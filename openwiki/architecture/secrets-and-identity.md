@@ -299,6 +299,20 @@ cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
 
+The [acceptance outcome amendment](../../clusters/homelab/apps/renovate/README.md)
+stages a separate immutable `automation/renovate-acceptance-outcome-review`
+Secret for owner-reviewed private policy exclusions or outage evidence. The
+guarded operator command accepts only an owner-only file from signed current
+`main` and binds the immutable Secret to the suspended writer and preflight
+Job UIDs. A
+separate read-only preflight Job validates that same input before writer
+activation; both Jobs mount it as a file, have no GitHub App key or
+Kubernetes token, and writes only to the protected acceptance ledger after all
+other acceptance writers drain. The input Secret is retired after its Job
+succeeds. A deleted or replaced writer cannot justify retracting that Secret.
+Source authenticity and any real exclusions still need independent
+private review; this staging does not start the seven-day window.
+
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
 `aws:ViaAWSService` is false. SSM must still forward the caller's authorization

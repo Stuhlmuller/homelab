@@ -2,6 +2,8 @@
 """Private review delivery rejects unsafe files and never puts values in command args."""
 
 import importlib.util
+import base64
+import copy
 import json
 import os
 from pathlib import Path
@@ -71,9 +73,56 @@ class ReviewDeliveryTests(TestCase):
             with self.assertRaises(REVIEW.Failure):
                 REVIEW.private_review(str(fifo))
 
+    def test_outcome_review_is_a_distinct_fixed_private_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "review.json"
+            payload = {"schema": 1, "owner": "Stuhlmuller",
+                       "inventorySha256": "a" * 64, "reviewSha256": "b" * 64,
+                       "configSha256": "d" * 64,
+                       "windowStart": "2026-10-17T00:00:00.000Z",
+                       "windowEnd": "2026-10-24T00:00:00.000Z",
+                       "classifications": [{"key": "c" * 64}]}
+            source.write_text(json.dumps(payload))
+            source.chmod(0o600)
+            raw = REVIEW.private_review(str(source), "outcomes")
+            job_uid = "971ca1f1-4479-45c4-8d0a-96ed6f11aa14"
+            preflight_uid = "6792c831-4bf4-45b2-a959-6b245db66b9e"
+            job = {"metadata": {"name": REVIEW.OUTCOME_JOB,
+                                "namespace": REVIEW.NAMESPACE,
+                                "uid": job_uid,
+                                "creationTimestamp": "2026-10-19T18:00:00Z"},
+                   "spec": {"suspend": True}, "status": {}}
+            preflight = {**job, "metadata": {**job["metadata"],
+                                             "name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+                                             "uid": preflight_uid}}
+            with (mock.patch.object(REVIEW, "secret", side_effect=[None, {
+                    "metadata": {"annotations": {
+                        REVIEW.OUTCOME_JOB_UID_ANNOTATION: job_uid,
+                        REVIEW.OUTCOME_PREFLIGHT_UID_ANNOTATION: preflight_uid}},
+                    "data": {"review.json": base64.b64encode(raw).decode()}}]),
+                  mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
+                      json.dumps(preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args else job)
+                      if "get" in args else "") as run,
+                  mock.patch.object(REVIEW, "verify_outcome_source") as source_guard,
+                  mock.patch("builtins.print")):
+                REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
+            self.assertEqual(source_guard.call_count, 2)
+            create = next(call for call in run.call_args_list
+                          if call.args[:3] == ("kubectl", "create", "-f"))
+            manifest = json.loads(create.kwargs["input_data"])
+            self.assertEqual(manifest["metadata"]["name"], REVIEW.OUTCOME_SECRET)
+            self.assertEqual(manifest["metadata"]["annotations"],
+                             {REVIEW.OUTCOME_JOB_UID_ANNOTATION: job_uid,
+                              REVIEW.OUTCOME_PREFLIGHT_UID_ANNOTATION: preflight_uid})
+            self.assertNotIn(raw.decode(), " ".join(create.args))
+            payload["inventorySha256"] = "invalid"
+            source.write_text(json.dumps(payload))
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.private_review(str(source), "outcomes")
+
     def test_secret_creation_passes_private_value_only_on_stdin(self):
         raw = b'{"schema":1,"owner":"Stuhlmuller"}'
-        existing = {"data": {"review.json": "eyJzY2hlbWEiOjEsIm93bmVyIjoiU3R1aGxtdWxsZXIifQ=="}}
+        existing = {"data": {"review.json": base64.b64encode(raw).decode()}}
         with (mock.patch.object(REVIEW, "secret", side_effect=[None, existing]),
               mock.patch.object(REVIEW, "command", return_value="") as run,
               mock.patch("builtins.print")):
@@ -141,6 +190,296 @@ class ReviewDeliveryTests(TestCase):
             REVIEW.retract(True)
         self.assertEqual(calls[-1], ("kubectl", "-n", REVIEW.NAMESPACE, "delete", "secret",
                                      REVIEW.SECRET, "--ignore-not-found=true", "--wait=true"))
+
+    def test_outcome_retraction_rejects_even_a_terminal_failed_started_job(self):
+        uid = "971ca1f1-4479-45c4-8d0a-96ed6f11aa14"
+        existing = {"metadata": {"creationTimestamp": "2026-10-19T19:00:00Z",
+                                 "annotations": {REVIEW.OUTCOME_JOB_UID_ANNOTATION: uid}}}
+        failed = {"metadata": {"name": REVIEW.OUTCOME_JOB,
+                               "uid": uid,
+                               "creationTimestamp": "2026-10-19T18:00:00Z"},
+                  "spec": {"suspend": False},
+                  "status": {"startTime": "2026-10-19T19:01:00Z", "failed": 1,
+                             "conditions": [{"type": "Failed", "status": "True"}]}}
+        with (mock.patch.object(REVIEW, "secret", return_value=existing),
+              mock.patch.object(REVIEW, "command", return_value=json.dumps(failed))):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.retract(True, REVIEW.OUTCOME_SECRET, REVIEW.OUTCOME_JOB)
+
+    def test_outcome_retraction_requires_same_suspended_job_before_secret(self):
+        uid = "971ca1f1-4479-45c4-8d0a-96ed6f11aa14"
+        existing = {"metadata": {"creationTimestamp": "2026-10-19T19:00:00Z",
+                                 "annotations": {REVIEW.OUTCOME_JOB_UID_ANNOTATION: uid}}}
+        before = {"metadata": {"name": REVIEW.OUTCOME_JOB,
+                               "uid": uid,
+                               "creationTimestamp": "2026-10-19T18:00:00Z"},
+                  "spec": {"suspend": True}, "status": {}}
+        replaced = {**before, "metadata": {"name": REVIEW.OUTCOME_JOB,
+                                           "uid": "16656a3a-92e3-4abc-907f-85ad05a6caa4",
+                                           "creationTimestamp": "2026-10-19T20:00:00Z"}}
+        replaced_old_timestamp = {**before, "metadata": {**before["metadata"],
+                                                         "uid": replaced["metadata"]["uid"]}}
+        completed_without_counter = {**before, "status": {"conditions": [
+            {"type": "Complete", "status": "True"}]}}
+        for output in ("", json.dumps(replaced), json.dumps(replaced_old_timestamp),
+                       json.dumps(completed_without_counter)):
+            with (self.subTest(output=output),
+                  mock.patch.object(REVIEW, "secret", return_value=existing),
+                  mock.patch.object(REVIEW, "command", return_value=output)):
+                with self.assertRaises(REVIEW.Failure):
+                    REVIEW.retract(True, REVIEW.OUTCOME_SECRET, REVIEW.OUTCOME_JOB)
+        calls = []
+
+        def command(*args, **_kwargs):
+            calls.append(args)
+            return json.dumps(before) if "get" in args else ""
+
+        with (mock.patch.object(REVIEW, "secret", side_effect=[existing, None]),
+              mock.patch.object(REVIEW, "command", side_effect=command),
+              mock.patch("builtins.print")):
+            REVIEW.retract(True, REVIEW.OUTCOME_SECRET, REVIEW.OUTCOME_JOB)
+        self.assertEqual(calls[-1], ("kubectl", "-n", REVIEW.NAMESPACE,
+                                     "delete", "secret", REVIEW.OUTCOME_SECRET,
+                                     "--ignore-not-found=true", "--wait=true"))
+
+    def test_outcome_input_replay_and_retirement_reject_replaced_job_uid(self):
+        delivered_uid = "971ca1f1-4479-45c4-8d0a-96ed6f11aa14"
+        replacement_uid = "16656a3a-92e3-4abc-907f-85ad05a6caa4"
+        preflight_uid = "6792c831-4bf4-45b2-a959-6b245db66b9e"
+        raw = b'{"schema":1}'
+        existing = {"metadata": {"creationTimestamp": "2026-10-19T19:00:00Z",
+                                 "annotations": {REVIEW.OUTCOME_JOB_UID_ANNOTATION:
+                                                 delivered_uid,
+                                                 REVIEW.OUTCOME_PREFLIGHT_UID_ANNOTATION:
+                                                 preflight_uid}},
+                    "data": {"review.json": base64.b64encode(raw).decode()}}
+        pending = {"metadata": {"name": REVIEW.OUTCOME_JOB,
+                                "namespace": REVIEW.NAMESPACE,
+                                "uid": replacement_uid,
+                                "creationTimestamp": "2026-10-19T18:00:00Z"},
+                   "spec": {"suspend": True}, "status": {}}
+        pending_preflight = {**pending, "metadata": {**pending["metadata"],
+                                                     "name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+                                                     "uid": preflight_uid}}
+        def response(*args, **_kwargs):
+            return json.dumps(pending_preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args
+                              else pending)
+        with (mock.patch.object(REVIEW, "secret", return_value=existing),
+              mock.patch.object(REVIEW, "command", side_effect=response)):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
+        same_second = {**pending, "metadata": {**pending["metadata"],
+                                                "uid": delivered_uid,
+                                                "creationTimestamp": "2026-10-19T19:00:00Z"}}
+        def same_response(*args, **_kwargs):
+            return json.dumps(pending_preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args
+                              else same_second)
+        with (mock.patch.object(REVIEW, "secret", return_value=existing),
+              mock.patch.object(REVIEW, "command", side_effect=same_response),
+              mock.patch.object(REVIEW, "verify_outcome_source"),
+              mock.patch("builtins.print")):
+            REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
+        terminal_without_counter = {**same_second, "status": {"conditions": [
+            {"type": "Failed", "status": "True"}]}}
+        with (mock.patch.object(REVIEW, "secret", return_value=existing),
+              mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
+                  json.dumps(pending_preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args
+                             else terminal_without_counter)),
+              mock.patch.object(REVIEW, "verify_outcome_source")):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
+        finished = {**pending, "spec": {"suspend": False},
+                    "status": {"startTime": "2026-10-19T19:01:00Z", "succeeded": 1}}
+        with (mock.patch.object(REVIEW, "secret", return_value=existing),
+              mock.patch.object(REVIEW, "command", return_value=json.dumps(finished))):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.retire(True, REVIEW.OUTCOME_SECRET, REVIEW.OUTCOME_JOB)
+
+    def test_preflight_gate_requires_current_input_and_read_only_completed_job(self):
+        writer_uid = "971ca1f1-4479-45c4-8d0a-96ed6f11aa14"
+        preflight_uid = "6792c831-4bf4-45b2-a959-6b245db66b9e"
+        code_name = "renovate-acceptance-observer-9k4tg5c8fh"
+        existing = {"metadata": {"creationTimestamp": "2026-10-19T19:00:00Z",
+                                 "annotations": {
+                                     REVIEW.OUTCOME_JOB_UID_ANNOTATION: writer_uid,
+                                     REVIEW.OUTCOME_PREFLIGHT_UID_ANNOTATION: preflight_uid}}}
+        writer = {"metadata": {"name": REVIEW.OUTCOME_JOB,
+                               "namespace": REVIEW.NAMESPACE, "uid": writer_uid,
+                               "creationTimestamp": "2026-10-19T18:00:00Z"},
+                  "spec": {"suspend": True}, "status": {}}
+        preflight = {"metadata": {"name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+                                  "namespace": REVIEW.NAMESPACE,
+                                  "uid": preflight_uid,
+                                  "creationTimestamp": "2026-10-19T18:00:00Z"},
+                     "spec": {"suspend": False, "template": {"metadata": {"labels": {
+                         "app.kubernetes.io/component": "acceptance-outcome-amend"}},
+                         "spec": {
+                         "automountServiceAccountToken": False,
+                         "serviceAccountName": "renovate",
+                         "containers": [{"command": ["node",
+                             "/usr/src/app/acceptance-outcome-amend.js", "--check-only"],
+                             "volumeMounts": [
+                                 {"name": "code", "mountPath":
+                                  "/usr/src/app/acceptance-outcome-amend.js",
+                                  "subPath": "acceptance-outcome-amend.js", "readOnly": True},
+                                 {"name": "code", "mountPath":
+                                  "/usr/src/app/acceptance-observer.js",
+                                  "subPath": "acceptance-observer.js", "readOnly": True},
+                                 {"name": "review", "mountPath": "/review", "readOnly": True},
+                                 {"name": "ledger", "mountPath": "/ledger",
+                                  "readOnly": True}]}],
+                         "volumes": [{"name": "code", "configMap": {
+                             "name": code_name}},
+                                     {"name": "review", "secret": {
+                                         "secretName": REVIEW.OUTCOME_SECRET,
+                                         "items": [{"key": "review.json", "path": "review.json"}]}},
+                                     {"name": "ledger", "persistentVolumeClaim": {
+                                         "claimName": "renovate-acceptance-ledger",
+                                         "readOnly": True}}]}}},
+                     "status": {"startTime": "2026-10-19T19:01:00Z", "succeeded": 1,
+                                "conditions": [{"type": "Complete", "status": "True"}]}}
+        writer["spec"]["template"] = copy.deepcopy(preflight["spec"]["template"])
+        writer_container = writer["spec"]["template"]["spec"]["containers"][0]
+        writer_container["command"] = writer_container["command"][:-1]
+        writer_container["volumeMounts"][3].pop("readOnly")
+        writer["spec"]["template"]["spec"]["volumes"][2][
+            "persistentVolumeClaim"].pop("readOnly")
+        code_dir = ROOT / "clusters/homelab/apps/renovate"
+        code_map = {"metadata": {"name": code_name, "namespace": REVIEW.NAMESPACE},
+                    "data": {name: (code_dir / name).read_text() for name in (
+                        "acceptance-outcome-amend.js", "acceptance-observer.js")}}
+
+        source_jobs = {REVIEW.OUTCOME_JOB: copy.deepcopy(writer),
+                       REVIEW.OUTCOME_PREFLIGHT_JOB: copy.deepcopy(preflight)}
+
+        def check(case, configmap=code_map, writer_case=writer):
+            def response(*args, **_kwargs):
+                if "configmap" in args:
+                    return json.dumps(configmap)
+                return json.dumps(case if REVIEW.OUTCOME_PREFLIGHT_JOB in args
+                                  else writer_case)
+            with (mock.patch.object(REVIEW, "secret", return_value=existing),
+                  mock.patch.object(REVIEW, "command", side_effect=response),
+                  mock.patch.object(REVIEW, "rendered_outcome_resources",
+                                    return_value=(source_jobs, code_map)),
+                  mock.patch("builtins.print")):
+                REVIEW.verify_preflight()
+
+        check(preflight)
+        defaulted = copy.deepcopy(preflight)
+        defaulted_pod = defaulted["spec"]["template"]["spec"]
+        defaulted_pod.update({"dnsPolicy": "ClusterFirst", "hostNetwork": False,
+                              "serviceAccount": "renovate",
+                              "terminationGracePeriodSeconds": 30})
+        defaulted_container = defaulted_pod["containers"][0]
+        defaulted_container["terminationMessagePath"] = "/dev/termination-log"
+        defaulted_container["terminationMessagePolicy"] = "File"
+        defaulted["spec"]["template"]["metadata"]["labels"].update({
+            "batch.kubernetes.io/job-name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+            "job-name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+            "batch.kubernetes.io/controller-uid": preflight_uid,
+            "controller-uid": preflight_uid})
+        check(defaulted)
+        with (mock.patch.object(REVIEW, "secret", return_value=None),
+              mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
+                  json.dumps(preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args else writer))):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.install(b'{"schema":1}', False, REVIEW.OUTCOME_SECRET)
+        stale = copy.deepcopy(preflight)
+        stale["status"]["startTime"] = "2026-10-19T18:59:00Z"
+        replaced = copy.deepcopy(preflight)
+        replaced["metadata"]["uid"] = "other"
+        failed = copy.deepcopy(preflight)
+        failed["status"]["succeeded"] = 0
+        writable_pvc = copy.deepcopy(preflight)
+        writable_pvc["spec"]["template"]["spec"]["volumes"][2]["persistentVolumeClaim"][
+            "readOnly"] = False
+        writable_mount = copy.deepcopy(preflight)
+        writable_mount["spec"]["template"]["spec"]["containers"][0]["volumeMounts"][3][
+            "readOnly"] = False
+        wrong_code = copy.deepcopy(preflight)
+        wrong_code["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = "other"
+        wrong_review = copy.deepcopy(preflight)
+        wrong_review["spec"]["template"]["spec"]["containers"][0]["volumeMounts"][2][
+            "readOnly"] = False
+        for case in (stale, replaced, failed, writable_pvc, writable_mount,
+                     wrong_code, wrong_review):
+            with self.subTest(case=case):
+                with self.assertRaises(REVIEW.Failure):
+                    check(case)
+        wrong_bytes = copy.deepcopy(code_map)
+        wrong_bytes["data"]["acceptance-outcome-amend.js"] = "stale"
+        with self.assertRaises(REVIEW.Failure):
+            check(preflight, wrong_bytes)
+
+        for target in ("preflight", "writer"):
+            for field in ("container", "initContainer", "image", "command",
+                          "environment", "envFrom", "mount", "hostNetwork",
+                          "token", "security"):
+                changed = copy.deepcopy(preflight if target == "preflight" else writer)
+                pod = changed["spec"]["template"]["spec"]
+                container = pod["containers"][0]
+                if field == "container":
+                    pod["containers"].append(copy.deepcopy(container))
+                elif field == "initContainer":
+                    pod["initContainers"] = [copy.deepcopy(container)]
+                elif field == "image":
+                    container["image"] = "example.invalid/unreviewed:latest"
+                elif field == "command":
+                    container["command"] = ["sh", "-c", "true"]
+                elif field == "environment":
+                    container["env"] = [{"name": "EXTRA", "value": "unsafe"}]
+                elif field == "envFrom":
+                    container["envFrom"] = [{"secretRef": {"name": "unsafe"}}]
+                elif field == "mount":
+                    container["volumeMounts"].append({"name": "review", "mountPath": "/extra"})
+                elif field == "hostNetwork":
+                    pod["hostNetwork"] = True
+                elif field == "token":
+                    pod["automountServiceAccountToken"] = True
+                else:
+                    container["securityContext"] = {"privileged": True}
+                with self.subTest(target=target, drift=field):
+                    with self.assertRaises(REVIEW.Failure):
+                        if target == "preflight":
+                            check(changed)
+                        else:
+                            check(preflight, writer_case=changed)
+        extra_map = copy.deepcopy(code_map)
+        extra_map["data"]["unexpected.js"] = "malicious"
+        with self.assertRaises(REVIEW.Failure):
+            check(preflight, extra_map)
+
+    def test_gitops_render_requires_both_jobs_and_one_generated_code_map(self):
+        jobs = [{"kind": "Job", "metadata": {"name": name,
+                 "namespace": REVIEW.NAMESPACE}} for name in
+                (REVIEW.OUTCOME_JOB, REVIEW.OUTCOME_PREFLIGHT_JOB)]
+        code_map = {"kind": "ConfigMap", "metadata": {
+            "name": "renovate-acceptance-observer-9k4tg5c8fh",
+            "namespace": REVIEW.NAMESPACE}, "data": {"script.js": "safe"}}
+        output = "\n".join(json.dumps(obj) for obj in (*jobs, code_map))
+        def response(*args, **_kwargs):
+            return "rendered YAML" if args[1] == "kustomize" else output
+        with mock.patch.object(REVIEW, "command", side_effect=response):
+            found_jobs, found_map = REVIEW.rendered_outcome_resources()
+            self.assertEqual(set(found_jobs), {REVIEW.OUTCOME_JOB,
+                                                REVIEW.OUTCOME_PREFLIGHT_JOB})
+            self.assertEqual(found_map, code_map)
+        with mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
+                               "rendered YAML" if args[1] == "kustomize" else
+                               "\n".join(json.dumps(obj) for obj in (jobs[0], code_map))):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.rendered_outcome_resources()
+
+    def test_outcome_source_guard_fails_before_secret_install(self):
+        pending = (None, "uid", {"metadata": {"name": REVIEW.OUTCOME_JOB}})
+        with (mock.patch.object(REVIEW, "suspended_outcome_job", return_value=pending),
+              mock.patch.object(REVIEW, "verify_outcome_source",
+                                side_effect=REVIEW.Failure("source drift")),
+              mock.patch.object(REVIEW, "secret") as secret):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.install(b'{}', True, REVIEW.OUTCOME_SECRET)
+        secret.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ if __name__ == "__main__" and not sys.flags.isolated:
 import argparse
 import base64
 import binascii
+import copy
 from datetime import datetime
 import hashlib
 import json
@@ -20,8 +21,15 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SECRET = "renovate-acceptance-review"
-JOB = "renovate-acceptance-inventory"
+APP = ROOT / "clusters/homelab/apps/renovate"
+ACCEPTANCE_NAME = "renovate-acceptance"
+SECRET = f"{ACCEPTANCE_NAME}-review"
+JOB = f"{ACCEPTANCE_NAME}-inventory"
+OUTCOME_SECRET = f"{ACCEPTANCE_NAME}-outcome-review"
+OUTCOME_JOB = f"{ACCEPTANCE_NAME}-outcome-amend"
+OUTCOME_PREFLIGHT_JOB = f"{ACCEPTANCE_NAME}-outcome-preflight"
+OUTCOME_JOB_UID_ANNOTATION = "renovate.stuhlmuller.net/outcome-job-uid"
+OUTCOME_PREFLIGHT_UID_ANNOTATION = "renovate.stuhlmuller.net/outcome-preflight-uid"
 NAMESPACE = "automation"
 API = "https://10.1.0.199:6443"
 LIMIT = 900 * 1024
@@ -55,7 +63,7 @@ def reviewed_main(expected):
         raise Failure("Kubernetes API target differs from the reviewed homelab endpoint")
 
 
-def private_review(path):
+def private_review(path, kind="inventory"):
     source = Path(path)
     if not source.is_absolute():
         raise Failure("Review input must be an absolute file outside a Git checkout")
@@ -85,33 +93,210 @@ def private_review(path):
         review = json.loads(raw)
         if (not isinstance(review, dict) or review.get("schema") != 1
                 or review.get("owner") != "Stuhlmuller"
-                or not isinstance(review.get("repositories"), list)
                 or not isinstance(review.get("classifications"), list)):
+            raise ValueError
+        if kind == "inventory":
+            if not isinstance(review.get("repositories"), list):
+                raise ValueError
+        elif kind == "outcomes":
+            if (not isinstance(review.get("inventorySha256"), str)
+                    or not re.fullmatch(r"[a-f0-9]{64}", review["inventorySha256"])
+                    or not isinstance(review.get("reviewSha256"), str)
+                    or not re.fullmatch(r"[a-f0-9]{64}", review["reviewSha256"])
+                    or not isinstance(review.get("configSha256"), str)
+                    or not re.fullmatch(r"[a-f0-9]{64}", review["configSha256"])
+                    or not isinstance(review.get("windowStart"), str)
+                    or not isinstance(review.get("windowEnd"), str)
+                    or not review["classifications"]):
+                raise ValueError
+        else:
             raise ValueError
     except (ValueError, UnicodeDecodeError, RecursionError):
         raise Failure("Review input schema is invalid") from None
     return raw
 
 
-def secret():
-    output = command("kubectl", "-n", NAMESPACE, "get", "secret", SECRET,
+def secret(name=SECRET):
+    output = command("kubectl", "-n", NAMESPACE, "get", "secret", name,
                      "--ignore-not-found=true", "-o", "json")
     try:
         result = json.loads(output) if output else None
     except ValueError:
         raise Failure("Review Secret metadata could not be read") from None
-    if result and (result.get("metadata", {}).get("name") != SECRET
+    if result and (result.get("metadata", {}).get("name") != name
                    or result.get("metadata", {}).get("namespace") != NAMESPACE
                    or result.get("type") != "Opaque"
                    or result.get("immutable") is not True
                    or set(result.get("data", {})) != {"review.json"}):
         raise Failure("Existing review Secret has an invalid shape")
+    if result and name == OUTCOME_SECRET:
+        delivered_uid(result, OUTCOME_JOB_UID_ANNOTATION)
+        delivered_uid(result, OUTCOME_PREFLIGHT_UID_ANNOTATION)
     return result
 
 
-def install(raw, execute):
-    existing = secret()
+def delivered_uid(review_secret, annotation):
+    try:
+        uid = review_secret["metadata"]["annotations"][annotation]
+    except (KeyError, TypeError):
+        raise Failure("Outcome input has no bound Job identity") from None
+    if not isinstance(uid, str) or not uid:
+        raise Failure("Outcome input has no bound Job identity")
+    return uid
+
+
+def rendered_outcome_resources():
+    """Read the reviewed GitOps render, including its generated code-map name."""
+    rendered = command("kubectl", "kustomize", str(APP))
+    output = command("kubectl", "create", "--dry-run=client", "--validate=false",
+                     "-f", "-", "-o", "json", input_data=rendered)
+    decoder = json.JSONDecoder()
+    objects = []
+    position = 0
+    try:
+        while position < len(output):
+            while position < len(output) and output[position].isspace():
+                position += 1
+            if position < len(output):
+                obj, position = decoder.raw_decode(output, position)
+                objects.extend(obj.get("items", []) if obj.get("kind") == "List" else [obj])
+        jobs = {}
+        for name in (OUTCOME_JOB, OUTCOME_PREFLIGHT_JOB):
+            matches = [obj for obj in objects if obj.get("kind") == "Job" and
+                       obj.get("metadata", {}).get("name") == name and
+                       obj.get("metadata", {}).get("namespace") == NAMESPACE]
+            if len(matches) != 1:
+                raise ValueError
+            jobs[name] = matches[0]
+        maps = [obj for obj in objects if obj.get("kind") == "ConfigMap" and
+                obj.get("metadata", {}).get("namespace") == NAMESPACE and
+                re.fullmatch(r"renovate-acceptance-observer-[a-z0-9]{10}",
+                             obj.get("metadata", {}).get("name", ""))]
+        if len(maps) != 1 or not isinstance(maps[0].get("data"), dict):
+            raise ValueError
+        return jobs, maps[0]
+    except (AttributeError, KeyError, TypeError, ValueError):
+        raise Failure("Reviewed GitOps outcome resources are incomplete") from None
+
+
+def normalized_template(job):
+    """Remove only known API defaults and Job-controller labels."""
+    template = copy.deepcopy(job["spec"]["template"])
+    metadata = template["metadata"]
+    if metadata.get("creationTimestamp") is None:
+        metadata.pop("creationTimestamp", None)
+    labels = metadata["labels"]
+    name = job["metadata"]["name"]
+    uid = job["metadata"].get("uid")
+    for key, expected in (("batch.kubernetes.io/job-name", name),
+                          ("job-name", name),
+                          ("batch.kubernetes.io/controller-uid", uid),
+                          ("controller-uid", uid)):
+        if key in labels:
+            if labels[key] != expected or expected is None:
+                raise ValueError
+            del labels[key]
+    pod = template["spec"]
+    for key, default in (("dnsPolicy", "ClusterFirst"),
+                         ("schedulerName", "default-scheduler"),
+                         ("terminationGracePeriodSeconds", 30),
+                         ("enableServiceLinks", True),
+                         ("priority", 0),
+                         ("preemptionPolicy", "PreemptLowerPriority"),
+                         ("hostNetwork", False), ("hostPID", False),
+                         ("hostIPC", False), ("shareProcessNamespace", False)):
+        if pod.get(key) == default:
+            pod.pop(key, None)
+    if pod.get("serviceAccount") == pod.get("serviceAccountName"):
+        pod.pop("serviceAccount", None)
+    for container in pod["containers"]:
+        for key, default in (("terminationMessagePath", "/dev/termination-log"),
+                             ("terminationMessagePolicy", "File"),
+                             ("stdin", False), ("stdinOnce", False),
+                             ("tty", False)):
+            if container.get(key) == default:
+                container.pop(key, None)
+    for volume in pod["volumes"]:
+        if volume.get("configMap", {}).get("defaultMode") == 420:
+            volume["configMap"].pop("defaultMode")
+        if volume.get("secret", {}).get("defaultMode") == 420:
+            volume["secret"].pop("defaultMode")
+        if volume.get("persistentVolumeClaim", {}).get("readOnly") is False:
+            volume["persistentVolumeClaim"].pop("readOnly")
+    return template
+
+
+def verify_outcome_source(writer, preflight):
+    """Fail before private input if either Pod or mounted code differs from main."""
+    try:
+        jobs, expected_map = rendered_outcome_resources()
+        for name, live in ((OUTCOME_JOB, writer), (OUTCOME_PREFLIGHT_JOB, preflight)):
+            expected = jobs[name]
+            if (live["metadata"]["name"] != name or
+                    live["metadata"]["namespace"] != NAMESPACE or
+                    normalized_template(live) != normalized_template(expected)):
+                raise ValueError
+        code_name = expected_map["metadata"]["name"]
+        for live in (writer, preflight):
+            volumes = live["spec"]["template"]["spec"]["volumes"]
+            if not any(volume.get("name") == "code" and
+                       volume.get("configMap", {}).get("name") == code_name
+                       for volume in volumes):
+                raise ValueError
+        live_map = json.loads(command("kubectl", "-n", NAMESPACE, "get", "configmap",
+                                      code_name, "-o", "json"))
+        if (live_map.get("metadata", {}).get("name") != code_name or
+                live_map.get("metadata", {}).get("namespace") != NAMESPACE or
+                live_map.get("data") != expected_map["data"] or
+                live_map.get("binaryData") or expected_map.get("binaryData")):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise Failure("Outcome Job or mounted code differs from reviewed main") from None
+
+
+def suspended_outcome_job(job_name=OUTCOME_JOB):
+    output = command("kubectl", "-n", NAMESPACE, "get", "job", job_name,
+                     "--ignore-not-found=true", "-o", "json")
+    try:
+        job = json.loads(output) if output else None
+        status = job.get("status", {}) if job else {}
+        if (not job or job.get("metadata", {}).get("name") != job_name
+                or job.get("metadata", {}).get("namespace") != NAMESPACE
+                or job.get("spec", {}).get("suspend") is not True
+                or status.get("startTime")
+                or any(status.get(field, 0) for field in ("active", "succeeded", "failed"))
+                or any(condition.get("type") in ("Complete", "Failed")
+                       and condition.get("status") == "True"
+                       for condition in status.get("conditions", []))):
+            raise ValueError
+        uid = job["metadata"]["uid"]
+        if not isinstance(uid, str) or not uid:
+            raise ValueError
+        created_at = datetime.fromisoformat(
+            job["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+        return created_at, uid, job
+    except (KeyError, TypeError, ValueError):
+        raise Failure("Outcome Job must be reconciled suspended before input delivery") from None
+
+
+def install(raw, execute, name=SECRET):
+    outcome_job = suspended_outcome_job() if name == OUTCOME_SECRET else None
+    preflight_job = suspended_outcome_job(OUTCOME_PREFLIGHT_JOB) if outcome_job else None
+    if outcome_job:
+        verify_outcome_source(outcome_job[2], preflight_job[2])
+    existing = secret(name)
     if existing:
+        if outcome_job:
+            try:
+                installed_at = datetime.fromisoformat(
+                    existing["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+            except (KeyError, TypeError, ValueError):
+                raise Failure("Existing outcome input creation time is unavailable") from None
+            if (outcome_job[0] > installed_at or preflight_job[0] > installed_at
+                    or delivered_uid(existing, OUTCOME_JOB_UID_ANNOTATION) != outcome_job[1]
+                    or delivered_uid(existing, OUTCOME_PREFLIGHT_UID_ANNOTATION)
+                    != preflight_job[1]):
+                raise Failure("Outcome Job was replaced after input delivery")
         try:
             actual = base64.b64decode(existing["data"]["review.json"], validate=True)
         except (KeyError, ValueError, TypeError, binascii.Error):
@@ -124,63 +309,90 @@ def install(raw, execute):
         print("Private review input and target verified; use --execute to install.")
         return
     manifest = {"apiVersion": "v1", "kind": "Secret",
-                "metadata": {"name": SECRET, "namespace": NAMESPACE}, "type": "Opaque",
+                "metadata": {"name": name, "namespace": NAMESPACE}, "type": "Opaque",
                 "immutable": True,
                 "data": {"review.json": base64.b64encode(raw).decode("ascii")}}
+    if outcome_job:
+        manifest["metadata"]["annotations"] = {
+            OUTCOME_JOB_UID_ANNOTATION: outcome_job[1],
+            OUTCOME_PREFLIGHT_UID_ANNOTATION: preflight_job[1]}
     command("kubectl", "create", "-f", "-", input_data=json.dumps(manifest))
-    created = secret()
+    created = secret(name)
     try:
         actual = base64.b64decode(created["data"]["review.json"], validate=True)
     except (TypeError, KeyError, ValueError, binascii.Error):
         raise Failure("Review Secret creation could not be verified") from None
     if hashlib.sha256(actual).digest() != hashlib.sha256(raw).digest():
         raise Failure("Review Secret digest mismatch; inspect before retrying")
+    if outcome_job:
+        current_writer = suspended_outcome_job()
+        current_preflight = suspended_outcome_job(OUTCOME_PREFLIGHT_JOB)
+        if (delivered_uid(created, OUTCOME_JOB_UID_ANNOTATION) != outcome_job[1]
+                or delivered_uid(created, OUTCOME_PREFLIGHT_UID_ANNOTATION)
+                != preflight_job[1]
+                or current_writer[:2] != outcome_job[:2]
+                or current_preflight[:2] != preflight_job[:2]):
+            raise Failure("Outcome Job identity changed during input delivery")
+        verify_outcome_source(current_writer[2], current_preflight[2])
     print("Private review input delivered to the fixed automation Secret; value withheld.")
 
 
-def retire(execute):
-    existing = secret()
+def retire(execute, name=SECRET, job_name=JOB):
+    existing = secret(name)
     if not existing:
         print("Review Secret already absent.")
         return
     try:
-        job = json.loads(command("kubectl", "-n", NAMESPACE, "get", "job", JOB, "-o", "json"))
+        job = json.loads(command("kubectl", "-n", NAMESPACE, "get", "job", job_name, "-o", "json"))
     except ValueError:
-        raise Failure("Inventory Job status could not be read") from None
+        raise Failure("Review target Job status could not be read") from None
     try:
         installed_at = datetime.fromisoformat(
             existing["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
         started_at = datetime.fromisoformat(
             job["status"]["startTime"].replace("Z", "+00:00"))
-    except (KeyError, ValueError):
-        raise Failure("Inventory Job and Secret creation times are unavailable") from None
-    if (job.get("metadata", {}).get("name") != JOB or started_at <= installed_at
+    except (KeyError, TypeError, ValueError):
+        raise Failure("Review target Job and Secret creation times are unavailable") from None
+    if (job.get("metadata", {}).get("name") != job_name or started_at <= installed_at
             or job.get("status", {}).get("succeeded", 0) < 1
             or job.get("status", {}).get("active", 0)):
-        raise Failure("Inventory Job has not completed successfully")
+        raise Failure("Review target Job has not completed successfully")
+    if (name == OUTCOME_SECRET and
+            job.get("metadata", {}).get("uid") !=
+            delivered_uid(existing, OUTCOME_JOB_UID_ANNOTATION)):
+        raise Failure("Outcome Job identity differs from delivered input")
     if not execute:
-        print("Inventory Job succeeded; use --execute to retire the input Secret.")
+        print("Review target Job succeeded; use --execute to retire the input Secret.")
         return
-    command("kubectl", "-n", NAMESPACE, "delete", "secret", SECRET,
+    command("kubectl", "-n", NAMESPACE, "delete", "secret", name,
             "--ignore-not-found=true", "--wait=true")
-    if secret():
+    if secret(name):
         raise Failure("Review Secret retirement could not be verified")
     print("Review Secret retired; frozen private ledger remains for acceptance review.")
 
 
-def retract(execute):
-    existing = secret()
+def retract(execute, name=SECRET, job_name=JOB):
+    existing = secret(name)
     if not existing:
         print("Review Secret already absent.")
         return
-    output = command("kubectl", "-n", NAMESPACE, "get", "job", JOB,
+    output = command("kubectl", "-n", NAMESPACE, "get", "job", job_name,
                      "--ignore-not-found=true", "-o", "json")
     try:
         job = json.loads(output) if output else None
         installed_at = datetime.fromisoformat(
             existing["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+        if name == OUTCOME_SECRET:
+            if not job:
+                raise ValueError
+            created_at = datetime.fromisoformat(
+                job["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+            if (created_at > installed_at or
+                    job["metadata"].get("uid") !=
+                    delivered_uid(existing, OUTCOME_JOB_UID_ANNOTATION)):
+                raise ValueError
         if job:
-            if job.get("metadata", {}).get("name") != JOB:
+            if job.get("metadata", {}).get("name") != job_name:
                 raise ValueError
             status = job.get("status", {})
             started_at = datetime.fromisoformat(status["startTime"].replace("Z", "+00:00")) \
@@ -188,8 +400,16 @@ def retract(execute):
             terminal_failed = any(condition.get("type") == "Failed"
                                   and condition.get("status") == "True"
                                   for condition in status.get("conditions", []))
-            # A pending unsuspended Job may have no active Pod yet. Retract only
-            # before activation or after a terminal failed attempt.
+            if (name == OUTCOME_SECRET and
+                    (started_at or any(status.get(field, 0) for field in
+                                       ("active", "succeeded", "failed"))
+                     or any(condition.get("type") in ("Complete", "Failed")
+                            and condition.get("status") == "True"
+                            for condition in status.get("conditions", []))
+                     or not job.get("spec", {}).get("suspend", False))):
+                raise ValueError
+            # Only inventory input may retract after a terminal failed attempt;
+            # outcome input above refuses every started or unsuspended Job.
             if (status.get("active", 0)
                     or (status.get("succeeded", 0)
                         and (not started_at or started_at >= installed_at))
@@ -197,37 +417,117 @@ def retract(execute):
                         and not terminal_failed)):
                 raise ValueError
     except (KeyError, ValueError, TypeError):
-        raise Failure("Inventory Job is active or has seeded after delivery") from None
+        raise Failure("Review target Job is active or has consumed the input") from None
     if not execute:
-        print("No successful inventory Job used this input; use --execute to retract it.")
+        print("No successful target Job used this input; use --execute to retract it.")
         return
-    command("kubectl", "-n", NAMESPACE, "delete", "secret", SECRET,
+    command("kubectl", "-n", NAMESPACE, "delete", "secret", name,
             "--ignore-not-found=true", "--wait=true")
-    if secret():
+    if secret(name):
         raise Failure("Review Secret retraction could not be verified")
     print("Review Secret retracted; existing ledger files were not changed.")
 
 
+def verify_preflight():
+    existing = secret(OUTCOME_SECRET)
+    if not existing:
+        raise Failure("Outcome review input is absent")
+    writer_created_at, writer_uid, writer = suspended_outcome_job()
+    try:
+        installed_at = datetime.fromisoformat(
+            existing["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+        preflight = json.loads(command("kubectl", "-n", NAMESPACE, "get", "job",
+                                         OUTCOME_PREFLIGHT_JOB, "-o", "json"))
+        status = preflight["status"]
+        preflight_created_at = datetime.fromisoformat(
+            preflight["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
+        started_at = datetime.fromisoformat(status["startTime"].replace("Z", "+00:00"))
+        pod = preflight["spec"]["template"]["spec"]
+        container, = pod["containers"]
+        mounts = {mount["mountPath"]: mount for mount in container["volumeMounts"]}
+        volumes = {volume["name"]: volume for volume in pod["volumes"]}
+        code_name = volumes["code"]["configMap"]["name"]
+        if not re.fullmatch(r"renovate-acceptance-observer-[a-z0-9]{10}", code_name):
+            raise ValueError
+        code_map = json.loads(command("kubectl", "-n", NAMESPACE, "get", "configmap",
+                                      code_name, "-o", "json"))
+        code_dir = APP
+        expected_mounts = {
+            "/usr/src/app/acceptance-outcome-amend.js": ("code", "acceptance-outcome-amend.js"),
+            "/usr/src/app/acceptance-observer.js": ("code", "acceptance-observer.js")}
+        verify_outcome_source(writer, preflight)
+        if (writer_created_at > installed_at or
+                writer_uid != delivered_uid(existing, OUTCOME_JOB_UID_ANNOTATION) or
+                preflight_created_at > installed_at or started_at <= installed_at or
+                preflight["metadata"]["name"] != OUTCOME_PREFLIGHT_JOB or
+                preflight["metadata"]["namespace"] != NAMESPACE or
+                preflight["metadata"]["uid"] !=
+                delivered_uid(existing, OUTCOME_PREFLIGHT_UID_ANNOTATION) or
+                status.get("succeeded") != 1 or status.get("active", 0) or
+                status.get("failed", 0) or
+                not any(condition.get("type") == "Complete" and
+                        condition.get("status") == "True"
+                        for condition in status.get("conditions", [])) or
+                pod.get("automountServiceAccountToken") is not False or
+                container.get("command") != ["node", "/usr/src/app/acceptance-outcome-amend.js",
+                                             "--check-only"] or
+                preflight["spec"]["template"]["metadata"]["labels"].get(
+                    "app.kubernetes.io/component") != "acceptance-outcome-amend" or
+                len(container["volumeMounts"]) != 4 or len(mounts) != 4 or
+                any(mounts.get(mount_path, {}).get("name") != name or
+                    mounts.get(mount_path, {}).get("subPath") != subpath or
+                    mounts.get(mount_path, {}).get("readOnly") is not True
+                    for mount_path, (name, subpath) in expected_mounts.items()) or
+                mounts.get("/review", {}).get("name") != "review" or
+                mounts.get("/review", {}).get("readOnly") is not True or
+                mounts.get("/ledger", {}).get("name") != "ledger" or
+                mounts.get("/ledger", {}).get("readOnly") is not True or
+                pod.get("securityContext", {}).get("fsGroup") is not None or
+                len(pod["volumes"]) != 3 or set(volumes) != {"code", "review", "ledger"} or
+                code_map.get("metadata", {}).get("name") != code_name or
+                code_map.get("metadata", {}).get("namespace") != NAMESPACE or
+                any(code_map.get("data", {}).get(script) != (code_dir / script).read_text()
+                    for script in ("acceptance-outcome-amend.js", "acceptance-observer.js")) or
+                volumes["review"].get("secret", {}).get("secretName") != OUTCOME_SECRET or
+                volumes["review"]["secret"].get("items") !=
+                [{"key": "review.json", "path": "review.json"}] or
+                volumes["ledger"].get("persistentVolumeClaim", {}).get("claimName") !=
+                "renovate-acceptance-ledger" or
+                volumes["ledger"]["persistentVolumeClaim"].get("readOnly") is not True or
+                preflight["spec"].get("suspend") is not False):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise Failure("Outcome preflight has not verified the current private input") from None
+    print("Bound read-only outcome preflight completed after input delivery; writer remains suspended.")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("install", "retire", "retract"))
+    parser.add_argument("operation", choices=("install", "retire", "retract", "verify-preflight"))
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--private-file")
+    parser.add_argument("--kind", choices=("inventory", "outcomes"), default="inventory")
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
+    name, job_name = ((SECRET, JOB) if args.kind == "inventory"
+                      else (OUTCOME_SECRET, OUTCOME_JOB))
     try:
         reviewed_main(args.expected_sha)
         if args.operation == "install":
             if not args.private_file:
                 raise Failure("Install requires --private-file")
-            raw = private_review(args.private_file)
-            install(raw, args.execute)
+            raw = private_review(args.private_file, args.kind)
+            install(raw, args.execute, name)
         elif args.private_file:
             raise Failure("Only install accepts a private file")
+        elif args.operation == "verify-preflight":
+            if args.kind != "outcomes" or args.execute:
+                raise Failure("Preflight verification is read-only for outcome input")
+            verify_preflight()
         elif args.operation == "retire":
-            retire(args.execute)
+            retire(args.execute, name, job_name)
         else:
-            retract(args.execute)
+            retract(args.execute, name, job_name)
     except (Failure, OSError, RuntimeError, subprocess.TimeoutExpired):
         raise SystemExit("Private review operation failed; details withheld") from None
 

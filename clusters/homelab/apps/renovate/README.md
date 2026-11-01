@@ -747,6 +747,92 @@ the report inconclusive. The file binds a claim to material but does not prove
 that GitHub or a package registry supplied it; independent reviewed production
 and verification are required.
 
+The staged `acceptance-outcome-amend-job.yaml` supplies the missing private
+`policy-ineligible` and `excluded-outage` receipts. Its source stays suspended
+and outside Kustomize. After the observer, report, and PR-proof writers are
+suspended and drained, reconcile its staged NetworkPolicy. Flannel does not
+enforce this policy today, so it is no proof of egress isolation. A separate
+reviewed GitOps change adds both the writer and
+`acceptance-outcome-preflight-job.yaml` still suspended; verify the writer has
+no start time before installing the private input. Unsuspend only the preflight
+Job through a reviewed GitOps change. Its `--check-only` mode mounts the ledger
+read-only and must complete with `valid: true` and the reviewed prospective
+count without creating outcomes or evidence. Both Jobs have no GitHub
+credential, Kubernetes token, or cache mount. The Pods retain network
+capability; the amendment code makes no intentional network calls. Signed
+source, exact live Pod and code comparison, fixed private input, and independent
+source review form the bounded trust boundary. The writer accepts
+only exact sampled `[key, version]` events inside the frozen window, preserves
+eligible receipts, and refuses conflicting classifications. An exact replay is
+a no-op. It writes mode `0600` evidence bound to the frozen inventory, policy
+review hash, config hash, event bracket, and private source record, then
+atomically updates `outcomes.json`. Pod logs contain counts only.
+
+Prepare its private JSON input outside git as an owner-only mode `0600` file.
+Use `schema: 1`, `owner: "Stuhlmuller"`, the frozen `inventorySha256`,
+`reviewSha256`, `configSha256`, `windowStart`, `windowEnd`, and nonempty
+`classifications`. Each classification names the exact `key`, `version`,
+`lastAbsent`, and `firstPresent` from the frozen event, an `eligibility` with
+`status` and `verifiedAt`, and a `source` containing `ref` (`private://...`),
+`observedAt`, a nonempty `record`, and the SHA-256 of
+`JSON.stringify(record)`. `policy-ineligible` also needs a nonempty policy
+`reason`; `excluded-outage` needs the documented `exclusion` interval,
+reason, affected time, impact, and post-interval verification time. The record
+remains private and must be checked against its original policy or incident
+source by an independent reviewer. Retain that original private source until
+the review records a verified match; if it is unavailable, SC-002 remains
+inconclusive. The generated hash alone is not authentication.
+Deliver and later retire only the fixed immutable input Secret from clean,
+signed, current `main`:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py install \
+  --kind outcomes --private-file /private/path/outcomes-review.json \
+  --expected-sha <current-main-sha> --execute
+```
+
+The install command verifies the fixed Kubernetes API, signed remote `main`, the
+owner-only input, both pre-existing suspended Jobs, their full live Pod templates,
+and the mounted generated code ConfigMap against the reviewed GitOps render.
+Any extra container, changed image, command, environment, mount, token setting,
+network setting, or security context fails before the fixed private Secret is
+created. The immutable Secret is bound to both Job UIDs through nonprivate
+annotations; readback is checked without printing private values. After the
+preflight PR
+merges, run this read-only binding gate from clean signed current `main`:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py verify-preflight \
+  --kind outcomes --expected-sha <current-main-sha>
+```
+
+The gate requires the preflight Job UID bound in the current immutable Secret,
+a start after Secret creation, successful `--check-only` execution, and the
+still-suspended writer. It rechecks both complete live Pod templates and mounted
+code against signed `main`. Run it immediately before the separate reviewed
+writer-activation change; any drift keeps the writer suspended. Retire only
+after the writer Job succeeds:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py retire \
+  --kind outcomes --expected-sha <current-main-sha> --execute
+```
+
+If the writer has not consumed the input,
+`retract --kind outcomes` can remove that Secret under the same reviewed-main
+guard only while the same Job still exists, remains suspended, predates the
+Secret, and has never started. A missing, replaced, or failed started Job
+cannot justify retraction. If preflight fails, keep the writer suspended,
+review its bounded failure log, retract the input, and correct it privately.
+Remove the failed preflight Job through reviewed GitOps, then add a fresh
+suspended preflight Job before redelivery and rerun the gate. A failed writer
+may have partially written evidence: retain its Secret and the ledger for a
+separate reviewed recovery change. A wrong applied classification is not
+overwritten:
+keep the ledger private and use a separately reviewed reset/reseed or correction
+path. The local fixture and Job success do not establish genuine source
+authenticity or SC-002 acceptance.
+
 The report joins exact events, counts eligible events without an outcome in the
 denominator, and measures four hours from the conservative `lastAbsent` bound.
 It emits only aggregate counts and a rate. Unknown eligibility, incomplete
@@ -755,10 +841,10 @@ ten eligible natural releases
 make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
 integer counts; the displayed rate is floored to two decimals. The best script
 status is `review-required`: locally bound receipts alone cannot prove their
-GitHub PR or restricted policy-log source. A reviewed
-private receipt-production and independent source-verification path remains a
-gate before any SC-002 acceptance claim; do not commit private receipt content
-or inject it through an ad hoc live command.
+GitHub PR or restricted policy-log source. The staged private receipt writers
+still need protected activation and independent source verification before any
+SC-002 acceptance claim; do not commit private receipt content or inject it
+through an ad hoc live command.
 The staged PR verifier checks an exact version in a GitHub diff and uses its
 first read time as the timing upper bound. The report worker binds explicit
 schedule or PR-approval deferrals to the sealed report completion time. A
@@ -791,7 +877,8 @@ access, or the pinned image's datasource API fails validation. After the
 seven-day window, remove the primary report patch through reviewed GitOps and
 verify the hourly writer uses its original config and no ledger mount. Drain
 all report-enabled Jobs before touching the ledger. Suspend and drain the
-observer, inventory, PR-proof, and schedule-collector acceptance writers;
+observer, inventory, PR-proof, and schedule-collector acceptance writers and
+both outcome Jobs;
 verify none of their Jobs or Pods remains pending or active. Activate the
 staged read-only
 `acceptance-source-review-job.yaml` only after that freeze. Activate the staged
@@ -806,6 +893,12 @@ final report's `ledgerSha256` with the last observer poll digest; a mismatch
 means the report is stale and must be regenerated and reviewed. The digest is
 safe to retain in the public activation change; never publish private files.
 A missing or failed final report keeps cleanup suspended.
+
+Before ledger cleanup, verify the transient
+`renovate-acceptance-outcome-review` Secret is absent. If it was installed, use
+the guarded `retire --kind outcomes` command above after the bound writer
+succeeds and while both outcome Jobs still exist. A remaining Secret or failed
+writer keeps ledger cleanup suspended.
 
 `acceptance-ledger-cleanup-job.yaml` is deliberately suspended and outside
 `kustomization.yaml`. In a reviewed activation PR, replace
@@ -825,16 +918,17 @@ before logging success. Keep all acceptance writers suspended during this check.
 Next remove `Prune=false`
 from the PVC and PV and `Delete=false` from the PV through their respective
 GitOps Applications; verify the live annotations are gone. Remove the CronJob,
-script, init/cleanup Jobs, and PVC from Renovate first, then remove the PV and
-local StorageClass from platform-storage through reviewed changes; verify the
-claim and PV are gone.
+script, init/cleanup Jobs, outcome preflight/amend Jobs, and PVC from Renovate
+first, then remove the PV and local StorageClass from platform-storage through
+reviewed changes; verify the claim and PV are gone.
 The retained local PV does not erase its hostPath on deletion. Use a separate
 reviewed exact-path storage cleanup on `acer` and verify
 `/var/lib/renovate-acceptance-ledger` has no retained files before closing
 T035. This later hostPath cleanup also removes the Job's digest marker; the
 Job itself never touches the backing path directly.
-Remove the suspended proof CronJob, one-shot Job manifests, inventory Job,
-report patch, and acceptance scripts through the same reviewed GitOps change.
+Remove the suspended proof CronJob, remaining one-shot Job manifests, inventory
+Job, report patch, outcome-amend deny-all NetworkPolicy, and acceptance scripts
+including `acceptance-outcome-amend.js` through the same reviewed GitOps change.
 Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret
 through reviewed desired state and verify both absent. Obtain explicit owner
 authorization/handoff before deleting the dedicated acceptance App in GitHub

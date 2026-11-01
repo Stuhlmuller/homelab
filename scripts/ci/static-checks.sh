@@ -46,6 +46,7 @@ node --test scripts/ci/renovate-acceptance-report-test.js
 node --test scripts/ci/renovate-acceptance-pr-proof-test.js
 node --test scripts/ci/renovate-acceptance-policy-proof-test.js
 node --test scripts/ci/renovate-acceptance-source-review-test.js
+node --test scripts/ci/renovate-acceptance-outcome-amend-test.js
 python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
 python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py

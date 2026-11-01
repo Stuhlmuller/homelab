@@ -1,0 +1,77 @@
+# Stage outside Kustomize; run with read-only ledger before activating the writer.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-outcome-preflight
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-outcome-amend
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate
+        app.kubernetes.io/component: acceptance-outcome-amend
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 0
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: check
+          image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+          imagePullPolicy: IfNotPresent
+          command: [node, /usr/src/app/acceptance-outcome-amend.js, --check-only]
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: "1", memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: code
+              mountPath: /usr/src/app/acceptance-outcome-amend.js
+              subPath: acceptance-outcome-amend.js
+              readOnly: true
+            - name: code
+              mountPath: /usr/src/app/acceptance-observer.js
+              subPath: acceptance-observer.js
+              readOnly: true
+            - name: review
+              mountPath: /review
+              readOnly: true
+            - name: ledger
+              mountPath: /ledger
+              readOnly: true
+      volumes:
+        - name: code
+          configMap:
+            name: renovate-acceptance-observer
+        - name: review
+          secret:
+            secretName: renovate-acceptance-outcome-review
+            defaultMode: 0440
+            items:
+              - key: review.json
+                path: review.json
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger
+            readOnly: true
