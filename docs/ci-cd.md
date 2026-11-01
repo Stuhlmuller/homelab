@@ -6,6 +6,25 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+Operational conditions live in executable checks and GitHub protections.
+Documentation, including app READMEs, OpenWiki, specs, and agent skills, explains
+those checks without creating additional approvals or deployment vetoes.
+Missing credentials, failed validation, unavailable recovery evidence, and
+unhealthy rollouts are pipeline failures, with the failing check as the owner.
+Historical incident notes are observations rather than current policy.
+
+| Condition | Executable owner |
+| --- | --- |
+| PR approval | `.policy.yml` and GitHub rulesets |
+| Static, security, and manifest validation | `scripts/ci/offline-checks.sh`, `scripts/ci/static-checks.sh`, `scripts/ci/conftest-policies.sh` |
+| Current-main and environment restrictions | Production workflows and `scripts/ci/terragrunt-current-main.sh` |
+| Tailnet enrollment and signed credentials | `harbor-mirror.yml` credential check and Tailscale enrollment |
+| Image publication and complete pulls | `scripts/ci/harbor-publish.sh` |
+| Mastodon database release readiness | `scripts/ci/mastodon-release-check.py` in the protected live-plan job |
+
+Change the owning executable check when changing a condition. A new rule in
+prose does not change pipeline behavior.
+
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
   validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
   Their required status names stay unchanged, so eligible PRs can still merge.
@@ -633,6 +652,15 @@ The role trust and additive IAM grant required to manage the chunked SSM reader
 policies are declared in `IaC/homelab/us-west-2/operator/github-actions-role-policy`. The unit is
 deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
+
+The same operator policy grants `GetPolicy`, `GetPolicyVersion`, and
+`ListPolicyTags` on only `homelab-oce-recovery-publisher-boundary`, so the
+application-backup-storage plan can refresh its existing boundary. The module's
+boundary test rejects broader actions or resources; this grant adds no IAM writes.
+It also grants `GetRole`, `GetRolePolicy`, `ListRolePolicies`, and
+`ListAttachedRolePolicies` on only `homelab-oce-recovery-publisher` for the
+[pinned provider's role refresh](https://github.com/hashicorp/terraform-provider-aws/blob/v6.56.0/internal/service/iam/role.go#L278-L325).
+These reads grant no role assumption, pass-role, or role mutation.
 
 For a trust-only change, use the targeted operator runbook in
 `docs/operator-infrastructure.md`. It conditionally imports only the existing role,

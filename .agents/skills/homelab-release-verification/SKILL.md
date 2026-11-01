@@ -5,6 +5,10 @@ description: Deliver an authorized homelab rollout and verify the original live 
 
 # Homelab Release Verification
 
+CI/CD owns readiness and approval conditions. Run the applicable authorized
+workflow and use its results. Do not add document-derived approval rounds or
+manual acceptance gates. Missing executable enforcement belongs in CI/CD.
+
 Read the affected workload README and [CI delivery contract](../../../docs/ci-cd.md).
 Use the user's existing authorization; this skill does not itself authorize
 workflow dispatches or production changes.

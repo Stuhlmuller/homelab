@@ -906,6 +906,8 @@ echo "::group::Kubeconfig setup"
 bash scripts/ci/install-kubeconfig.sh
 echo "::group::Kubernetes API check"
 kubectl --request-timeout=15s version >/dev/null
+echo "::group::Mastodon database release checks"
+python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::Argo CD bootstrap plan"
 bash scripts/ci/terragrunt-plan.sh
 EOF`

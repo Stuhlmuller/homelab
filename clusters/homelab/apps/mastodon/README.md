@@ -169,15 +169,23 @@ Both verifier paths use disposable PostgreSQL 18 storage, a read-only backup
 mount, no production database volume or credentials, and a private Unix socket.
 Success checks the restored schema, owner and media catalog. It does not prove
 media-file or stable application-key recovery.
-
 Kustomize copies each scheduled Job template into its corresponding initial
 Job. Version an initial Job name when changing its copied template; completed
 Kubernetes Job templates are immutable. The nightly verifier prevents the
 original one-shot result from becoming the only recovery evidence.
 
-Before acceptance, prove a successful scheduled backup and restore the newest
-dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
-references before trusting the restore. Initialize the extensions and limited application role from
+Runtime and application-registration PRs run
+[`mastodon-release-check.py`](../../../../scripts/ci/mastodon-release-check.py)
+in the protected live-plan job. `Terragrunt Gate` fails for an unhealthy Argo
+baseline, a suspended backup schedule, a latest scheduled backup without a
+successful completion in the last 24 hours, or an isolated restore that did not
+succeed after that backup. Old one-shot restore success cannot satisfy this
+check. Forked runtime PRs fail the gate without receiving credentials; the
+protected check runs from a trusted repository branch. Documentation-only
+changes skip the database check.
+
+The verifier checks tables, accounts and media references. It initializes
+the extensions and limited application role from
 `initdb-configmap.yaml`; restore with
 `pg_restore --no-owner --no-comments --role=mastodon_app` into the initialized
 `mastodon` database. The bootstrap administrator owns the extensions; their
