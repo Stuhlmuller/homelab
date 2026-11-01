@@ -17,7 +17,7 @@ function fixture(found = {}) {
   const routes = new Map([
     [`${base}/rules/branches/main?per_page=100`, []],
     [`${base}/branches/main/protection`, null],
-    [`${base}/branches/main`, { commit: { sha: headSha } }],
+    [`${base}/branches/main`, { commit: { sha: headSha }, protected: false }],
     [base, { private: true, archived: false, default_branch: 'main' }],
     ...Object.entries(found).map(([name, value]) =>
       [`${base}/contents/${name}?ref=${headSha}`, content(value)]),
@@ -42,6 +42,7 @@ test('pinned GitHub config paths capture a config-free repository', async () => 
   assert.equal(snapshot.config.free, true);
   assert.equal(snapshot.config.selected, null);
   assert.equal(snapshot.classic.present, false);
+  assert.equal(snapshot.defaultBranchProtected, false);
   assert.equal(snapshot.rulesetBypassActors, 'unknown-read-only');
   assert.equal(snapshot.effectiveAutoMerge, 'requires-private-review');
 });
@@ -59,6 +60,7 @@ test('override, shadowed config, rules, and classic protection stay private evid
       required_pull_request_reviews: { required_approving_review_count: 2 },
       enforce_admins: { enabled: true },
     };
+    if (route === `${base}/branches/main`) return { commit: { sha: headSha }, protected: true };
     return get(route, allow404);
   });
   assert.equal(snapshot.config.free, false);
@@ -83,6 +85,41 @@ test('effective branch rules fail closed at the GitHub page limit', async () => 
   }), /invalid-branch-rules/);
 });
 
+test('plan-gated private protection records unavailability without a policy pass', async () => {
+  const get = fixture({ 'renovate.json': '{"automerge":false}' });
+  const planGated = (route, allow404) => {
+    if (route.includes('/rules/branches/') || route.endsWith('/protection')) {
+      return proof.planUnavailable;
+    }
+    return get(route, allow404);
+  };
+  const snapshot = await proof.snapshotRepository(repository, planGated);
+  assert.deepEqual(snapshot.rules, { available: false, reason: 'private-plan-entitlement',
+    storedConfiguration: 'unverified' });
+  assert.deepEqual(snapshot.classic, { available: false, reason: 'private-plan-entitlement',
+    storedConfiguration: 'unverified' });
+  assert.equal(snapshot.defaultBranchProtected, false);
+  assert.equal(snapshot.effectiveBranchProtection, 'inactive-under-current-plan');
+  assert.equal(snapshot.effectiveAutoMerge, 'requires-private-review');
+  assert.equal(snapshot.config.free, false);
+  await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
+    if (route === `${base}/branches/main`) return { commit: { sha: headSha }, protected: true };
+    return planGated(route, allow404);
+  }), /policy-branch-protected/);
+  await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
+    if (route === `${base}/branches/main`) return { commit: { sha: headSha } };
+    return planGated(route, allow404);
+  }), /invalid-policy-branch/);
+  await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
+    if (route === `${base}/branches/main`) return { commit: { sha: 'b'.repeat(40) }, protected: false };
+    return planGated(route, allow404);
+  }), /policy-branch-changed/);
+  await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
+    if (route.includes('/rules/branches/')) return proof.planUnavailable;
+    return get(route, allow404);
+  }), /inconsistent-policy-entitlement/);
+});
+
 test('403, malformed config, and changing default branch fail closed', async () => {
   await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
     if (route === `${base}/rules/branches/main?per_page=100`) throw new Error('github-policy-read-failed');
@@ -103,7 +140,7 @@ test('403, malformed config, and changing default branch fail closed', async () 
     size: 2, content: 'not-base64' }), /invalid-repository-config/);
 });
 
-test('GitHub 200 succeeds, 404 is optional only, and 403 always fails', async () => {
+test('GitHub accepts only the exact private protection plan-entitlement 403', async () => {
   const prior = global.fetch;
   global.fetch = async () => ({ status: 200, ok: true,
     headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null },
@@ -121,8 +158,37 @@ test('GitHub 200 succeeds, 404 is optional only, and 403 always fails', async ()
     assert.equal(await proof.github('fixture-token', '/missing', true), null);
     await assert.rejects(proof.github('fixture-token', '/missing'), /github-policy-read-failed/);
     global.fetch = async () => ({ status: 403, ok: false,
-      headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null } });
+      headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null },
+      text: async () => JSON.stringify({
+        message: 'Upgrade to GitHub Pro or make this repository public to enable this feature.',
+        documentation_url: 'https://docs.github.com/rest/repos/rules#get-rules-for-a-branch',
+        status: '403',
+      }) });
     await assert.rejects(proof.github('fixture-token', '/private', true), /github-policy-read-failed/);
+    assert.equal(await proof.github('fixture-token', `${base}/rules/branches/main?per_page=100`,
+      false, 'rules'), proof.planUnavailable);
+    await assert.rejects(proof.github('fixture-token', `${base}/branches/main/protection`,
+      true, 'classic'), /github-policy-read-failed/);
+    await assert.rejects(proof.github('fixture-token', '/private', false, 'rules'),
+      /github-policy-read-failed/);
+    global.fetch = async () => ({ status: 403, ok: false,
+      headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null },
+      text: async () => JSON.stringify({
+        message: 'Upgrade to GitHub Pro or make this repository public to enable this feature.',
+        documentation_url: 'https://docs.github.com/rest/branches/branch-protection#get-branch-protection',
+        status: '403',
+      }) });
+    assert.equal(await proof.github('fixture-token', `${base}/branches/main/protection`,
+      true, 'classic'), proof.planUnavailable);
+    global.fetch = async () => ({ status: 403, ok: false,
+      headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null },
+      text: async () => JSON.stringify({
+        message: 'Resource not accessible by integration',
+        documentation_url: 'https://docs.github.com/rest/repos/rules#get-rules-for-a-branch',
+        status: '403',
+      }) });
+    await assert.rejects(proof.github('fixture-token', `${base}/rules/branches/main?per_page=100`,
+      false, 'rules'), /github-policy-read-failed/);
   } finally {
     global.fetch = prior;
   }

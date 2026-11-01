@@ -2599,6 +2599,14 @@ without claiming a separate per-repository Prometheus alert. Live cache-fault
 recovery, a declared QNAP capacity-restoration path, full parity, writer
 cutover, and seven-day acceptance remain open.
 
+The staged [private-policy proof](../../clusters/homelab/apps/renovate/acceptance-policy-proof.js)
+accepts only GitHub Free's exact plan-entitlement 403 from both private
+protection reads when the unchanged default branch reports `protected: false`.
+It records those reads as unavailable, leaves stored rules and effective
+auto-merge for independent owner review, and fails on other 403s, mixed results,
+or a changed branch. The [focused fixture](../../scripts/ci/renovate-acceptance-policy-proof-test.js)
+checks that boundary; it is not a live private-policy receipt or cutover proof.
+
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
 and actual Skopeo, rejecting network transports and requiring exact root and
