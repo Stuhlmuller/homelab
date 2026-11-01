@@ -53,7 +53,8 @@ for access in 'get applications -n argocd' 'get deployments -n automation' \
   'get networkpolicies -n automation' 'delete networkpolicies -n automation' \
   'list pods -n automation'; do
   read -r -a args <<<"$access"
-  [[ "$(kubectl auth can-i "${args[@]}")" == yes ]] || exit 1
+  access_decision="$(kubectl auth can-i "${args[@]}")" || exit 1
+  [[ "$access_decision" == yes ]] || exit 1
 done
 
 fenced() {

@@ -91,6 +91,8 @@ elif name == "yq":
 elif name == "kubectl":
     if args[:2] == ["auth", "can-i"]:
         print("yes")
+        if mode == "auth-yes-error":
+            raise SystemExit(1)
     elif "application" in args and "get" in args:
         print(json.dumps({"status": {"sync": {"status":
             "OutOfSync" if mode == "fence-unsynced" else "Synced",
@@ -267,6 +269,12 @@ class ResidualCleanupTests(unittest.TestCase):
         self.assertIsNone(final["policy"])
         self.assertNotIn("Confirmed residual", result.stdout)
         self.assertEqual([args[args.index("delete") + 1] for args in deletes], ["job", "networkpolicy"])
+
+    def test_auth_yes_with_nonzero_never_deletes(self):
+        result, final, deletes = self.run_case(mode="auth-yes-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(final, initial_state())
+        self.assertEqual(deletes, [])
 
     def test_stale_main_and_unfenced_writer_never_delete(self):
         for mode in ("stale-main", "git-status-error", "fence-unsynced", "writer-active"):
