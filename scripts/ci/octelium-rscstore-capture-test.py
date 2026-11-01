@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 import subprocess
 import tarfile
 import tempfile
@@ -31,6 +32,7 @@ PV_UID = "22222222-2222-4222-8222-222222222222"
 DEPLOY_UID = "33333333-3333-4333-8333-333333333333"
 POD_UID = "44444444-4444-4444-8444-444444444444"
 SHA = "a" * 40
+BOOT_ID = "55555555-5555-4555-8555-555555555555"
 
 
 def archive_bytes(include_database=True):
@@ -61,7 +63,8 @@ def source_fixture(workspace, tar_data):
         "writers_fenced": True, "approved_fence_reference": SHA,
         "source": {"namespace": CAPTURE.NAMESPACE, "pvc_name": CAPTURE.CLAIM,
                    "pvc_uid": PVC_UID, "pv_name": "pvc-test", "pv_uid": PV_UID,
-                   "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID},
+                   "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID,
+                   "node_boot_ids": dict.fromkeys(CAPTURE.NODES, BOOT_ID)},
         "archive": {"parts": list(CAPTURE.PARTS), "bytes": len(tar_data),
                     "before_sha256": digest, "sha256": digest, "after_sha256": digest},
         "inspection": inspection,
@@ -200,7 +203,84 @@ class RscstoreCaptureTest(unittest.TestCase):
         with mock.patch.object(CAPTURE, "argo_guard"), \
                 mock.patch.object(CAPTURE, "json_output", side_effect=snapshot), \
                 self.assertRaises(ValueError):
-            CAPTURE.cluster_guard("homelab", PVC_UID, PV_UID, SHA)
+            CAPTURE.cluster_guard("homelab", Path("/missing-talosconfig"), PVC_UID, PV_UID, SHA)
+
+    def test_runtime_guard_requires_all_node_views_and_no_orphan_writer(self):
+        inspector = cluster_fixture()[3][0]
+        nodes = {"kind": "NodeList", "metadata": {"resourceVersion": "21"},
+                 "items": [{"metadata": {"name": name},
+                            "status": {"addresses": [{"type": "InternalIP", "address": address}],
+                                       "nodeInfo": {"bootID": BOOT_ID},
+                                       "conditions": [{"type": "Ready", "status": "True"}]}}
+                           for name, address in CAPTURE.NODES.items()]}
+        leases = {"kind": "LeaseList", "metadata": {"resourceVersion": "22"},
+                  "items": [{"metadata": {"name": name}, "spec": {
+                      "renewTime": datetime.now(timezone.utc).isoformat()}}
+                      for name in CAPTURE.NODES]}
+        state = {"nodes": nodes, "leases": leases, "views": {}, "talos_writer": False}
+        for name in CAPTURE.NODES:
+            state["views"][name] = {"pods": {"kind": "PodList", "items": [inspector]
+                                               if name == "acer" else []},
+                                    "runningpods/": {"kind": "PodList", "items": [inspector]
+                                                    if name == "acer" else []}}
+
+        def response(*command):
+            if command[-1] == "/api/v1/nodes":
+                return state["nodes"]
+            if command[-1].endswith("/leases"):
+                return state["leases"]
+            path = command[-1].split("/proxy/")
+            return state["views"][path[0].split("/nodes/")[1]][path[1]]
+
+        def talos(*command):
+            if command[1] == "version":
+                return "Client:\nTalos v1.11.3\n"
+            address = command[command.index("--nodes") + 1]
+            header = "NODE NAMESPACE ID IMAGE PID STATUS\n"
+            row = f"{address} k8s.io kube-system/example pause:3.10 123 SANDBOX_READY\n"
+            if state["talos_writer"]:
+                row += (f"{address} k8s.io octelium/octeliumee-rscstore-old "
+                        "store:0.22.0 1 CONTAINER_RUNNING\n")
+            return header + row
+
+        with tempfile.TemporaryDirectory() as directory:
+            talosconfig = Path(directory) / "talosconfig"
+            talosconfig.write_text("synthetic")
+
+            def guard():
+                with mock.patch.object(CAPTURE, "json_output", side_effect=response), \
+                        mock.patch.object(CAPTURE, "output", side_effect=talos):
+                    return CAPTURE.node_runtime_guard("homelab", talosconfig, [inspector], POD_UID)
+
+            self.assertEqual(guard(), dict.fromkeys(CAPTURE.NODES, BOOT_ID))
+            writer = copy.deepcopy(inspector)
+            writer["metadata"]["name"] = "octeliumee-rscstore-old"
+            writer["metadata"]["uid"] = DEPLOY_UID
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = [writer]
+            with self.assertRaisesRegex(ValueError, "writer or orphan"):
+                guard()
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = []
+            old_reader = copy.deepcopy(inspector)
+            old_reader["metadata"]["name"] = "old-reader"
+            old_reader["metadata"]["uid"] = DEPLOY_UID
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = [old_reader]
+            with mock.patch.object(CAPTURE, "json_output", side_effect=response), \
+                    mock.patch.object(CAPTURE, "output", side_effect=talos), \
+                    self.assertRaisesRegex(ValueError, "PVC mount user"):
+                CAPTURE.node_runtime_guard("homelab", talosconfig,
+                                           [inspector, old_reader], POD_UID)
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = []
+            state["talos_writer"] = True
+            with self.assertRaisesRegex(ValueError, "Talos CRI retains"):
+                guard()
+            state["talos_writer"] = False
+            state["leases"]["items"][0]["spec"]["renewTime"] = "2020-01-01T00:00:00Z"
+            with self.assertRaisesRegex(ValueError, "lease is stale"):
+                guard()
+            state["leases"]["items"][0]["spec"]["renewTime"] = datetime.now(timezone.utc).isoformat()
+            state["nodes"]["items"][0]["status"]["conditions"][0]["status"] = "Unknown"
+            with self.assertRaisesRegex(ValueError, "readiness changed"):
+                guard()
 
     def test_inspector_requires_exact_identity_and_zero_other_mounts(self):
         deployment, pvc, pv, pods = cluster_fixture()
@@ -288,7 +368,8 @@ class RscstoreCaptureTest(unittest.TestCase):
         data = archive_bytes()
         digest = hashlib.sha256(data).hexdigest()
         identity = {"pvc_uid": PVC_UID, "pv_name": "pvc-test", "pv_uid": PV_UID,
-                    "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID}
+                    "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID,
+                    "node_boot_ids": dict.fromkeys(CAPTURE.NODES, BOOT_ID)}
 
         def stream(_context, _pod, sink=None):
             if sink:
@@ -303,7 +384,7 @@ class RscstoreCaptureTest(unittest.TestCase):
                     mock.patch.object(CAPTURE, "cluster_guard", return_value=identity), \
                     mock.patch.object(CAPTURE, "tar_stream", side_effect=stream), \
                     mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=10**12)):
-                stamp = CAPTURE.capture(root, SHA, "homelab", PVC_UID, PV_UID)
+                stamp = CAPTURE.capture(root, SHA, "homelab", Path("/talosconfig"), PVC_UID, PV_UID)
             self.assertEqual(release.call_count, 2)
             source = root / stamp
             self.assertEqual(CAPTURE.validate_bundle(source)["archive"]["sha256"], digest)
@@ -326,7 +407,7 @@ class RscstoreCaptureTest(unittest.TestCase):
                     mock.patch.object(CAPTURE, "tar_stream", side_effect=drifting_stream), \
                     mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=10**12)):
                 with self.assertRaises(ValueError):
-                    CAPTURE.capture(second, SHA, "homelab", PVC_UID, PV_UID)
+                    CAPTURE.capture(second, SHA, "homelab", Path("/talosconfig"), PVC_UID, PV_UID)
             self.assertFalse(any(second.glob("*/SHA256SUMS")))
 
     def test_isolated_retrieval_extraction_records_s3_versions(self):
@@ -381,7 +462,8 @@ class RscstoreCaptureTest(unittest.TestCase):
         data = archive_bytes()
         digest = hashlib.sha256(data).hexdigest()
         identity = {"pvc_uid": PVC_UID, "pv_name": "pvc-test", "pv_uid": PV_UID,
-                    "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID}
+                    "deployment_uid": DEPLOY_UID, "inspector_uid": POD_UID,
+                    "node_boot_ids": dict.fromkeys(CAPTURE.NODES, BOOT_ID)}
 
         def stream(_context, _pod, sink=None):
             if sink:
@@ -398,7 +480,7 @@ class RscstoreCaptureTest(unittest.TestCase):
                     mock.patch.object(CAPTURE.shutil, "disk_usage",
                                       return_value=mock.Mock(free=10**12)):
                 with self.assertRaisesRegex(ValueError, "main advanced"):
-                    CAPTURE.capture(root, SHA, "homelab", PVC_UID, PV_UID)
+                    CAPTURE.capture(root, SHA, "homelab", Path("/talosconfig"), PVC_UID, PV_UID)
             self.assertFalse(any(root.glob("[0-9]*T[0-9]*Z")))
             self.assertTrue(any(root.glob(".partial-*/capture.json")))
 

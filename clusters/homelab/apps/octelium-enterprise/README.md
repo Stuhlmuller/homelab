@@ -82,7 +82,15 @@ it rejects a missing policy or ambiguous source/revision list.
 After activation, privately record the live PVC UID, bound PV name and UID,
 the exact merged `main` SHA, and the intended kubectl context. The capture
 helper requires those identities, a settled zero-replica Deployment, no other
-Pod mounting the claim, and the pinned, ready inspector. It streams a tar of
+Pod mounting the claim, and the pinned, ready inspector. It also requires an
+explicit private Talos config and authenticated `talosctl` v1.11.3. At every
+checkpoint it verifies all four expected nodes are Ready with leases renewed
+within 30 seconds, reads each kubelet's desired and CRI Pod lists, and reads
+each node's Talos Kubernetes container inventory. Any stale PVC mount,
+orphaned Octelium Pod, resource-store container or sandbox, unreachable node,
+or changed node boot ID fails closed. The receipt records those boot IDs.
+This catches a former writer that disappeared from the API while its node
+kept running. It streams a tar of
 the entire PVC root three times: before, archive, after. All three byte counts
 and SHA-256 values must match. The archive includes the active WAL, dated
 quarantines, and recovery markers present on the claim; its private receipt
@@ -102,6 +110,7 @@ stops for a separately reviewed multipart path.
 ```sh
 python3 -I scripts/octelium-rscstore-capture.py capture \
   --context '<reviewed-homelab-context>' \
+  --talosconfig /private/operator/talosconfig \
   --expected-sha '<exact-merged-main-sha>' \
   --expected-pvc-uid '<live-pvc-uid>' --expected-pv-uid '<live-pv-uid>' \
   --workspace /private/durable-off-nas/rscstore

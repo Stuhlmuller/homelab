@@ -1145,8 +1145,9 @@ kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.c
 ## Dormant Octelium resource-store capture
 
 `scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
-the unpaginated namespaced PodList guard, zero other PVC mounts, the read-only
-inspector, three matching archive hashes, complete tar members, publisher
+the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
+Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
+PVC mounts, the read-only inspector, three matching archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must still show
 one `octeliumee-rscstore` replica and no inspector; the candidate inspector
@@ -1166,7 +1167,10 @@ ownership and modes: retain the proposed inspector UID/GID 0 only if complete
 file access requires it; otherwise revise to a proven nonroot UID. Readiness
 checks `store.db` readability, while capture must read the whole PVC. The
 later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
-and no other Pod mounting the claim. Capture then requires private off-NAS
+and no other Pod mounting the claim. The capture guard also requires explicit
+Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
+writer still running on a disconnected node; a missing node inventory does not
+count as zero writers. Capture then requires private off-NAS
 storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
 readback, and isolated file extraction. The capture helper repeats the
 current-main and Argo fence checks before issuing its receipt; the proof
