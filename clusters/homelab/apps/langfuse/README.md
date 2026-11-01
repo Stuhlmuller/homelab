@@ -79,7 +79,7 @@ directory outside Git.
 
 ```sh
 main_sha="$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
-receipt_dir="$(mktemp -d /private/tmp/langfuse-checkpoint-receipts.XXXXXXXX)"
+receipt_dir="$(mktemp -d)"
 nix develop --command bash scripts/ci/langfuse-postgres-checkpoint.sh \
   --local-upload --expected-sha "$main_sha" \
   --expected-pvc-uid '<pre-move-pvc-uid>' \
