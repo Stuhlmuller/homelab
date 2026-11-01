@@ -184,13 +184,63 @@ database move still requires a fresh verified off-NAS checkpoint.
 One enforcer, client, Traefik Pod, and 128 MiB reserve consume 1,216 MiB at
 their limits, leaving only 214 MiB at this snapshot. Traefik's current
 one-Pod surge raises that budget to 1,728 MiB, 298 MiB beyond free memory.
-The node also hosts 64 non-system Pods, including 55 Octelium Pods. Deluge,
+The node also hosts 64 active app Pods, including 55 Octelium Pods, plus 19
+completed backup Pods and the `kube-system/image-rewrite` Deployment Pod.
+[Canary admission](../scripts/network-policy-canary-node.py) rejects all 84
+foreign assigned Pods, even completed ones or Pods in `kube-system`. Deluge,
 Radarr, Sonarr, and Bazarr have config volumes pinned to local `hostPath` PVs;
-Prometheus uses an NFS claim. The non-system Pods request about 3,861 MiB,
+Prometheus uses an NFS claim. The active app Pods request about 3,733 MiB,
 while `acer` and `zimaboard-1` together have about 3,052 MiB unrequested.
 A taint leaves existing Pods in place. Source-owned relocation or an explicitly
 planned service outage, storage recovery proof, and fresh capacity/Pod
 inventories are prerequisites to isolating this worker.
+
+A candidate existing-node maintenance route requires these source-owned stages
+and fresh capacity and recovery checks. The November 1 read-only check found
+no required reviewer on `homelab-plan`; restore it before any credentialed
+Terragrunt plan or apply in this route.
+
+1. Verify current media config archives and the media PostgreSQL recovery path.
+   Through GitOps, pause Prometheus and Deluge, Radarr, Sonarr, and Bazarr;
+   preserve their PVCs and local PVs. Suspend the four media backup CronJobs
+   and disable Bazarr's z0-pinned PostSync backup/reconcile Jobs for the outage.
+   This pauses monitoring and four media apps, without moving their local
+   data. Their current requests total about 2,512 MiB, enough to close the
+   681 MiB destination request deficit at this snapshot.
+2. Set `successfulJobsHistoryLimit: 0` in the Bazarr, Deluge, Radarr, Sonarr,
+   Harbor, Octelium storage, and Fleet `backup-cronjob.yaml` sources. Verify
+   the controllers remove all 19 retained successful Jobs and Pods. Keep
+   Fleet, Harbor, and Octelium backups running. If reconciliation does not
+   remove them, add a reviewed, identity-bounded cleanup script; never delete
+   them by hand.
+3. Move Prowlarr's committed node selector to `acer`. Add Octelium dataplane
+   eligibility to `acer` through the node-label Terragrunt owner, update its
+   gateway override, and prove native/Multus endpoints and destination capacity
+   before removing `zimaboard-0` eligibility. The 55 Octelium Pods and client
+   use that label; existing Pods remain until eviction.
+4. Apply a temporary `NoExecute` taint to `zimaboard-0` through the repo-owned
+   node-label Terragrunt unit. Expect an Octelium/private-app interruption as
+   its gateway and 54 other Pods move together. Confirm `image-rewrite` moves
+   off the node and its webhook stays healthy. Require all displaced workloads
+   Ready and native gateway and client paths working after rescheduling.
+   Verify every Pod except the reviewed system DaemonSet Pods has left,
+   including completed Jobs.
+   Obtain a fresh, exact-UID placement receipt and run protected canary
+   admission. Remove the temporary taint only after the dedicated canary
+   `NoSchedule` taint is installed, and recheck the Pod list.
+
+No stage above authorizes the firewall or Traefik. A shared-node Traefik move
+needs a guard that installs default-drop on its Pod interface before the
+container starts, survives kube-router loss, and ties openings to exact Pod
+identity so IP reuse cannot inherit access. A CNI attachment hook with an
+independent policy controller is a candidate, not implemented here. Talos
+[host ingress rules](https://docs.siderolabs.com/talos/v1.14/networking/ingress-firewall)
+do not supply this Pod boundary, and kube-router starts its full policy sync
+asynchronously. Prove cold boot, image-cache miss, enforcer crash/restart,
+policy deletion, Pod replacement/IP reuse, and same-node, cross-node, and
+host-origin bypass negatives before placement. If any gate fails, leave
+Traefik on its current node and restore paused workloads through reviewed
+GitOps/Terragrunt changes, then verify local PV startup and backup schedules.
 
 Only after an existing worker is empty of unrelated Pods, retarget and validate
 the canary source, then run the protected baseline, admission, fixture-first
