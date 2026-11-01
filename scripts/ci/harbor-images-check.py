@@ -160,8 +160,8 @@ def declared_mastodon_images():
     # Publication precedes its consuming workload; compare the fixed four tags
     # to the full reviewed catalog until the runtime overlay lands.
     prefixes = (
-        "ghcr.io/mastodon/mastodon:v4.7.3@",
-        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "ghcr.io/mastodon/mastodon:v4.7.4@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.4@",
         "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )

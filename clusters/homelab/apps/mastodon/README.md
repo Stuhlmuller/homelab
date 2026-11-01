@@ -64,9 +64,29 @@ own password key. The ExternalSecrets mount credentials as files. Its namespace 
 Mastodon prefix. Rotation needs a declared ExternalSecret revision and workload
 restart through GitOps, plus database/Redis password coordination.
 
+## Security patch rollout: 4.7.4
+
+Mastodon [4.7.4](https://github.com/mastodon/mastodon/releases/tag/v4.7.4)
+fixes insufficient ActivityPub identifier verification
+([GHSA-288h-6j8h-6x5j](https://github.com/mastodon/mastodon/security/advisories/GHSA-288h-6j8h-6x5j)).
+The owner authorized a one-time seven-day image-age exception for this release
+on October 29, 2026; other images retain their normal age policy.
+Web, Sidekiq, streaming, migration and owner-bootstrap references use the
+verified official multi-platform index digests. The 4.7.3 to 4.7.4 Docker
+upgrade requires restarting Mastodon processes; no database migration is listed.
+The federation route file and attachment serializer are unchanged upstream.
+
+This source patch is not deployment evidence. Publish and completely pull the
+new mirrored digests through the protected Harbor workflow, inspect fresh child
+scans, and verify a fresh successful database backup and isolated recovery before
+merging consuming references. The historical October 25 restore receipt below
+does not establish current backup freshness. Keep the existing routes and all
+persistent data. Roll back application references through a reviewed PR using
+retained prior digests; preserve database, media and encryption keys.
+
 ## Server configuration
 
-The official 4.7.3 image serves compiled static files and media through Puma;
+The official 4.7.4 image serves compiled static files and media through Puma;
 streaming runs separately on port 4000. The image's private application directory
 requires its native UID/GID 991; application containers use those IDs with
 supplementary filesystem group 65534 for shared volumes. The datastore and
@@ -447,8 +467,8 @@ allowlist expansion without checking Mastodon route ownership again.
 Rollback through a reviewed PR reverting the tunnel config and its Deployment
 revision; preserve the authenticated Service and all retained data.
 
-The allowlist follows [Mastodon 4.7.3 route ownership](https://github.com/mastodon/mastodon/blob/v4.7.3/config/routes.rb)
-and [attachment serialization](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/note_serializer.rb).
+The allowlist follows [Mastodon 4.7.4 route ownership](https://github.com/mastodon/mastodon/blob/v4.7.4/config/routes.rb)
+and [attachment serialization](https://github.com/mastodon/mastodon/blob/v4.7.4/app/serializers/activitypub/note_serializer.rb).
 [Cloudflared matches rules in order](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/configuration-file/);
 the first Mastodon rule is the narrow exception, the second requires Octelium.
 
