@@ -21,6 +21,7 @@ python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/octelium-ci-credential-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-operator-oauth-rotate-test.py
 python3 -I scripts/ci/harbor-tailscale-production-test.py
 python3 -I scripts/ci/harbor-tailscale-production-sign-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
