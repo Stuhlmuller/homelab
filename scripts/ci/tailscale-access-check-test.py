@@ -23,7 +23,18 @@ class AccessCheckTest(unittest.TestCase):
         self.assertFalse(any("tag:homelab-dns" in grant["dst"] for grant in policy["grants"]))
         self.assertTrue(all("udp:53" not in grant["ip"] and "tcp:53" not in grant["ip"]
                             for grant in policy["grants"] if "tag:homelab-ingress" in grant["dst"]
-                            and "autogroup:member" not in grant["src"]))
+                            and "autogroup:member" not in grant["src"]
+                            and grant["src"] != ["tag:codex-cloud"]))
+
+    def test_codex_dns_exception_does_not_expand_ci_or_lan_access(self):
+        policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())
+        self.assertEqual(policy["tagOwners"]["tag:codex-cloud"], ["autogroup:admin"])
+        grants = [grant for grant in policy["grants"] if "tag:codex-cloud" in grant["src"]]
+        self.assertEqual(grants, [
+            {"src": ["tag:codex-cloud"], "dst": ["tag:homelab-ingress"],
+             "ip": ["tcp:443", "tcp:53", "udp:53"]},
+            {"src": ["tag:codex-cloud"], "dst": ["tag:k8s-operator"], "ip": ["tcp:443"]},
+        ])
 
     def run_check(self, identity="plan", *, denial=True, message=None, groups=None, credentials=None):
         calls = []

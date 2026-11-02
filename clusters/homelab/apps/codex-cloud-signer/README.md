@@ -54,7 +54,12 @@ source before replacing the full policy; preserve unrelated edits. Review and
 apply that saved plan, never the earlier broad plan. This unit is outside
 workload CI. Applying the shared SSM unit
 through protected CI grants External Secrets the four exact runtime parameter
-names. The cloud enrollment key is excluded from that reader grant. Apply the
+names. Dispatch `terragrunt-apply.yml` on exact current `main` with
+`argocd_app=codex-cloud-signer` to reconcile those grants and only this
+Application. Its read-only preflight checks the existing `automation` namespace,
+actual workload AppProject, ESO scope, platform health and dedicated local
+volume before any writes. The cloud enrollment key is excluded from the reader
+grant. Apply the
 `platform-storage` desired state before the signer; the registration dependency
 only orders Application creation, not runtime readiness.
 

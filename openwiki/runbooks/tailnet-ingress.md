@@ -529,3 +529,8 @@ health endpoints and the local daemon API stay private. The fixed proxy helper
 supports `--codex-funnel-only`; signing that proxy does not trust the separate
 API daemon. HMAC authentication and a dedicated ephemeral enrollment tag are
 required before any agent node signature is issued.
+
+The targeted `terragrunt-apply.yml` Codex path checks the existing `automation`
+namespace, `homelab-workloads` destination, ESO namespace scope and retained
+local PV before reconciling shared SSM reader grants and this Application.
+It leaves bootstrap and unrelated Application registration outside that path.
