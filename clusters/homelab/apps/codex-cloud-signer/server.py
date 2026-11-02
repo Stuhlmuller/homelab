@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import socket
 import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 SECRETS = Path('/secrets')
@@ -56,8 +57,14 @@ def verify_signature(body, header, key, now):
 def api(path, token):
     request = Request('https://api.tailscale.com/api/v2' + path,
                       headers={'Authorization': 'Bearer ' + token})
-    with urlopen(request, timeout=10) as response:
-        return json.load(response)
+    try:
+        with urlopen(request, timeout=10) as response:
+            return json.load(response)
+    except HTTPError as error:
+        error.close()
+        if error.code == 404:
+            raise Denied('device no longer exists') from None
+        raise
 
 
 def access_token():
@@ -123,20 +130,20 @@ def eligible(device, node_id, now):
 
 
 def process(events, now):
-    if not isinstance(events, list) or not 1 <= len(events) <= 16:
+    if not isinstance(events, list) or not events:
         raise Denied('invalid event batch')
     token = None
     for event in events:
-        if not isinstance(event, dict) or event.get('version') != 1:
-            raise Denied('invalid event')
-        if event.get('type') != 'nodeNeedsSignature':
-            continue
-        data = event.get('data')
-        node_id = data.get('nodeID') if isinstance(data, dict) else None
-        if not isinstance(node_id, str) or not re.fullmatch(r'[A-Za-z0-9]{1,64}', node_id):
-            raise Denied('invalid node ID')
-        token = token or access_token()
         try:
+            if not isinstance(event, dict) or event.get('version') != 1:
+                raise Denied('invalid event')
+            if event.get('type') != 'nodeNeedsSignature':
+                continue
+            data = event.get('data')
+            node_id = data.get('nodeID') if isinstance(data, dict) else None
+            if not isinstance(node_id, str) or not re.fullmatch(r'[A-Za-z0-9]{1,64}', node_id):
+                raise Denied('invalid node ID')
+            token = token or access_token()
             for attempt in range(3):
                 device = api('/device/' + node_id + '?fields=all', token)
                 try:
@@ -146,18 +153,18 @@ def process(events, now):
                     if attempt == 2:
                         raise
                     time.sleep(1)
+            if not device.get('tailnetLockError'):
+                continue  # Duplicate deliveries of an already-signed node are harmless.
+            signer_status()
+            current = api('/device/' + node_id + '?fields=all', token)
+            if eligible(current, node_id, now) != keys:
+                raise Denied('device keys changed')
+            local_api('tka/sign', {'NodeKey': keys[0], 'RotationPublic':
+                                 base64.b64encode(bytes.fromhex(keys[1].split(':')[1])).decode()})
+            print('eligible Codex node signed', flush=True)
         except Denied:
+            # One permanent rejection must not acknowledge away later enrollments.
             print('event ignored: device outside enrollment policy', flush=True)
-            continue
-        if not device.get('tailnetLockError'):
-            continue  # Duplicate deliveries of an already-signed node are harmless.
-        signer_status()
-        current = api('/device/' + node_id + '?fields=all', token)
-        if eligible(current, node_id, now) != keys:
-            raise Denied('device keys changed')
-        local_api('tka/sign', {'NodeKey': keys[0], 'RotationPublic':
-                             base64.b64encode(bytes.fromhex(keys[1].split(':')[1])).decode()})
-        print('eligible Codex node signed', flush=True)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -185,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
             signer_status()
         except Exception:
             return self.respond(503)
-        self.respond(200)
+        return self.respond(200)
 
     def do_POST(self):
         if self.path != HOOK:
@@ -211,7 +218,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             print('signing temporarily unavailable; details withheld', flush=True)
             return self.respond(503)
-        self.respond(204)
+        return self.respond(204)
 
 
 if __name__ == '__main__':

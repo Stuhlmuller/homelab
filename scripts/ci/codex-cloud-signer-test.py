@@ -13,6 +13,7 @@ import threading
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('signer', ROOT / 'clusters/homelab/apps/codex-cloud-signer/server.py')
@@ -117,9 +118,42 @@ class SignerTests(unittest.TestCase):
             with self.subTest(field=field), patch.object(S, 'access_token', return_value='x'), \
                  patch.object(S, 'api', side_effect=[DEVICE, {**DEVICE, field: value}]), \
                  patch.object(S, 'signer_status', return_value=LOCK), patch.object(S, 'local_api') as local:
-                with self.assertRaises(S.Denied):
-                    S.process([EVENT], NOW)
+                S.process([EVENT], NOW)
                 local.assert_not_called()
+
+    def test_rejected_event_does_not_discard_later_eligible_devices(self):
+        second = {**DEVICE, 'nodeId': 'nSecond123', 'nodeKey': 'nodekey:' + 'e' * 64}
+        second_event = {**EVENT, 'data': {'nodeID': second['nodeId']}}
+        variants = [
+            ([EVENT, second_event], [DEVICE, {**DEVICE, 'tags': ['tag:ci']}, second, second]),
+            ([EVENT, second_event], [DEVICE, {**DEVICE, 'nodeKey': 'nodekey:' + 'd' * 64}, second, second]),
+            ([EVENT, second_event], [DEVICE, S.Denied('removed'), second, second]),
+            ([{**EVENT, 'data': {'nodeID': '../acl'}}, second_event], [second, second]),
+            ([{'version': 2}, second_event], [second, second]),
+        ]
+        for events, devices in variants:
+            with self.subTest(events=events, devices=devices), \
+                 patch.object(S, 'access_token', return_value='x'), \
+                 patch.object(S, 'api', side_effect=devices), \
+                 patch.object(S, 'signer_status', return_value=LOCK), patch.object(S, 'local_api') as local:
+                S.process(events, NOW)
+                local.assert_called_once_with('tka/sign', {
+                    'NodeKey': second['nodeKey'],
+                    'RotationPublic': base64.b64encode(bytes.fromhex('b' * 64)).decode()})
+
+    def test_large_authenticated_batch_does_not_drop_later_enrollment(self):
+        with patch.object(S, 'access_token', return_value='x'), \
+             patch.object(S, 'api', side_effect=[DEVICE, DEVICE]), \
+             patch.object(S, 'signer_status', return_value=LOCK), patch.object(S, 'local_api') as local:
+            S.process([{'version': 1, 'type': 'nodeCreated'}] * 17 + [EVENT], NOW)
+            local.assert_called_once()
+
+    def test_removed_device_is_permanent_but_api_outage_still_retries(self):
+        for code, expected in ((404, S.Denied), (403, HTTPError), (500, HTTPError)):
+            with self.subTest(code=code), \
+                 patch.object(S, 'urlopen', side_effect=HTTPError('https://example.invalid', code, 'fixture', {}, None)), \
+                 self.assertRaises(expected):
+                S.api('/device/' + NODE, 'synthetic-token')
 
     def test_unrelated_unsigned_or_duplicate_signed_device_is_ignored(self):
         for device in ({**DEVICE, 'tags': ['tag:ci']}, {**DEVICE, 'tailnetLockError': ''}):
@@ -141,10 +175,9 @@ class SignerTests(unittest.TestCase):
     def test_event_cannot_inject_path_or_sign_command(self):
         for node_id in ('../acl', NODE + '?x=y', 'nodekey:' + 'a' * 64, '', None):
             with self.subTest(node_id=node_id), patch.object(S, 'access_token') as token:
-                with self.assertRaises(S.Denied):
-                    S.process([{**EVENT, 'data': {'nodeID': node_id}}], NOW)
+                S.process([{**EVENT, 'data': {'nodeID': node_id}}], NOW)
                 token.assert_not_called()
-        for events in ([], {}, [EVENT] * 17):
+        for events in ([], {}):
             with self.assertRaises(S.Denied):
                 S.process(events, NOW)
 

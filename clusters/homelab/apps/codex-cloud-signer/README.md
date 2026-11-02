@@ -19,7 +19,9 @@ read-only device OAuth client, and requires:
 Only the exact node public key is signed through the local daemon API. This
 never wraps an auth key or adds the target as a trusted signer. Unrelated,
 already-signed and permanently ineligible events are acknowledged without
-signing. Connecting devices receive three checks one second apart; transient
+signing. A permanent rejection skips only that event, preserving later
+enrollments in the same delivery. The HTTP body-size limit bounds the input.
+Connecting devices receive three checks one second apart; transient
 failures return 503 for Tailscale retry. The 25-hour HMAC/creation window covers
 Tailscale's hourly retries for 24 hours. Replays recheck current device policy
 and skip an already-signed node; they cannot supply signing keys.
