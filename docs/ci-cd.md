@@ -6,6 +6,25 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+Operational conditions live in executable checks and GitHub protections.
+Documentation, including app READMEs, OpenWiki, specs, and agent skills, explains
+those checks without creating additional approvals or deployment vetoes.
+Missing credentials, failed validation, unavailable recovery evidence, and
+unhealthy rollouts are pipeline failures, with the failing check as the owner.
+Historical incident notes are observations rather than current policy.
+
+| Condition | Executable owner |
+| --- | --- |
+| PR approval | `.policy.yml` and GitHub rulesets |
+| Static, security, and manifest validation | `scripts/ci/offline-checks.sh`, `scripts/ci/static-checks.sh`, `scripts/ci/conftest-policies.sh` |
+| Current-main and environment restrictions | Production workflows and `scripts/ci/terragrunt-current-main.sh` |
+| Tailnet enrollment and signed credentials | `harbor-mirror.yml` credential check and Tailscale enrollment |
+| Image publication and complete pulls | `scripts/ci/harbor-publish.sh` |
+| Mastodon database release readiness | `scripts/ci/mastodon-release-check.py` in the protected live-plan job |
+
+Change the owning executable check when changing a condition. A new rule in
+prose does not change pipeline behavior.
+
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
   validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
   Their required status names stay unchanged, so eligible PRs can still merge.
@@ -57,6 +76,29 @@ This repository uses GitHub Actions for the review and rollout path:
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
+
+## Release publication
+
+The release publisher takes one non-canceling `semantic-release-main` lock,
+then checks out current `main`. Pending runs may coalesce; the surviving run
+analyzes every commit since the last tag, including intervening pushes. Repeated
+runs with no new releasable commits create no tag. Publishers and independent,
+cancelable PR previews time out after 15 minutes.
+
+The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
+with package integrity hashes. `npm ci --ignore-scripts` installs without a
+step token. Only publication receives `GITHUB_TOKEN`; PR previews use a local
+bare Git repository without a token. Renovate's npm manager and lockfile
+maintenance propose updates through PRs. No npm package is published.
+
+After `npm ci --ignore-scripts`, run
+`nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
+preview isolation, coalesced commit inclusion, and repeat-publication behavior
+against a disposable local remote. Confirm the first merged GitHub release run
+separately. Roll back by reverting the workflow and toolchain together.
+
+See [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+and [semantic-release CI](https://semantic-release.org/recipes/ci-configurations/github-actions/).
 
 ## Monitoring
 
@@ -133,6 +175,14 @@ checks remain fresh.
   can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
+  The 90-minute apply job requests a 7,200-second session; the operator-owned
+  role declares a 25,200-second maximum. Verify the live role allows at least
+  7,200 seconds before dispatch. The offline duration regression rejects a
+  missing or shorter request and requests above the declared maximum.
+  Full #873 acceptance requires a same-session AWS call after 3,600 seconds;
+  a short successful run does not prove that boundary. If an apply stops
+  partway, inspect state read-only and prepare a fresh reviewed plan from
+  current `main`; do not reuse expired credentials or manually undo resources.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
   and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
   Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
@@ -379,31 +429,43 @@ defines:
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
-Apply that catalog after materializing the upstream kubeconfig Secret, then
-create or rotate the GitHub environment secret in both CI environments:
+For initial bootstrap, apply that catalog after creating the upstream kubeconfig
+Secret, then create the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
-scripts/octelium-ci-credential.sh
+scripts/octelium-ci-credential.sh --apply-catalog
 ```
 
+The kubeconfig helper validates the selected context and authenticated TLS/API
+access, then creates only a new Secret; it never overwrites the active one.
+Upstream kubeconfig rotation requires a staged timestamped name and a separate
+reviewed catalog/consumer cutover, preserving the previous Secret for rollback.
+See [the rotation contract](octelium.md#private-kubernetes-access). This differs
+from routine rotation of the downstream Octelium access token below.
+
 The helper requires an authenticated Octelium admin session for `octeliumctl`
-and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
-or rotates the `homelab-ci` credential, pipes the generated token directly into
-the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
+and GitHub CLI access to `Stuhlmuller/homelab`. The bootstrap command applies
+the full catalog before creating the credential. Routine rotations omit
+`--apply-catalog` and verify the existing dedicated User, Policy, Service, and
+credential binding without changing the catalog. The helper pipes the token
+directly into the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
 For existing credentials, the helper verifies GitHub environment secret write
-access by writing and deleting a temporary preflight secret, reconciles the
-credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
-User so Octelium cannot reuse its old expiry, then rotates the token. It
-refuses to rotate an existing credential when GitHub secret updates are
+access by writing and deleting a temporary preflight secret. Routine rotation
+fails if the credential binding differs from User `homelab-ci` and Policy
+`homelab-ci-kubernetes-api-access`; explicit catalog application may reconcile
+that binding. The helper deletes every Session for the dedicated User so
+Octelium cannot reuse its old expiry, then rotates the token. It reads every
+listing page first and stops before deletion if that inventory is incomplete.
+It refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
 Run rotation in a quiet window: deleting the old Session invalidates the
 current bearer before the two GitHub environment secrets are updated. After
-token generation, the helper retries each secret write until both environments
-hold the replacement; if interrupted, rerun the helper.
+token generation, the helper retries each secret write five times. If either
+environment still fails, or rotation is interrupted, rerun the helper to put a
+fresh replacement in both environments.
 When recovering through a temporary Octelium CLI session, pass the unique home
 created by the recovery block below. If the public Octelium API path is not
 carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
@@ -419,10 +481,11 @@ Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
 policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog and rotate the credential with
-`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
-failure before rotating. Reconcile the upstream kubeconfig Secret when its
-Kubernetes credential changes.
+`kubernetes-api-ci`, first try routine rotation with
+`scripts/octelium-ci-credential.sh`. Apply the full catalog with
+`--apply-catalog` only after reviewing a relevant catalog change or drift.
+Treat `403` as a policy or User-state failure before rotating. Reconcile the
+upstream kubeconfig Secret when its Kubernetes credential changes.
 Recover the primary credential directly with the checked helper. Run this block
 from the repository root; it uses a private, unique admin home and removes it
 only after Octelium confirms logout:
@@ -459,9 +522,9 @@ only after Octelium confirms logout:
 )
 ```
 
-The helper applies the primary catalog with checked resource verification,
-invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Dispatch and bind verification to the exact `main` commit:
+The helper verifies the primary CI access resources, invalidates stale Sessions,
+and writes the replacement token to both GitHub environments. Dispatch and bind
+verification to the exact `main` commit:
 
 ```sh
 set -euo pipefail
@@ -627,6 +690,15 @@ The role trust and additive IAM grant required to manage the chunked SSM reader
 policies are declared in `IaC/homelab/us-west-2/operator/github-actions-role-policy`. The unit is
 deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
+
+The same operator policy grants `GetPolicy`, `GetPolicyVersion`, and
+`ListPolicyTags` on only `homelab-oce-recovery-publisher-boundary`, so the
+application-backup-storage plan can refresh its existing boundary. The module's
+boundary test rejects broader actions or resources; this grant adds no IAM writes.
+It also grants `GetRole`, `GetRolePolicy`, `ListRolePolicies`, and
+`ListAttachedRolePolicies` on only `homelab-oce-recovery-publisher` for the
+[pinned provider's role refresh](https://github.com/hashicorp/terraform-provider-aws/blob/v6.56.0/internal/service/iam/role.go#L278-L325).
+These reads grant no role assumption, pass-role, or role mutation.
 
 For a trust-only change, use the targeted operator runbook in
 `docs/operator-infrastructure.md`. It conditionally imports only the existing role,

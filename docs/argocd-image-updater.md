@@ -57,6 +57,13 @@ the live ref again, and requests a non-force update. It requires the reviewed
 cherry-pick, or execute proposal-branch code.
 The independent Image Update Gate runs before that write job and checks the
 candidate tree's semantic scope with read-only permissions.
+Committed `scripts/config/image-automation-candidate.json` contains the base,
+parents, application, operation, and changes; it must omit `candidate_sha`.
+Each validation job reads that file from the fetched proposal commit and passes
+the commit's resolved SHA separately through `--candidate-sha`. The trusted
+validator adds that SHA to its in-memory candidate. Embedding the enclosing
+commit's SHA in its own tree would change the SHA; supplied metadata cannot
+override the Git-derived identity.
 The `observe` job runs only on a trusted manual `verify` or `promote` dispatch.
 It reads the durable journal and sends bounded Discord alerts for expired failed
 or paused observations; missing notification credentials fail visibly without

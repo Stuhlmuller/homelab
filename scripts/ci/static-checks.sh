@@ -5,6 +5,18 @@ set -euo pipefail
 if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
   export TF_REGISTRY_CLIENT_TIMEOUT=60
 fi
+
+# Cache plumbing only: cover Terragrunt invoked by this shell and child fixtures.
+static_download_dir="$(mktemp -d /tmp/homelab-static-terragrunt.XXXXXX)"
+readonly static_download_dir
+cleanup_static_downloads() {
+  [[ ! -d "$static_download_dir" ]] || rm -rf -- "$static_download_dir"
+}
+trap cleanup_static_downloads EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+export TG_DOWNLOAD_DIR="$static_download_dir"
+
 case "${1:-}" in
   "") bash scripts/ci/nix-checks.sh ;;
   --offline-verified) [[ $# == 1 ]] ;;
@@ -244,6 +256,22 @@ echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
 echo "::endgroup::"
 
+echo "::group::LiteLLM runtime hardening"
+python3 -I scripts/ci/litellm-runtime-hardening-check.py
+echo "::endgroup::"
+
+echo "::group::Descheduler cadence"
+bash scripts/ci/descheduler-cadence-check.sh
+python3 -I scripts/ci/octelium-kubernetes-policy-check.py
+echo "::endgroup::"
+
+echo "::group::n8n inactive maintenance fence"
+python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
+bash scripts/ci/n8n-maintenance-fence-check.sh
+python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+echo "::endgroup::"
+
 echo "::group::Secret scan"
 bash scripts/ci/secret-scan.sh --self-check
 bash scripts/ci/secret-scan.sh
@@ -301,6 +329,6 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::Whitespace"
-git diff --check
-echo "::endgroup::"
+if [[ "${GITHUB_ACTIONS:-}" != true ]]; then
+  git diff --check HEAD
+fi

@@ -58,6 +58,10 @@ cache and sandbox policy. The client refuses to publish when Nix ignores
 those settings. Alternatively, run on another trusted **x86_64 Linux** Nix machine. The platform must match;
 macOS or ARM Linux results cannot satisfy x86_64 Linux checks. If copying a key to another builder, protect that machine as carefully as CI. A Linux cache miss builds the checks normally.
 
+While the builder Deployment declares zero replicas for media backup capacity,
+skip `publish --linux`; its preflight requires one Ready builder and refuses
+the attempt. Existing signed cache entries remain available to CI.
+
 Stopping the local publisher does not guarantee that Kubernetes exec stops the
 remote build. To cancel an interrupted attempt, run:
 
@@ -132,8 +136,8 @@ bounded retry. The operator explicitly approved this capability change and
 one further attempt on October 11, 2026. A temporary candidate rendered and
 passed all 224 Conftest policy assertions without policy changes; this is not runtime acceptance.
 `NET_ADMIN` also allows configuring the Pod's network namespace. The October 11
-approval covered this scoped change only; any further privilege change needs
-separate approval. Keep RuntimeDefault seccomp,
+approval described that scoped change. Subsequent changes follow the executable
+policy checks and protected pipeline. Keep RuntimeDefault seccomp,
 strict sandbox/signature verification, the 1 GiB request/limit, serial
 substitutions and lifecycle safeguards. Host namespace sysctls, host
 networking, credentials, capacity and other workloads are outside this fix.

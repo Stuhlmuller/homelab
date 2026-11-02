@@ -12,7 +12,7 @@
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
       "Resource": "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1",
-      "Condition": {"StringLike": {"s3:prefix": ["applications/octelium/*", "applications/media-postgres/*"]}}
+      "Condition": {"StringLike": {"s3:prefix": ["applications/octelium/*", "applications/octelium-rscstore/*", "applications/media-postgres/*"]}}
     },
     {
       "Sid": "VerifyImmutableApplicationVersions",
@@ -20,6 +20,7 @@
       "Action": ["s3:GetObject", "s3:GetObjectVersion"],
       "Resource": [
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium/*",
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium-rscstore/*",
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/media-postgres/*"
       ]
     },
@@ -29,6 +30,7 @@
       "Action": ["s3:PutObject"],
       "Resource": [
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium/*",
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium-rscstore/*",
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/media-postgres/*"
       ],
       "Condition": {"StringEquals": {"s3:if-none-match": "*", "s3:x-amz-server-side-encryption": "aws:kms"}}

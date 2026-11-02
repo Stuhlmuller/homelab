@@ -106,6 +106,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not approved_tailnet_harbor_mirror
 	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
@@ -113,6 +114,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not approved_tailnet_harbor_mirror
 	value := workflow_env_value("KUBE_API_SERVER_URL")
 	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
@@ -401,7 +403,13 @@ approved_openclaw_legacy_operation if {
 	contains(step.run, "set -euo pipefail\numask 077\n")
 	contains(step.run, "if [[ \"$RUN_STAGE\" == resume-restore ]]; then\n  export PRIOR_RUN_ID=39988927652\nfi\n")
 	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
-  printf '%s\n' network-access >"$OPENCLAW_PHASE_FILE"
+  printf '%s\n' network-nix-entry >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubeconfig >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubectl-version >"$OPENCLAW_PHASE_FILE"
 fi`)
 	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
   printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
@@ -517,7 +525,7 @@ trap 'rm -f "$private_log"' EXIT
 if ! {
   sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
   sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
-  sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  sha256sum --check --status <<<'61a3dd43e7a14a452daa1e4e9f65c68fd6af6d80304fbf80f245f65a0cd90370  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'
@@ -733,7 +741,7 @@ has_event(events, event) if {
 
 has_event(events, event) if {
 	is_object(events)
-	events[event]
+	event in object.keys(events)
 }
 
 external_action_reference(uses) if {
@@ -898,6 +906,8 @@ echo "::group::Kubeconfig setup"
 bash scripts/ci/install-kubeconfig.sh
 echo "::group::Kubernetes API check"
 kubectl --request-timeout=15s version >/dev/null
+echo "::group::Mastodon database release checks"
+python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::Argo CD bootstrap plan"
 bash scripts/ci/terragrunt-plan.sh
 EOF`
@@ -995,43 +1005,43 @@ set -euo pipefail
 umask 077
 case "$IMAGE_SCOPE" in
   all)
-    bash scripts/ci/harbor-publish.sh mirror
+    bash scripts/ci/harbor-publish.sh mirror --tailscale
     ;;
   fleet)
-    bash scripts/ci/harbor-publish.sh mirror-fleet
+    bash scripts/ci/harbor-publish.sh mirror-fleet --tailscale
     ;;
   mastodon)
-    bash scripts/ci/harbor-publish.sh mirror-mastodon
+    bash scripts/ci/harbor-publish.sh mirror-mastodon --tailscale
     ;;
   bazarr)
-    bash scripts/ci/harbor-publish.sh mirror-bazarr
+    bash scripts/ci/harbor-publish.sh mirror-bazarr --tailscale
     ;;
   chainguard)
-    bash scripts/ci/harbor-publish.sh mirror-chainguard
+    bash scripts/ci/harbor-publish.sh mirror-chainguard --tailscale
     ;;
   traefik)
-    bash scripts/ci/harbor-publish.sh mirror-traefik
+    bash scripts/ci/harbor-publish.sh mirror-traefik --tailscale
     ;;
   harbor)
-    bash scripts/ci/harbor-publish.sh mirror-harbor
+    bash scripts/ci/harbor-publish.sh mirror-harbor --tailscale
     ;;
   renovate)
-    bash scripts/ci/harbor-publish.sh mirror-renovate
+    bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
     ;;
   dns)
-    bash scripts/ci/harbor-publish.sh mirror-dns
+    bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
     ;;
   litellm)
-    bash scripts/ci/harbor-publish.sh mirror-litellm
+    bash scripts/ci/harbor-publish.sh mirror-litellm --tailscale
     ;;
   prometheus)
-    bash scripts/ci/harbor-publish.sh mirror-prometheus
+    bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
     ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1054,7 +1064,7 @@ private_live_tail(tail) if {
 	lines == [
 		"then",
 		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
-		`case "$phase" in preflight|network-access|network-source|network-current-main|network-stopped-reader|network-namespace|network-postcheck|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore|cache-build|cache-publication|cache-transfer)`,
+		`case "$phase" in preflight|network-nix-entry|network-kubeconfig|network-kubectl-version|network-source|network-current-main|network-stopped-reader|network-namespace|network-postcheck|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore|cache-build|cache-publication|cache-transfer)`,
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",
@@ -1138,4 +1148,34 @@ workflow_step_env_has(key) if {
 workflow_env_value(key) := value if {
 	env := object.get(input, "env", {})
 	value := sprintf("%v", [object.get(env, key, "")])
+}
+
+# This exception admits only the exact dispatch-only, production-only mirror.
+# Any changed workflow must be reviewed with its policy contract again.
+approved_tailnet_harbor_mirror if {
+	input.name == "Mirror Kubernetes Images To Harbor"
+
+	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
+	count({"on", "true", true} & object.keys(input)) == 1
+	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
+	crypto.sha256(json.marshal(canonical)) == "04151b8a1f51dfb08cd22beceee39e93178c878550472ce49649e585e1d3a757"
+}
+
+tailnet_workflow_requested if {
+	some _, job in input.jobs
+	some step in job.steps
+	startswith(object.get(step, "uses", ""), "tailscale/github-action@")
+}
+
+tailnet_workflow_requested if {
+	some _, job in input.jobs
+	some step in job.steps
+	run := object.get(step, "run", "")
+	contains(run, "harbor-publish.sh")
+	contains(run, "--tailscale")
+}
+
+deny contains "Tailnet workflow access requires the exact reviewed production Harbor mirror contract" if {
+	tailnet_workflow_requested
+	not approved_tailnet_harbor_mirror
 }

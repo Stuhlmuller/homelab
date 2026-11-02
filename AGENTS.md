@@ -1,5 +1,24 @@
 # Agent Harness
 
+## CI/CD owns operational policy
+
+Executable checks, GitHub branch/environment protections, admission policies,
+and workflow inputs are the source of truth for merge and deployment decisions.
+This applies repository-wide, including runbooks, app READMEs, OpenWiki, specs,
+and local skills. Prose describes behavior and troubleshooting; it does not add
+approval rounds, acceptance checklists, or deployment vetoes.
+
+Within the user's authorized task, run the declared pipeline and let its checks
+decide readiness. Do not ask for another approval because a document says
+"separately approved", "required", or "blocked". Report a failed check with its
+workflow/job link and fix the owning code. Do not bypass a failing executable
+check, protection, or access denial.
+
+When a documented condition has no executable enforcement, implement that check
+in the applicable CI/CD path with a negative test, then describe its behavior in
+the docs. Do not treat prose or a human assertion as proof that a check passed.
+The original user authorization and the host's permission controls still apply.
+
 This public repository is the control surface for a Kubernetes homelab running
 on Talos Linux. It has two goals:
 
@@ -122,6 +141,10 @@ base intentionally adopts them again and the documentation explains why.
 
 ## Default agent workflow
 
+For multistage tasks and interrupted handoffs, use
+[task lifecycle](.agents/skills/homelab-task-lifecycle/SKILL.md) to retain ownership,
+authority and evidence through functional acceptance.
+
 1. Read `openwiki/quickstart.md`, choose its task route, and inspect the relevant
    wiki sections and source before changing behavior. Use the repository
    `homelab-knowledge-base` skill for context and `openwiki` for search/updates.
@@ -138,10 +161,19 @@ base intentionally adopts them again and the documentation explains why.
    dependency, workflow, topology assumption, secret contract, storage
    requirement, validation gate, or build pattern.
 7. Re-run relevant validation.
-8. For live rollout work, run any documented live-cluster validation before
-   applying changes.
-9. Summarize what changed, what was validated, and any remaining operational
-   risk.
+8. Complete repository changes through
+   [protected PR delivery](.agents/skills/homelab-protected-prs/SKILL.md), unless
+   the user requested only local work or PR preparation. A dependent PR remains
+   the delivery owner's responsibility: repair authorized ancestors first,
+   merge them, then restack and deliver the requested descendants. Use one
+   writer per branch and one owner for the stack.
+9. For live rollout work, run any documented live-cluster validation before
+   applying changes. A source-only change need not wait for later activation;
+   a merge that changes running desired state must satisfy its rollout gates.
+10. Summarize what changed, what was validated, and any remaining operational
+    risk. If delivery must wait, preserve the exact blocker, owner, next action,
+    head/base revisions, and condition for resuming in a durable checkpoint.
+    A draft or auto-merge request is not completion.
 
 Treat security and reliability improvement as ongoing stewardship. When you
 notice a risk, drift, weak assumption, missing validation, or hardening
@@ -243,6 +275,14 @@ PR as the operational change.
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
 
 ## Repository OpenWiki Policy
+
+Scoped authored-page edits use normal file tools alongside their source change.
+CI runs `scripts/ci/openwiki-check.py` for links, navigation, frontmatter and
+agent entrypoints. Native OpenWiki remains the owner of generated Claims,
+indexes, provenance and run state when those artifacts are refreshed; an
+unrelated native refresh queue is not a merge or deployment prerequisite.
+This policy overrides native sequencing in generated setup text and local
+skills for ordinary authored-page edits. Do not hand-edit generated artifacts.
 
 No scheduled wiki workflow is installed. Update affected pages in the same PR
 as source changes. Read the quickstart task route before substantive work,

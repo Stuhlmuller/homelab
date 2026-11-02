@@ -78,12 +78,12 @@ jobs:
           git fetch --no-tags --depth=1 origin refs/heads/codex/image-updater-proposals:refs/remotes/origin/codex/image-updater-proposals
           candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
           git show "${candidate_sha}:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
-          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
           mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
           mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
           python3 -I scripts/ci/image-automation-promote.py \
             --state scripts/config/image-automation-state.json \
             --candidate "$RUNNER_TEMP/candidate.json" \
+            --candidate-sha "$candidate_sha" \
             --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
           echo 'Image Update Gate passed for the exact candidate tree.' >> "$GITHUB_STEP_SUMMARY"
 
@@ -114,12 +114,12 @@ jobs:
           set -euo pipefail
           candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
           git show "${candidate_sha}:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
-          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
           mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
           mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
           python3 -I scripts/ci/image-automation-promote.py \
             --state scripts/config/image-automation-state.json \
             --candidate "$RUNNER_TEMP/candidate.json" \
+            --candidate-sha "$candidate_sha" \
             --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
       - name: Compare and fast-forward main
         env:
@@ -155,12 +155,12 @@ jobs:
           git fetch --no-tags --depth=1 origin refs/heads/codex/image-updater-proposals:refs/remotes/origin/codex/image-updater-proposals
           candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
           git show "$candidate_sha:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
-          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
           mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
           mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
           python3 -I scripts/ci/image-automation-promote.py \
             --state scripts/config/image-automation-state.json \
             --candidate "$RUNNER_TEMP/candidate.json" \
+            --candidate-sha "$candidate_sha" \
             --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
       - name: Create or reuse validated proposal PR
         env:

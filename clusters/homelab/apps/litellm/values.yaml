@@ -11,11 +11,20 @@ serviceAccount:
   create: true
   name: litellm
   automount: false
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 service:
   type: ClusterIP
   port: 4000
 podAnnotations:
   homelab.stuhlmuller.dev/app-identity-revision: "10"
+  ambient.istio.io/dns-capture: "true"
 volumes:
   - name: app-identity
     configMap:

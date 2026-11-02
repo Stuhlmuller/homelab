@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: renovate-cache-local
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: renovate-cache-local
+  volumeMode: Filesystem
+  volumeName: renovate-cache-local
+  resources:
+    requests:
+      storage: 20Gi

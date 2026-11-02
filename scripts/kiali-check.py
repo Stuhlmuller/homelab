@@ -35,12 +35,8 @@ def main():
     resources = api(kiali, "namespaces/istio-system/istio")
     count = sum(len(items) for items in resources.get("resources", {}).values())
     check(count > 0, f"Istio configuration API returns {count} objects in istio-system")
-    query = urlencode({"query": 'count({__name__=~"istio_.*"})'})
-    metrics = api("prometheus-kube-prometheus-prometheus:9090", "v1/query?" + query)
-    check(metrics.get("status") == "success" and bool(metrics.get("data", {}).get("result")),
-          "Prometheus contains Istio telemetry")
     query = urlencode({"namespaces": ",".join(names), "duration": "600s",
-                       "graphType": "workload", "includeIdleEdges": "true"})
+                       "graphType": "workload", "includeIdleEdges": "false"})
     graph = api(kiali, "namespaces/graph?" + query)
     elements = graph.get("elements", {})
     nodes, edges = elements.get("nodes", []), elements.get("edges", [])

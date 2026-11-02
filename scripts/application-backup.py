@@ -16,15 +16,23 @@ from datetime import datetime, timezone
 SPEC = importlib.util.spec_from_file_location('etcd_offsite', Path(__file__).with_name('etcd-offsite-backup.py'))
 OFFSITE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(OFFSITE)
+RSC_SPEC = importlib.util.spec_from_file_location('rscstore_capture', Path(__file__).with_name('octelium-rscstore-capture.py'))
+RSC = importlib.util.module_from_spec(RSC_SPEC)
+RSC_SPEC.loader.exec_module(RSC)
 CONFIG = Path(__file__).resolve().parents[1] / 'IaC/application-backup-storage.hcl'
 CONTRACTS = {
     'octelium': ('globals.sql', 'octelium.dump'),
+    'octelium-rscstore': (*RSC.PARTS, 'capture.json'),
     'multica': ('globals.sql', 'multica.dump', 'uploads.tar', 'capture.json'),
     'affine': ('globals.sql', 'affine.dump', 'blobs.tar', 'config.tar', 'capture.json'),
     'dispatcharr': ('globals.sql', 'dispatcharr.dump', 'data.tar', 'capture.json'),
     'media-postgres': ('globals.sql', 'sonarr-main.dump', 'sonarr-log.dump',
                        'radarr-main.dump', 'radarr-log.dump', 'prowlarr-main.dump', 'prowlarr-log.dump'),
 }
+MAX_SET_BYTES = {app: 5 * 1024**3 for app in CONTRACTS}
+# Two fixed halves keep each S3 PutObject below 5 GiB. A complete PVC archive
+# can exceed 5 GiB once tar headers are included; the 10 GiB cap fails closed.
+MAX_SET_BYTES['octelium-rscstore'] = RSC.MAX_ARCHIVE + 16384
 MAX_AGE = 30 * 3600
 ID = re.compile(r'[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}')
 
@@ -105,7 +113,7 @@ def prepare(source, workspace, app):
             with (pending / name).open('xb') as output:
                 os.chmod(pending / name, 0o600)
                 remaining = info.st_size
-                if sum(item['bytes'] for item in objects.values()) + remaining > 5 * 1024**3:
+                if sum(item['bytes'] for item in objects.values()) + remaining > MAX_SET_BYTES[app]:
                     raise ValueError('recovery set exceeds publication budget')
                 while remaining:
                     chunk = original.read(min(remaining, 1024 * 1024))
@@ -120,9 +128,9 @@ def prepare(source, workspace, app):
         objects[name] = OFFSITE.digest(pending / name)
         if objects[name]['sha256'] != hashes[name]:
             raise ValueError('source checksum failure')
-    if sum(item['bytes'] for item in objects.values()) > 5 * 1024**3:
-        raise ValueError('recovery set exceeds 5 GiB publication budget')
-    if app in ('multica', 'affine', 'dispatcharr'):
+    if sum(item['bytes'] for item in objects.values()) > MAX_SET_BYTES[app]:
+        raise ValueError('recovery set exceeds publication budget')
+    if app in ('multica', 'affine', 'dispatcharr', 'octelium-rscstore'):
         if (pending / 'capture.json').stat().st_size > 16384:
             raise ValueError('oversized capture record')
         capture = json.loads((pending / 'capture.json').read_text())
@@ -130,6 +138,8 @@ def prepare(source, workspace, app):
                 or not isinstance(capture.get('approved_fence_reference'), str)
                 or not capture['approved_fence_reference'].strip()):
             raise ValueError('paired database/blob sets require a reviewed writer fence')
+        if app == 'octelium-rscstore':
+            RSC.validate_bundle(pending, capture)
     record = {'format': 1, 'app': app, 'captured_at': source.name, 'objects': objects}
     identifier = source.name + '-' + hashlib.sha256(canonical(record)).hexdigest()
     write(pending / 'source.json', canonical(record))
@@ -162,8 +172,8 @@ def validate_record(record, identifier, versions=False):
                          or item['version_id'] in ('', 'null')):
             raise ValueError('missing immutable object version')
         unversioned[name] = digest
-    if sum(item['bytes'] for item in unversioned.values()) > 5 * 1024**3:
-        raise ValueError('recovery set exceeds 5 GiB publication budget')
+    if sum(item['bytes'] for item in unversioned.values()) > MAX_SET_BYTES[record['app']]:
+        raise ValueError('recovery set exceeds publication budget')
     original = {'format': 1, 'app': record['app'], 'captured_at': record['captured_at'], 'objects': unversioned}
     if hashlib.sha256(canonical(original)).hexdigest() != identifier[17:]:
         raise ValueError('manifest identity mismatch')

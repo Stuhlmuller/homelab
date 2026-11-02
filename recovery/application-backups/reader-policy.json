@@ -20,6 +20,7 @@
         "StringLike": {
           "s3:prefix": [
             "applications/octelium/*",
+            "applications/octelium-rscstore/*",
             "applications/media-postgres/*"
           ]
         }
@@ -34,6 +35,7 @@
       ],
       "Resource": [
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium/*",
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium-rscstore/*",
         "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/media-postgres/*"
       ]
     },

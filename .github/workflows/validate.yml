@@ -126,7 +126,7 @@ jobs:
         run: nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py --runtime docker
 
       - name: Install Python for gateway checks
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.13'
 

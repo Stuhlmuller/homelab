@@ -337,22 +337,23 @@ echo "::endgroup::"
 
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
-if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+n8n_migration_values="clusters/homelab/apps/n8n/migration-v1.values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values" "$n8n_migration_values"; then
   echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
   exit 1
 fi
-rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
+rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_migration_values"
 yq -e '
   (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
   ) and (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 # The literal shell assignment is intentionally matched inside a yq expression.
 # shellcheck disable=SC2016
 yq -e '
-  .controllers.n8n.initContainers."migrate-ai-workflow".command |
+  .controllers."migrate-ai-workflow-v1".containers.migrate.command |
   join("\n") |
   (
     contains("if [ ! -s /home/node/.n8n/config ]; then") and
@@ -362,11 +363,21 @@ yq -e '
     contains("Array.isArray(workflows)") and
     contains("JSON.stringify(workflows)")
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 echo "::endgroup::"
 
-echo "::group::Kiali shell-free Prometheus readiness"
+echo "::group::Kiali server digest and Prometheus readiness"
 kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e --slurpfile catalog scripts/config/harbor-images.json '
+    .cr.spec.deployment as $deployment |
+    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
+    $deployment.image_digest == "sha256" and
+    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
+    ([$catalog[0].images[] |
+      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
+    ] | length == 1)
+  ' >/dev/null
 yq -o=json '.' "$kiali_values" |
   jq -e '
     [
@@ -877,6 +888,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
+      "BASE_REF": "${{ github.base_ref }}",
       "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
@@ -897,7 +909,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     (. | tostring | contains("update-pr-plan-description") | not) and
     (. | tostring | contains("pull-requests") | not) and
     ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
-    .jobs["terragrunt-gate"].if == "${{ always() }}" and
+    .jobs["terragrunt-gate"].if == "${{ !cancelled() }}" and
     .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan", "terragrunt-plan-skipped"] and
     .jobs["terragrunt-gate"].permissions == {} and
     .jobs["terragrunt-gate"].environment == null and
@@ -916,11 +928,11 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "572582f40953e32c851ef3535ccd80f141a4df6d936ab34f34ed71fd6d52a5b4" ]] || {
+[[ "$scope_body_sha256" == "eb45c04f8cfd124bdf7ada92938e14a2259d7fff097176addca251ebe27366e7" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
-[[ "$gate_body_sha256" == "72b4b48f8151b1c2c778f963c618380e57df259175ce4728d57f870a439fc471" ]] || {
+[[ "$gate_body_sha256" == "f1570afa574e5a7cf7f6cc9ec5721d483a5a37c58b207729024028440fd07e17" ]] || {
   echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1003,6 +1015,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
+    '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
+    '.github/workflows/langfuse-postgres-object-restore.yml:static-policy' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -1010,6 +1024,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/mastodon-public-dns.yml:static-policy' \
     '.github/workflows/mastodon-smtp-credential.yml:credential' \
     '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+    '.github/workflows/n8n-paired-checkpoint.yml:checkpoint' \
+    '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
     '.github/workflows/nofx-images.yml:publish' \
     '.github/workflows/nofx-images.yml:published-digests' \
     '.github/workflows/nofx-images.yml:test-build' \
@@ -1079,29 +1095,31 @@ done <<'EOF'
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
+.github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
+.github/workflows/harbor-mirror.yml 32adff9c3c7643bfa9c9285aa56d95d50293098d4cdea7e7b91911253e311934
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
-.github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
+.github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
+.github/workflows/lint.yml 8408798ea388d2ee3b806d2f33f42382689448aa6aa1d5f8f616abfbef4bc321
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 867502c8ef32d55cbc4341ab99385f5ff31530408ac8da34c2b84745b397e37c
+.github/workflows/openclaw-enterprise-operations.yml b5793e22a26609aa74ced9fcbb64e2dbc71760ab74dab11f0b34df6ad2198cec
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
+.github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
-.github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
+.github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
-.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
+.github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
+.github/workflows/terragrunt-plan.yml 54e6506f1133c88517795d3b722b73f4cd344d9bd3ea413b9876fa4f8be35534
 EOF
 echo "::endgroup::"
 
@@ -1118,6 +1136,7 @@ for workflow_job in \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
   '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-object-restore.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
@@ -1129,6 +1148,7 @@ for workflow_job in \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
   '.github/workflows/mastodon-public-dns.yml:static-policy' \
   '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
@@ -1455,6 +1475,15 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+# Native parser/CEL regression runs in the network static gate; keep its exact reviewed policy offline.
+private_policy_hash="$(
+  yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' \
+    docs/examples/octelium/homelab-services.yaml | jq -cS . | sha256sum | cut -d' ' -f1
+)"
+[[ "$private_policy_hash" == d232749dfe13897937645fa8fe3e47a62e5cb6ee307b1ab42326fcab0ae584ab ]] || {
+  echo "Private Kubernetes policy changed; review the native boundary test and update its exact security hash." >&2
+  exit 1
+}
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
@@ -1466,46 +1495,6 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
-    $policies[0].spec.rules == [
-      {
-        "name": "cordium-sensitive-read-deny",
-        "effect": "DENY",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"any": {"of": [
-            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
-            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
-          ]}}
-        ]}}
-      },
-      {
-        "name": "operator-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
-        ]}}
-      },
-      {
-        "name": "cordium-read-only-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
-        ]}}
-      }
-    ] and
     ($services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
     $services[0].spec.mode == "KUBERNETES" and
@@ -1620,7 +1609,7 @@ yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
     (.service.annotations["tailscale.com/hostname"] // null) == null and
     (.service.annotations["homelab.rst.io/pod-security"] // "") != "tailscale-proxy-requires-privileged"
   ' >/dev/null
-rg -Fq 'octeliumctl update secret "$secret_name"' scripts/octelium-ci-kubeconfig-secret.sh
+python3 -I scripts/ci/octelium-ci-kubeconfig-secret-test.py
 if rg -Fq 'octeliumctl delete secret' scripts/octelium-ci-kubeconfig-secret.sh; then
   echo "Shared Octelium kubeconfig rotation must not delete the active Secret." >&2
   exit 1
