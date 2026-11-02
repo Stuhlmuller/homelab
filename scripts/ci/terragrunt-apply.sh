@@ -4,6 +4,7 @@ umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(pwd)"
+# shellcheck source=scripts/ci/terragrunt-filter-base.sh
 source "${script_dir}/terragrunt-filter-base.sh"
 
 cleanup_dirs=()

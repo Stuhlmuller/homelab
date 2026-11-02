@@ -385,6 +385,13 @@ and validation, then runs static checks and Conftest policies with pinned tools.
 Docs-only changes can use focused checks; this local gate does not replace live
 plans or rollout acceptance. See the [validation runbook](../../docs/validation-runbook.md).
 
+The [pre-commit configuration](../../.pre-commit-config.yaml) gives ShellCheck
+the two declared shared helpers explicitly, so their callers remain analyzable
+when hooks split files into batches. Source annotations name repository paths;
+unrestricted external source following is not enabled. Codespell ignores only
+complete JSON `integrity` lines containing SRI hashes. Other JSON text and all
+secret and saved-state scans remain checked.
+
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
