@@ -112,12 +112,14 @@ persistent tagged signer retains its identity after its enrollment key expires.
 
 `platform-storage` owns a retained 1 GiB local PV at
 `acer:/var/lib/codex-cloud-signer`; this app owns its pre-bound retained PVC.
-A narrow root init container prepares a real `tailscale` directory owned by
+A narrow root init container prepares the volume's root directory owned by
 65532 with mode 0700, then both steady containers run without root or added
 capabilities. The API mounts only the daemon socket and its three credential
 files. It cannot read the persisted private keys or the signer enrollment key.
 The daemon mounts the enrollment key and entire state directory, including
 `tka-profiles`. Keep one replica and retain this volume across restarts.
+Both mounts use the volume directly: Talos kubelet `subPath` mounts can resolve
+inside its overlay instead of the retained host directory.
 
 There is no automatic off-node backup of this signing authority. Disk loss
 requires another trusted device to revoke the lost signer and authorize a new

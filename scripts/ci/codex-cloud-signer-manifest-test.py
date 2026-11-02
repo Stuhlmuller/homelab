@@ -31,6 +31,10 @@ class ManifestTests(unittest.TestCase):
             self.assertTrue(container['securityContext']['readOnlyRootFilesystem'])
         self.assertEqual({mount['name'] for mount in containers['api']['volumeMounts']}, {'code', 'credentials', 'socket'})
         self.assertEqual({mount['name'] for mount in containers['tailscale']['volumeMounts']}, {'code', 'enrollment', 'socket', 'state'})
+        self.assertEqual(next(mount for mount in init['volumeMounts'] if mount['name'] == 'state'),
+                         {'name': 'state', 'mountPath': '/state'})
+        self.assertEqual(next(mount for mount in containers['tailscale']['volumeMounts'] if mount['name'] == 'state'),
+                         {'name': 'state', 'mountPath': '/var/lib/tailscale'})
         volumes = {item['name']: item for item in pod['volumes']}
         self.assertEqual(volumes['state']['persistentVolumeClaim'], {'claimName': 'codex-cloud-signer-state'})
         self.assertEqual({item['key'] for item in volumes['credentials']['secret']['items']},

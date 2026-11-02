@@ -112,7 +112,7 @@ spec:
               mountPath: /auth
               readOnly: true
             - {name: socket, mountPath: /run/tailscale}
-            - {name: state, mountPath: /var/lib/tailscale, subPath: tailscale}
+            - {name: state, mountPath: /var/lib/tailscale}
       volumes:
         - name: code
           configMap: {name: codex-cloud-signer-code, defaultMode: 0444}

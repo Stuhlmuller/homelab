@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 import stat
 
-path = Path('/state/tailscale')
-path.mkdir(mode=0o700, exist_ok=True)
+path = Path('/state')
 assert stat.S_ISDIR(path.lstat().st_mode), 'state must be a real directory'
 os.chown(path, 65532, 65532)
 os.chmod(path, 0o700)
