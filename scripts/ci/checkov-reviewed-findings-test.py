@@ -24,6 +24,7 @@ HCL_COMPATIBILITY_PATHS = {
     "IaC/root.hcl",
     "IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt.hcl",
 }
+OCTELIUM_CATALOG = "docs/examples/octelium/homelab-services.yaml"
 NATIVE = "--native" in sys.argv
 if NATIVE:
     sys.argv.remove("--native")
@@ -197,22 +198,36 @@ class Boundaries(unittest.TestCase):
         with self.assertRaises(review.ReviewError):
             review.load_reviews(json.dumps(self.allow))
 
-    def test_hcl_compatibility_hook_selection(self):
+    def test_parser_compatibility_hook_selection(self):
         config = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".", str(review.ROOT / ".pre-commit-config.yaml")], text=True))
         hooks = {hook["id"]: hook for repo in config["repos"] for hook in repo["hooks"]}
         diff, secrets = hooks["checkov_diff"], hooks["checkov_secrets"]
         tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=review.ROOT).decode().split("\0")
-        excluded_hcl = {path for path in tracked if path.endswith(".hcl") and re.search(diff["exclude"], path)}
-        self.assertEqual(excluded_hcl, HCL_COMPATIBILITY_PATHS)
-        for path in HCL_COMPATIBILITY_PATHS:
-            for scope in (config, secrets, hooks["terragrunt-hcl-fmt"]):
+        compatibility_paths = HCL_COMPATIBILITY_PATHS | {OCTELIUM_CATALOG}
+        excluded = {path for path in tracked if re.search(diff["exclude"], path)
+                    and not re.search(r"^clusters/.*\.ya?ml$", path)}
+        self.assertEqual(excluded, compatibility_paths)
+        for path in compatibility_paths:
+            for scope in (config, secrets):
                 self.assertIsNotNone(re.search(scope.get("files", ""), path))
                 self.assertNotRegex(path, scope.get("exclude", "^$"))
                 self.assertFalse(scope.get("exclude_types"))
                 self.assertEqual(scope.get("types", ["file"]), ["file"])
-            for adjacent in (path + ".backup", "copy/" + path, path.replace(".hcl", "-other.hcl")):
+            for adjacent in (path + ".backup", "copy/" + path, str(Path(path).with_stem("other"))):
                 self.assertNotRegex(adjacent, diff["exclude"])
+        for path in HCL_COMPATIBILITY_PATHS:
+            fmt = hooks["terragrunt-hcl-fmt"]
+            self.assertIsNotNone(re.search(fmt.get("files", ""), path))
+            self.assertNotRegex(path, fmt.get("exclude", "^$"))
+            self.assertFalse(fmt.get("exclude_types"))
+            self.assertEqual(fmt.get("types", ["file"]), ["file"])
+        for name in ("check-yaml", "yamllint"):
+            self.assertIsNotNone(re.search(hooks[name].get("files", ""), OCTELIUM_CATALOG))
+            self.assertNotRegex(OCTELIUM_CATALOG, hooks[name].get("exclude", "^$"))
+            self.assertFalse(hooks[name].get("exclude_types"))
+            self.assertEqual(hooks[name].get("types", ["yaml"]), ["yaml"])
+        self.assertIn("--allow-multiple-documents", hooks["check-yaml"]["args"])
         self.assertRegex("clusters/example/config.yaml", diff["exclude"])
         self.assertRegex("clusters/example/config.yml", diff["exclude"])
         self.assertNotRegex("IaC/example.tf", diff["exclude"])
@@ -246,6 +261,26 @@ class Boundaries(unittest.TestCase):
                                         cwd=self.root, capture_output=True, text=True, timeout=30, check=False)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("Invalid expression", result.stderr)
+
+    @unittest.skipUnless(NATIVE, "Run --native with either reviewed pinned Checkov on PATH")
+    def test_native_octelium_catalog_secret_coverage(self):
+        value = base64.b64encode(bytes(range(32, 96))).decode()
+        target = self.root / OCTELIUM_CATALOG
+        target.parent.mkdir(parents=True)
+        target.write_text('kind: Policy\nspec:\n  attrs:\n    cordiumCoreResources: [pods]\n'
+                          '  fixture_secret: "' + value + '"\n---\nkind: Service\n')
+        environment = os.environ.copy()
+        environment.pop("PYTHONPATH", None)
+        result = subprocess.run(
+            ["checkov", "--framework", "secrets", "--enable-secret-scan-all-files", "--output", "json",
+             "-f", OCTELIUM_CATALOG], cwd=self.root, capture_output=True, text=True,
+            env=environment, timeout=120, check=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse(result.stderr.strip())
+        reviewed, remaining = self.assess(review.decode(result.stdout), selected={OCTELIUM_CATALOG})
+        self.assertEqual(reviewed, 0)
+        self.assertEqual(len(remaining), 1)
+        self.assertEqual(remaining[0][:2], ("CKV_SECRET_6", OCTELIUM_CATALOG))
 
     @unittest.skipUnless(NATIVE, "Run --native with either reviewed pinned Checkov on PATH")
     def test_native_pinned_scanner(self):

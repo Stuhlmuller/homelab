@@ -2843,6 +2843,11 @@ Terragrunt format/parser check and static native HCL validation. The Secrets hoo
 and static secret scan still inspect both; all Terraform modules and other HCL
 files retain their Diff scans. No backend key or emergency-admin guard is changed.
 Remove this narrow compatibility split when the pinned parser supports both.
+The Diff hook also routes exactly
+`docs/examples/octelium/homelab-services.yaml` to its existing native Octelium
+parser/CEL and multi-document YAML checks. Checkov mistakes its `Resources`
+attribute names for CloudFormation and rejects the valid document stream. The
+Secrets hook still scans the complete catalog; no scanner diagnostic is ignored.
 The Cordium controller image reports bounded main-loop progress through its
 read-only health command; it never restarts active jobs. Activation and live
 probe behavior remain separate rollout acceptance.

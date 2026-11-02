@@ -78,8 +78,9 @@ repos:
       - id: checkov_diff
         entry: python3 scripts/ci/checkov-reviewed-findings.py diff
         # Native Terragrunt validates these two constructs unsupported by Checkov's parser.
-        # Checkov Secrets still scans both files; Terraform modules remain in this hook.
-        exclude: ^clusters/.*\.ya?ml$|^IaC/root\.hcl$|^IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt\.hcl$
+        # The Octelium catalog is multi-document YAML, not a CloudFormation template.
+        # Secrets and native format validators still cover these exact paths.
+        exclude: ^clusters/.*\.ya?ml$|^IaC/root\.hcl$|^IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt\.hcl$|^docs/examples/octelium/homelab-services\.yaml$
       - id: checkov
         name: Checkov Kubernetes context
         entry: checkov -d clusters --framework kubernetes
