@@ -396,12 +396,7 @@ For Descheduler values or chart changes, run
 `bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
 rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
 exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. The same render feeds
-`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
-enabled strategy, valid LowNodeUtilization thresholds and the existing
-DefaultEvictor guards. Missing strategy configuration prevents profile
-construction even while the Pod remains Ready.
-Live revision, argument and execution-cadence
+the pinned chart when upgrading. Live revision, argument and execution-cadence
 acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:

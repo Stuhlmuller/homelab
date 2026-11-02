@@ -1049,5 +1049,5 @@ Issues #775, #793 and #785 remain open. Prepare a measured gateway memory
 request and placement correction; coordinate capacity with #1656, which moves
 PostgreSQL only. A current reviewed node-recovery path and its preconditions
 are required before any reboot or drain. No live cleanup, reboot or credential
-change occurred. Hold #1806's Descheduler activation until readiness/capacity
+change occurred. Hold #1805's Descheduler repair until readiness/capacity
 preflight is restored; keep its existing eviction guards.
