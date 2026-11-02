@@ -4,6 +4,14 @@ title = "homelab gitleaks configuration"
 useDefault = true
 
 [[allowlists]]
+description = "Published Go module checksum in the local-path dependency patch context"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^builds/local-path-provisioner/dependencies\.patch$''']
+regexTarget = "line"
+regexes = ['''(?m)^ golang\.org/x/oauth2 v0\.27\.0 h1:da9Vo7/tDv5RH/7nZDz1eMGS/q1Vv1N/7FCrBhI9I3M=$''']
+
+[[allowlists]]
 description = "Octelium Enterprise package hash annotation"
 targetRules = ["generic-api-key"]
 condition = "AND"
