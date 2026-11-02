@@ -14,6 +14,13 @@ provider "tailscale" {
   oauth_client_id     = "file:${pathexpand("~/.config/homelab/tailscale/terragrunt-oauth-client-id")}"
   oauth_client_secret = "file:${pathexpand("~/.config/homelab/tailscale/terragrunt-oauth-client-secret")}"
 }
+
+# Owner API credentials are used only for Codex enrollment resources. The
+# existing OAuth client cannot create OAuth clients or manage this webhook.
+provider "tailscale" {
+  alias   = "codex_bootstrap"
+  api_key = "file:${pathexpand("~/.config/homelab/tailscale/codex-signer-owner-api-key")}"
+}
 EOF
 }
 

@@ -42,6 +42,15 @@ Codex enrollment key, a device-reader OAuth client and the webhook. Provider
 other event type. It writes credentials directly to encrypted AWS SSM. No key
 material is printed or committed.
 
+The Codex resource provider uses an Owner/Admin Tailscale API key at
+`~/.config/homelab/tailscale/codex-signer-owner-api-key` (regular file mode
+0600, parent directory 0700). The existing operator OAuth client lacks webhook
+write access and cannot create an OAuth client. Generate the shortest practical
+API key in Tailscale's Keys console, save it privately, and remove/revoke it
+after provisioning. Never paste it into chat or a repository. Future management
+of these provider-owned resources needs another owner API key in this slot.
+The existing policy/CI provider continues to use its separate OAuth client.
+
 Use the existing administrator saved-plan path in the
 [Tailscale module runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
 from clean current `main`. First inspect the complete private plan for drift.

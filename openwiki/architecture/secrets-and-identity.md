@@ -1082,3 +1082,8 @@ client. This enrolls the dedicated policy class, not independently attested
 OpenAI workloads. The owner adds the signer to trusted keys; the API never
 promotes itself or an agent. The cloud auth key is excluded from the External
 Secrets reader's four runtime SSM grants.
+
+Codex provider provisioning uses a separate short-lived Owner/Admin API-key
+file. The existing administrator OAuth client cannot create another OAuth
+client and lacks webhook write scope. That owner credential stays local to the
+operator and is not published to SSM, CI, or either service container.

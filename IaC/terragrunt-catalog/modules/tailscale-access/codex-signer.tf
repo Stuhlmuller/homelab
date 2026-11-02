@@ -1,10 +1,12 @@
 # A device reader and webhook do not distribute Tailnet Lock signing authority.
 resource "tailscale_oauth_client" "codex_signer" {
+  provider    = tailscale.codex_bootstrap
   description = "Codex cloud signer device reader"
   scopes      = ["devices:core:read"]
 }
 
 resource "tailscale_webhook" "codex_signer" {
+  provider     = tailscale.codex_bootstrap
   endpoint_url = "https://codex-signer.tail67beb.ts.net/webhooks/tailscale"
   # Provider 0.29.2 lacks the nodeNeedsSignature enum. The receiver ignores all
   # other events in this category; this does not broaden its signing policy.
@@ -12,6 +14,7 @@ resource "tailscale_webhook" "codex_signer" {
 }
 
 resource "tailscale_tailnet_key" "codex_signer" {
+  provider            = tailscale.codex_bootstrap
   description         = "Persistent homelab Codex signer enrollment"
   reusable            = false
   ephemeral           = false
@@ -23,6 +26,7 @@ resource "tailscale_tailnet_key" "codex_signer" {
 }
 
 resource "tailscale_tailnet_key" "codex_cloud" {
+  provider            = tailscale.codex_bootstrap
   description         = "Codex cloud ephemeral agents"
   reusable            = true
   ephemeral           = true

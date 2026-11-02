@@ -292,3 +292,13 @@ DNS/settings adoption untouched. Inspect its actions before applying: nine
 creates, expected ACL update, no deletion/replacement or unrelated resource.
 Refresh it from current clean `main` after merge; a feature-branch preview is
 not an apply receipt.
+
+The Codex OAuth client, webhook and both enrollment keys use the separate
+`tailscale.codex_bootstrap` provider. It reads a short-lived Owner/Admin API key
+from the regular mode-0600 file
+`~/.config/homelab/tailscale/codex-signer-owner-api-key` in a mode-0700 directory.
+The established OAuth provider remains responsible for existing tailnet
+resources and the policy; its existing client cannot create the runtime OAuth
+client and has no webhook write scope. The owner key is never sent to a Pod or
+SSM. Revoke/remove it after the saved-plan apply; future refresh/management of
+the Codex resources needs a new owner credential in the same private slot.

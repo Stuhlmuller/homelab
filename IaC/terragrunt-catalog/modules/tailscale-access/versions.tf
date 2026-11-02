@@ -7,8 +7,9 @@ terraform {
       version = "6.56.0"
     }
     tailscale = {
-      source  = "tailscale/tailscale"
-      version = "0.29.2"
+      source                = "tailscale/tailscale"
+      version               = "0.29.2"
+      configuration_aliases = [tailscale.codex_bootstrap]
     }
   }
 

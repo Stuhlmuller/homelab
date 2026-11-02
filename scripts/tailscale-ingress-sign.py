@@ -24,12 +24,13 @@ OAUTH_SPEC.loader.exec_module(OAUTH)
 TAILSCALE = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 TAILNET = "tail67beb.ts.net"
 OAUTH_DIRECTORY = Path.home() / ".config/homelab/tailscale"
+DNS_TARGET = ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress")
 TARGETS = (
     ("traefik", "svc", "traefik-private", "homelab-ingress", "tag:homelab-ingress"),
     ("traefik", "ingress", "n8n-webhook", "n8n-webhook", "tag:homelab-funnel"),
     ("traefik", "ingress", "policy-bot-hook", "policy-bot-hook", "tag:homelab-funnel"),
     ("traefik", "ingress", "bulldozer-hook", "bulldozer-hook", "tag:homelab-funnel"),
-    ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"),
+    DNS_TARGET,
     ("traefik", "ingress", "codex-signer", "codex-signer", "tag:homelab-funnel"),
 )
 CANARY = ("traefik", "statefulset", "traefik-sidecar-canary", "homelab-ingress-canary",
@@ -280,7 +281,7 @@ def reconcile(execute, dns_only=False, canary_only=False, codex_funnel_only=Fals
     signer = local_signer()
     selected = (CANARY,) if canary_only else TARGETS
     if dns_only:
-        selected = tuple(target for target in TARGETS if target[0] == "tailnet-dns")
+        selected = (DNS_TARGET,)
     if codex_funnel_only:
         selected = tuple(target for target in TARGETS if target[2] == "codex-signer")
     inspect = inspect_canary if canary_only else inspect_target

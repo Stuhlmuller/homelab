@@ -1,4 +1,7 @@
 mock_provider "tailscale" {}
+mock_provider "tailscale" {
+  alias = "codex_bootstrap"
+}
 mock_provider "aws" {}
 
 variables {
