@@ -90,11 +90,16 @@ class Registration(unittest.TestCase):
                          NAMESPACED_KINDS)
 
     def test_shared_gateway_crds_have_one_pinned_platform_owner(self):
+        crd_app = json.loads(run("terragrunt", "--working-dir",
+                                "IaC/homelab/us-west-2/apps/platform-gateway-api-crds/argocd",
+                                "--log-disable", "render", "--json", "--write=false",
+                                "--no-color"))["inputs"]["manifest"]
         platform = json.loads(run("terragrunt", "--working-dir",
                                   "IaC/homelab/us-west-2/apps/platform-envoy-gateway/argocd",
                                   "--log-disable", "render", "--json", "--write=false",
                                   "--no-color"))["inputs"]["manifest"]
-        crds_source, controller_source, *_ = platform["spec"]["sources"]
+        crds_source, *_ = crd_app["spec"]["sources"]
+        controller_source, *_ = platform["spec"]["sources"]
         self.assertEqual((crds_source["repoURL"], crds_source["chart"],
                           crds_source["targetRevision"]),
                          ("docker.io/envoyproxy", "gateway-crds-helm", "v1.9.2"))
