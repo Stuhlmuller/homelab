@@ -25,5 +25,14 @@ committed image must include a digest.
 The hourly in-cluster runner is unsuspended in full dry-run mode. The legacy
 GitHub Action remains the only PR writer until the reviewed cutover.
 
+The separate [Image Updater promotion path](../../docs/argocd-image-updater.md)
+remains staged. Its gate, promotion job, and fallback validation read proposal
+metadata from an exact fetched commit and pass the resolved SHA separately to
+the [trusted validator](../../scripts/ci/image-automation-promote.py).
+Committed metadata must omit `candidate_sha`; the validator derives the
+in-memory candidate identity from that separate argument and rejects embedded
+SHA claims. The [Git fixture](../../scripts/ci/image-automation-promote-test.py)
+exercises all three workflow validation steps against actual commits.
+
 See [GitOps Flow](../architecture/gitops-flow.md), [Secrets And Identity](../architecture/secrets-and-identity.md),
 and [Validation](validation.md).

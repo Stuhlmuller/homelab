@@ -1,0 +1,15 @@
+{
+  "name": "QNAP H264 SDR",
+  "requiredTitle": "(?:^|[^a-z0-9])(?:[xh][ ._-]?264|avc)(?:$|[^a-z0-9])",
+  "forbiddenTitle": "(?:^|[^a-z0-9])(?:[xh][ ._-]?265|hevc|av1|vp9|hdr(?:10(?:plus|\\+)?)?|dv|dovi|dolby[ ._-]?vision|hlg|(?:10|12)[ ._-]?bit|hi(?:10|12|422|444)p?|high[ ._-]?(?:10|12|422|444)p?|remux|raw[ ._-]?hd|bdmv|bd[ ._-]?(?:disc|disk)|br[ ._-]?(?:disc|disk)|full[ ._-]?(?:blu[ ._-]?ray|disc)|iso)(?:$|[^a-z0-9])",
+  "safeQualities": [
+    "SDTV", "WEBRip-480p", "WEBDL-480p", "Bluray-480p", "Bluray-576p",
+    "HDTV-720p", "WEBRip-720p", "WEBDL-720p", "Bluray-720p",
+    "HDTV-1080p", "WEBRip-1080p", "WEBDL-1080p", "Bluray-1080p"
+  ],
+  "maxSize720": 30,
+  "preferredSize720": 20,
+  "maxSize1080": 60,
+  "preferredSize1080": 40,
+  "fallbackName": "QNAP HD - 720p/1080p"
+}

@@ -35,6 +35,22 @@ or persistent volumes are required; signed release outputs survive Pod
 replacement. Container ephemeral storage is bounded at 16 GiB, and each
 build uses at most two cores. A cold replacement downloads dependencies again.
 
+## Temporary backup capacity pause
+
+The Deployment is declared at zero replicas while `zimaboard-0` needs its
+1 GiB memory request back for node-bound media config backup Jobs. Before
+merging this pause, confirm no Nix build attempt is active; scaling down
+discards its workspace. `nix-cache.py publish --linux` fails closed without
+one Ready builder. CI can use already published signed cache entries and build
+cache misses itself; this pause cannot publish new Linux entries.
+
+After Argo syncs, verify zero builder Pods and the freed node request. Let
+the declared media backup CronJobs run, then require fresh successful archives
+and an independent restore before any media service is paused. Restore the
+builder with a reviewed `replicas: 1` change only after another placement or
+retirement leaves durable room for both builder and nightly backup Jobs.
+The rollback is the same reviewed replica change; no builder data is retained.
+
 After GitOps deployment:
 
 ```sh

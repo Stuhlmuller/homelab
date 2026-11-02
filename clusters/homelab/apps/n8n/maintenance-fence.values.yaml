@@ -1,0 +1,4 @@
+# Inactive until a separately reviewed n8n maintenance revision adds this value file.
+controllers:
+  n8n:
+    replicas: 0
