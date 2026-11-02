@@ -888,6 +888,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
+      "BASE_REF": "${{ github.base_ref }}",
       "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
@@ -927,11 +928,11 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "572582f40953e32c851ef3535ccd80f141a4df6d936ab34f34ed71fd6d52a5b4" ]] || {
+[[ "$scope_body_sha256" == "eb45c04f8cfd124bdf7ada92938e14a2259d7fff097176addca251ebe27366e7" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
-[[ "$gate_body_sha256" == "72b4b48f8151b1c2c778f963c618380e57df259175ce4728d57f870a439fc471" ]] || {
+[[ "$gate_body_sha256" == "f1570afa574e5a7cf7f6cc9ec5721d483a5a37c58b207729024028440fd07e17" ]] || {
   echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1106,7 +1107,7 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
+.github/workflows/openclaw-enterprise-operations.yml b5793e22a26609aa74ced9fcbb64e2dbc71760ab74dab11f0b34df6ad2198cec
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1118,7 +1119,7 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
-.github/workflows/terragrunt-plan.yml 9b201f1924bd6c5de50cff847dbdedb6b91faf2292920a50a81b5020b5c3261a
+.github/workflows/terragrunt-plan.yml 54e6506f1133c88517795d3b722b73f4cd344d9bd3ea413b9876fa4f8be35534
 EOF
 echo "::endgroup::"
 
@@ -1474,6 +1475,15 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+# Native parser/CEL regression runs in the network static gate; keep its exact reviewed policy offline.
+private_policy_hash="$(
+  yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' \
+    docs/examples/octelium/homelab-services.yaml | jq -cS . | sha256sum | cut -d' ' -f1
+)"
+[[ "$private_policy_hash" == d232749dfe13897937645fa8fe3e47a62e5cb6ee307b1ab42326fcab0ae584ab ]] || {
+  echo "Private Kubernetes policy changed; review the native boundary test and update its exact security hash." >&2
+  exit 1
+}
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
@@ -1485,46 +1495,6 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
-    $policies[0].spec.rules == [
-      {
-        "name": "cordium-sensitive-read-deny",
-        "effect": "DENY",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"any": {"of": [
-            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
-            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
-          ]}}
-        ]}}
-      },
-      {
-        "name": "operator-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
-        ]}}
-      },
-      {
-        "name": "cordium-read-only-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
-        ]}}
-      }
-    ] and
     ($services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
     $services[0].spec.mode == "KUBERNETES" and

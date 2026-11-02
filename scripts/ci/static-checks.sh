@@ -262,6 +262,7 @@ echo "::endgroup::"
 
 echo "::group::Descheduler cadence"
 bash scripts/ci/descheduler-cadence-check.sh
+python3 -I scripts/ci/octelium-kubernetes-policy-check.py
 echo "::endgroup::"
 
 echo "::group::n8n inactive maintenance fence"

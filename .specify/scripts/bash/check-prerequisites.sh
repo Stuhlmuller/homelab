@@ -76,6 +76,7 @@ done
 
 # Source common functions
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 # Feature path resolution only reads .specify/feature.json.
