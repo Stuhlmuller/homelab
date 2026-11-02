@@ -1102,6 +1102,13 @@ remaining reader Pod must prevent deny-all policy removal. It does not run
 against the cluster during source validation.
 Only a live success receipt binding both exact S3 object versions and an
 isolated restore qualifies for migration activation.
+`scripts/ci/litellm-runtime-hardening-check.py` lints and renders the declared
+LiteLLM chart with anonymous registry access. It verifies the tokenless
+ServiceAccount, RuntimeDefault seccomp, disabled privilege escalation and
+capability drop, including negative-control fixtures. Static CI runs it before
+delivery; it does not prove native database startup or active caller behavior.
+Issue #844 still requires live Pod checks and its 24-hour acceptance window;
+nonroot/read-only-root controls need a separate current-image rehearsal.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
@@ -1276,6 +1283,14 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
+The E2E checker records a catalog parse failure without aborting its final
+summary or printing YAML diagnostics. It requires exactly one private
+Kubernetes policy and one private Talos policy. The offline regression
+`python3 -I scripts/ci/octelium-catalog-test.py` exercises the actual catalog
+check and summary with valid, missing, malformed and duplicate inputs.
+Issue #848 remains open until the authenticated owner/Cordium matrix and
+trusted access-log attestation also pass.
+
 For retained native Cordium access, validate the existing human and Workspace
 paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
@@ -1307,6 +1322,12 @@ secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
 Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
+The 90-minute apply job requests a 7,200-second AWS session.
+`scripts/ci/terragrunt-credential-duration-test.py` checks that the explicit
+request covers the job timeout without exceeding the declared IAM maximum,
+and rejects missing, shorter and dynamic durations. Confirm the live role's
+maximum before dispatch; #873 remains open until a same-session AWS read
+succeeds after the former 3,600-second expiry boundary.
 During production apply, the script rechecks current `main` immediately before
 each import, untaint, direct Kubernetes write, and apply. The root Terragrunt
 `before_hook` also checks before each unit's `apply` in a multi-unit run; the

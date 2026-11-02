@@ -22,6 +22,23 @@ disabled. The Langfuse keys are mounted only in LiteLLM.
 
 ## Validation and rollout
 
+### Gateway runtime controls
+
+The gateway uses `RuntimeDefault` seccomp, disables privilege escalation and
+drops all Linux capabilities. Its dedicated ServiceAccount remains tokenless.
+Run `python3 -I scripts/ci/litellm-runtime-hardening-check.py` in the pinned
+Nix shell to lint and render the declared chart and verify these controls.
+The check uses anonymous public chart access and fails if the chart declaration
+changes without updating its fixture.
+
+After Argo observes the merged revision, verify the live Pod controls,
+readiness and restart count, native database startup, and authenticated calls
+from each active consumer. Keep #844 open through its 24-hour acceptance
+window. Do not start retired consumers for this check. Nonroot execution and
+a read-only root filesystem need a separate writable-path rehearsal against
+the current native database startup. Roll back through a reviewed values
+revert if these controls prevent startup or normal inference.
+
 ### October 10, 2026 native-key rollout
 
 [PR #1243](https://github.com/Stuhlmuller/homelab/pull/1243) merged as

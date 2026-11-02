@@ -242,6 +242,13 @@ echo "::endgroup::"
 
 echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
+echo "::endgroup::"
+
+echo "::group::LiteLLM runtime hardening"
+python3 -I scripts/ci/litellm-runtime-hardening-check.py
+echo "::endgroup::"
+
+echo "::group::Descheduler cadence"
 bash scripts/ci/descheduler-cadence-check.sh
 echo "::endgroup::"
 
