@@ -888,6 +888,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
+      "BASE_REF": "${{ github.base_ref }}",
       "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
@@ -927,11 +928,11 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "572582f40953e32c851ef3535ccd80f141a4df6d936ab34f34ed71fd6d52a5b4" ]] || {
+[[ "$scope_body_sha256" == "eb45c04f8cfd124bdf7ada92938e14a2259d7fff097176addca251ebe27366e7" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
-[[ "$gate_body_sha256" == "72b4b48f8151b1c2c778f963c618380e57df259175ce4728d57f870a439fc471" ]] || {
+[[ "$gate_body_sha256" == "f1570afa574e5a7cf7f6cc9ec5721d483a5a37c58b207729024028440fd07e17" ]] || {
   echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1118,7 +1119,7 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
-.github/workflows/terragrunt-plan.yml 9b201f1924bd6c5de50cff847dbdedb6b91faf2292920a50a81b5020b5c3261a
+.github/workflows/terragrunt-plan.yml 54e6506f1133c88517795d3b722b73f4cd344d9bd3ea413b9876fa4f8be35534
 EOF
 echo "::endgroup::"
 

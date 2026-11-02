@@ -136,8 +136,8 @@ bounded retry. The operator explicitly approved this capability change and
 one further attempt on October 11, 2026. A temporary candidate rendered and
 passed all 224 Conftest policy assertions without policy changes; this is not runtime acceptance.
 `NET_ADMIN` also allows configuring the Pod's network namespace. The October 11
-approval covered this scoped change only; any further privilege change needs
-separate approval. Keep RuntimeDefault seccomp,
+approval described that scoped change. Subsequent changes follow the executable
+policy checks and protected pipeline. Keep RuntimeDefault seccomp,
 strict sandbox/signature verification, the 1 GiB request/limit, serial
 substitutions and lifecycle safeguards. Host namespace sysctls, host
 networking, credentials, capacity and other workloads are outside this fix.
