@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Offline security checks; no real credentials, network or signatures."""
 import base64
-from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import hmac

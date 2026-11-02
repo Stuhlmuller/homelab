@@ -44,8 +44,15 @@ material is printed or committed.
 
 Use the existing administrator saved-plan path in the
 [Tailscale module runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
-from clean current `main`, review the complete private plan, then apply that
-saved plan. This unit is outside workload CI. Applying the shared SSM unit
+from clean current `main`. First inspect the complete private plan for drift.
+For this enrollment rollout, plan with
+`-target=aws_ssm_parameter.codex_signer` and a private `-out` path. This selects
+the five credentials and their OAuth/webhook/key/ACL dependencies. Require
+only nine creates and the expected ACL update, with no DNS, tailnet-settings,
+existing-key replacement or deletion. Compare the live ACL to the starting
+source before replacing the full policy; preserve unrelated edits. Review and
+apply that saved plan, never the earlier broad plan. This unit is outside
+workload CI. Applying the shared SSM unit
 through protected CI grants External Secrets the four exact runtime parameter
 names. The cloud enrollment key is excluded from that reader grant. Apply the
 `platform-storage` desired state before the signer; the registration dependency

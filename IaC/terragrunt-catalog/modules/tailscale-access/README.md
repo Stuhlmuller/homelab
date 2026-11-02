@@ -284,3 +284,11 @@ existing administrator unit; workload CI does not apply it. Review the full
 saved plan, including unrelated tailnet drift, before applying. Follow the
 [signer runbook](../../../../clusters/homelab/apps/codex-cloud-signer/README.md)
 for staged activation, owner signer trust, recovery and actual cloud acceptance.
+
+For the Codex-only rollout, review the full private plan first, then generate
+an exact saved plan with `-target=aws_ssm_parameter.codex_signer`. This includes
+the credential dependencies and required ACL update, while leaving unrelated
+DNS/settings adoption untouched. Inspect its actions before applying: nine
+creates, expected ACL update, no deletion/replacement or unrelated resource.
+Refresh it from current clean `main` after merge; a feature-branch preview is
+not an apply receipt.
