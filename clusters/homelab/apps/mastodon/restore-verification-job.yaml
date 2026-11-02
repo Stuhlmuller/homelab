@@ -1,25 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mastodon-restore-verification-v1
+  name: mastodon-restore-verification-v2
   namespace: mastodon
   labels:
     app.kubernetes.io/name: mastodon-restore-verification
     app.kubernetes.io/part-of: mastodon
   annotations:
     argocd.argoproj.io/sync-wave: '4'
+# Keep raw security defaults for scanners; Kustomize copies the full scheduled template.
 spec:
-  backoffLimit: 0
-  activeDeadlineSeconds: 600
   template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: mastodon-restore-verification
     spec:
-      serviceAccountName: mastodon
       automountServiceAccountToken: false
-      nodeSelector:
-        kubernetes.io/hostname: acer
       restartPolicy: Never
       securityContext:
         runAsUser: 65534
@@ -28,80 +21,3 @@ spec:
         fsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
-      containers:
-        - name: restore
-          image: docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
-          command: [/bin/sh, -ec]
-          args:
-            - |
-              umask 077
-              cleanup() {
-                pg_ctl -D /restore/data -m immediate -w stop >/dev/null 2>&1 || true
-                rm -f /restore/private.log /restore/postgres.log
-              }
-              trap cleanup EXIT
-              # Keep database contents and restore diagnostics out of public logs.
-              if ! /bin/sh -eu >/restore/private.log 2>&1 <<'RESTORE'
-                set -eu
-                latest="$(find /backup/database -mindepth 1 -maxdepth 1 -type d -name '20*Z' | LC_ALL=C sort | tail -n 1)"
-                test -n "$latest"
-                (cd "$latest"; sha256sum --check SHA256SUMS)
-                mkdir /restore/socket
-                initdb -D /restore/data -U mastodon --auth-local=trust --auth-host=reject --locale=C --encoding=UTF8
-                pg_ctl -D /restore/data -l /restore/postgres.log -w -t 30 \
-                  -o '-c listen_addresses= -c unix_socket_directories=/restore/socket -c shared_buffers=16MB' start
-                createdb -h /restore/socket -U mastodon mastodon
-                psql -X -h /restore/socket -U mastodon -d mastodon -v ON_ERROR_STOP=1 -f /initdb/10-mastodon.sql
-                psql -X -h /restore/socket -U mastodon -d mastodon -v ON_ERROR_STOP=1 -c \
-                  'CREATE ROLE mastodon_app NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; ALTER DATABASE mastodon OWNER TO mastodon_app; ALTER SCHEMA public OWNER TO mastodon_app;'
-                pg_restore --exit-on-error --no-owner --no-comments --role=mastodon_app \
-                  -h /restore/socket -U mastodon -d mastodon "$latest/mastodon.dump"
-                psql -X -h /restore/socket -U mastodon -d mastodon -v ON_ERROR_STOP=1 -At -c \
-                  "SELECT count(*) > 100 FROM information_schema.tables WHERE table_schema='public'" | grep -qx t
-                psql -X -h /restore/socket -U mastodon -d mastodon -v ON_ERROR_STOP=1 -At -c \
-                  "SELECT count(*)=1 FROM users u JOIN accounts a ON a.id=u.account_id JOIN user_roles r ON r.id=u.role_id WHERE a.username='rodman' AND a.domain IS NULL AND u.confirmed_at IS NOT NULL AND u.approved AND NOT u.disabled AND r.name='Owner'" | grep -qx t
-                psql -X -h /restore/socket -U mastodon -d mastodon -v ON_ERROR_STOP=1 -At -c \
-                  'SELECT count(*) FROM media_attachments' >/dev/null
-              RESTORE
-              then
-                echo 'Mastodon isolated NAS restore failed; private diagnostics withheld.' >&2
-                exit 1
-              fi
-              echo 'Mastodon newest NAS backup restored in isolation; schema, owner and media catalog verified.'
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: [ALL]
-          volumeMounts:
-            - name: backup
-              mountPath: /backup
-              readOnly: true
-            - name: initdb
-              mountPath: /initdb
-              readOnly: true
-            - name: restore
-              mountPath: /restore
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        - name: backup
-          persistentVolumeClaim:
-            claimName: mastodon-backup
-            readOnly: true
-        - name: initdb
-          configMap:
-            name: mastodon-initdb
-        - name: restore
-          emptyDir:
-            sizeLimit: 1Gi
-        - name: tmp
-          emptyDir:
-            sizeLimit: 16Mi

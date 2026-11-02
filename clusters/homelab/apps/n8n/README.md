@@ -81,6 +81,220 @@ live. Verify a real workflow/Langfuse generation before retiring the AWS key.
 Rollback needs the paired database dump and n8n PVC restore; editing the Job
 cannot undo database changes.
 
+## Staged signed Emergency callback
+
+The GitHub Emergency workflow (`AARG1VWHRxowXlSU`) currently starts with an
+unauthenticated generic Webhook node. Its existing GitHub hook `636944763`
+uses form encoding without a signing secret. Before Traefik containment on
+2026-10-31, a fresh HTTP 200 delivery had no `X-Hub-Signature-256` header;
+HTTP success did not authenticate the callback.
+`scripts/n8n-github-webhooks.py --require-delivery`
+now rejects such an unsigned delivery. Header presence proves GitHub signed a
+delivery, while the receiver's HMAC check comes from the n8n trigger.
+
+`migration-github-trigger-v1.values.yaml` stages a one-time Job. It is absent
+from the n8n Helm valueFiles and Kustomize resources, so this source change
+does not edit the workflow or register a hook. The Job requires the exact
+active six-node graph, original parameter fingerprints and seven inventoried
+expression locations. It replaces only the old Webhook node with n8n 2.43.7's
+native GitHub Trigger, copies the existing `githubAppApi` credential reference,
+and changes those expressions from `$json.body.payload` to `$json.body` for
+the trigger's JSON event body. Drift aborts before import; an already migrated
+graph is a no-op. The new node ID path is
+`/webhook/f3e12cbd-1d01-4ef0-b24e-d68741ea898b/webhook`, distinct from the
+old path. The pinned trigger creates a random signing secret, configures the
+new GitHub hook with JSON content, and rejects invalid signatures before the
+workflow runs. It cannot adopt or delete the existing generic hook.
+
+Before a separate activation PR includes this values file, verify a paired
+off-NAS PostgreSQL logical dump and n8n PVC backup with a restore path, and
+confirm that the existing GitHub App installation credential has repository
+`Webhooks: write` permission. Run
+`nix develop --command python3 -I scripts/ci/n8n-github-trigger-migration-check.py`
+and render the proposed Helm values. Activation imports and republishes the
+workflow. In n8n 2.43.7, CLI import first deactivates it; the Job compares the
+full imported node graph before publishing and checks active readback after.
+A failed import or publish can leave the workflow unavailable, so the paired
+restore is required. A separate reviewed GitOps Deployment revision restarts
+n8n to load the published version. Verify the new signed hook and a fresh
+delivery before retiring the old unsigned hook through a reviewed
+repository-owned helper change. Keep Traefik's old-path exclusion in place
+through that verification and retirement; the new path is not excluded. The
+callback helper has a separate read-only `--verify-signed-trigger` mode for this
+post-activation check. Record a UTC timestamp immediately before activation,
+then run it with `--activated-after ACTIVATION_UTC` after the n8n restart and a
+real pull request event. It discovers exactly one new active JSON/TLS GitHub
+hook at the pinned native path, reads back its masked signing secret, and
+requires its latest pull request delivery to be newer than both that timestamp
+and the hook's `updated_at`, successful and signed. It checks that the old hook
+still points at its denied path. Safe OPTIONS probes require Traefik's
+plain-text 404 on the old path and 204 on the new POST-only path. The helper
+sends no webhook, does not calculate the HMAC, and does not prove workflow
+execution; check that separately before retiring the old hook. Rollback
+requires the paired database and PVC restore; removing the Job does not undo
+the workflow edit.
+
+## Inactive Paired-Backup Maintenance Fence
+
+`maintenance-fence.values.yaml` sets the n8n Deployment to zero replicas. The
+active stack still lists only `values.yaml`, so this file changes no live
+workload. A separately reviewed fence revision may append it after `values.yaml`
+in the Helm `valueFiles`; keep both migration overlays excluded. This pauses
+the editor, webhooks, scheduled workflows, and other in-process writers while
+`n8n-postgres` remains available for a logical dump. Plan the outage and
+preserve the existing n8n and PostgreSQL PVCs.
+Run `nix develop --command bash scripts/ci/n8n-maintenance-fence-check.sh` to
+verify the pinned chart renders one active replica, zero fenced replicas, and
+no migration Job in either case.
+
+From a clean checkout of the exact merged fence revision, require all of these
+read-only gates before capturing either member of the paired backup:
+
+```sh
+fence_sha="$(git rev-parse HEAD)"
+kubectl -n argocd get application n8n -o json | jq -e --arg sha "$fence_sha" \
+  '.status.sync.status == "Synced" and .status.health.status == "Healthy" and
+   ([.status.sync.revisions[]? | select(. == $sha)] | length) == 2'
+kubectl -n automation get deployment n8n -o json | jq -e \
+  '.spec.replicas == 0 and (.status.replicas // 0) == 0 and
+   (.status.readyReplicas // 0) == 0'
+kubectl -n automation get pods -o json | jq -e \
+  '[.items[] | select(.spec.serviceAccountName == "n8n" or
+   any(.spec.volumes[]?; .persistentVolumeClaim.claimName == "n8n" or
+     .secret.secretName == "n8n-postgres-client"))] | length == 0'
+kubectl -n automation get jobs,cronjobs -o json | jq -e \
+  '[.items[] | select(
+    (.kind == "Job" and (.status.active // 0) > 0 and
+     .spec.template.spec.serviceAccountName == "n8n") or
+    (.kind == "CronJob" and .spec.suspend != true and
+     .spec.jobTemplate.spec.template.spec.serviceAccountName == "n8n"))] | length == 0'
+kubectl -n automation get statefulset n8n-postgres -o json | jq -e \
+  '.spec.replicas == 1 and (.status.readyReplicas // 0) == 1'
+kubectl -n automation exec statefulset/n8n-postgres -c postgres -- \
+  psql -XAt -w -U postgres -d n8n -c 'SELECT 1'
+```
+
+Also inspect the full workload inventory for any new database client. Record
+both PVC and PV UIDs, and require the capture to recheck those bindings and
+the zero-writer gates after the database dump and read-only n8n PVC archive.
+Keep the persisted `/home/node/.n8n/config` encryption key with that archive;
+never print it or rotate the SSM bootstrap value during capture. A successful
+off-NAS upload needs immutable object versions, byte-verified readback, and an
+isolated restore of the database and PVC before migration activation.
+
+## Staged One-Shot Paired Checkpoint
+
+The [manual paired checkpoint](../../../../.github/workflows/n8n-paired-checkpoint.yml),
+[reader Job](checkpoint-reader.job.yaml), and deny-all
+[reader NetworkPolicy](checkpoint-reader.networkpolicy.yaml) are staged source.
+The Job and policy are excluded from the active Kustomization and Helm values. The workflow runs
+only by manual dispatch from exact current `main` after the reviewed fence
+overlay is activated. On 2026-10-31, `homelab-production` had a branch policy
+but no required reviewer; dispatch starts the job without a GitHub approval pause.
+Obtain explicit operator approval before dispatch. Source hashes are pinned
+before the workflow accesses AWS or Octelium credentials.
+Do not dispatch it against the current one-replica stack.
+
+The declared one-shot script creates a run-named deny-all policy and reader Job
+from the pinned manifests only after Argo
+reports the fenced revision Synced/Healthy, n8n desired/current/ready replicas
+are zero, no other n8n Pod or writer Job remains, PostgreSQL is Ready, and both
+PVC/PV bindings match the independently inventoried UIDs. The Job mounts the
+n8n PVC read-only and sleeps; the workflow runner uses `kubectl exec` to
+stream an archive into private scratch. Each dump/archive stream has a 15-minute
+timeout and 30-second forced termination; a timeout triggers cleanup and
+withholds the success receipt. Other Kubernetes calls have 30-second API and
+45-second command deadlines; cleanup deletes have a two-minute command limit.
+The Job receives no API token or AWS credential. The script verifies each
+resource's owner token and UID, requests foreground Job deletion, and requires
+the complete run-owner Pod list to be empty before removing the policy. A
+lingering reader Pod keeps the policy and blocks the receipt. A lost create
+response is reconciled by reading the created object; failed or unconfirmed
+deletion prevents a success
+receipt. These pinned manifests and workflow are the repository-owned path for
+the temporary Job;
+do not run ad hoc `kubectl create` or `kubectl delete` commands.
+
+The workflow puts a custom PostgreSQL dump and n8n PVC tar under one
+run-specific prefix in the versioned SSE-KMS backup bucket. It downloads both
+exact object versions, checks bytes and SHA-256, restores PostgreSQL as the
+`n8n` database owner in a disposable container with no network, and safely extracts the PVC archive in
+disposable runner scratch. The PVC check requires the persisted config and an
+encryption key but emits only a config checksum and file count. A third
+versioned manifest binds both object versions, hashes, source UIDs, fence SHA,
+and restore counts. The disposable database container, volume, and private
+scratch must be removed before the success receipt is written. The public Actions log receives only its sanitized
+manifest key/version/hash and source UIDs; raw data, credentials, config, and
+private diagnostics stay out of logs and artifacts.
+Identity, source-binding, and S3 readback gates require a successful command
+exit as well as matching output; a partial response with an error withholds
+the receipt.
+
+After a separately reviewed PR activates `maintenance-fence.values.yaml`,
+inventory the four live source UIDs, confirm the zero-writer gates above, then
+dispatch with exact current main SHA and those UIDs:
+
+```sh
+gh workflow run n8n-paired-checkpoint.yml -R Stuhlmuller/homelab --ref main \
+  -f expected_sha='<exact-current-main-sha>' \
+  -f expected_n8n_pvc_uid='<n8n-pvc-uid>' \
+  -f expected_n8n_pv_uid='<n8n-pv-uid>' \
+  -f expected_pg_pvc_uid='<postgres-pvc-uid>' \
+  -f expected_pg_pv_uid='<postgres-pv-uid>'
+```
+
+Keep the success receipt with the migration record. A failed run may leave
+individual unverified objects in its private prefix, or a run-named reader
+Job/policy if the Kubernetes API cannot confirm cleanup. Keep the fence active.
+From a clean checkout at current `main`, inventory only that run's resource
+identity; an absent object has no UID:
+
+```sh
+name="n8n-checkpoint-reader-<run-id>-<attempt>"
+for kind in job networkpolicy; do
+  kubectl -n automation get "$kind" "$name" -o json --ignore-not-found |
+    jq -r '[.metadata.uid, .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"]] | @tsv'
+done
+```
+
+After separately reviewing the UIDs and matching owner label, use the
+[repository cleanup helper](../../../../scripts/n8n-paired-residual-cleanup.sh):
+
+```sh
+nix develop --command bash scripts/n8n-paired-residual-cleanup.sh \
+  '<exact-current-main-sha>' '<run-id>' '<attempt>' \
+  '<observed-job-uid-or-absent>' '<observed-policy-uid-or-absent>' '<owner-label>'
+```
+
+It rechecks the fence and resource specs, deletes only that run's Job with
+foreground Pod cleanup, confirms no reader Pod remains, then removes the
+deny-all policy. Matching objects already deleting are waited to absence with
+bounded timeouts; a deleting policy requires no reader Pod. A mismatch or API
+error leaves the fence in place and never requests policy deletion before Pod
+absence.
+Do not run raw `kubectl delete` commands. Only a success receipt
+with a readable manifest and both exact object versions qualifies. If a
+capture gate fails after confirmed cleanup, restore one n8n replica through a
+separate reviewed GitOps revision. The database and n8n PVC remain untouched by this capture.
+The reader Job itself has a one-hour deadline; a later retry requires a new
+run/attempt and fresh source UID inventory.
+
+Source-only validation:
+
+```sh
+nix develop --command python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+nix develop --command python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
+nix develop --command python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+nix develop --command bash scripts/ci/n8n-maintenance-fence-check.sh
+```
+
+After the verified checkpoint, a separate reviewed revision removes the fence
+value file from `valueFiles`. Require Argo CD Synced/Healthy, one Ready n8n
+replica, database-aware readiness, continued denial of the unsigned Emergency
+hook, and fresh deliveries for enabled signed GitHub callbacks before ending
+the maintenance window. If any fence gate fails, stop capture and restore the
+one-replica GitOps revision.
+
 ## Access Contract
 
 - Editor/UI: `https://n8n.stinkyboi.com` through private Tailscale and Traefik.
@@ -98,6 +312,11 @@ to call itself without widening other workload access.
 
 Move the surviving external registration from `n8n-webhook.stinkyboi.com` to
 the Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
+Temporary [Traefik containment](../traefik/README.md) denies the unsigned
+Emergency Bot webhook path at the Funnel edge. Hook `636944763` returns 404;
+other n8n webhook paths stay routed. Do not count Emergency deliveries as
+accepted or run the helper cutover while this exclusion is active.
+
 The helper previews the Github Emergency Bot hook `636944763` and the exact
 retirement of unused Codex Review Helper hook `589400612`:
 
@@ -107,16 +326,29 @@ python3 -I scripts/n8n-github-webhooks.py --retire-helper
 ```
 
 Its guarded `--execute` changes only the Emergency hook URL, preserving its
-path, secret, events, and settings. It requires root 404 and a safe OPTIONS 204
+path, events, and settings. It requires root 404 and a safe OPTIONS 204
 response for that POST-only hook; it never POSTs or triggers redelivery.
 `--retire-helper --execute --expected-sha REVIEWED_MAIN_SHA` removes only the
 reviewed helper hook after a fresh successful Emergency delivery. Here
 `REVIEWED_MAIN_SHA` is the full reviewed current `main` commit. Repeating it
 after verified absence is a no-op. `--require-delivery` requires the retired
-ID and callback path to be absent and a newer successful Emergency delivery
-than its saved cutover receipt. Historical success does not establish current
-callback acceptance. Keep the legacy Tunnel route until the surviving Policy
-Bot and Emergency callbacks pass their fresh delivery checks.
+ID and callback path to be absent, plus a newer successful Emergency delivery
+with a SHA-256 signature header after its saved cutover receipt. It does not
+prove the receiver validated that signature. Historical success does not
+establish current callback acceptance. Keep the legacy Tunnel route until the
+surviving Policy Bot and Emergency callbacks pass their fresh delivery checks.
+
+After signed-trigger activation, verify the new registration and delivery with
+the UTC timestamp recorded before activation:
+
+```sh
+python3 -I scripts/n8n-github-webhooks.py --verify-signed-trigger --activated-after ACTIVATION_UTC
+```
+
+This mode performs only GitHub GET requests and safe GET/OPTIONS probes. It
+cannot be combined with legacy hook mutation flags. It needs repository hook
+read access and a pull request delivery after activation; a ping alone cannot
+pass. A successful check does not replace a real n8n workflow execution check.
 
 ## Database Readiness
 

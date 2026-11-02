@@ -69,9 +69,16 @@ node failure while pinned otherwise removes the only Traefik replica.
 
 | Public callback | Allowed paths | Application authentication |
 | --- | --- | --- |
-| `n8n-webhook.tail67beb.ts.net` | `/webhook`, `/webhook-test`, `/webhook-waiting`, and their slash-separated descendants | Workflow-specific webhook credentials/signatures |
+| `n8n-webhook.tail67beb.ts.net` | Webhook prefixes; see below | Workflow-specific credentials/signatures |
 | `policy-bot-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
 | `bulldozer-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
+
+The n8n route permits `/webhook`, `/webhook-test`, and `/webhook-waiting`
+with their slash-separated descendants. Temporary containment returns Traefik
+404 for Emergency Bot hook `636944763`
+at `/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`, including equivalent
+slash/case forms. Other webhook IDs remain routed. Emergency Bot deliveries
+cannot succeed until a reviewed replacement or rollback restores the route.
 
 All other paths on the callback hosts return 404. Supplying a private application
 Host header to the Funnel listener cannot select a private router. No Fleet

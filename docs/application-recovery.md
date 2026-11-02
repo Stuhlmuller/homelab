@@ -42,7 +42,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | State and source | Current source-declared coverage | Proposed RPO / RTO | Remaining recovery requirement |
 | --- | --- | --- | --- |
 | Octelium PostgreSQL (`apps/octelium-storage`) | Daily consistent custom dump + password-free globals, 14 days on same QNAP; this PR can publish those complete sets independently | 24h / 4h | Retrieve a named S3 set; PostgreSQL 14 restore and Octelium startup/resource/decryption checks; recover DB auth, external root/encryption keys and identity bootstrap privately |
-| Octelium Redis AOF and Enterprise package storage | Retained PVCs; not included in PostgreSQL dump | No loss accepted / 4h | Inventory runtime PVCs and Redis durability semantics; fence writers, capture AOF and packages, determine whether sessions/queues may be discarded; PostgreSQL coverage is not whole-Octelium coverage |
+| Octelium Redis AOF and Enterprise package storage | Retained PVCs; dormant rscstore whole-PVC S3 capture candidate, not yet activated; neither is included in the PostgreSQL dump | No loss accepted / 4h | Inventory runtime PVCs and Redis durability semantics; fence writers, capture AOF and packages, determine whether sessions/queues may be discarded; PostgreSQL coverage is not whole-Octelium coverage |
 | Media PostgreSQL (`apps/media-postgres`) | Six nightly DB dumps + globals to QNAP; active data on Acer | 24h / 8h | All six are required by publisher; separate `pg_dump` snapshots do not establish cross-database atomicity. Fence all media writers for coordinated app/config recovery |
 | AFFiNE (`apps/affine`) | NFS PostgreSQL 16/pgvector, blobs and config; source says suspended; no independent paired capture | 24h / 8h | Paired publication adapter accepts `globals.sql`, `affine.dump`, `blobs.tar`, `config.tar`, `capture.json`; prove suspension live, fence all writers, capture one window; preserve ECDSA signing key and extensions. Ephemeral Redis/queued work loss needs approval |
 | Multica backend (`apps/multica`) | NFS pgvector PostgreSQL and uploads, no automatic independent capture | 24h / 8h | Paired adapter requires `globals.sql`, `multica.dump`, `uploads.tar`, `capture.json`; fence API/workers, retain JWT/DB secret dependencies; prove records refer to recovered uploads |
@@ -66,12 +66,20 @@ ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
 gap. The paired adapters provide publication, not an approved writer-fencing or
 capture workflow. Do not enable them until that capture change is reviewed.
 
+The dormant [rscstore capture stage](../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
+adds a source-owned stopped-writer whole-PVC path to the existing versioned
+application backup bucket. It needs separate inspector and fence activation,
+exact-version readback, and isolated file extraction before an off-NAS archive
+can be claimed. It does not reopen DuckDB or repair the WAL.
+
 ## Publication and retention design
 
-`scripts/application-backup.py` reads only allowlisted, checksummed members from a
-complete UTC-named directory (`YYYYMMDDTHHMMSSZ`). It refuses partial directories,
-symlinks, missing files, malformed manifests, future/stale captures and sets above
-5 GiB. Media sets require all six dumps. PostgreSQL dumps originate from the
+`scripts/application-backup.py` reads only allowlisted, checksummed members
+from a complete UTC-named directory (`YYYYMMDDTHHMMSSZ`). It refuses partial
+directories, symlinks, missing files, malformed manifests, and future/stale
+captures. Most sets are capped at 5 GiB; the two-part rscstore archive is
+bounded at 10 GiB plus its receipt, with each S3 object at most 5 GiB. Media
+sets require all six dumps. PostgreSQL dumps originate from the
 existing `pg_dump` jobs; that gives each individual DB a consistent snapshot.
 The publisher does not execute SQL, `pg_restore`, or tar extraction.
 
@@ -158,8 +166,10 @@ activation gates below are satisfied.
 4. Review `publisher-policy.json` for attachment to one dedicated identity with
    no broader inherited AWS rights. No identity or attachment is created here.
    `reader-policy.json` is the separate read-only checker proposal. Restrict
-   initial grants to Octelium/media. AFFiNE/Multica publication requires a later
-   reviewed prefix grant and capture pipeline. File-backed credentials must be
+   initial grants to Octelium/media; the dormant rscstore prefix is now an
+   additional source-declared candidate, not an attached permission. AFFiNE/Multica
+   publication requires a later reviewed prefix grant and capture pipeline.
+   File-backed credentials must be
    available outside the NAS/cluster and recoverable without Octelium. AWS
    managed S3 key use is same-account and bucket-key scoped; validate the IAM
    conditions with real read-only checks and synthetic objects before rollout.

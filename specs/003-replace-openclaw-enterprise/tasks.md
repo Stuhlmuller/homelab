@@ -108,7 +108,12 @@ verify existing app/recovery paths and private routing dependencies independentl
 - [X] T021 [US3] Add `IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl` and its adjacent `terragrunt.stack.hcl` unit; extend `IaC/terragrunt-catalog/modules/kubernetes-node-labels/main.tf`, `variables.tf`, `metadata.tftest.hcl` and `IaC/terragrunt-catalog/units/live/kubernetes-node-labels/terragrunt.hcl` only as needed for explicit canary labels/taints;
   keep deployment disabled until capacity admission, with matching test tolerations and infrastructure DaemonSet review.
 - [ ] T022 [US3] Remeasure every node after US2 shutdown; commit the concrete safe placement, taint, steady/transient reservations and local-storage allocations in `scripts/config/platform-maintenance.json` and the node catalog inputs; record sanitized measured peaks/headroom in `docs/evidence/openclaw-enterprise-acceptance.md`; block on insufficient capacity or absent isolated
-  canary without evicting unrelated apps or buying hardware.
+  canary until a reviewed existing-node evacuation, verified recovery, declared
+  outages, and fresh capacity and exact-Pod receipts prove safe admission.
+  Before moving labels, add the shared node-label unit to protected PR plans;
+  before evacuation, implement an exact-identity temporary `NoExecute` to
+  canary `NoSchedule` handoff without an untainted gap. Do not evict Pods ad hoc
+  or assume new hardware.
 - [ ] T023 [US3] Add platform/enforcement checks to `scripts/ci/static-checks.sh` and relevant Conftest policies; run HCL formatting/generation/validation, strict Talos config validation, source renders and scoped authenticated plans from `quickstart.md`; publish any changed artifact digests and verify direct recovery plus fresh off-node etcd backup before live maintenance.
 - [ ] T024 [US3] Execute `.github/workflows/platform-maintenance.yml` for Talos `1.11.3 -> 1.11.6 -> 1.12.12 -> 1.13.11 -> 1.14.4`, retaining Kubernetes 1.34; for every hop upgrade workers serially then the sole control plane, checking API/etcd/DNS/storage/access/apps between nodes and recording per-node receipts referenced by `docs/evidence/openclaw-enterprise-acceptance.md`.
 - [ ] T025 [US3] Deliver Istio `1.27.3 -> 1.28.10 -> 1.29.9 -> 1.30.6` as separate reviewed changes in `IaC/homelab/us-west-2/apps/istio/stack.hcl` and `clusters/homelab/apps/istio/`; include the first-hop patch resolved by T001, order base/CRDs, istiod, CNI, ztunnel and gateways, and require live mesh/access/webhook health at each minor before proceeding.

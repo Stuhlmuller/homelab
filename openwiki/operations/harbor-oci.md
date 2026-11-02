@@ -118,15 +118,15 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-5ae720cb09fc62f57248e942
+    resource: repo://docs/harbor-tailscale-production.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-31T22:40:48.699Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # Harbor Private OCI Registry
@@ -216,10 +216,13 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
-with the existing Octelium CI credential. Only its disposable runner maps
-the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+The public mirror workflow now declares direct private Tailscale HTTPS and a
+strict TLS/401 registry challenge, without Kubernetes forwarding or host-file
+changes. Legacy private-publication callers retain the bounded Octelium-backed
+Kubernetes port-forward and disposable loopback mapping. Both paths retain TLS
+verification; see [the production path](../../docs/harbor-tailscale-production.md)
+and `scripts/ci/harbor-publish.sh`. Source publication alone does not install a
+credential, enroll a runner, or prove live mirror acceptance.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in
@@ -500,12 +503,12 @@ Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upl
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
 and do not trigger another copy client or an automatic write retry.
 
-The fixed `renovate` scope selects seven cataloged update digests from
+The fixed `renovate` scope selects eight cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
-Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
-Renovate runner.
+Fleet, Harbor PostgreSQL, Multica Python and Redis, Dispatcharr, Bazarr, n8n,
+and the Renovate runner.
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these seven images;
+the unrelated full catalog is held. Its success proves only these eight images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
@@ -705,6 +708,24 @@ records successful Linux audit CI at `279092e6`, with exact image/config identit
 `06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
 The available-fix gate passed; CVE clearance remains explicitly false.
 
+**Open finding (2026-11-01):** On 2026-10-29,
+[main validation](https://github.com/Stuhlmuller/homelab/actions/runs/40828576192)
+began failing `harbor-core-compatibility` with `validation:remediation`; the
+[2026-10-30 main run](https://github.com/Stuhlmuller/homelab/actions/runs/40999168427)
+failed the same check. The [2026-11-01 main run at `7114271`](https://github.com/Stuhlmuller/homelab/actions/runs/41318122367)
+also failed with the same sanitized category. The [last passing main run](https://github.com/Stuhlmuller/homelab/actions/runs/40616761747)
+on October 28 retained five unresolved matches. A
+[commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
+shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
+workflow between the passing and failing main revisions. A fresh advisory
+database may now report an available fix; public logs deliberately withhold the
+finding, so the exact cause remains unverified. Inspect the private report,
+update the pinned runtime base or affected dependency as needed, then rerun the
+[Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
+[full-image scan](../../builds/harbor-core/scan.sh). Keep the
+[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
+Grype database gate; do not suppress the match to clear unrelated PR checks.
+
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
 The vulnerability exporter references it only for kubelet pulls. The
@@ -889,8 +910,7 @@ those additions, so expanded publication requires protected approval and complet
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong
 in the catalog; application runtime references must use Harbor.
 
-The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
-`3db21366…` digests while retaining prior digest-only references for rollback.
+The full catalog stages the reviewed Dispatcharr and n8n upgrade digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
 complete Harbor pulls. Their consuming Renovate PRs remain held until that
 publication and pull acceptance finish.
@@ -900,7 +920,9 @@ For a missing destination digest tag, the
 anonymously into a local directory image tree and checks the original manifest
 digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI
 index digest during staging or upload, `regctl` copies the exact upstream digest;
-an upload fallback reads upstream a second time. Existing destination tags
+an upload fallback reads upstream a second time. The exact OCI-index
+root-artifact-missing upload error also permits this fallback; unrelated
+upload errors remain fatal. Existing destination tags
 resume only after exact hash verification. Aliases come from the verified
 Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` retries that alias from Harbor. These exact conversion fallbacks use

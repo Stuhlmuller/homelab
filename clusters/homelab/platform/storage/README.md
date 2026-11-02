@@ -34,3 +34,11 @@ StorageClass and PV for the temporary private Renovate acceptance ledger on
 `acer`. It is outside this Kustomization until a reviewed activation. The
 Renovate Application owns only the matching namespaced claim after the platform
 resources reconcile.
+
+`renovate-cache-local.yaml` owns the active static `renovate-cache-local`
+StorageClass and retained PV, explicitly bound to Renovate's same-named claim
+in `automation`. It uses `/var/lib/renovate-cache` on `acer`'s Talos
+`EPHEMERAL` filesystem. The advertised 20 GiB is not a quota or reservation;
+node loss can lose the rebuildable cache. Renovate's credential-free init
+container sets only the mount root's ownership before the non-root runner
+starts. The old NFS cache and staged dedicated NAS resources remain intact.

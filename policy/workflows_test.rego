@@ -546,10 +546,22 @@ test_allows_digest_pinned_workflow_images if {
 }
 
 test_rejects_generic_pull_request_target_workflow if {
-	workflow := object.union(workflow_with_live_run("echo safe"), {"on": "pull_request_target"})
-	violations := deny with input as workflow
-	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	every events in ["pull_request_target", ["push", "pull_request_target"], {"pull_request_target": null}, {"pull_request_target": false}, {"pull_request_target": {"branches": ["main"]}}] {
+		every key in ["on", "true", true] {
+			workflow := object.union(object.remove(workflow_with_live_run("echo safe"), {"on", "true", true}), {key: events})
+			violations := deny with input as workflow
+			some msg in violations
+			contains(msg, "must not use pull_request_target")
+		}
+	}
+}
+
+test_allows_safe_pull_request_event_forms if {
+	every events in ["pull_request", ["push", "pull_request"], {"pull_request": null}, {"pull_request": {"branches": ["main"]}}] {
+		workflow := object.union(workflow_with_live_run("echo safe"), {"on": events})
+		violations := deny with input as workflow
+		count(violations) == 0
+	}
 }
 
 test_allows_exact_native_receipt_provenance_workflow if {
@@ -1018,9 +1030,9 @@ test_rejects_modified_apply_stage_classifier if {
 	}
 }
 
+# The actual migrated workflow is covered by the YAML policy mutation fixture.
 test_allows_exact_harbor_mirror_status if {
-	violations := deny with input as workflow_with_live_run(harbor_mirror_private_run)
-	count(violations) == 0
+	private_live_output(harbor_mirror_private_run)
 }
 
 test_rejects_modified_harbor_mirror_status if {
@@ -1032,7 +1044,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -1260,9 +1272,7 @@ workflow_with_catalog_credential_on_different_step := {
 test_encrypted_harbor_artifact_exception_is_exact if {
 	base := workflow_with_live_run(harbor_mirror_private_run)
 	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [harbor_encrypted_diagnostic_step])})
-	workflow := object.union(base, {"jobs": {"mirror": job}})
-	violations := deny with input as workflow
-	count(violations) == 0
+	encrypted_harbor_diagnostic("mirror", job, harbor_encrypted_diagnostic_step)
 	every changed in [
 		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
 		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"retention-days": 2})}),

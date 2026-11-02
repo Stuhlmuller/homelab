@@ -2,6 +2,12 @@
 
 # Sonarr
 
+The [QNAP playback policy](../../../../docs/arr-playback-policy.md) owns
+codec, resolution, and size limits for all existing quality profiles. Apply
+its reviewed operator helper after policy changes; the app chart does not
+reconcile those database settings. Existing media and queued downloads are
+retained.
+
 Sonarr uses the shared `media-postgres` PostgreSQL 14 instance for its
 application and log databases. This app follows the Servarr PostgreSQL runbook:
 `sonarr-main` and `sonarr-log` must exist before Sonarr starts, and Sonarr is
@@ -38,6 +44,28 @@ The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
 local `config.xml`, and writes 14-day tarball archives back to
 `sonarr-config/local-backups` on NFS. Keep this claim as the archive and
 rollback target; the backup CronJob is its only steady-state Sonarr consumer.
+
+## Import Memory
+
+The app requests `192Mi` and has a `512Mi` memory limit. On October 29, 2026,
+the former `256Mi` limit caused two OOM kills during media replacement work.
+One restart interrupted an import and left a partial destination; the complete
+download survived and Sonarr recovered the import. The larger limit uses the
+existing node's measured headroom while preserving the current request.
+
+After the reviewed GitOps rollout, confirm the live app limit and record the
+new Pod's restart count. Import one completed, stream-validated episode in copy
+mode after checking the [playback policy](../../../../docs/arr-playback-policy.md).
+Observe container memory usage, peak, OOM events, restart count, and node
+MemoryPressure every 30 seconds through completion plus two minutes, bounded
+to ten minutes. Verify the complete library file, preserved download, and Plex
+catalog before resuming replacements. Stop new imports if an OOM, restart, or
+node memory-pressure condition recurs; a successful single import does not
+establish capacity for every workload.
+
+Revert the limit through a reviewed GitOps change if needed. Keep replacement
+imports stopped while diagnosing a recurrence, and retain complete downloads
+for recovery rather than deleting source data or retrying a partial copy blindly.
 
 ## Authentication
 
@@ -115,11 +143,12 @@ The media claims point at the QNAP `/media` NFS export instead of the default
 `/homelab` provisioner path.
 
 The `media-tv-directories` Job creates required directories and sets
-nonrecursive directory permissions. It uses `Force=true,Replace=true` so image
-changes recreate it without patching immutable Pod templates. Its deadline is
-two minutes; the dedicated deny-all NetworkPolicy is installed first. Claims
-remain declared independently of this Job. Restoring historical data requires
-a reviewed recovery with writers stopped.
+nonrecursive directory permissions. It runs as a Sync hook at wave `-1` after
+the claims and dedicated deny-all NetworkPolicy at wave `-2`. Argo CD removes
+the Job and Pod after success; a later full sync recreates the hook if needed.
+Selective sync skips hooks. Its deadline is two minutes. Claims remain declared
+independently of this Job. Restoring historical data requires a reviewed
+recovery with writers stopped.
 
 ## Migration Notes
 
