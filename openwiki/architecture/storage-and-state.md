@@ -210,6 +210,11 @@ policy and have no replication or backup; they are development scratch space,
 not durable workload storage. The provisioner and its `hostPath` helper Pods
 run in the dedicated privileged `cordium-storage` namespace so the broader
 `storage` namespace can keep baseline Pod Security enforcement.
+The [local-path helper](../../clusters/homelab/platform/storage/README.md) uses
+a digest-pinned Wolfi base with a discoverable BusyBox package inventory on
+Linux amd64 and arm64. Its UID 0 and shell applets preserve host-path setup and
+teardown behavior; the controller remains non-root. Inventory evidence alone
+does not replace fresh vulnerability, mirror-pull, and live PVC acceptance.
 The Cordium worker patch also sets `user.max_user_namespaces=28633` only on
 `zimaboard-1`, because each Workspace starts a rootless Podman container and
 Talos otherwise disables the required user namespaces. The Cordium Application

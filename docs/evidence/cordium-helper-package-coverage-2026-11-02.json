@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "native-trivy-spdx-inventory",
+  "source": "cgr.dev/chainguard/wolfi-base@sha256:256c88bb066424045021090932d50be93c8e3f2ce3586707702a401b146f3e43",
+  "scanner": {
+    "name": "Trivy",
+    "version": "0.72.0",
+    "binary": "trivy_0.72.0_macOS-ARM64.tar.gz",
+    "binary_sha256": "88f208680dc05da2b459e19b4f5aa2b4dc7c2117892ba4aab2ae63baba330016"
+  },
+  "command": "trivy image --cache-dir <scratch>/cache --format spdx-json --skip-db-update --skip-java-db-update --input <platform>.tar --output <platform>.spdx.json",
+  "archive_source": "Anonymous skopeo copy of each Linux child selected from the immutable index; Docker archive config hashes match the source image configs.",
+  "platforms": {
+    "amd64": {
+      "child": "sha256:030e45cb37187dff322bbefe9658bcaec31b824a5d523380771a64864c9f45d4",
+      "config": "sha256:5e6dc9eae7ee10765abf01a6a6c23ca43b988b85289ef69e08e04462befa4f8b",
+      "user": "0",
+      "package_count": 19,
+      "busybox": [
+        "1.38.0-r3"
+      ],
+      "sbom_sha256": "sha256:9db1cceaf333bb754bd61d071e1ee5efb94c1f1532113f54df7e558327d71377",
+      "entries": {
+        "usr/lib/apk/db/installed": {
+          "type": "0",
+          "link": "",
+          "mode": "0o644",
+          "size": 15370
+        },
+        "usr/bin/busybox": {
+          "type": "0",
+          "link": "",
+          "mode": "0o755",
+          "size": 694880
+        },
+        "bin": {
+          "type": "2",
+          "link": "usr/bin",
+          "mode": "0o777",
+          "size": 0
+        },
+        "sbin": {
+          "type": "2",
+          "link": "usr/bin",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/mkdir": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/rm": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/sh": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        }
+      },
+      "filesystem_proof": {
+        "commands": {
+          "/bin/sh": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "58a7e3382ff371cd69bf5184759399b1a7a673205073ae123298a47173b6101e",
+            "executable": true
+          },
+          "/bin/mkdir": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "58a7e3382ff371cd69bf5184759399b1a7a673205073ae123298a47173b6101e",
+            "executable": true
+          },
+          "/bin/rm": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "58a7e3382ff371cd69bf5184759399b1a7a673205073ae123298a47173b6101e",
+            "executable": true
+          }
+        },
+        "elf_machine": 62,
+        "interpreter": "/lib64/ld-linux-x86-64.so.2",
+        "resolved_interpreter": "usr/lib/ld-linux-x86-64.so.2"
+      }
+    },
+    "arm64": {
+      "child": "sha256:e02c7a98dc477e32e2f04ea2e827a132baace0fbeccb3781aa9c64ffc7982774",
+      "config": "sha256:e155f0caf849076e20b844e6e2633c767f3bc11836e2571c443b3ee483db83d8",
+      "user": "0",
+      "package_count": 19,
+      "busybox": [
+        "1.38.0-r3"
+      ],
+      "sbom_sha256": "sha256:df62e6050d8314a1c8c9a8ec69fa1f308a421b8b777560e82a4aa213194f2d86",
+      "entries": {
+        "usr/lib/apk/db/installed": {
+          "type": "0",
+          "link": "",
+          "mode": "0o644",
+          "size": 15521
+        },
+        "usr/bin/busybox": {
+          "type": "0",
+          "link": "",
+          "mode": "0o755",
+          "size": 723608
+        },
+        "bin": {
+          "type": "2",
+          "link": "usr/bin",
+          "mode": "0o777",
+          "size": 0
+        },
+        "sbin": {
+          "type": "2",
+          "link": "usr/bin",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/mkdir": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/rm": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        },
+        "usr/bin/sh": {
+          "type": "2",
+          "link": "/bin/busybox",
+          "mode": "0o777",
+          "size": 0
+        }
+      },
+      "filesystem_proof": {
+        "commands": {
+          "/bin/sh": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "33ba5da5fe3c4316e4f35a4ca60ece93f40ddd955a37c340355b1ac375fcaa46",
+            "executable": true
+          },
+          "/bin/mkdir": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "33ba5da5fe3c4316e4f35a4ca60ece93f40ddd955a37c340355b1ac375fcaa46",
+            "executable": true
+          },
+          "/bin/rm": {
+            "resolved": "usr/bin/busybox",
+            "sha256": "33ba5da5fe3c4316e4f35a4ca60ece93f40ddd955a37c340355b1ac375fcaa46",
+            "executable": true
+          }
+        },
+        "elf_machine": 183,
+        "interpreter": "/lib/ld-linux-aarch64.so.1",
+        "resolved_interpreter": "usr/lib/ld-linux-aarch64.so.1"
+      }
+    }
+  },
+  "vulnerability_assessment": "Not performed by inventory generation; fresh vulnerability acceptance is required.",
+  "runtime_execution": "Not performed: Linux container runtime unavailable on the local Darwin host.",
+  "live_acceptance": false
+}
