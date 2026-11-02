@@ -50,6 +50,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-bdb62680f3d94d9e85b85463d7547a1b
+    resource: repo://scripts/network-policy-candidate-report.py
   - id: openwiki-source-1d91dece74882a3fae04c364
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-221eda5e9e283a2549066105
@@ -63,7 +65,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-31T22:18:24.858Z
 ---
 
 # Runtime Isolation
@@ -149,6 +151,157 @@ margin. `zimaboard-2` has four unrelated Pods, including single-replica
 `Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
 requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
+
+The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-an-existing-worker-candidate-2026-11-01)
+keeps live Traefik on `zimaboard-1` and stages a second Traefik controller on
+`acer` with a userspace Tailscale sidecar, leaving the old controller and
+LoadBalancer serving during tests. Its Pod must match no existing private,
+Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
+only to Pod loopback, with raw TCP Serve exposing HTTPS 443 first while Traefik
+retains TLS termination. Port 80 needs separate review. This could close the
+private listener when kube-router or the sidecar is absent, without clearing
+another worker. Its source is staged but the runtime is not deployed or
+proven. The current Tailscale operator uses a separate proxy;
+[`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
+answers from its LoadBalancer status,
+[`tailscale-ingress-sign.py`](../../scripts/tailscale-ingress-sign.py) signs
+that fixed proxy, and
+[CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
+Harbor and Octelium API names to its Service. A selectorless headless Service
+with a ready EndpointSlice could publish the sidecar device IP, but a static
+device IP is unsafe after reassignment. The candidate is a pinned-provider
+[Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
+with a stable IPv4 TailVIP and one exact, signed canary host approved through a
+repo-owned script.
+The [Service host approval command](../../scripts/tailscale-service-host-approve.py)
+requires live policy to match reviewed source, one test-user grant for only
+Service TCP 443, a single pending host, the exact `acer` canary Pod and
+persistent state identity, matching Tailscale device ID/public node key/tag,
+signed Tailnet Lock state, and raw TCP Serve to loopback 8443. Its preview
+fingerprint binds a later current-main approval to that observed identity.
+It rejects auto-approval and rechecks immediately before its sole host
+approval write; the staged policy and canary do not yet satisfy preflight.
+The first live preview must confirm the `/vip-services` definition read and
+`/services` pending-host shape before execution. Traffic and wrong-host
+withdrawal probes remain required after API approval.
+The Service endpoint uses raw TCP 443 to the canary loopback listener. A
+selectorless headless Service and reviewed EndpointSlice would publish that
+TailVIP; DNS may still answer it while the host is offline, so a cached-A
+negative test must show traffic fails after drain, peer loss, or wrong-host
+advertisement. Keep the approved-name A/AAAA view without public `fallthrough`
+or `forward`, and its allowlist aligned with Traefik routes and the Service
+annotation. Probe immediately after withdrawal, before the 30-second resolver
+cache expires; client caches may last longer. Narrow the broad tailnet grant,
+then add an explicit `svc:homelab-private-ingress` TCP 443 grant for intended
+test and production clients with positive and negative policy tests before DNS
+cutover. November 1
+read-only checks found the Terragrunt OAuth credential lacks Services write
+(403), and the SSM-backed operator credential returned 401 at token exchange;
+resolve a repo-owned credential path before activation. Confirm the connected
+Tailscale v1.40 NAS is not an ingress consumer or upgrade it. Preserve the old
+internal Service until the replacements work. `loadBalancerClass` cannot be
+changed in place; create a distinct internal Service before retiring the old
+one. Prove
+these contracts, persistent sidecar
+identity, a canary-only tailnet tag, Tailnet Lock, same-node/remote-node
+Pod-IP HTTP/HTTPS and tailnet-IP negative probes, native clients, and
+[legacy-route retirement](../../scripts/ci/legacy-ingress-retirement-check.py)
+before cutover, while preserving named Octelium control paths. The 18 legacy
+app routes still have 54 source entries. The
+existing-node evacuation below remains a separate general `NetworkPolicy`
+canary candidate, not a prerequisite for the sidecar test.
+
+The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.md)
+renders independently and is absent from the live Traefik Argo source. It has
+distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
+first raw TCP Serve exposes only tailnet 443. The current broad grant reaches
+every signed device regardless of tag; narrow it and prove the applied policy
+denies every canary client before using the `--canary-only` signer. Add a test
+client grant after signing. Port 80 needs separate review. The
+Tailscale container alone receives its projected API token and file-backed auth
+key. Tailscale creates its mutable state Secret; Argo does not reconcile it.
+Backend Istio identity, Tailnet Lock signing, capacity, and negative-path probes
+remain activation gates. The November 1
+read-only capacity recheck found only about 580 MiB sampled peak headroom on
+`zimaboard-1`, below the canary's 768 MiB memory limit. `acer` had about
+3,164 MiB before that limit and about 2,396 MiB after it; remeasure before
+registration, preserve its control-plane reserve, and prove image pull and
+admission there.
+
+The November 1 existing-node recheck found `zimaboard-2` using 1,365 MiB of
+1,792 MiB physical memory before the 576 MiB enforcer/client limit budget
+and 128 MiB reserve. Evacuating only app Pods leaves CoreDNS and metrics-server
+outside the allowed inventory; no peak or restart margin is proven.
+`zimaboard-0` is only a conditional candidate. A 15:20 UTC PodList recheck
+found 64 active app Pods (54 Octelium), an `octelium` gateway-agent DaemonSet,
+19 completed backup Pods, and the `kube-system/image-rewrite` Deployment Pod.
+The admission code rejects all 85 foreign assigned Pods, including that
+DaemonSet, completed Jobs, and ordinary Pods in system namespaces. Deluge,
+Radarr, Sonarr, and Bazarr config PVs are locally pinned.
+Its 5,838 MiB sampled use against 7,766 MiB physical capacity leaves about
+712 MiB after one enforcer, client, Traefik Pod, and reserve, or about 200 MiB
+with the current Traefik surge. Neither proves peak or restart safety.
+`acer` has 70 nonterminal Pods against 110 allocatable slots; moving all 56
+native dataplane-selected Pods there would need 126 slots. Retiring 16 stale
+proxies alone fills all 110, before Prowlarr or surge.
+[The runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+records the conditional maintenance route: verify local-volume archives;
+pause Prometheus and four media apps through GitOps, including Bazarr's
+z0-pinned PostSync Jobs; make seven backup CronJobs discard successful Job
+history and pause the four media schedules; move Prowlarr through its source
+owner and validate `acer`'s 25 already-running emergency Octelium fallback
+Pods, including protected CI access. Remove native z0 dataplane eligibility
+for a bounded, explicitly accepted outage of the 29 native-only Services
+found in the November 1 15:34 UTC selector check; then use a protected,
+source-owned `NoExecute` evacuation and atomic handoff to the
+canary `NoSchedule` taint before protected admission. This handoff is not
+implemented. The current Terraform taint resource can replace the whole Node
+taint list when removed, so it must not own the temporary taint. Restore the
+missing `homelab-plan` required reviewer and add `shared/kubernetes-node-labels`
+to its protected PR plan before any node-label change. The five paused workloads
+remove about 2,640 MiB in scheduler-effective requests, closing a 1,315 MiB
+destination deficit if all apps moved, but this is request-only math. Prove
+actual memory
+peaks, restart and Pod-slot headroom around etcd, and fallback path health.
+
+The handoff remains blocked even after its taint implementation exists.
+Kubernetes v1.34.11 accepts both `pods/binding` and `bindings`, and a timed
+wait, admission denial probes, and a complete PodList cannot prove that an
+older admitted Binding handler will not place a foreign Pod after the isolation
+check. The API server may time out the response while that handler continues.
+The [runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+requires a reviewed placement fence before activation. A temporary Node rename
+has no validated Talos no-wipe credential and retirement path, and the four
+media `hostPath` PVs remain pinned to the old hostname; it is not a fallback.
+A candidate fence reboots the sole `acer` control plane under the fail-closed
+guard, then requires a successful post-reboot Kubernetes API Node-annotation
+barrier write before a complete PodList and runtime inventory. Reboot plus
+PodList alone cannot order older
+persisted writes. This source-owned operation and its backup, outage, and
+live checks are not implemented; activation remains blocked.
+
+[The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
+Deployment selectors. It records Service identities and Ready Pod target UIDs,
+not endpoint addresses, and keeps admission unproven. The dated 25/29 counts
+do not identify all 54 Services; a fresh private report and owner-reviewed
+exact identity baseline are still required before outage acceptance.
+
+A November 1 17:03 UTC read-only inventory found 64 Octelium namespace
+Services: 25 Ready fallback-covered, 29 native-only, 9 independent of z0, and
+1 unresolved Enterprise store Service with one selected unready Pod and no
+Ready endpoint. The private full report stays
+outside git; this observation does not qualify the outage.
+
+This route incurs monitoring and media outages plus an Octelium/private-app
+interruption during eviction. A persistent guard must deny
+Traefik Pod traffic before container start and through enforcer restart,
+independently of kube-router; no such guard is implemented. Cold boot,
+image-cache miss, IP reuse, and legacy ClusterIP bypass tests remain required.
+PRs #1583 and #1584 targeted `zimaboard-2` and were closed as superseded by
+the z0 route; neither changed live state. No worker is admitted. The
+[platform capacity task](../../specs/003-replace-openclaw-enterprise/tasks.md)
+permits only a reviewed, recoverable existing-node evacuation before admission.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -182,19 +335,30 @@ expanding to another node. Stock Enterprise's public TCP/443 requirement
 remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
 
+The [candidate report](../../scripts/network-policy-candidate-report.py)
+reads one named Node, its complete assigned Pod list, and kubelet Summary. It
+reports physical headroom from capacity minus working set and scheduler request
+headroom from allocatable minus effective nonterminal Pod requests. It lists
+foreign Pod UIDs against the admission guard's system DaemonSet contract.
+Its snapshot is for review and cannot establish admission or isolation.
+
 The protected `canary-admit` source path requires a fresh measured placement
 receipt and exact Node and system Pod identities. It checks that the enforcer,
 cleanup Pods, and fixture traffic are absent, then adds the dedicated
 `NoSchedule` taint before the selector label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
-the taint. After a qualifying traffic probe, exact reviewed GitOps commits
+the taint. Admission requires a raw, unpaginated assigned-Pod `PodList` with a
+resource version and rejects any `NoExecute` taint. The temporary evacuation
+handoff is not implemented; it cannot be treated as an admitted canary. After
+a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
 runtime-source changes under the guarded operational roots or Nix flake
 inputs. The static gate accepts only five exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
+
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
 before ownership capture. The owner reviews the private full firewall snapshot

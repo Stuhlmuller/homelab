@@ -167,6 +167,349 @@ still has unqualified source-bound generated policies and broad egress findings.
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
+### Private ingress on an existing worker (candidate, 2026-11-01)
+
+Traefik is currently Ready on `zimaboard-1`; its operator-managed
+`traefik-private` Tailscale proxy is a separate Pod on that node. The November 1
+read-only recheck found 6,612 MiB requested against 7,282 MiB allocatable on
+that worker. A sampled 24-hour Pod peak plus current host overhead leaves only
+about 580 MiB, below the canary's 768 MiB memory limit; the live controller
+also allows one surge Pod. Stage the separate canary on `acer` instead. It has
+13,390 MiB requested against 15,261 MiB allocatable; the same sampled estimate
+leaves about 3,164 MiB before the canary limit and 2,396 MiB after it. Both
+nodes were Ready, untainted, and pressure-free; `acer` has about 408 GB of
+node filesystem space but must pull both canary images. `acer` is a control-plane
+node, so preserve its reserve and check concurrent control-plane demand. These
+samples are not an activation receipt: remeasure limits, image pulls, peak use,
+and concurrent surges immediately before registration.
+
+The smaller private-listener design is a [userspace Tailscale sidecar](https://tailscale.com/docs/solutions/connect-kubernetes-pods-to-tailnet-using-sidecar)
+in the same Traefik Pod. Bind only the private `web` and `websecure` entrypoints
+to `127.0.0.1:8000` and `127.0.0.1:8443`; configure [raw TCP Serve](https://tailscale.com/docs/reference/tailscale-cli/serve#use-a-tcp-forwarder)
+for tailnet port 443 to the HTTPS loopback listener. Port 80 needs separate
+caller review. Traefik must still terminate HTTPS with its existing certificate.
+Keep the separate Funnel and registry listeners and their exact routes. A
+Pod-IP or ClusterIP caller cannot reach another Pod's loopback listener, so
+this boundary could survive a
+kube-router crash or cold start without relocating Traefik or draining
+`zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
+
+The dormant [canary source](../clusters/homelab/apps/traefik/canary/README.md)
+implements only TCP 443 Serve for the first test. The current broad tailnet
+grant reaches every signed device regardless of tag, so narrow it and prove
+production clients cannot reach the canary before signing. Its route ConfigMap,
+ServiceAccount, and headless health Service are outside the live Argo source.
+Activation requires a dedicated auth key, exact Tailnet Lock signing, backend
+Istio rules, capacity proof, and direct-path negative probes.
+
+Stage it in reviewed source before cutting over:
+
+1. Stage a second one-replica Traefik controller on `acer` with distinct
+   labels, route ConfigMap, and Tailscale sidecar. Prove no existing private,
+   Funnel, or registry Service selector matches the new Pod; keep the current
+   controller and operator LoadBalancer intact. Use a distinct tailnet hostname
+   and canary-only tag, pinned images, bounded resources, durable per-Pod
+   Tailscale state, narrow Secret RBAC, and a repository-owned authentication
+   contract. Gate deployment on measured two-controller capacity. Keep Tailnet
+   Lock enabled. The fixed signer's `--canary-only` path must match the applied
+   narrow policy and exact Pod/device/Serve identity before signing; it rejects
+   the current wildcard grant. Add the reviewed test-client grant after signing.
+   Prove raw TCP,
+   original TLS certificate, HTTPS, native gRPC, ACLs, and both containers'
+   readiness on the test peer. A Tailscale health response proves an IP, not a
+   signed peer or the intended Serve configuration; check both explicitly.
+2. Prove denied direct private routes from ordinary Pods on the same and a
+   different node, from a host, and through Pod IP on ports 80, 8000, 443,
+   and 8443, ClusterIP on ports 80 and 443, and the sidecar's `100.64.0.0/10`
+   address. Repeat while Tailscale is absent, restarting, unsigned, or unable
+   to pull its image.
+   Repeat after Traefik replacement, Pod-IP reuse, and node reboot. Prove
+   allowed tailnet clients and the independent registry/Funnel paths. Set a
+   no-surge rollout or prove measured two-Pod capacity before the live switch.
+3. Replace the current DNS and internal-client contracts in source. The
+   [`tailnet-dns` resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+   now publishes the `traefik-private` LoadBalancer status IP; its checker and
+   [signer](../scripts/tailscale-ingress-sign.py) assume an operator proxy.
+   A candidate is a [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
+   named `svc:homelab-private-ingress` with only `tcp:443`, declared through the
+   pinned [Terraform provider](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/service).
+   Its IPv4 TailVIP belongs to the Service rather than the canary device. After
+   device-only preflight, configure the pinned sidecar with raw TCP Serve for
+   that Service and advertise it. Do not add a matching auto-approver or tag
+   this Service `tag:ci`, which the current policy auto-approves. A repo-owned
+   approval path must match the Pod and persistent device identity, exact
+   signed node key, tag, Service name, and Serve endpoint before approving that
+   one host. A tag or `tailscale status` response alone does not prove this.
+   Tailnet Lock must still reject unsigned devices.
+
+   Publish the provider-owned IPv4 TailVIP through a selectorless headless Service
+   with [`k8s-gateway.dns/resolve-endpoints: "true"`](https://github.com/k8s-gateway/k8s_gateway#endpoint-resolution)
+   and a reviewed IPv4 EndpointSlice. Never publish the device IP in a static slice:
+   reassignment could send cached DNS clients to a different peer. A ready
+   TailVIP slice says the Service address exists, not that a host is online;
+   DNS may keep answering during a host outage. Prove an approved host serves
+   TLS and that the same cached A record fails closed after drain, offline,
+   unsigned-host, and wrong-host tests. The approved-name A/AAAA resolver view
+   must have no public `fallthrough` or `forward`; prove the pinned resolver
+   returns no address for absent or unready endpoints after its 30-second
+   cache bound. Keep its allowlist, Traefik routes, and Service annotation in
+   sync. Run the negative tailnet probe immediately after test-peer withdrawal,
+   before the old A record expires. Longer client caches make the TailVIP
+   traffic test necessary even if DNS is withdrawn. The
+   [CoreDNS rewrites](../clusters/homelab/platform/dns/coredns-configmap.yaml)
+   for `harbor.stinkyboi.com` and `octelium-api.stinkyboi.com` currently target
+   that Service; preserve it until both reviewed internal replacements and
+   Harbor node pulls and native Octelium clients pass.
+4. Before the Service or DNS change, resolve the credential, client, and access
+   gates. Narrow the current broad tailnet grant so the canary device and
+   Service are denied by default. Add a reviewed `svc:homelab-private-ingress`
+   destination grant for only the intended test identity on TCP 443, with
+   positive and negative policy tests. Add the reviewed production identities
+   before DNS cutover; otherwise the TailVIP has no authorized clients.
+   On November 1, the current Terragrunt OAuth client could list Services but
+   could not request Services write (403); the SSM-backed operator credential
+   returned 401 at the token endpoint. Verify a repo-owned credential path
+   without printing tokens. A connected NAS client reported Tailscale v1.40;
+   confirm it does not consume this ingress or upgrade it before TailVIP use.
+   Tailscale documents v1.86 as the Service host minimum and v1.94 as the
+   client version that needs no `accept-routes` setting.
+5. Validate the new peer and DNS from a trusted tailnet client, then change
+   the declared private DNS path while the old controller still serves. Create
+   a separate internal Service for the accepted Harbor/API callers, then
+   retire the old operator LoadBalancer through GitOps after acceptance.
+   [Kubernetes does not permit changing a set `loadBalancerClass`](https://kubernetes.io/docs/concepts/services-networking/service/#specifying-class-of-load-balancer-implementation),
+   so do not try to convert that Service in place. Keep a reviewed rollback to
+   its previous Service and DNS declarations until the new path survives
+   restart and client acceptance.
+   Retire the 18 old Octelium/Istio app routes and broad app gateway only after
+   each caller passes on the new path. Preserve named native Octelium control
+   paths and separately reviewed callbacks. Require
+   `scripts/ci/legacy-ingress-retirement-check.py --retired` and negative
+   in-cluster bypass probes. The current [audit](../scripts/ci/legacy-ingress-retirement-check.py)
+   reports 54 legacy source entries.
+
+This route addresses the private Traefik listener only. It does not enforce
+general `NetworkPolicy`, narrow the generated broad egress rules, or prove
+existing app backends inaccessible through other Services. Do not claim the
+private-ingress finding closed until the sidecar, DNS, old-route retirement,
+and live negative probes all pass. The isolated worker route below remains
+the separate candidate for general `NetworkPolicy` qualification.
+
+### NetworkPolicy canary on an existing node (2026-11-01)
+
+No spare worker is available. A 2026-11-01 15:05 UTC read-only sample found
+`zimaboard-2` using 1,365 MiB of its 1,792 MiB physical memory before the
+staged 576 MiB enforcer/client limit budget and 128 MiB reserve. Ten foreign
+Pods used about 826 MiB; moving only app Pods leaves CoreDNS and metrics-server,
+which still fail exact-Pod isolation. Moving every foreign Pod leaves no
+proved peak or restart headroom. It cannot pass admission.
+Closed [#1584](https://github.com/Stuhlmuller/homelab/pull/1584) proposed moving
+only `zimaboard-2` workloads to `acer`/`zimaboard-1`; closed
+[#1583](https://github.com/Stuhlmuller/homelab/pull/1583) proposed restarting
+Langfuse PostgreSQL on `acer`. Neither changed live state. Do not incur that
+database outage solely to clear `zimaboard-2`. Any later database move still
+requires a fresh verified off-NAS checkpoint.
+
+`zimaboard-0` is a conditional candidate, not an admitted canary. The 15:03
+UTC sample found 7,766 MiB physical, 7,282 MiB allocatable, 5,838 MiB used,
+and 8.1 GiB node filesystem free. One enforcer, client, Traefik Pod, and
+128 MiB reserve consume 1,216 MiB at their limits, leaving about 712 MiB
+of sampled physical headroom. Traefik's current one-Pod surge raises that
+budget to 1,728 MiB, leaving about 200 MiB. These are not peak or restart
+measurements.
+
+A 15:20 UTC raw PodList recheck found 64 active app Pods (54 Octelium), an
+`octelium` gateway-agent DaemonSet, 19 completed backup Pods, and the
+`kube-system/image-rewrite` Deployment Pod.
+[Canary admission](../scripts/network-policy-canary-node.py) rejects all 85
+foreign assigned Pods, including the Octelium DaemonSet, completed Jobs, and
+ordinary Pods in `kube-system`. Deluge, Radarr, Sonarr, and Bazarr have config
+volumes pinned to local `hostPath` PVs;
+Prometheus uses an NFS claim. The active app Pods have about 3,920 MiB of
+scheduler-effective memory requests, including Deluge's restartable Gluetun
+init container. `acer` and `zimaboard-1` together have about 2,605 MiB
+unrequested.
+A separate Pod-slot gate rules out the initial acer-only native Octelium move:
+`acer` already has 70 nonterminal Pods of 110 allocatable slots, while 54
+Octelium app Pods, its gateway DaemonSet, and `octelium-client` select the
+dataplane label on `zimaboard-0`. Moving all 56 would require 126 slots before
+Prowlarr or rollout surge. Even removing 16 stale proxies leaves 110 of 110.
+A taint leaves existing Pods in place. Source-owned relocation or an explicitly
+planned service outage, storage recovery proof, and fresh capacity/Pod
+inventories are prerequisites to isolating this worker.
+
+A candidate existing-node maintenance route requires these source-owned stages
+and fresh capacity and recovery checks. The November 1 read-only check found
+no required reviewer on `homelab-plan`; restore it before any credentialed
+Terragrunt plan or apply in this route. The protected PR plan currently omits
+`shared/kubernetes-node-labels`; add its saved plan and policy check before
+reviewing node-label or annotation changes. The current taint handoff is not
+implemented, so these stages are a design, not authority to evacuate a node.
+
+1. Verify current media config archives and the media PostgreSQL recovery path.
+   Through GitOps, pause Prometheus and Deluge, Radarr, Sonarr, and Bazarr;
+   preserve their PVCs and local PVs. Suspend the four media backup CronJobs
+   and disable Bazarr's z0-pinned PostSync backup/reconcile Jobs for the outage.
+   This pauses monitoring and four media apps, without moving their local
+   data. Their scheduler-effective requests total about 2,640 MiB, enough to
+   close the 1,315 MiB destination request deficit at this snapshot.
+2. Set `successfulJobsHistoryLimit: 0` in the Bazarr, Deluge, Radarr, Sonarr,
+   Harbor, Octelium storage, and Fleet `backup-cronjob.yaml` sources. Verify
+   the controllers remove all 19 retained successful Jobs and Pods. Keep
+   Fleet, Harbor, and Octelium backups running only if their dependencies
+   remain healthy through the planned outage; otherwise verify a recent
+   backup, suspend the schedule, and resume it after recovery. If
+   reconciliation does not remove the completed Pods, add a reviewed,
+   identity-bounded cleanup script; never delete them by hand.
+3. Move Prowlarr's committed node selector to a measured destination. Keep
+   `acer`'s 25 existing emergency Octelium fallback Pods and prove their direct
+   paths, native Service coverage, protected CI Kubernetes API access, owner
+   access, and rollback before any native dataplane interruption. Remove
+   `zimaboard-0` native dataplane eligibility through its reviewed Terragrunt
+   owner only for a bounded maintenance window. Do not add the native dataplane
+   label to `acer`: its current Pod-slot count does not fit. The 56 selected
+   native Pods may remain Pending. A 15:34 UTC read-only selector join found
+   25 Services with Ready fallback endpoints and 29 native-only Services,
+   including the operator API, Talos API, Harbor, Langfuse, and Enterprise
+   paths. The [read-only Service inventory](../scripts/network-policy-octelium-service-inventory.py)
+   now joins complete Octelium namespace Service, Pod, and EndpointSlice lists
+   to the 25 source-declared emergency Deployments. It checks current Service
+   UID ownership, selectors, and Ready Pod targets without recording endpoint
+   addresses or ports. Its report remains `admission: unproven` and
+   `baselineQualified: false`: the dated 25/29 counts do not provide an exact
+   54-Service identity baseline. Capture a fresh private report and review its
+   complete identity set before making that baseline or accepting the outage.
+   Ready EndpointSlices do not prove direct paths or protected CI access.
+   Accept that specific outage before evacuation. Preserve a trusted
+   LAN recovery path independent of the native operator and Talos APIs. Update
+   the hardcoded bootstrap assertions for this temporary state. Recheck real
+   memory peaks, etcd headroom, Pod slots, and all running destination workloads.
+
+   To capture this observation with the authenticated homelab Kubernetes
+   context, write its sanitized JSON to a private file outside the repository:
+
+   ```sh
+   umask 077
+   nix develop --command python3 -I \
+     scripts/network-policy-octelium-service-inventory.py \
+     --native-node zimaboard-0 \
+     > /private/tmp/octelium-service-inventory.json
+   ```
+
+   A November 1 17:03 UTC read-only observation found 64 namespace Services:
+   25 with Ready fallbacks, 29 native-only, 9 independent of z0, and 1
+   unresolved. The unresolved Enterprise store Service has one selected
+   unready Pod and no Ready endpoint. The complete Service identity digest was
+   `ccfdfcd58d54ab71c4d5363e621ce6b2e306d086ba356e06b90ffbb90c9b17a7`.
+   This is an unqualified snapshot; the full private report remains outside
+   git.
+
+4. Implement a protected, source-owned evacuation and taint handoff. After
+   backup and destination gates, add an exact-identity temporary `NoExecute`
+   taint to `zimaboard-0`. Expect an Octelium/private-app interruption as its
+   gateway, client, and 54 app Pods leave. Confirm `image-rewrite` moves off
+   the node and its webhook stays healthy. Require all displaced workloads
+   that are expected to remain online Ready and their fallback paths working.
+   Verify every Pod except the reviewed system DaemonSet Pods has left,
+   including completed Jobs. With a fresh exact-UID placement receipt, the
+   protected admission operation must replace `NoExecute` with its dedicated
+   `NoSchedule` taint in one resource-version-guarded Node patch, recheck
+   isolation, then add the canary label. The current Terraform taint resource
+   cannot safely perform that handoff: [provider deletion](https://github.com/hashicorp/terraform-provider-kubernetes/blob/v3.2.1/kubernetes/resource_kubernetes_node_taint.go#L90-L93)
+   applies an empty [atomic Node taint list](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/api/core/v1/types.go#L6036-L6039),
+   which can conflict with or remove the canary taint. Keep `node_taints = {}`
+   and do not start evacuation until the protected handoff and tests exist.
+
+   This handoff alone cannot establish strict isolation. Kubernetes v1.34.11
+   serves both [`pods/binding` and `bindings`](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/registry/core/rest/storage_core.go#L216-L235).
+   A direct Binding or `spec.nodeName` placement can bypass scheduler taints.
+   Admission denial probes cover new requests, while a request admitted before
+   the handoff can still complete later: an API server
+   [timeout](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/server/config.go#L973-L981)
+   can return to the caller without stopping its inner handler. A timed wait
+   and an empty foreign-Pod list therefore do not prove the old Binding
+   handlers have drained. Keep canary activation blocked until a reviewed
+   placement fence proves this race closed; do not infer that the taint patch,
+   admission probes, or PodList alone provide that guarantee.
+
+   A candidate fence uses this cluster's **single** `acer` API server and etcd
+   member. Verify no second API server, etcd member, or direct etcd writer
+   exists. With the fail-closed policy covering
+   Pod `CREATE`/`UPDATE`, both Binding endpoints, and direct `spec.nodeName`
+   placement, keep `NoExecute` in place and the canary label absent. Verify
+   negative probes for all four request forms and record the policy and
+   binding UIDs and specs. After a verified off-node etcd snapshot, reboot
+   `acer` through a reviewed repository-owned operation. Verify a new boot
+   ID, new API server and etcd processes, the same etcd member ID and retained
+   data directory without restore or wipe, and a revision at least as high as
+   the pre-reboot receipt. Re-read the exact Node UID and `NoExecute` taint,
+   and the unchanged guard UIDs/specs; repeat all four negative probes. The
+   Kubernetes v1.34.11
+   [admission plugin](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/plugin.go#L194-L213)
+   denies requests until its [policy and binding caches](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_source.go#L146-L221)
+   sync. The reboot interrupts the sole Kubernetes API and may restart
+   dependent workloads; qualify that outage before using this route.
+
+   A reboot and PodList alone are insufficient: the single-member
+   [Raft read fast path](https://github.com/etcd-io/raft/blob/v3.6.0/raft.go#L1346-L1362)
+   does not itself prove older persisted proposals are applied. After reboot,
+   a reviewed
+   script must make a real resource-version-guarded Node annotation write with
+   a unique maintenance run ID while `NoExecute` remains. Require the write's
+   successful response and changed resource version, then a complete
+   [most-recent PodList](https://v1-34.docs.kubernetes.io/docs/reference/using-api/api-concepts/#semantics-for-get-and-list)
+   with resource version unset and a node runtime inventory. A successful
+   [later API write](https://etcd.io/docs/v3.6/learning/api_guarantees/)
+   applies any old proposal retained earlier in the same Raft log first;
+   discarded proposals cannot later appear. Abort if any
+   foreign Pod or container remains, the guard is missing, the write fails,
+   or topology differs. Only then may the protected atomic taint handoff run,
+   followed by another complete PodList, runtime check, and guard readback
+   before the label. Keep the guard unchanged through canary release.
+   This fence is **not implemented or live-validated**; keep activation blocked
+   until its source, tests, backup, outage, and recovery gates are reviewed.
+
+   A temporary distinct Node name is also not an admitted fallback. The
+   kubelet's [`system:node:<name>` identity](https://kubernetes.io/docs/reference/access-authn-authz/node/)
+   must match the new name, and no validated Talos v1.11.3 no-wipe credential,
+   rejoin, and old-Node retirement path is documented. Deluge, Radarr, Sonarr,
+   and Bazarr still have [local `hostPath` PVs](storage-nfs.md) with affinity
+   to the current hostname on Talos EPHEMERAL storage. Resolve those identity
+   and data recovery gates in a separate reviewed design before proposing a
+   rename.
+
+No stage above authorizes the firewall or Traefik. A shared-node Traefik move
+needs a guard that installs default-drop on its Pod interface before the
+container starts, survives kube-router loss, and ties openings to exact Pod
+identity so IP reuse cannot inherit access. A CNI attachment hook with an
+independent policy controller is a candidate, not implemented here. Talos
+[host ingress rules](https://docs.siderolabs.com/talos/v1.14/networking/ingress-firewall)
+do not supply this Pod boundary, and kube-router starts its full policy sync
+asynchronously. Prove cold boot, image-cache miss, enforcer crash/restart,
+policy deletion, Pod replacement/IP reuse, and same-node, cross-node, and
+host-origin bypass negatives before placement. If any gate fails, leave
+Traefik on its current node and restore paused workloads through reviewed
+GitOps/Terragrunt changes, then verify local PV startup and backup schedules.
+
+Only after an existing worker is empty of unrelated Pods, retarget and validate
+the canary source, then run the protected baseline, admission, fixture-first
+pull, enforcement, and traffic gates. Before placing Traefik there, prove a
+persistent fail-closed boundary through cold boot, image-cache miss, and
+enforcer stop/restart: [kube-router v2.11.1](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go)
+can report healthy before async policy sync and clear its tail chain during
+restart. Use `surge: 0` and
+`unavailable: 1` for any single-node Traefik move, with a documented ingress
+outage. The legacy Istio/Octelium ClusterIP bypass must be retired after
+caller acceptance and negative probes. Keep enforcement disabled if any
+capacity, identity, policy, lifecycle, or bypass gate fails.
+
+After fixture qualification, use the protected firewall cleanup and canary
+release paths to remove only owned rules, label, and `NoSchedule` taint. Restore
+`zimaboard-0` dataplane eligibility through a reviewed Terragrunt plan, then
+verify native Octelium endpoints, the 29 affected Services, media local PV
+startup, monitoring, and backup schedules before ending the outage. Fixture
+success alone does not authorize broad enforcement or a Traefik move.
+
 The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 for `cordium/ws-main`, `octelium/cordium-nocturne`, and
 `octelium/cordium-rscserver`. Their complete specs match the live read-only

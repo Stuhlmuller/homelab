@@ -47,6 +47,120 @@ the store process; historical WAL quarantine files are never replayed or
 removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
+On 2026-11-01, read-only inspection found the resource-store Pod selected but
+unready. Source and live Deployment/PVC state match; DuckDB WAL replay reports
+a missing schema. Treat this as a separate store recovery issue, not a
+dataplane selector failure. Capture the PVC immutably and validate an offline
+candidate before any reviewed one-shot recovery. Preserve the failed WAL and
+checkpoint; do not edit the live PVC by hand. The prior repository-owned
+[WAL quarantine pattern](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8)
+is context, not authorization to repeat it unchanged.
+
+## Dormant resource-store capture stage
+
+`capture-stage/` is excluded from the active app. First, a separate reviewed
+GitOps stage adds the inspector Pod and its exact-label NetworkPolicy while
+the Deployment remains at one replica. Verify the pinned Harbor mirror image
+pulls, the Pod schedules and reaches Ready, and both read-only mount fields are
+live.
+The liveness probe checks the mounted directory; readiness checks that
+`store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
+store's root behavior, but source PVC ownership and modes must be checked before
+activation. Retain root only if complete file access requires it; otherwise
+revise the inspector and capture guard to a proven nonroot UID. A successful
+readiness probe covers `store.db`; the full tar capture must still read every
+PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
+Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
+the exact `octelium-rscstore` claim read-only at the volume and container mount,
+has no API token, credentials, or writable image root, and is not selected by
+the resource-store Service. This image digest is declared in
+`clusters/homelab/platform/image-policy/images.json` and used by existing
+Harbor-backed workloads; the inspector's own live pull is still an activation
+gate. Merging this preparation alone does not stop or restart the store. The
+capture helper requires the exact fence revision Synced in Argo CD and a
+complete namespaced PodList showing zero other PVC mount users. Removal and
+restart require a later reviewed change; this stage does
+not quarantine the WAL, replay it, or resume the Deployment.
+
+The fenced Kustomization must retain both the inspector Pod and its exact-label
+`capture-stage/inspector-networkpolicy.yaml` resource. The capture helper
+requires the live Application's single `spec.sources` entry and matching
+`status.sync.revisions` entry for this repository, path, and exact `main` SHA;
+it rejects a missing policy or ambiguous source/revision list.
+
+After activation, privately record the live PVC UID, bound PV name and UID,
+the exact merged `main` SHA, and the intended kubectl context. The capture
+helper requires those identities, a settled zero-replica Deployment, no other
+Pod mounting the claim, and the pinned, ready inspector. It also requires an
+explicit private Talos config and authenticated `talosctl` v1.11.3. At every
+checkpoint it verifies all four expected nodes are Ready with leases renewed
+within 30 seconds, reads each kubelet's desired and CRI Pod lists, and reads
+each node's Talos Kubernetes container inventory. Any stale PVC mount,
+orphaned Octelium Pod, resource-store container or sandbox, unreachable node,
+or changed node boot ID fails closed. The inspector must run on the single node
+with the declared control-plane selector label, currently `zimaboard-1`; the
+receipt records all node boot IDs. Its exact UID must appear in both kubelet
+views; the kubelet container ID must match the API, and Talos must show exactly
+one current inspector sandbox and running container whose 12-hex ID matches
+the API container ID prefix. Old or duplicate
+same-name runtime rows block capture.
+This catches a former writer that disappeared from the API while its node
+kept running. It streams a tar of
+the entire PVC root three times: before, archive, after. All three byte counts
+and SHA-256 values must match. The archive includes the active WAL, dated
+quarantines, and recovery markers present on the claim; its private receipt
+records their names and hashes. Missing `store.db`, unsupported file types,
+changed identities, main advancing during capture, or changed bytes fail
+closed. The helper rechecks current `main`, Argo sync, and the stopped writer
+immediately before issuing its receipt. Private partials remain for
+inspection and cannot enter the publisher as a completed timestamp directory.
+
+Use a pre-existing, owned mode-0700 directory on durable **local off-NAS**
+storage with five times the archive size plus 64 MiB free. Do not use a Git
+checkout, temporary directory, NFS, or SMB mount. The two archive parts are
+each at most 5 GiB for S3 `PutObject`; the complete tar is bounded at 10 GiB.
+The 5000 Mi PVC request is not a file-system quota, so an oversized archive
+stops for a separately reviewed multipart path.
+
+```sh
+python3 -I scripts/octelium-rscstore-capture.py capture \
+  --context '<reviewed-homelab-context>' \
+  --talosconfig /private/operator/talosconfig \
+  --expected-sha '<exact-merged-main-sha>' \
+  --expected-pvc-uid '<live-pvc-uid>' --expected-pv-uid '<live-pv-uid>' \
+  --workspace /private/durable-off-nas/rscstore
+python3 -I scripts/application-backup.py prepare \
+  --app octelium-rscstore --workspace /private/durable-off-nas/rscstore \
+  --source /private/durable-off-nas/rscstore/<capture-timestamp>
+python3 -I scripts/application-backup.py publish \
+  --app octelium-rscstore --workspace /private/durable-off-nas/rscstore \
+  --id '<prepared-id>' --aws-cli '<absolute-aws-cli-path>' \
+  --profile application-backup
+python3 -I scripts/octelium-rscstore-capture.py prove-retrieval \
+  --workspace /private/durable-off-nas/rscstore --id '<prepared-id>' \
+  --aws-cli '<absolute-aws-cli-path>' --profile application-backup-reader \
+  --proof /private/durable-off-nas/rscstore/<new-proof-directory>
+```
+
+The existing application-backup publisher conditionally creates each object
+in the committed versioned S3 bucket, reads each exact version back, and writes
+a versioned `complete.json` marker last. Its rscstore allowlist requires both
+archive parts and `capture.json`; it verifies the complete-PVC receipt and
+three matching hashes. The proof command itself retrieves a fresh set from S3
+through the publisher, then records the marker and object version IDs and
+rehashes files restored into a separate directory. A locally fabricated
+`complete.json` or `retrieval.json` cannot start a proof.
+The publisher and reader policy examples include only the new rscstore prefix;
+their attachment and the operator profile's actual rights remain a separate
+activation check. A failed S3 upload or retrieval leaves the writer fenced.
+Immediately before publication and any recovery decision, recheck current
+`main` against the capture receipt's fence SHA, Argo Synced at that revision,
+and zero live resource-store writers; drift requires a new capture and review.
+Only that published, retrieved, extracted set qualifies as the off-NAS archive
+gate. It does **not** prove DuckDB can reopen the checkpoint/WAL or that Octelium
+can serve traffic. Keep the writer fenced and all source files untouched until
+a separately reviewed recovery plan establishes those facts.
+
 The resource-store Deployment declares `initContainers: []` and
 `Replace=true,ServerSideApply=false` so Argo CD reconciles the complete Pod
 template without inheriting the Application's server-side apply mode. Server-side
@@ -72,6 +186,14 @@ not add the Multus annotation or a dataplane node label to these temporary
 Pods. If Octelium recreates a Service, refresh its generated
 `octelium.com/svc-uid` here before relying on the fallback.
 
+`scripts/network-policy-octelium-service-inventory.py` reads the complete
+Octelium namespace Service, Pod, and EndpointSlice lists and joins them to
+these 25 fallback Deployment labels. The sanitized report includes object IDs,
+readiness, and hashes but no endpoint addresses, ports, or upstream URLs. It
+does not prove that clients can reach a fallback. No exact source baseline for
+the 54 Services in the November 1 selector sample is checked in; the report
+marks admission unproven until a fresh private inventory is reviewed.
+
 Keep this recovery file until a correctly sized native dataplane worker has
 run the full package-managed fleet for 24 hours. Follow the direct native Pod
 probe and public end-to-end removal gate in
@@ -84,7 +206,8 @@ Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
 images as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments,
-omit `rollingUpdate`, keep `initContainers: []` and `Replace=true,ServerSideApply=false` on the
+omit `rollingUpdate`, keep `initContainers: []` and
+`Replace=true,ServerSideApply=false` on the
 resource store, preserve
 the Argo image ignore rule for the four generated service proxy Deployments,
 and re-run validation.
@@ -94,5 +217,6 @@ and re-run validation.
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium-enterprise
 kubectl -n octelium get deploy,pod,svc,pvc -l octelium.com/app=octeliumee
+python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 scripts/octelium-e2e-check.sh
 ```
