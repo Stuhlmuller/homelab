@@ -392,6 +392,13 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
 
+For Descheduler values or chart changes, run
+`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
+rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
+exactly one `--descheduling-interval=30m` argument. Update the check alongside
+the pinned chart when upgrading. Live revision, argument and execution-cadence
+acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
+
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
@@ -709,6 +716,13 @@ Drift labels consider both live and rendered policy types, so a transition
 between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
+
+The read-only [Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+joins complete namespace Service, Pod, and EndpointSlice snapshots to the 25
+source-declared emergency Deployments. Offline fixtures cover stale Service
+UID ownership, false Ready endpoints, selector drift, and fallback loss. Its
+sanitized output stays `admission: unproven` without a reviewed exact
+54-Service baseline, direct-path probes, and protected CI checks.
 
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
@@ -1095,6 +1109,13 @@ remaining reader Pod must prevent deny-all policy removal. It does not run
 against the cluster during source validation.
 Only a live success receipt binding both exact S3 object versions and an
 isolated restore qualifies for migration activation.
+`scripts/ci/litellm-runtime-hardening-check.py` lints and renders the declared
+LiteLLM chart with anonymous registry access. It verifies the tokenless
+ServiceAccount, RuntimeDefault seccomp, disabled privilege escalation and
+capability drop, including negative-control fixtures. Static CI runs it before
+delivery; it does not prove native database startup or active caller behavior.
+Issue #844 still requires live Pod checks and its 24-hour acceptance window;
+nonroot/read-only-root controls need a separate current-image rehearsal.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
@@ -1148,6 +1169,51 @@ dig +short A iptorrents.com @1.1.1.1
 kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
+
+## Dormant Octelium resource-store capture
+
+`scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
+the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
+Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
+PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
+single Talos sandbox/container matching its 12-hex ID prefix, three matching
+archive hashes, complete tar members, publisher
+allowlisting, and isolated extraction. Run it with the existing application
+backup fixtures and render the active app. The active render must still show
+one `octeliumee-rscstore` replica and no inspector; the candidate inspector
+resource and fence component render only when added to a temporary copy of the
+app Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
+```sh
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
+python3 -I scripts/ci/application-backup-test.py
+kubectl kustomize clusters/homelab/apps/octelium-enterprise
+python3 -I scripts/ci/openwiki-check.py
+```
+
+Before any future fence, the inspector-only GitOps stage must be Synced and
+the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+ownership and modes: retain the proposed inspector UID/GID 0 only if complete
+file access requires it; otherwise revise to a proven nonroot UID. Readiness
+checks `store.db` readability, while capture must read the whole PVC. The
+later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
+and no other Pod mounting the claim. The capture guard also requires explicit
+Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
+writer still running on a disconnected node; a missing node inventory does not
+count as zero writers. Capture then requires private off-NAS
+storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
+readback, and isolated file extraction. The capture helper repeats the
+current-main and Argo fence checks before issuing its receipt; the proof
+command fetches fresh S3 versions itself and cannot accept a supplied local
+retrieval directory. Repeat the exact-main and zero-writer checks before
+publication or a recovery decision. These gates do not prove a DuckDB
+reopen or authorize WAL quarantine or writer restart.
+
+The source guard requires the future fenced Kustomization to retain the
+inspector's exact-label NetworkPolicy. The Argo guard reads the live
+Application's single `spec.sources` and `status.sync.revisions` entries;
+singular source/revision fields do not exist there. It rejects extra entries,
+source drift, and any revision other than the reviewed `main` SHA.
 
 ## Octelium Cutover Checks
 
@@ -1224,6 +1290,14 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
+The E2E checker records a catalog parse failure without aborting its final
+summary or printing YAML diagnostics. It requires exactly one private
+Kubernetes policy and one private Talos policy. The offline regression
+`python3 -I scripts/ci/octelium-catalog-test.py` exercises the actual catalog
+check and summary with valid, missing, malformed and duplicate inputs.
+Issue #848 remains open until the authenticated owner/Cordium matrix and
+trusted access-log attestation also pass.
+
 For retained native Cordium access, validate the existing human and Workspace
 paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
@@ -1255,6 +1329,12 @@ secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
 Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
+The 90-minute apply job requests a 7,200-second AWS session.
+`scripts/ci/terragrunt-credential-duration-test.py` checks that the explicit
+request covers the job timeout without exceeding the declared IAM maximum,
+and rejects missing, shorter and dynamic durations. Confirm the live role's
+maximum before dispatch; #873 remains open until a same-session AWS read
+succeeds after the former 3,600-second expiry boundary.
 During production apply, the script rechecks current `main` immediately before
 each import, untaint, direct Kubernetes write, and apply. The root Terragrunt
 `before_hook` also checks before each unit's `apply` in a multi-unit run; the
@@ -2199,6 +2279,8 @@ wrapper or a shared/host PID namespace. It also requires failure on corrupt or
 stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
+The fixture and normal failure cleanup stop PostgreSQL with fast shutdown;
+candidate cleanup tries bounded immediate shutdown only if fast stop fails.
 Rendered timing guards include the backup's late-start and execution deadlines
 plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and
@@ -2669,6 +2751,19 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Task lifecycle verification
+
+The [read-only GitOps verifier](../../scripts/verify-gitops.py) binds Application
+source comparisons to an exact homelab revision, checks Deployment convergence
+and ReplicaSet/Pod ownership, then rechecks for drift. Last successful operation
+revisions are separate because unchanged manifests need no new apply.
+Its [failure fixtures](../../scripts/ci/verify-gitops-test.py) run in the existing
+offline gate. The receipt explicitly excludes service-specific acceptance.
+The [lifecycle runbook](../../docs/autonomous-task-lifecycle.md) requires that
+acceptance before closure and retains blocked handoffs outside the cluster.
+Prometheus's OutOfSync annotation routes operators to the same recovery path;
+its loaded-rule API check is distinct from controller health.
 
 ## Mastodon activation gates
 

@@ -260,8 +260,39 @@ taint list when removed, so it must not own the temporary taint. Restore the
 missing `homelab-plan` required reviewer and add `shared/kubernetes-node-labels`
 to its protected PR plan before any node-label change. The five paused workloads
 remove about 2,640 MiB in scheduler-effective requests, closing a 1,315 MiB
-destination deficit if all apps moved, but this is request-only math. Prove actual memory
+destination deficit if all apps moved, but this is request-only math. Prove
+actual memory
 peaks, restart and Pod-slot headroom around etcd, and fallback path health.
+
+The handoff remains blocked even after its taint implementation exists.
+Kubernetes v1.34.11 accepts both `pods/binding` and `bindings`, and a timed
+wait, admission denial probes, and a complete PodList cannot prove that an
+older admitted Binding handler will not place a foreign Pod after the isolation
+check. The API server may time out the response while that handler continues.
+The [runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+requires a reviewed placement fence before activation. A temporary Node rename
+has no validated Talos no-wipe credential and retirement path, and the four
+media `hostPath` PVs remain pinned to the old hostname; it is not a fallback.
+A candidate fence reboots the sole `acer` control plane under the fail-closed
+guard, then requires a successful post-reboot Kubernetes API Node-annotation
+barrier write before a complete PodList and runtime inventory. Reboot plus
+PodList alone cannot order older
+persisted writes. This source-owned operation and its backup, outage, and
+live checks are not implemented; activation remains blocked.
+
+[The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
+Deployment selectors. It records Service identities and Ready Pod target UIDs,
+not endpoint addresses, and keeps admission unproven. The dated 25/29 counts
+do not identify all 54 Services; a fresh private report and owner-reviewed
+exact identity baseline are still required before outage acceptance.
+
+A November 1 17:03 UTC read-only inventory found 64 Octelium namespace
+Services: 25 Ready fallback-covered, 29 native-only, 9 independent of z0, and
+1 unresolved Enterprise store Service with one selected unready Pod and no
+Ready endpoint. The private full report stays
+outside git; this observation does not qualify the outage.
+
 This route incurs monitoring and media outages plus an Octelium/private-app
 interruption during eviction. A persistent guard must deny
 Traefik Pod traffic before container start and through enforcer restart,

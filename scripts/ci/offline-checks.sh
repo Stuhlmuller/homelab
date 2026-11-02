@@ -7,6 +7,7 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -15,6 +16,7 @@ python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
+python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
@@ -30,6 +32,8 @@ python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-service-host-approve-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
+python3 -I scripts/ci/octelium-catalog-test.py
+python3 -I scripts/ci/terragrunt-credential-duration-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
@@ -98,6 +102,7 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/network-policy-candidate-report-test.py
+python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 -I scripts/ci/talos-nri-preparation-check-test.py
@@ -116,6 +121,7 @@ python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
 python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py

@@ -371,10 +371,39 @@ implemented, so these stages are a design, not authority to evacuate a node.
    native Pods may remain Pending. A 15:34 UTC read-only selector join found
    25 Services with Ready fallback endpoints and 29 native-only Services,
    including the operator API, Talos API, Harbor, Langfuse, and Enterprise
-   paths. Accept that specific outage before evacuation. Preserve a trusted
+   paths. The [read-only Service inventory](../scripts/network-policy-octelium-service-inventory.py)
+   now joins complete Octelium namespace Service, Pod, and EndpointSlice lists
+   to the 25 source-declared emergency Deployments. It checks current Service
+   UID ownership, selectors, and Ready Pod targets without recording endpoint
+   addresses or ports. Its report remains `admission: unproven` and
+   `baselineQualified: false`: the dated 25/29 counts do not provide an exact
+   54-Service identity baseline. Capture a fresh private report and review its
+   complete identity set before making that baseline or accepting the outage.
+   Ready EndpointSlices do not prove direct paths or protected CI access.
+   Accept that specific outage before evacuation. Preserve a trusted
    LAN recovery path independent of the native operator and Talos APIs. Update
    the hardcoded bootstrap assertions for this temporary state. Recheck real
    memory peaks, etcd headroom, Pod slots, and all running destination workloads.
+
+   To capture this observation with the authenticated homelab Kubernetes
+   context, write its sanitized JSON to a private file outside the repository:
+
+   ```sh
+   umask 077
+   nix develop --command python3 -I \
+     scripts/network-policy-octelium-service-inventory.py \
+     --native-node zimaboard-0 \
+     > /private/tmp/octelium-service-inventory.json
+   ```
+
+   A November 1 17:03 UTC read-only observation found 64 namespace Services:
+   25 with Ready fallbacks, 29 native-only, 9 independent of z0, and 1
+   unresolved. The unresolved Enterprise store Service has one selected
+   unready Pod and no Ready endpoint. The complete Service identity digest was
+   `ccfdfcd58d54ab71c4d5363e621ce6b2e306d086ba356e06b90ffbb90c9b17a7`.
+   This is an unqualified snapshot; the full private report remains outside
+   git.
+
 4. Implement a protected, source-owned evacuation and taint handoff. After
    backup and destination gates, add an exact-identity temporary `NoExecute`
    taint to `zimaboard-0`. Expect an Octelium/private-app interruption as its
@@ -390,6 +419,64 @@ implemented, so these stages are a design, not authority to evacuate a node.
    applies an empty [atomic Node taint list](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/api/core/v1/types.go#L6036-L6039),
    which can conflict with or remove the canary taint. Keep `node_taints = {}`
    and do not start evacuation until the protected handoff and tests exist.
+
+   This handoff alone cannot establish strict isolation. Kubernetes v1.34.11
+   serves both [`pods/binding` and `bindings`](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/registry/core/rest/storage_core.go#L216-L235).
+   A direct Binding or `spec.nodeName` placement can bypass scheduler taints.
+   Admission denial probes cover new requests, while a request admitted before
+   the handoff can still complete later: an API server
+   [timeout](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/server/config.go#L973-L981)
+   can return to the caller without stopping its inner handler. A timed wait
+   and an empty foreign-Pod list therefore do not prove the old Binding
+   handlers have drained. Keep canary activation blocked until a reviewed
+   placement fence proves this race closed; do not infer that the taint patch,
+   admission probes, or PodList alone provide that guarantee.
+
+   A candidate fence uses this cluster's **single** `acer` API server and etcd
+   member. Verify no second API server, etcd member, or direct etcd writer
+   exists. With the fail-closed policy covering
+   Pod `CREATE`/`UPDATE`, both Binding endpoints, and direct `spec.nodeName`
+   placement, keep `NoExecute` in place and the canary label absent. Verify
+   negative probes for all four request forms and record the policy and
+   binding UIDs and specs. After a verified off-node etcd snapshot, reboot
+   `acer` through a reviewed repository-owned operation. Verify a new boot
+   ID, new API server and etcd processes, the same etcd member ID and retained
+   data directory without restore or wipe, and a revision at least as high as
+   the pre-reboot receipt. Re-read the exact Node UID and `NoExecute` taint,
+   and the unchanged guard UIDs/specs; repeat all four negative probes. The
+   Kubernetes v1.34.11
+   [admission plugin](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/plugin.go#L194-L213)
+   denies requests until its [policy and binding caches](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_source.go#L146-L221)
+   sync. The reboot interrupts the sole Kubernetes API and may restart
+   dependent workloads; qualify that outage before using this route.
+
+   A reboot and PodList alone are insufficient: the single-member
+   [Raft read fast path](https://github.com/etcd-io/raft/blob/v3.6.0/raft.go#L1346-L1362)
+   does not itself prove older persisted proposals are applied. After reboot,
+   a reviewed
+   script must make a real resource-version-guarded Node annotation write with
+   a unique maintenance run ID while `NoExecute` remains. Require the write's
+   successful response and changed resource version, then a complete
+   [most-recent PodList](https://v1-34.docs.kubernetes.io/docs/reference/using-api/api-concepts/#semantics-for-get-and-list)
+   with resource version unset and a node runtime inventory. A successful
+   [later API write](https://etcd.io/docs/v3.6/learning/api_guarantees/)
+   applies any old proposal retained earlier in the same Raft log first;
+   discarded proposals cannot later appear. Abort if any
+   foreign Pod or container remains, the guard is missing, the write fails,
+   or topology differs. Only then may the protected atomic taint handoff run,
+   followed by another complete PodList, runtime check, and guard readback
+   before the label. Keep the guard unchanged through canary release.
+   This fence is **not implemented or live-validated**; keep activation blocked
+   until its source, tests, backup, outage, and recovery gates are reviewed.
+
+   A temporary distinct Node name is also not an admitted fallback. The
+   kubelet's [`system:node:<name>` identity](https://kubernetes.io/docs/reference/access-authn-authz/node/)
+   must match the new name, and no validated Talos v1.11.3 no-wipe credential,
+   rejoin, and old-Node retirement path is documented. Deluge, Radarr, Sonarr,
+   and Bazarr still have [local `hostPath` PVs](storage-nfs.md) with affinity
+   to the current hostname on Talos EPHEMERAL storage. Resolve those identity
+   and data recovery gates in a separate reviewed design before proposing a
+   rename.
 
 No stage above authorizes the firewall or Traefik. A shared-node Traefik move
 needs a guard that installs default-drop on its Pod interface before the

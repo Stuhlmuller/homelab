@@ -283,6 +283,8 @@ if every `.torrent` info hash has an exact fast-resume match and every recovered
 save path stays under `/downloads`, rejecting parent (`..`) components before
 restoring any state. It checks the live fast-resume file first,
 then retained `/config/archive/*.tar.xz` snapshots from newest to oldest. It
+opens fallback archives only when needed and skips unreadable or truncated
+snapshots, so a damaged old archive cannot block a usable current source. It
 archives the old catalogs, atomically restores the complete fast-resume data
 and catalog, and stops without changing state if validation fails. Downloaded
 data and `.torrent` files remain untouched.

@@ -6,6 +6,16 @@ old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
 is verified and its entire workflow is removed through a reviewed PR. Only
 then may a reviewed homelab change remove `dryRun: 'full'`.
 
+On November 1, 2026, legacy scheduled run
+[41272850456](https://github.com/Stuhlmuller/renovate/actions/runs/41272850456)
+failed before App-token creation: its anonymous Harbor route probe could not
+resolve the registry hostname. Dependency Dashboard #159 was last updated
+October 25. Local extraction tests do not establish hosted discovery while
+this prerequisite fails. Restore the declared registry route or reviewed
+runner connectivity, then verify a successful legacy scan and dashboard
+coverage before closing #875, #887 or #888. Keep the cluster writer suspended
+until its separate cutover gates pass.
+
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
 settings. Repository files still override eligible settings. Autodiscovery
