@@ -300,5 +300,6 @@ from the regular mode-0600 file
 The established OAuth provider remains responsible for existing tailnet
 resources and the policy; its existing client cannot create the runtime OAuth
 client and has no webhook write scope. The owner key is never sent to a Pod or
-SSM. Revoke/remove it after the saved-plan apply; future refresh/management of
-the Codex resources needs a new owner credential in the same private slot.
+SSM. Revoke/remove it after the saved-plan apply; future changes to the Codex resources need a new owner credential in the same
+private slot. With that file absent, ordinary refreshes fall back to the
+existing read-capable operator OAuth client, preserving other operator work.

@@ -47,8 +47,8 @@ The Codex resource provider uses an Owner/Admin Tailscale API key at
 0600, parent directory 0700). The existing operator OAuth client lacks webhook
 write access and cannot create an OAuth client. Generate the shortest practical
 API key in Tailscale's Keys console, save it privately, and remove/revoke it
-after provisioning. Never paste it into chat or a repository. Future management
-of these provider-owned resources needs another owner API key in this slot.
+after provisioning. Never paste it into chat or a repository. Changes to these provider-owned resources need another owner API key in this
+slot; ordinary refreshes can use the existing read-capable OAuth credential.
 The existing policy/CI provider continues to use its separate OAuth client.
 
 Use the existing administrator saved-plan path in the
