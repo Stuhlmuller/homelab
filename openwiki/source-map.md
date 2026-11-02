@@ -172,6 +172,7 @@ desired state.
 | `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
+| `clusters/homelab/apps/octelium-enterprise/capture-stage/`, `scripts/octelium-rscstore-capture.py`, and `scripts/ci/octelium-rscstore-capture-test.py` | [Dormant resource-store capture](architecture/storage-and-state.md), [offline and activation gates](operations/validation-gates.md#dormant-octelium-resource-store-capture) |
 | `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
@@ -221,6 +222,17 @@ and [activation gates](operations/validation-gates.md#mastodon-activation-gates)
 Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
 [ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
 [PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).
+
+## Task lifecycle
+
+Task lifecycle source: [skill](../.agents/skills/homelab-task-lifecycle/SKILL.md),
+[issue form](../.github/ISSUE_TEMPLATE/agent-task.yml),
+[runbook](../docs/autonomous-task-lifecycle.md),
+[read-only verifier](../scripts/verify-gitops.py), and
+[failure fixtures](../scripts/ci/verify-gitops-test.py).
+See [agent workflows](operations/agent-workflows.md#task-lifecycle) for ownership
+and [validation gates](operations/validation-gates.md#task-lifecycle-verification)
+for evidence boundaries.
 
 ## Media playback compatibility
 

@@ -50,6 +50,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--candidate", type=Path, required=True)
+    parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--main-sha", required=True)
     parser.add_argument("--config", type=Path, default=automation.CONFIG)
     parser.add_argument("--path", action="append", default=[])
@@ -57,6 +58,9 @@ def main():
     args = parser.parse_args()
     state = json.loads(args.state.read_text())
     candidate = json.loads(args.candidate.read_text())
+    if "candidate_sha" in candidate:
+        parser.error("candidate_sha must come from the fetched Git ref, not committed metadata")
+    candidate["candidate_sha"] = args.candidate_sha
     ok, reason = promotion_plan(state, candidate, args.main_sha)
     if ok and args.path:
         ok, reason = validate_candidate_paths(json.loads(args.config.read_text()), candidate, args.path, args.symlink)

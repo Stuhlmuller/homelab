@@ -7,6 +7,7 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -14,6 +15,7 @@ python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
+python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
@@ -116,6 +118,7 @@ python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
 python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py

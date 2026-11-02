@@ -27,6 +27,41 @@ The homelab skills point to canonical runbooks; OpenWiki supplies searchable
 cross-cutting context. See [wiki maintenance](wiki-maintenance.md) for its
 installation, update, and verification workflow.
 
+## PR Delivery
+
+Repository change tasks continue through protected merge unless the user asks
+for preparation only. The [delivery runbook](../../docs/pr-delivery.md) connects
+PR contribution, protected merging, and stack maintenance. The delivery owner
+repairs actionable ancestors first, then restacks and resumes descendants.
+Drafts and external waits retain a specific next action and ready condition.
+Merge completion is verified in GitHub and `main`; deployment acceptance remains
+separate. A durable runner must resume pending work after checks or dependencies
+change; instructions alone do not schedule another agent session.
+
+The [planner](../../scripts/pr-delivery.py) orders live PR dependencies and
+records checkout-local branch ownership and continuation. Its output is
+advisory: protected merge still verifies signatures, reviews, integration
+identities, and activation gates. The
+[regression suite](../../scripts/ci/pr-delivery-test.py) exercises conflicting
+parents, restacking, missing checks, and interrupted ownership; it runs in the
+repository offline gate and focused PR Delivery workflow. A Codex heartbeat
+provides recurring delivery using the authenticated agent runtime.
+
+## Task Lifecycle
+
+The [lifecycle skill](../../.agents/skills/homelab-task-lifecycle/SKILL.md) and
+[issue form](../../.github/ISSUE_TEMPLATE/agent-task.yml) retain scope, owner,
+authority, dependencies, stage, evidence and next action across sessions.
+The [runbook](../../docs/autonomous-task-lifecycle.md) extends existing PR
+delivery with revision-bound deployment and service-specific acceptance.
+Its read-only verifier rejects stale or incomplete rollout evidence; it does
+not supply functional acceptance or install a runner. Local atomic PR claims
+do not coordinate independent cloud clones. Keep one delivery owner and prove
+an actual scheduled wakeup before describing a task as unattended.
+
+[Research decisions](../../docs/autonomous-development-research.md) distinguish
+documented mechanisms, author claims and deferred integration work.
+
 ## Reference Coding
 
 Before nontrivial code with a relevant upstream or peer implementation, search

@@ -392,6 +392,13 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
 
+For Descheduler values or chart changes, run
+`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
+rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
+exactly one `--descheduling-interval=30m` argument. Update the check alongside
+the pinned chart when upgrading. Live revision, argument and execution-cadence
+acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
+
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
@@ -1148,6 +1155,51 @@ dig +short A iptorrents.com @1.1.1.1
 kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
+
+## Dormant Octelium resource-store capture
+
+`scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
+the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
+Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
+PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
+single Talos sandbox/container matching its 12-hex ID prefix, three matching
+archive hashes, complete tar members, publisher
+allowlisting, and isolated extraction. Run it with the existing application
+backup fixtures and render the active app. The active render must still show
+one `octeliumee-rscstore` replica and no inspector; the candidate inspector
+resource and fence component render only when added to a temporary copy of the
+app Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
+```sh
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
+python3 -I scripts/ci/application-backup-test.py
+kubectl kustomize clusters/homelab/apps/octelium-enterprise
+python3 -I scripts/ci/openwiki-check.py
+```
+
+Before any future fence, the inspector-only GitOps stage must be Synced and
+the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+ownership and modes: retain the proposed inspector UID/GID 0 only if complete
+file access requires it; otherwise revise to a proven nonroot UID. Readiness
+checks `store.db` readability, while capture must read the whole PVC. The
+later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
+and no other Pod mounting the claim. The capture guard also requires explicit
+Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
+writer still running on a disconnected node; a missing node inventory does not
+count as zero writers. Capture then requires private off-NAS
+storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
+readback, and isolated file extraction. The capture helper repeats the
+current-main and Argo fence checks before issuing its receipt; the proof
+command fetches fresh S3 versions itself and cannot accept a supplied local
+retrieval directory. Repeat the exact-main and zero-writer checks before
+publication or a recovery decision. These gates do not prove a DuckDB
+reopen or authorize WAL quarantine or writer restart.
+
+The source guard requires the future fenced Kustomization to retain the
+inspector's exact-label NetworkPolicy. The Argo guard reads the live
+Application's single `spec.sources` and `status.sync.revisions` entries;
+singular source/revision fields do not exist there. It rejects extra entries,
+source drift, and any revision other than the reviewed `main` SHA.
 
 ## Octelium Cutover Checks
 
@@ -2199,6 +2251,8 @@ wrapper or a shared/host PID namespace. It also requires failure on corrupt or
 stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
+The fixture and normal failure cleanup stop PostgreSQL with fast shutdown;
+candidate cleanup tries bounded immediate shutdown only if fast stop fails.
 Rendered timing guards include the backup's late-start and execution deadlines
 plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and
@@ -2670,6 +2724,19 @@ sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
 
+## Task lifecycle verification
+
+The [read-only GitOps verifier](../../scripts/verify-gitops.py) binds Application
+source comparisons to an exact homelab revision, checks Deployment convergence
+and ReplicaSet/Pod ownership, then rechecks for drift. Last successful operation
+revisions are separate because unchanged manifests need no new apply.
+Its [failure fixtures](../../scripts/ci/verify-gitops-test.py) run in the existing
+offline gate. The receipt explicitly excludes service-specific acceptance.
+The [lifecycle runbook](../../docs/autonomous-task-lifecycle.md) requires that
+acceptance before closure and retains blocked handoffs outside the cluster.
+Prometheus's OutOfSync annotation routes operators to the same recovery path;
+its loaded-rule API check is distinct from controller health.
+
 ## Mastodon activation gates
 
 The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
@@ -2678,12 +2745,18 @@ DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
 the DNS job installs Nix and runs both kubeconfig setup and publication inside
 the pinned shell. These fixtures do not contact SMTP or publish DNS.
 
-Before activation, require current-head protected checks and live Terragrunt
-plan, complete fixed-image publication, worker capacity, ready upstream
-Applications and declared SSM credentials. Register only the Mastodon target
-through the saved-plan apply path. Then verify actual Argo revision/health,
-migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
-WebFinger, media and streaming. The DNS workflow requires Mastodon and the
-shared connector Synced/Healthy at its reviewed revision. Preserve data and
-stable keys through recovery; prove backups and isolated restore separately.
+The [scheduled verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)
+runs at 03:35 America/Los_Angeles after the backup execution window. Kustomize
+copies that same isolated template into `mastodon-restore-verification-v2` for
+immediate verification. The route/recovery fixtures check template equality,
+schedule, read-only backup access, disabled API-token mounting, and absence of
+production database or credential mounts. The verifier checks the dump checksum,
+restored schema, owner and media catalog; failures cannot report success.
+
+These declarations and fixtures are not live recovery receipts. Job outcomes
+record individual database rehearsals; they do not prove media-file or stable-key
+recovery. Protected CI and GitOps own delivery conditions. Login, SMTP, public
+HTTP, WebFinger, media and streaming remain distinct runtime observations.
+The DNS workflow checks Mastodon and the shared connector Synced/Healthy at
+its reviewed revision; this page adds no separate activation approval.
 See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).

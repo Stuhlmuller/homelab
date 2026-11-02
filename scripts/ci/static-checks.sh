@@ -242,6 +242,7 @@ echo "::endgroup::"
 
 echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
+bash scripts/ci/descheduler-cadence-check.sh
 echo "::endgroup::"
 
 echo "::group::n8n inactive maintenance fence"
