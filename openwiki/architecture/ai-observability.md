@@ -428,11 +428,16 @@ delete data or restart workloads manually. No repair was performed.
 The protected PR plan runs
 [`litellm-release-check.py`](../../scripts/ci/litellm-release-check.py) for gateway
 runtime or check changes. It requires fresh target health, complete Pod/Job/CronJob
-inventories and room for two 1 GiB gateway Pods plus all eligible recurring
-reservations. Existing active Job requests are counted once; terminating Pods,
-init sidecars and overhead retain their cost. Unknown scheduling, resize or
-parallel recurring behavior fails closed. A fresh kubelet Summary supplies the
-actual memory margin, crediting only the exact serving gateway Pod's existing
-working set up to its 1 GiB reservation. The check uses existing CI access and withholds private
-metrics; a denied read fails `Terragrunt Gate`. It does not prove N-1 capacity,
-recover a worker or activate an extra approval step.
+inventories and scheduler room for the serving Pod's actual effective request
+plus the new Pod's 1 GiB request and all eligible recurring reservations.
+RollingUpdate keeps the old revision's resources: the first unreserved-to-1-GiB
+transition needs 1 GiB; future 1-GiB-to-1-GiB rollouts need 2 GiB. Existing active
+Job requests are counted once; terminating Pods, init sidecars and overhead
+retain their cost. Unknown scheduling, resize or parallel recurring behavior
+fails closed. A fresh kubelet Summary must still show a 2 GiB gateway envelope
+plus absent recurring demand, crediting only the exact serving Pod's existing
+working set (at most 1 GiB). This sampled physical margin is not a hard memory
+bound; neither gateway revision has a memory limit. The check uses existing CI
+access and withholds private metrics; a denied read fails `Terragrunt Gate`.
+It does not prove N-1 capacity, recover a worker or activate an extra approval
+step.

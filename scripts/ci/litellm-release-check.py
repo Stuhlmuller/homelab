@@ -156,13 +156,13 @@ def check(node, lease, pods, crons, jobs, deployment, sets, summary, values, now
             and owned(gateway[0], current[0]["metadata"]["uid"], "ReplicaSet")
             and any(item.get("type") == "Ready" and item.get("status") == "True"
                     for item in gateway[0]["status"].get("conditions", [])), "gateway_baseline_unverified")
-    # Account for the serving Pod before replacing its reservation with two complete Pods.
+    # Reserve the serving revision's actual request plus the new 1 GiB Pod.
     require(pod_request(gateway[0]) <= GIB, "gateway_request_contract_changed")
     other = [pod for pod in bound if pod is not gateway[0]]
     recurring = recurring_reservation(crons, jobs, other, node)
     available = CAPACITY["memory_bytes"](node["status"]["allocatable"]["memory"])
     available -= sum(pod_request(pod) for pod in other) + recurring
-    require(available >= 2 * GIB, "two_pod_reservation_insufficient")
+    require(available >= GIB + pod_request(gateway[0]), "two_pod_reservation_insufficient")
     require(summary["node"]["nodeName"] == "acer", "metrics_identity_changed")
     memory = summary["node"]["memory"]
     fresh(memory["time"], now, 120)

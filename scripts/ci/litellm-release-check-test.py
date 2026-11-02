@@ -64,6 +64,21 @@ class Capacity(unittest.TestCase):
         data[2][0]["spec"]["containers"][0]["resources"]["requests"]["memory"] = "1Gi"
         release.check(*data)
 
+    def test_transition_reserves_actual_serving_request_plus_candidate(self):
+        # Available is after other Pods and the complete 960 MiB recurring budget.
+        for serving, available, admitted in ((0, 1536, True), (1024, 1536, False),
+                                             (1024, 2048, True), (0, 1023, False),
+                                             (512, 1536, True), (512, 1535, False)):
+            with self.subTest(serving_mib=serving, available_mib=available):
+                data = fixture()
+                data[0]["status"]["allocatable"]["memory"] = f"{4096 + 960 + available}Mi"
+                data[2][0]["spec"]["containers"][0]["resources"]["requests"]["memory"] = f"{serving}Mi"
+                if admitted:
+                    release.check(*data)
+                else:
+                    with self.assertRaisesRegex(ValueError, "two_pod_reservation"):
+                        release.check(*data)
+
     def test_actual_headroom_credits_only_exact_fresh_serving_gateway_usage(self):
         data = fixture()
         threshold = 2 * release.GIB - 512 * MIB + 960 * MIB
@@ -118,6 +133,7 @@ class Capacity(unittest.TestCase):
 
     def test_absent_recurring_jobs_cannot_create_false_headroom(self):
         data = fixture()
+        data[2][0]["spec"]["containers"][0]["resources"]["requests"]["memory"] = "1Gi"
         data[0]["status"]["allocatable"]["memory"] = "6656Mi"
         with self.assertRaisesRegex(ValueError, "two_pod_reservation"):
             release.check(*data)

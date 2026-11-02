@@ -74,14 +74,16 @@ held changes or count projected savings as available capacity.
 The apparent 512 MiB gain at 03:16 UTC came from the hourly Renovate Job
 finishing at 03:04:56 UTC. Its unsuspended Acer-only CronJob still reserves
 512 MiB each run. Budget recurring reservations even between runs: do not
-release the hold because a snapshot omits completed Jobs. Other unsuspended
+ignore future demand because a snapshot omits completed Jobs. Other unsuspended
 Acer-eligible jobs add 448 MiB: Mastodon restore verification (128 MiB), media
 PostgreSQL backup (64 MiB), Fleet MySQL backup (128 MiB), Harbor PostgreSQL
 backup (64 MiB), and Octelium PostgreSQL backup (64 MiB). The last three are
 unpinned and can land on Acer. Their schedules differ, but overlap cannot be
 excluded without verified durations. Conservatively reserve 960 MiB for all
-six when absent. The earlier 241.3 MiB deficit is only the Renovate-inclusive
-minimum; the full conservative deficit at the job-free snapshot is 689.3 MiB.
+six when absent. For a future 1-GiB-to-1-GiB rollout, the earlier 241.3 MiB
+deficit is only the Renovate-inclusive minimum; the full conservative deficit
+at the job-free snapshot is 689.3 MiB. These deficits concern that future
+two-reserved-Pod state, not the initial transition from the unreserved Pod.
 Terminal Pods were already excluded from accounting; deleting them adds no room.
 Fresh seven-day telemetry also invalidates PR #1656's old Dispatcharr Celery
 assumption: observed peak 666.72 MiB exceeds both its current 512 MiB request
@@ -98,12 +100,18 @@ It counts every eligible unsuspended CronJob conservatively, deducts only
 already counted active owned Job Pods, and retains terminating Pod requests.
 It reuses the existing Kubernetes request calculator for init sidecars,
 Pod-level resources and overhead; unresolved resize or pending placement fails.
-The actual memory check uses fresh kubelet Summary available bytes: two gateway
-reservations plus absent recurring demand, minus the exact serving gateway
-Pod's already consumed working set (at most 1 GiB). Node/Pod metrics must be
-fresh and collected within 30 seconds of each other. API denial fails closed;
-this change grants no new access and prints no private metrics. This proves the
-specific two-Pod rollout budget, not the wider #793 failure-domain target.
+Scheduler accounting reserves the serving Pod's actual effective request plus
+the new Pod's 1 GiB request. RollingUpdate retains the old revision's resources:
+the initial unreserved-to-1-GiB transition needs 1 GiB, while later 1-GiB-to-1-GiB
+rollouts need 2 GiB, in addition to other Pods and recurring reservations.
+The physical check still requires fresh kubelet Summary available bytes for a
+2 GiB gateway envelope plus absent recurring demand, minus the exact serving
+Pod's already consumed working set (at most 1 GiB). This is a sampled physical
+margin, not a hard memory bound: neither gateway revision has a memory limit.
+Node/Pod metrics must be fresh and collected within 30 seconds of each other.
+API denial fails closed; this change grants no new access and prints no private
+metrics. The check covers this rollout's scheduler budget and sampled memory
+margin; it does not prove the wider #793 failure-domain target.
 
 For diagnosis and post-merge acceptance:
 
