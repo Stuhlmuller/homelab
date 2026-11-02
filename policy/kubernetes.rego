@@ -152,6 +152,7 @@ deny contains msg if {
 	public_external_route
 	not octelium_access_plane
 	not reviewed_funnel_ingress
+	not internal_waypoint_gateway
 	kind := object.get(input, "kind", "<unknown>")
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("%s %q exposes a public route and must declare homelab.rst.io/access-plane=octelium", [kind, name])
@@ -353,6 +354,15 @@ truthy(value) if {
 octelium_access_plane if {
 	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
 	object.get(annotations, "homelab.rst.io/access-plane", "") == "octelium"
+}
+
+internal_waypoint_gateway if {
+	input.apiVersion == "gateway.networking.k8s.io/v1"
+	input.kind == "Gateway"
+	input.metadata.namespace == "istio-egress"
+	input.metadata.annotations["networking.istio.io/service-type"] == "ClusterIP"
+	input.spec.gatewayClassName == "istio-waypoint"
+	input.spec.listeners == [{"name": "mesh", "port": 15008, "protocol": "HBONE"}]
 }
 
 public_external_route if {

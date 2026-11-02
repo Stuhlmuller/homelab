@@ -16,6 +16,37 @@ test_rejects_gateway_attached_non_octelium_external_route if {
 	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
 }
 
+test_allows_internal_istio_egress_waypoint if {
+	violations := deny with input as internal_waypoint_fixture("ClusterIP", "HBONE")
+	count(violations) == 0
+}
+
+test_rejects_public_istio_egress_gateway if {
+	violations := deny with input as internal_waypoint_fixture("LoadBalancer", "HBONE")
+	some msg in violations
+	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
+}
+
+test_rejects_http_listener_on_istio_egress_waypoint if {
+	violations := deny with input as internal_waypoint_fixture("ClusterIP", "HTTP")
+	some msg in violations
+	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
+}
+
+internal_waypoint_fixture(service_type, protocol) := {
+	"apiVersion": "gateway.networking.k8s.io/v1",
+	"kind": "Gateway",
+	"metadata": {
+		"name": "waypoint",
+		"namespace": "istio-egress",
+		"annotations": {"networking.istio.io/service-type": service_type},
+	},
+	"spec": {
+		"gatewayClassName": "istio-waypoint",
+		"listeners": [{"name": "mesh", "port": 15008, "protocol": protocol}],
+	},
+}
+
 test_allows_mesh_only_internal_route if {
 	violations := deny with input as {
 		"apiVersion": "networking.istio.io/v1",

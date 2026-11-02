@@ -56,6 +56,7 @@ jq -e '
   .operation == null
 ' <<<"$enterprise" >/dev/null
 
+argocd app wait platform-gateway-api-crds --core --sync --health --operation --timeout 600 >/dev/null
 argocd app wait platform-envoy-gateway --core --sync --health --operation --timeout 600 >/dev/null
 [[ "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" == "$EXPECTED_SHA" ]] || exit 2
 argocd app sync openclaw-enterprise-foundation --core --revisions "$EXPECTED_SHA" --source-positions 1 --timeout 1800 >/dev/null
