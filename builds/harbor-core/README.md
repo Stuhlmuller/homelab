@@ -63,6 +63,23 @@ report stay private, and an unknown or malformed diagnostic reports `unknown`.
 A stage narrows the failed operation; it does not establish the cause or grant
 vulnerability clearance.
 
+Failed validation retains the complete gzip-compressed report encrypted to
+the [enrolled operator subkey](../../scripts/ci/harbor-encrypt-diagnostic.py)
+for one day as `harbor-core-report-<run-id>-<attempt>`. Raw reports and logs are
+removed. The existing 1 MiB encryption-input limit applies after compression;
+oversized reports or encryption failure retain no artifact and never change the
+failed audit result. No finding is truncated. Decrypt the downloaded ciphertext
+only into a private local directory, then decompress it before inspecting JSON:
+
+```bash
+umask 077
+gpg --output report.json.gz --decrypt harbor-core-report.json.gz.gpg
+gzip --decompress report.json.gz
+```
+
+Do not publish the decrypted report. Reverting the retention wiring restores
+cleanup-only behavior; it does not relax the runtime or publication gates.
+
 ## Protected publication
 
 The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
