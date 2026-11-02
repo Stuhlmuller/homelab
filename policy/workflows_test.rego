@@ -546,10 +546,22 @@ test_allows_digest_pinned_workflow_images if {
 }
 
 test_rejects_generic_pull_request_target_workflow if {
-	workflow := object.union(workflow_with_live_run("echo safe"), {"on": "pull_request_target"})
-	violations := deny with input as workflow
-	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	every events in ["pull_request_target", ["push", "pull_request_target"], {"pull_request_target": null}, {"pull_request_target": false}, {"pull_request_target": {"branches": ["main"]}}] {
+		every key in ["on", "true", true] {
+			workflow := object.union(object.remove(workflow_with_live_run("echo safe"), {"on", "true", true}), {key: events})
+			violations := deny with input as workflow
+			some msg in violations
+			contains(msg, "must not use pull_request_target")
+		}
+	}
+}
+
+test_allows_safe_pull_request_event_forms if {
+	every events in ["pull_request", ["push", "pull_request"], {"pull_request": null}, {"pull_request": {"branches": ["main"]}}] {
+		workflow := object.union(workflow_with_live_run("echo safe"), {"on": events})
+		violations := deny with input as workflow
+		count(violations) == 0
+	}
 }
 
 test_allows_exact_native_receipt_provenance_workflow if {
