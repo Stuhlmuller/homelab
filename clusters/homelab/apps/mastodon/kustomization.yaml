@@ -12,6 +12,7 @@ resources:
   - backup-cronjob.yaml
   - initial-backup-job.yaml
   - restore-verification-job.yaml
+  - restore-verification-cronjob.yaml
   - configmap.yaml
   - runtime-externalsecret.yaml
   - database-role-job.yaml
@@ -29,6 +30,15 @@ replacements:
       - select:
           kind: Job
           name: mastodon-initial-backup-v1
+        fieldPaths: [spec]
+  - source:
+      kind: CronJob
+      name: mastodon-restore-verification
+      fieldPath: spec.jobTemplate.spec
+    targets:
+      - select:
+          kind: Job
+          name: mastodon-restore-verification-v2
         fieldPaths: [spec]
 configMapGenerator:
   - name: mastodon-launcher

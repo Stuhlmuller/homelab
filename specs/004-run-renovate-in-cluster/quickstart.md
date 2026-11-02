@@ -36,6 +36,8 @@ nix develop --command npm --cache "$renovate_fixture_dir/npm-cache" --prefix "$r
 nix develop --command node scripts/ci/renovate-discovery-path-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 nix develop --command node scripts/ci/renovate-cache-recovery-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 nix develop --command node scripts/ci/renovate-cache-corruption-drill-test.mjs "$renovate_fixture_dir/node_modules/renovate"
+# Historical timing diagnostic; the fixture supplies its own temporary remaps.
+nix develop --command node scripts/ci/renovate-cache-stats-log-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 ```
 
 ## Dry-run gate
@@ -67,6 +69,10 @@ access path.
 
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.
+
+## Reliability storage verification
+
+For the local-cache change, verify both `platform-storage` and `renovate` Applications at the reviewed revision before accepting a scheduled run. Confirm the `renovate-cache-local` PVC binds to the same-named retained PV, the Pod runs on `acer`, the credential-free initializer succeeds, and the main container remains UID 12021. Preserve the original NFS claim. Compare separate scheduled Pods completing all eligible repositories and final cleanup within the unchanged deadline; record errors, numeric cache timings, and Pod identities in [the reliability receipt](reliability-receipt.md). Faster completion alone is not proof of a same-key cache hit. The 20 GiB local PV is advisory, so never use the staged NFS capacity-fill drill on this filesystem. Capacity recovery, writer cutover, and seven-day acceptance remain open.
 
 ## Retire the old workflow and enable writes
 

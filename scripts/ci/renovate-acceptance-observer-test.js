@@ -630,7 +630,8 @@ test('private acceptance data binds only to initialized acer-local storage', () 
       assert.doesNotMatch(manifest, /claimName: renovate-cache/, filename);
     } else {
       const inventoryClaim = manifest.match(/claimName: (renovate-cache(?:-dedicated)?)\n\s+readOnly: true/)?.[1];
-      const runnerClaim = runner.match(/claimName: (renovate-cache(?:-dedicated)?)/)?.[1];
+      const runnerClaim = runner.match(/- name: cache\n\s+persistentVolumeClaim:\n\s+claimName: (\S+)\n/)?.[1];
+      assert.ok(runnerClaim, 'the active runner must declare a cache claim');
       assert.equal(inventoryClaim, 'renovate-cache-dedicated');
       if (inventoryClaim !== runnerClaim) {
         assert.match(manifest, /^  suspend: true$/m);

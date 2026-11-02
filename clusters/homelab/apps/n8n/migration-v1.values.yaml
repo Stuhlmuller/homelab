@@ -1,0 +1,215 @@
+controllers:
+  migrate-ai-workflow-v1:
+    type: job
+    serviceAccount:
+      identifier: n8n
+    annotations:
+      argocd.argoproj.io/sync-wave: "1"
+    job:
+      backoffLimit: 1
+      activeDeadlineSeconds: 900
+    pod:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/controller: n8n
+                  app.kubernetes.io/instance: n8n
+                  app.kubernetes.io/name: n8n
+              topologyKey: kubernetes.io/hostname
+    containers:
+      migrate:
+        image:
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
+          tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
+        env:
+          DB_TYPE: postgresdb
+          DB_POSTGRESDB_HOST: n8n-postgres.automation.svc.cluster.local
+          DB_POSTGRESDB_PORT: "5432"
+          DB_POSTGRESDB_DATABASE: n8n
+          DB_POSTGRESDB_USER: n8n
+          DB_POSTGRESDB_SCHEMA: public
+          DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n-postgres/DB_POSTGRESDB_PASSWORD
+          N8N_BOOTSTRAP_ENCRYPTION_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: n8n-secrets
+                key: N8N_BOOTSTRAP_ENCRYPTION_KEY
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            : "${DB_POSTGRESDB_PASSWORD_FILE:?DB_POSTGRESDB_PASSWORD_FILE must point at the n8n Postgres client secret}"
+            test -s "$DB_POSTGRESDB_PASSWORD_FILE"
+
+            if [ ! -s /home/node/.n8n/config ]; then
+              : "${N8N_BOOTSTRAP_ENCRYPTION_KEY:?N8N bootstrap encryption key must be provided by n8n-secrets}"
+              export N8N_ENCRYPTION_KEY="$N8N_BOOTSTRAP_ENCRYPTION_KEY"
+            fi
+
+            umask 077
+            trap 'rm -f /tmp/litellm-credential.json /dev/shm/litellm-existing.json /tmp/litellm-export.log' 0
+            credential_checked=false
+            workflow_ids="$(n8n list:workflow --onlyId)"
+            for workflow_id in s1JVSbnvnmHMCbty xaUDsbylSwaveMQ5 Wc0AMPBPqBegSey5; do
+            if ! printf '%s\n' "$workflow_ids" | grep -Fxq "$workflow_id"; then
+              echo "Skipping AI workflow migration for $workflow_id: workflow absent" >&2
+              continue
+            fi
+            rm -f /tmp/ai-workflow.json
+            n8n export:workflow --id="$workflow_id" --output=/tmp/ai-workflow.json
+            test -s /tmp/ai-workflow.json
+            rm -f /tmp/ai-workflow-active /tmp/ai-workflow-changed
+            node - "$workflow_id" <<'NODE'
+            const fs = require('node:fs');
+            const path = '/tmp/ai-workflow.json';
+            const workflows = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const targets = {
+              s1JVSbnvnmHMCbty: ['5c52f616-3b9e-4483-89e3-effffc393750', 'lmChatAwsBedrock', 'anthropic.claude-3-sonnet-20240229-v1:0'],
+              xaUDsbylSwaveMQ5: ['d8f30a03-c3a1-4bdd-b733-8e33da04b004', 'lmChatOpenAi', 'gpt-5.5'],
+              Wc0AMPBPqBegSey5: ['3278c81b-c7cd-4181-aa17-ad91b9d932a8', 'lmChatAwsBedrock', 'anthropic.claude-3-sonnet-20240229-v1:0'],
+            };
+            const target = targets[process.argv[2]];
+            if (!Array.isArray(workflows) || workflows.length !== 1 ||
+                !target || workflows[0]?.id !== process.argv[2] ||
+                typeof workflows[0]?.active !== 'boolean') {
+              throw new Error('expected exactly the target workflow from n8n export');
+            }
+            const workflow = workflows[0];
+            if (!Array.isArray(workflow.nodes) || !workflow.nodes.every(
+                (candidate) => candidate && typeof candidate === 'object' &&
+                  !Array.isArray(candidate) && typeof candidate.id === 'string')) {
+              throw new Error('invalid n8n workflow nodes');
+            }
+            const matches = workflow.nodes.filter((candidate) => candidate.id === target[0]);
+            if (matches.length === 0) {
+              fs.writeFileSync('/tmp/ai-workflow-changed', 'skip');
+              process.exit(0);
+            }
+            if (matches.length !== 1) throw new Error('duplicate n8n AI model node');
+            const node = matches[0];
+            if (typeof node.type !== 'string' || !node.parameters ||
+                typeof node.parameters !== 'object' || Array.isArray(node.parameters)) {
+              throw new Error('invalid n8n AI model node shape');
+            }
+            fs.writeFileSync('/tmp/ai-workflow-active', String(workflow.active));
+            if (node.type === '@n8n/n8n-nodes-langchain.lmChatOpenAi' &&
+                node.credentials?.openAiApi?.id === 'litellm-managed' &&
+                node.parameters?.model?.value === 'openrouter/free' &&
+                !node.parameters?.responsesApiEnabled &&
+                !Object.keys(node.parameters?.builtInTools ?? {}).length &&
+                !node.parameters?.options?.baseURL && !node.parameters?.options?.extraBody) {
+              fs.writeFileSync('/tmp/ai-workflow-changed', 'false');
+              process.exit(0);
+            }
+            if (node.type !== '@n8n/n8n-nodes-langchain.' + target[1] ||
+                (node.parameters?.model?.value ?? node.parameters?.model) !== target[2] ||
+                node.parameters?.responsesApiEnabled ||
+                Object.keys(node.parameters?.options ?? {}).length ||
+                Object.keys(node.parameters?.builtInTools ?? {}).length) {
+              fs.writeFileSync('/tmp/ai-workflow-changed', 'skip');
+              process.exit(0);
+            }
+            node.type = '@n8n/n8n-nodes-langchain.lmChatOpenAi';
+            node.typeVersion = 1.3;
+            node.parameters = {
+              model: { __rl: true, mode: 'list', value: 'openrouter/free' },
+              options: {},
+            };
+            node.credentials = {
+              openAiApi: { id: 'litellm-managed', name: 'LiteLLM Gateway' },
+            };
+            fs.writeFileSync(path, JSON.stringify(workflows));
+            fs.writeFileSync('/tmp/ai-workflow-changed', 'true');
+            NODE
+            migration_state="$(cat /tmp/ai-workflow-changed)"
+            case "$migration_state" in
+              skip)
+                echo "Skipping AI workflow migration for $workflow_id: workflow no longer matches the inventoried model" >&2
+                continue ;;
+              false) continue ;;
+              true) ;;
+              *) echo "Invalid AI workflow migration result for $workflow_id" >&2; exit 1 ;;
+            esac
+
+            # Imports overwrite matching IDs; type-wide overwrites fill only blank data.
+            if [ "$credential_checked" = false ]; then
+              test -d /dev/shm && test -w /dev/shm
+              rm -f /dev/shm/litellm-existing.json /tmp/litellm-export.log
+              if n8n export:credentials --id=litellm-managed --decrypted \
+                  --output=/dev/shm/litellm-existing.json \
+                  >/tmp/litellm-export.log 2>&1; then
+                credential_export_ok=true
+              else
+                credential_export_ok=false
+              fi
+              if [ "$credential_export_ok" = true ] && [ -s /dev/shm/litellm-existing.json ]; then
+                node - <<'CREDENTIAL'
+            const fs = require('node:fs');
+            const credentials = JSON.parse(fs.readFileSync('/dev/shm/litellm-existing.json', 'utf8'));
+            if (!Array.isArray(credentials) || credentials.length !== 1 ||
+                credentials[0]?.id !== 'litellm-managed' ||
+                credentials[0]?.name !== 'LiteLLM Gateway' ||
+                credentials[0]?.type !== 'openAiApi' ||
+                !credentials[0]?.data || typeof credentials[0].data !== 'object' ||
+                Array.isArray(credentials[0].data) ||
+                Object.keys(credentials[0].data).length !== 0) {
+              throw new Error('existing LiteLLM credential is not the blank migration credential');
+            }
+            CREDENTIAL
+              elif [ ! -e /dev/shm/litellm-existing.json ] && \
+                  grep -Fq 'No credentials found with specified filters' /tmp/litellm-export.log; then
+                # CREDENTIALS_OVERWRITE_DATA in the application supplies the key and URL.
+                printf '%s\n' '[{"id":"litellm-managed","name":"LiteLLM Gateway","type":"openAiApi","data":{}}]' \
+                  >/tmp/litellm-credential.json
+                n8n import:credentials --input=/tmp/litellm-credential.json
+              else
+                echo 'Cannot determine LiteLLM credential state; refusing workflow migration' >&2
+                exit 1
+              fi
+              credential_checked=true
+              rm -f /dev/shm/litellm-existing.json /tmp/litellm-export.log /tmp/litellm-credential.json
+            fi
+
+            n8n import:workflow --input=/tmp/ai-workflow.json
+            if [ "$(cat /tmp/ai-workflow-active)" = true ]; then
+              n8n publish:workflow --id="$workflow_id"
+              echo "N8N_AI_MIGRATION_APPLIED workflow_id=$workflow_id active=true restart_required=true" >&2
+            else
+              echo "N8N_AI_MIGRATION_APPLIED workflow_id=$workflow_id active=false restart_required=false" >&2
+            fi
+            done
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+persistence:
+  data:
+    advancedMounts:
+      migrate-ai-workflow-v1:
+        migrate:
+          - path: /home/node/.n8n
+  postgres-client:
+    advancedMounts:
+      migrate-ai-workflow-v1:
+        migrate:
+          - path: /run/secrets/n8n-postgres
+            readOnly: true

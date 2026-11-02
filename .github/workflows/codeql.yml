@@ -18,7 +18,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
+        uses: chainguard-actions/actions-checkout@37298d8de412b35988dd165ffae45f45b329d365 # v7.0.1
         with:
           persist-credentials: false
       - name: Initialize CodeQL

@@ -61,6 +61,8 @@ class DirectDnsCheck(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as output:
             CHECK.verify(SERVER, initial=True)
         self.assertIn("29 approved names", output.getvalue())
+        self.assertEqual(CHECK.SIGNER.inspect_target.call_args.args[0],
+                         ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"))
         calls = CHECK.dns_answer.call_args_list
         for kind in ("A", "AAAA"):
             self.assertTrue(any(call.args[1:] == ("dns-preflight.cordium.stinkyboi.com", kind, True)

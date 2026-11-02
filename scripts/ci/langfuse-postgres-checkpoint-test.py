@@ -30,13 +30,34 @@ runtime_image = "pgvector/pgvector:pg17@sha256:" + "0" * 64 if mode == "upstream
 body = b"PGDMPfixture"
 checksum = base64.b64encode(hashlib.sha256(body).digest()).decode()
 metadata = {"VersionId": "version-1", "ChecksumSHA256": checksum,
-            "ContentLength": len(body), "ServerSideEncryption": "aws:kms"}
+            "ContentLength": len(body), "ServerSideEncryption": "aws:kms",
+            "Metadata": {"source-revision": os.environ["GITHUB_SHA"],
+                         "source-pvc-uid": "e" * 36, "source-pv-uid": "1" * 36}}
 with open(os.environ["TEST_LOG"], "a") as log:
     log.write(json.dumps([name, args]) + "\n")
 if name == "gh":
-    print("b" * 40 if mode == "main-advanced" else os.environ["GITHUB_SHA"])
+    calls = sum(1 for line in Path(os.environ["TEST_LOG"]).read_text().splitlines()
+                if json.loads(line)[0] == "gh")
+    advanced = (mode == "main-advanced" or
+                mode == "main-advanced-after-dump" and calls >= 2 or
+                mode == "main-advanced-after-upload" and calls >= 3)
+    print("b" * 40 if advanced else os.environ["GITHUB_SHA"])
+elif name == "git":
+    if args == ["rev-parse", "--show-toplevel"]:
+        print(os.environ["TEST_ROOT"])
+    elif args == ["status", "--porcelain", "--untracked-files=all"]:
+        if mode == "dirty-checkout": print(" M scripts/ci/langfuse-postgres-checkpoint.sh")
+    elif args == ["rev-parse", "HEAD"]:
+        print("b" * 40 if mode == "stale-local" else os.environ["GITHUB_SHA"])
+    else:
+        raise SystemExit("unexpected git command")
 elif name == "kubectl":
-    if args[:2] == ["auth", "can-i"]:
+    if args == ["config", "view", "--minify", "--raw", "-o", "json"]:
+        print(json.dumps({"clusters": [{"cluster": {
+            "server": "https://10.1.0.199:6443",
+            "insecure-skip-tls-verify": mode == "insecure-kubeconfig",
+            "certificate-authority-data": "CA"}}]}))
+    elif args[:2] == ["auth", "can-i"]:
         print("no" if (mode == "deny-exec" and "pods/exec" in args) or
               (mode == "deny-pod-list" and args[2:4] == ["list", "pods"]) or
               (mode == "deny-pv" and "persistentvolumes" in args) else "yes")
@@ -107,6 +128,7 @@ elif name == "aws":
     elif "put-object" in args:
         assert "--if-none-match" in args and args[args.index("--if-none-match") + 1] == "*"
         assert Path(args[args.index("--body") + 1]).read_bytes() == body
+        assert "source-pvc-uid=" + "e" * 36 in args[args.index("--metadata") + 1]
         print(json.dumps({"VersionId": "version-1"}))
     elif "head-object" in args:
         print(json.dumps(metadata))
@@ -136,13 +158,16 @@ else:
 
 
 class CheckpointTests(unittest.TestCase):
-    def run_case(self, mode="good", expected_sha=None, expected_pvc_uid=None, expected_pv_uid=None):
+    def run_case(self, mode="good", expected_sha=None, expected_pvc_uid=None,
+                 expected_pv_uid=None, local_upload=False):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)
-            for name in ("gh", "kubectl", "aws", "docker"):
+            for name in ("gh", "git", "kubectl", "aws", "docker"):
                 fake = path / name
                 fake.write_text(MOCK)
                 fake.chmod(0o755)
+            receipt_dir = path / "receipts"
+            receipt_dir.mkdir(mode=0o700)
             log = path / "commands.jsonl"
             sha = "a" * 40
             env = os.environ | {
@@ -162,11 +187,20 @@ class CheckpointTests(unittest.TestCase):
                 "TEST_LOG": str(log),
                 "TEST_DUMPED": str(path / "dumped"),
                 "TEST_PODS_PATH": PODS_PATH,
+                "TEST_ROOT": str(ROOT),
             }
-            result = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+            command = ["bash", str(SCRIPT)]
+            if local_upload:
+                env.pop("GITHUB_ACTIONS")
+                command += ["--local-upload", "--expected-sha", expected_sha or sha,
+                            "--expected-pvc-uid", expected_pvc_uid or "e" * 36,
+                            "--expected-pv-uid", expected_pv_uid or "1" * 36,
+                            "--receipt-dir", str(receipt_dir)]
+            result = subprocess.run(command, cwd=ROOT, env=env,
                                     capture_output=True, text=True, timeout=30)
             commands = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
-            receipt = path / "langfuse-checkpoint-receipt"
+            receipts = list(receipt_dir.glob("langfuse-checkpoint-pending.*")) if local_upload else []
+            receipt = receipts[0] if receipts else path / "langfuse-checkpoint-receipt"
             return result, commands, receipt.read_text() if receipt.exists() else ""
 
     def test_exact_current_main_restores_downloaded_version_without_network(self):
@@ -295,6 +329,51 @@ class CheckpointTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt, "")
         self.assertEqual([name for name, _ in commands], ["gh"])
+
+    def test_local_upload_verifies_readback_without_restoring(self):
+        result, commands, receipt = self.run_case(local_upload=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Pending receipt: ", result.stdout)
+        self.assertIn("Pending Langfuse PostgreSQL restore:", receipt)
+        self.assertNotIn("Verified Langfuse PostgreSQL checkpoint:", receipt)
+        self.assertRegex(receipt, r"key=langfuse/postgresql/[0-9a-f]{40}/[1-9][0-9]*/1/langfuse.dump")
+        self.assertFalse(any(name == "docker" for name, _ in commands))
+        self.assertTrue(all("--profile" in args and args[args.index("--profile") + 1] == "default"
+                            for name, args in commands if name == "aws"))
+        self.assertFalse(any(name in ("pg_restore", "pg_ctl", "postgres")
+                             for name, _ in commands))
+
+    def test_local_upload_rejects_stale_or_dirty_main_before_credentials(self):
+        for mode in ("stale-local", "dirty-checkout", "main-advanced"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode, local_upload=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any(name in ("aws", "docker", "pg_restore") for name, _ in commands))
+
+    def test_local_upload_rejects_insecure_kubeconfig(self):
+        for mode in ("insecure-kubeconfig",):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode, local_upload=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any("put-object" in args for _, args in commands))
+
+    def test_local_upload_corrupt_readback_has_no_pending_receipt(self):
+        result, commands, receipt = self.run_case("corrupt-readback", local_upload=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any(name in ("docker", "pg_restore") for name, _ in commands))
+
+    def test_local_upload_rechecks_main_before_put_and_pending_receipt(self):
+        result, commands, receipt = self.run_case("main-advanced-after-dump", local_upload=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("put-object" in args for _, args in commands))
+        result, commands, receipt = self.run_case("main-advanced-after-upload", local_upload=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertTrue(any("put-object" in args for _, args in commands))
 
 
 if __name__ == "__main__":

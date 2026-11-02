@@ -138,8 +138,10 @@ isolation, and verify that a failed upgrade does not start incompatible writers.
   affected existing policies, and prove required traffic and forbidden access
   during startup, steady state, and restart. Story 3.
 - **FR-008**: Validate per-node capacity, storage, private routing, secret delivery,
-  and recovery before activation. Never lower security or evict unrelated apps to
-  pass a readiness gate. Story 3.
+  and recovery before activation. An existing-node canary may use reviewed,
+  source-owned workload relocation or pauses only with verified recovery,
+  declared outages, and fresh capacity and placement receipts. Never lower
+  security or evict Pods ad hoc to pass a readiness gate. Story 3.
 - **FR-009**: Keep installation, agent provisioning, revision changes, cutover,
   upgrades, and retirement in reviewed repository workflows. Retry ambiguous
   operations without duplicating resources. Story 4.

@@ -2,6 +2,10 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
+Source publication does not authorize key installation or a live dispatch.
+
+
 ## Helm charts
 
 `scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
@@ -158,9 +162,9 @@ and alias verification on each run.
 Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
-publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
-registry challenge. Failed forward readiness is retried at most twice, stopping
-the failed process between attempts. It retains completed content in one
+publisher requires a fresh strict-TLS/401 registry challenge. The protected
+public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
+retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
 temporary OCI directory and forces a recursive check of nested manifests and
 blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
@@ -256,17 +260,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects eight pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Five new digests cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. These candidates use digest-only source references so
+   the existing tag aliases keep their current mapping. It copies and
+   verifies only those eight entries while the unrelated full catalog is held.
+   After this catalog change merges, dispatch
+   it at exact current `main` and require eight complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
+   `afc7e2d` and `7d38526` pins remain for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
@@ -358,9 +363,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures restart the private Harbor port-forward
-   and recheck its TLS registry challenge before retrying either Docker manifests
-   or OCI indexes. Hard authentication, missing-content and digest errors stop.
+   Transient authenticated pull failures recheck the private Harbor TLS registry
+   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
@@ -704,6 +709,18 @@ that consumer exists. Before onboarding, it compares all four fixed version tags
 against the full reviewed catalog. Runtime version changes must update the
 publication scope in the prerequisite change before the consumer reaches main.
 Existing shared platform dependencies keep their own publication ownership.
+
+### Mastodon 4.7.4 security prerequisite
+
+The full catalog additionally retains official 4.7.4 web and streaming index
+pins before any runtime change. The owner authorized a one-time seven-day
+image-age exception for this security release on October 29, 2026.
+The fixed Mastodon scope remains bound to the running 4.7.3 overlay, so publish
+these staged pins through the existing `image_scope=all` lane at exact reviewed
+`main`. Require complete destination pulls and fresh child scan review before
+merging the consuming patch. Catalog entries alone do not prove availability
+or authorize deployment; require fresh database backup and recovery evidence.
+Other image-age policy, routes and persistent data remain unchanged.
 
 ## Publication queue boundaries
 
