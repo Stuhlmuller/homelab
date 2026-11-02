@@ -242,6 +242,7 @@ echo "::endgroup::"
 
 echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
+python3 -I scripts/ci/litellm-runtime-hardening-check.py
 echo "::endgroup::"
 
 echo "::group::n8n inactive maintenance fence"

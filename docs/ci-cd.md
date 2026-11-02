@@ -133,6 +133,14 @@ checks remain fresh.
   can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
+  The 90-minute apply job requests a 7,200-second session; the operator-owned
+  role declares a 25,200-second maximum. Verify the live role allows at least
+  7,200 seconds before dispatch. The offline duration regression rejects a
+  missing or shorter request and requests above the declared maximum.
+  Full #873 acceptance requires a same-session AWS call after 3,600 seconds;
+  a short successful run does not prove that boundary. If an apply stops
+  partway, inspect state read-only and prepare a fresh reviewed plan from
+  current `main`; do not reuse expired credentials or manually undo resources.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
   and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
   Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the

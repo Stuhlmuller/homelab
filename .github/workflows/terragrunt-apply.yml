@@ -181,6 +181,7 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
+          role-duration-seconds: 7200
           role-session-name: homelab-terragrunt-apply-${{ github.run_id }}
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true

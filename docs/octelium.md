@@ -402,6 +402,12 @@ denied. It also checks the AFFiNE native-client CORS preflight and public
 AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other app Services must remain
 non-anonymous.
 
+A missing or malformed catalog, or a missing or duplicate private Kubernetes
+or Talos policy, records an explicit failure and reaches the final failure
+summary. Parser diagnostics and catalog contents are not printed. Validate
+this offline with `python3 -I scripts/ci/octelium-catalog-test.py`; this does
+not replace the authenticated owner and Cordium access checks.
+
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
 connector checks run against homelab:
