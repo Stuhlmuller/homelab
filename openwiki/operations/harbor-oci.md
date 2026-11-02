@@ -719,6 +719,13 @@ private and temporary inputs are removed. On failure, the [bounded diagnostic
 helper](../../scripts/ci/harbor-core-audit-status.sh) prints only a fixed scan
 stage or report-validation category from a separate temporary status file.
 Malformed status becomes `unknown`; the private log and report remain withheld.
+Failed Linux validation additionally retains the complete gzip-compressed
+report as ciphertext for one day, using the [fixed enrolled operator
+recipient](../../scripts/ci/harbor-encrypt-diagnostic.py). The helper's 1 MiB
+input bound applies after compression, with no truncation or plaintext fallback.
+Encryption failure keeps the audit failed and retains no report. The [operator
+instructions](../../builds/harbor-core/README.md) describe private decryption;
+publication and scan acceptance checks are unchanged.
 The category narrows investigation but does not relax the audit or establish
 vulnerability clearance. Identity failures distinguish archive structure,
 archive path/byte hash mismatch, missing inspected root descriptor, invalid
