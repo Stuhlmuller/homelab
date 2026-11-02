@@ -113,7 +113,10 @@ class HarborAPI:
                 if len(parts) > 6:
                     artifact = next(item for item in objects if item["digest"] == parts[6])
                     if method == "POST" and parts[-1] == "scan":
-                        artifact["scan_overview"] = {"vulnerability": {"scan_status": "Pending"}}
+                        if body["scan_type"] == "sbom":
+                            artifact["sbom_overview"] = {"scan_status": "Pending"}
+                        else:
+                            artifact["scan_overview"] = {"vulnerability": {"scan_status": "Pending"}}
                         return 202, b"", {}
                     return 200, artifact, {}
             page = int(query.get("page", ["1"])[0])
@@ -454,12 +457,12 @@ class BootstrapTest(unittest.TestCase):
 
     def test_initial_bootstrap_and_repeat_preserve_identities_and_least_privilege(self):
         self.assertEqual(self.main()[0], 0)
-        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"})
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
         self.assertEqual(len(original), 5)
-        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
                 robot = next(robot for robot in original.values()
@@ -490,7 +493,7 @@ class BootstrapTest(unittest.TestCase):
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots[30], other)
-        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"})
         self.assertEqual(self.api.robots[1]["permissions"], bootstrap.permissions("pull", "homelab"))
         self.assertFalse(self.api.robots[1]["disable"])
         self.assertFalse(any(method == "DELETE" for method, _, _ in self.mutations()))
@@ -501,7 +504,7 @@ class BootstrapTest(unittest.TestCase):
         homelab = copy.deepcopy(self.api.projects["homelab"])
         private_robots = copy.deepcopy({key: self.api.robots[key] for key in (1, 2, 3)})
         self.reconcile()
-        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
         self.assertEqual(self.api.projects["homelab"], homelab)
         self.assertEqual({key: self.api.robots[key] for key in (1, 2, 3)}, private_robots)
         mirror_pull = self.api.robots[4]
@@ -532,7 +535,7 @@ class BootstrapTest(unittest.TestCase):
                                                  "metadata": {**metadata, "severity": "high"}}
                 self.reconcile()
                 self.assertEqual(self.api.projects["homelab"]["metadata"],
-                                 {"public": "false", "auto_scan": "true", "severity": "high"})
+                                 {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true", "severity": "high"})
 
     def test_ignored_scanning_update_fails_verification(self):
         self.api.projects["homelab"] = {"project_id": 7, "name": "homelab",
@@ -545,7 +548,8 @@ class BootstrapTest(unittest.TestCase):
     def image(self, identifier, **changes):
         return {"id": identifier, "type": "IMAGE", "digest": f"sha256:{identifier:064x}",
                 "media_type": "application/vnd.oci.image.config.v1+json",
-                "extra_attrs": {"os": "linux", "architecture": "amd64"}, **changes}
+                "extra_attrs": {"os": "linux", "architecture": "amd64"},
+                "sbom_overview": {"scan_status": "Success"}, **changes}
 
     def test_backfill_only_missing_private_image_scans_and_repeat_skips_pending(self):
         self.api.repositories = [{"id": 1, "name": "homelab/nested/app"}]
@@ -612,6 +616,27 @@ class BootstrapTest(unittest.TestCase):
                 with self.assertRaises(bootstrap.BootstrapError):
                     bootstrap.backfill_scans(self.client)
                 self.assertEqual(self.mutations(), [])
+
+    def test_sbom_backfill_is_independent_and_idempotent(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/app"}]
+        self.api.artifacts["app"] = [self.image(1, scan_overview={"complete": {}}, sbom_overview=None)] + [
+            self.image(i, scan_overview={"complete": {}}, sbom_overview={"scan_status": status})
+            for i, status in enumerate(("Success", "Running", "Pending", "Error"), 2)]
+        bootstrap.backfill_scans(self.client)
+        self.assertEqual([(path, body) for _, path, body in self.mutations()], [
+            ("/projects/homelab/repositories/app/artifacts/sha256:" + f"{1:064x}" + "/scan", {"scan_type": "sbom"})])
+        self.api.requests.clear()
+        bootstrap.backfill_scans(self.client)
+        self.assertEqual(self.mutations(), [])
+
+    def test_backfill_limit_is_checked_before_scan_submission(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/app"}]
+        self.api.override = lambda method, path, body: (
+            (200, [self.image(1)], {"X-Total-Count": str(bootstrap.MAX_SCAN_ARTIFACTS + 1)})
+            if "/artifacts?" in path else None)
+        with self.assertRaises(bootstrap.BootstrapError):
+            bootstrap.backfill_scans(self.client)
+        self.assertEqual(self.mutations(), [])
 
     def test_denied_admin_and_unexpected_response_never_log_credentials(self):
         for status in (401, 403, 500):

@@ -90,6 +90,11 @@ aws ssm get-parameter --region us-west-2 --name /homelab/harbor/robot-scan-passw
 [[ -s "$scratch/harbor-scan-password" ]]
 skopeo login --authfile "$authfile" --username "robot\$homelab+pull" --password-stdin harbor.stinkyboi.com \
   <"$scratch/harbor-pull-password" >>"$transport_log" 2>&1
+mkdir "$scratch/regctl-empty-docker"
+printf '%s\n' '{"auths":{}}' >"$scratch/regctl-empty-docker/config.json"
+REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+  regctl registry login harbor.stinkyboi.com --user "robot\$homelab+pull" \
+  --pass-stdin --skip-check <"$scratch/harbor-pull-password" >>"$transport_log" 2>&1
 rm -f -- "$scratch/harbor-pull-password"
 while IFS= read -r image_id; do
   metadata="$scratch/${image_id}.json"
@@ -125,7 +130,8 @@ while IFS= read -r image_id; do
   rm -rf -- "$pull_directory"
 
   config_digest="$(jq -er '.config_digest' "$metadata")"
-  python3 -I scripts/ci/harbor-native-chainguard-receipt.py scan \
+  REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+    python3 -I scripts/ci/harbor-native-chainguard-receipt.py scan \
     --image-id "$image_id" --config-digest "$config_digest" --destination-digest "$source_digest" \
     --index "$source_index" --scan-password-file "$scratch/harbor-scan-password" --output "$scan_receipt" \
     >>"$transport_log" 2>&1
