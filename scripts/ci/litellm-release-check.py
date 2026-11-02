@@ -201,11 +201,12 @@ def main():
         started = time.monotonic()
         node = read_json("get", "node", "acer", "-o", "json")
         lease = read_json("-n", "kube-node-lease", "get", "lease", "acer", "-o", "json")
-        pods = items(read_json("get", "pods", "-A", "--chunk-size=0", "-o", "json"), "Pod")
-        crons = items(read_json("get", "cronjobs", "-A", "--chunk-size=0", "-o", "json"), "CronJob")
-        jobs = items(read_json("get", "jobs", "-A", "--chunk-size=0", "-o", "json"), "Job")
+        # Raw collection responses retain server resourceVersion/continue; kubectl get flattens them.
+        pods = items(read_json("get", "--raw", "/api/v1/pods?limit=0"), "Pod")
+        crons = items(read_json("get", "--raw", "/apis/batch/v1/cronjobs?limit=0"), "CronJob")
+        jobs = items(read_json("get", "--raw", "/apis/batch/v1/jobs?limit=0"), "Job")
         deployment = read_json("-n", "ai", "get", "deployment", "litellm", "-o", "json")
-        sets = items(read_json("-n", "ai", "get", "replicasets", "--chunk-size=0", "-o", "json"), "ReplicaSet")
+        sets = items(read_json("get", "--raw", "/apis/apps/v1/namespaces/ai/replicasets?limit=0"), "ReplicaSet")
         summary = read_json("get", "--raw", "/api/v1/nodes/acer/proxy/stats/summary")
         values = json.loads(subprocess.run(["yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/litellm/values.yaml")],
                                           capture_output=True, text=True, timeout=15, check=True).stdout)

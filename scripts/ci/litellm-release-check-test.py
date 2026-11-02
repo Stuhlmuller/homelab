@@ -5,6 +5,7 @@ import contextlib
 from datetime import datetime, timezone
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -175,6 +176,43 @@ class Capacity(unittest.TestCase):
             mutation(changed)
             with self.assertRaises(ValueError):
                 release.items(changed, "Pod")
+
+    def test_native_collection_reads_preserve_server_completeness_metadata(self):
+        data = fixture()
+        raw = {
+            "/api/v1/pods?limit=0": ("Pod", data[2]),
+            "/apis/batch/v1/cronjobs?limit=0": ("CronJob", data[3]),
+            "/apis/batch/v1/jobs?limit=0": ("Job", data[4]),
+            "/apis/apps/v1/namespaces/ai/replicasets?limit=0": ("ReplicaSet", data[6]),
+        }
+        reads = []
+        def read(*args):
+            reads.append(args)
+            if args[:2] == ("get", "--raw"):
+                if args[2] == "/api/v1/nodes/acer/proxy/stats/summary":
+                    return data[7]
+                kind, objects = raw[args[2]]
+                return {"kind": kind + "List", "metadata": {"resourceVersion": "1"}, "items": objects}
+            if "node" in args:
+                return data[0]
+            if "lease" in args:
+                return data[1]
+            if "deployment" in args:
+                return data[5]
+            # Native kubectl flattens normal collection output and removes list metadata.
+            return {"kind": "List", "metadata": {}, "items": []}
+        results = [subprocess.CompletedProcess([], 0, "clusters/homelab/apps/litellm/values.yaml\0"),
+                   subprocess.CompletedProcess([], 0, json.dumps(data[8]))]
+        output = io.StringIO()
+        with patch("sys.argv", ["check", "--base-ref", "origin/main"]), \
+             patch.object(release.subprocess, "run", side_effect=results), \
+             patch.object(release, "read_json", side_effect=read), \
+             patch.object(release, "check") as check, \
+             contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            self.assertEqual(release.main(), 0)
+        check.assert_called_once()
+        for path in raw:
+            self.assertIn(("get", "--raw", path), reads)
 
     def test_failed_live_read_withholds_private_output(self):
         changed = subprocess.CompletedProcess([], 0, "clusters/homelab/apps/litellm/values.yaml\0")
