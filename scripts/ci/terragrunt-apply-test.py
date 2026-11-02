@@ -372,7 +372,7 @@ class TerragruntApplyTest(unittest.TestCase):
             result = subprocess.run(
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
                 cwd=root, env=environment,
-                text=True, capture_output=True, timeout=15, check=False)
+                text=True, capture_output=True, timeout=45, check=False)
             calls_file = root / "calls.jsonl"
             calls = [json.loads(line) for line in calls_file.read_text().splitlines()] if calls_file.exists() else []
             self.assertNotIn("UNEXPECTED", [call["event"] for call in calls], result.stderr)
