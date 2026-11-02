@@ -42,6 +42,7 @@ Generated indexes: [root](index.md), [apps](apps/index.md),
 | Repair a PR or deliver a rollout | [Validation gates](operations/validation-gates.md) | [Protected PRs](../.agents/skills/homelab-protected-prs/SKILL.md), [release verification](../.agents/skills/homelab-release-verification/SKILL.md) |
 | Maintain documentation | [Source map](source-map.md), [wiki maintenance](operations/wiki-maintenance.md) | [Homelab context](../.agents/skills/homelab-knowledge-base/SKILL.md), [OpenWiki](../.agents/skills/openwiki/SKILL.md) |
 | Plan a larger feature | [Agent workflows](operations/agent-workflows.md) | Repository `speckit-*` skills and `.specify/` templates |
+| Resume an authorized task | [Agent workflows](operations/agent-workflows.md) | [Task lifecycle](../.agents/skills/homelab-task-lifecycle/SKILL.md), issue evidence and existing delivery owner |
 
 <!-- markdownlint-enable MD013 -->
 
