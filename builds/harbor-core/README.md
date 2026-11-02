@@ -25,6 +25,11 @@ nonbrowser requests remain allowed. Native tests cover UI/session-origin
 denials, valid same-origin requests and the existing non-session API exemption.
 Harbor's declared CSRF key contract and invalid-key refusal remain intact.
 
+The dependency patch pins `github.com/go-jose/go-jose/v4` to `v4.1.6` and
+`golang.org/x/net` to `v0.62.0` to address the next fixable findings from the
+container audit. Their Go checksums remain committed. Compatibility tests do
+not replace the exact rebuilt Linux container audit before publication.
+
 A local Linux binary scan after these changes still reports four Distribution
 v2 findings and one x/crypto finding as unfixed/unknown. Do not suppress these
 or treat the binary-only scan as final container or deployed-digest acceptance.
