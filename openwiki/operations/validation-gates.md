@@ -489,6 +489,17 @@ Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/homelab/us-west-2/operator` are never retired by the workflow. Every saved destroy plan must
 pass the same Conftest policy as ordinary plans before production applies it;
 protected resource deletion cannot bypass policy through unit removal.
+The [shared comparison helper](../../scripts/ci/terragrunt-filter-base.sh)
+normalizes automatic pull-request bases to the common ancestor of the fetched
+base branch and the checked-out PR merge. A main-only unit added while a PR is
+queued must not appear as a retirement in that PR. Missing common ancestry,
+including truncated shallow history, fails closed; the workflow fetches full
+history. Explicit reproduction bases
+and the protected apply's last-successful `APPLY_BASE_SHA` remain exact, so
+retirements across multiple unapplied commits are still included. The
+[stack regression tests](../../scripts/ci/terragrunt-stack-test.py) exercise
+these Git histories without accessing remote state.
+
 Synthetic retirement units reuse the canonical Kubernetes and Helm connection
 configuration. Encrypted-state retirement remains gated on the decoder work in
 [PR #837](https://github.com/Stuhlmuller/homelab/pull/837).
