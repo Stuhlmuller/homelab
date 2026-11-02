@@ -30,6 +30,16 @@ def check(images, *, subresource="", allowed=True):
         return json.loads(base64.b64decode(result["patch"]))
     return []
 
+# Existing network-policy fixtures use the historical Python digest tag directly.
+old_python = "1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
+python_repository = "cgr.dev/chainguard/python"
+old_source = f"{python_repository}:latest@sha256:{old_python}"
+old_mirror = f"harbor.stinkyboi.com/mirror/{python_repository}:{old_python}@sha256:{old_python}"
+assert check({"containers": old_mirror}) == []
+assert check({"containers": old_source}) == [{"op": "replace", "path": "/spec/containers/0/image", "value": old_mirror}]
+assert mapping[python_repository + ":latest"] != old_mirror
+check({"containers": python_repository + ":latest@sha256:" + "f" * 64}, allowed=False)
+
 source = next(item["source"] for item in selected["images"]
               if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1])
 short = source.split("@", 1)[0]

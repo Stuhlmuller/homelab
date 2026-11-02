@@ -30,7 +30,7 @@ SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 IMAGE_ID = re.compile(r"^chainguard-[a-z0-9][a-z0-9-]{0,62}$")
 PLATFORM = re.compile(r"^linux/(amd64|arm64)$")
 SOURCE = re.compile(r"^cgr\.dev/(chainguard/[a-z0-9][a-z0-9.-]*):latest$")
-CATALOG_SOURCE = re.compile(r"^cgr\.dev/chainguard/[a-z0-9][a-z0-9.-]*:[A-Za-z0-9][A-Za-z0-9.-]*$")
+CATALOG_SOURCE = re.compile(r"^(cgr\.dev/chainguard/[a-z0-9]+(?:(?:\.|-+)[a-z0-9]+)*)(?::([A-Za-z0-9][A-Za-z0-9.-]{0,127}))?$")
 DESTINATION = re.compile(r"^harbor\.stinkyboi\.com/homelab/chainguard/([a-z0-9][a-z0-9.-]*):latest$")
 INDEX_MEDIA_TYPES = {
     "application/vnd.oci.image.index.v1+json",
@@ -200,18 +200,28 @@ def config_images(config):
 def catalog_digests(catalog):
     require(isinstance(catalog, dict) and set(catalog) == {"images"}
             and isinstance(catalog["images"], list), "Chainguard catalog is malformed")
-    result = {}
+    tagged = {}
+    history = set()
     for item in catalog["images"]:
         require(isinstance(item, dict) and set(item) == {"source"} and isinstance(item["source"], str),
                 "Chainguard catalog entry is malformed")
-        try:
-            source, digest = item["source"].rsplit("@", 1)
-        except ValueError as error:
-            raise ReceiptError("Chainguard catalog entry lacks a digest") from error
-        require(CATALOG_SOURCE.fullmatch(source) is not None and SHA256.fullmatch(digest) is not None
-                and source not in result, "Chainguard catalog source is invalid")
-        result[source] = digest
-    return result
+        source, _, digest = item["source"].rpartition("@")
+        match = CATALOG_SOURCE.fullmatch(source)
+        require(match is not None and SHA256.fullmatch(digest) is not None, "Chainguard catalog source is invalid")
+        repository, tag = match.groups()
+        if tag:
+            require(source not in tagged, "Chainguard catalog tag is ambiguous")
+            tagged[source] = digest
+        else:
+            require((repository, digest) not in history, "duplicate historical Chainguard digest")
+            history.add((repository, digest))
+
+    # A retained digest supports existing pulls. Only a tagged row selects a native import.
+    current = {(source.rsplit(":", 1)[0], digest) for source, digest in tagged.items()}
+    require(not history.intersection(current), "historical Chainguard digest is already tagged")
+    require({repo for repo, _ in history} <= {repo for repo, _ in current},
+            "historical Chainguard digest lacks a tagged repository")
+    return tagged
 
 
 def replication_rules(replication):
