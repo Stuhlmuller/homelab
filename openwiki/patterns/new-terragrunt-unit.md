@@ -40,6 +40,18 @@ Use this checklist before adding or changing a Terragrunt unit.
    outputs.
 10. Format and validate the smallest affected scope before planning or applying.
 
+The repository-local Application module fixes its API-owned computed fields:
+metadata annotations/labels, destination name, and qualifying multi-source
+chart/ref/directory paths. Callers supply the manifest, with no unused computed
+field override. The SSM-backed Kubernetes Secret module likewise fixes `Opaque`
+and rejects empty or `REPLACE_ME` values; ephemeral reads, write-only data and
+the caller's rotation revision remain unchanged. See the
+[Application module](../../IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf)
+and [Secret module](../../IaC/terragrunt-catalog/modules/kubernetes-secret-from-ssm/main.tf).
+The native HCL regression `scripts/ci/argocd-computed-fields-test.py` covers
+omitted, null, dot and explicit source paths. Use explicit null comparisons:
+OpenTofu's `contains` rejects a null search value, even in a list containing null.
+
 ## Knowledge-Base Update
 
 Update [GitOps Flow](../architecture/gitops-flow.md) and [Validation Gates](../operations/validation-gates.md) when the

@@ -1052,7 +1052,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:static-policy' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
-    '.github/workflows/terragrunt-plan.yml:terragrunt-plan'
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
+    '.github/workflows/validate.yml:harbor-core-compatibility'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
@@ -1120,6 +1121,7 @@ done <<'EOF'
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
 .github/workflows/terragrunt-plan.yml 955f02170dbd3ff8a8e692281a759ead321a99fa296bc795481d5383217b254e
+.github/workflows/validate.yml ea0547f9a8980c2683a57fb2cab18d208d36bf970b02ff5dac471fef440f9d9f
 EOF
 echo "::endgroup::"
 

@@ -27,9 +27,8 @@ the legacy source, not the target access contract:
 ## Mastodon public transport exception
 
 Mastodon exposes only its anchored federation/media allowlist anonymously.
-All other `mastodon.stinkyboi.com` paths forward to the Octelium ingress
-and require the catalog's non-anonymous `mastodon.default` human-access Service.
-Establish and verify that Service before rolling this connector revision.
+All other `mastodon.stinkyboi.com` paths return HTTP 404. Browser and native
+clients use split DNS over the tailnet to private Traefik, without Octelium.
 The public DNS record remains necessary for federation; it is not permission
 to expose login, administration or client APIs. See the
 [Mastodon access boundary](../mastodon/README.md#public-federation-boundary).

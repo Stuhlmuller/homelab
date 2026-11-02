@@ -204,7 +204,7 @@ def test_state(state, binary, corefile, hostnames, public_port):
                     pass
                 check(time.monotonic() < deadline, f"resolver did not sync for {state}")
                 time.sleep(0.15)
-            for name in ("stinkyboi.com", "affine.stinkyboi.com",
+            for name in ("mastodon.stinkyboi.com", "stinkyboi.com", "affine.stinkyboi.com",
                          "AfFiNe.StInKyBoI.CoM",
                          "team.cordium.stinkyboi.com",
                          "agent-0123456789abcdef0123456789abcdef.agents.oce.stinkyboi.com"):
@@ -243,7 +243,7 @@ def main():
     args = parser.parse_args()
     check(args.resolver_bin.is_file(), "resolver binary is missing")
     hostnames = load_yaml(TRAEFIK_VALUES)["service"]["private"]["annotations"]["coredns.io/hostname"]
-    private_samples = {"stinkyboi.com.", "affine.stinkyboi.com.",
+    private_samples = {"mastodon.stinkyboi.com.", "stinkyboi.com.", "affine.stinkyboi.com.",
                        "AfFiNe.StInKyBoI.CoM.",
                        "team.cordium.stinkyboi.com.",
                        "agent-0123456789abcdef0123456789abcdef.agents.oce.stinkyboi.com."}

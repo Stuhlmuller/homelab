@@ -52,7 +52,9 @@ jobs:
       - name: Install pinned runtime audit tools
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
       - name: Check runtime report trust boundaries
-        run: python3 -I scripts/ci/harbor-core-scan-check-test.py
+        run: |
+          python3 -I scripts/ci/harbor-core-scan-check-test.py
+          python3 -I scripts/ci/harbor-encrypt-diagnostic-test.py
       - name: Audit exact built runtime privately
         run: |
           set -euo pipefail
@@ -62,12 +64,22 @@ jobs:
           trap 'rm -f "$private_log" "$diagnostic_file"' EXIT
           printf '%s\n' launcher >"$diagnostic_file"
           if ! nix develop --command bash builds/harbor-core/scan.sh \
+            --encrypted-report "$RUNNER_TEMP/harbor-core-report.json.gz.gpg" \
             --diagnostic-file "$diagnostic_file" >"$private_log" 2>&1; then
             bash scripts/ci/harbor-core-audit-status.sh "$diagnostic_file"
             exit 1
           fi
           grep -F 'Complete private runtime audit passed;' "$private_log"
           grep -F 'Runtime audit receipt: ' "$private_log"
+      - name: Retain only encrypted failed runtime report
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-core-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-core-report.json.gz.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false
   repo:
     runs-on: ubuntu-latest
     steps:

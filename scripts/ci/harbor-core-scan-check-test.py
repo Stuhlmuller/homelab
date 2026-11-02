@@ -291,6 +291,9 @@ class ScanTests(unittest.TestCase):
     def test_ci_keeps_raw_scan_output_in_private_log(self):
         workflow = VALIDATE_WORKFLOW.read_text()
         self.assertIn('--diagnostic-file "$diagnostic_file" >"$private_log" 2>&1', workflow)
+        self.assertIn('--encrypted-report "$RUNNER_TEMP/harbor-core-report.json.gz.gpg"', workflow)
+        self.assertIn('path: ${{ runner.temp }}/harbor-core-report.json.gz.gpg', workflow)
+        self.assertIn('retention-days: 1', workflow)
         self.assertIn('bash scripts/ci/harbor-core-audit-status.sh "$diagnostic_file"', workflow)
         self.assertIn('trap \'rm -f "$private_log" "$diagnostic_file"\' EXIT', workflow)
 

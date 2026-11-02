@@ -121,13 +121,13 @@ For diagnosis and post-merge acceptance:
    -o wide`. Keep #844's native startup, caller and 24-hour acceptance gates.
 2. Recompute Acer scheduling requests from all nonterminal bound Pods,
    including terminating Pods, restartable init containers and Pod overhead.
-   Require room for **both** 1 GiB gateway Pods: at least 2 GiB unreserved while
-   the old gateway has no request; after correction, at least 1 GiB unreserved
-   in addition to the running gateway. Inventory every unsuspended CronJob
+   Retain the serving Pod's actual request and reserve another 1 GiB for the
+   candidate. The initial transition has a combined 1 GiB gateway request;
+   subsequent rollouts have 2 GiB combined. Inventory every unsuspended CronJob
    eligible for Acer, including unpinned templates; account for verified run
    durations and overlap, or conservatively include all of them. With all six
-   current jobs absent, reserve another 960 MiB: require 3,008 MiB unreserved
-   before correction, or 1,984 MiB after one corrected gateway is running.
+   current jobs absent, reserve another 960 MiB: require 1,984 MiB unreserved
+   after counting the serving gateway's actual request.
    Subtract reservations already counted for their active owned Job Pods to
    avoid double-counting. The Renovate-only 2.5 GiB/1.5 GiB thresholds are
    insufficient for this full inventory. Require actual memory margin for the

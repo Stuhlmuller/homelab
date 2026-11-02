@@ -315,6 +315,18 @@ local/expected/current-main check. Tests cover a shallow image checkout, its
 later Deployment commit, executable drift, restoration and rewritten history.
 
 
+The controller image's `--healthcheck` reads only a private progress receipt and
+its lifecycle lock; it makes no API calls and reports health without restarting
+or interrupting a job. Main-loop progress sets bounded polling, provisioning,
+runner, cleanup and idle deadlines. The runner deadline preserves the existing
+365-minute execution timeout plus one minute of reporting grace; other phases
+expire independently. PID/start-time binding rejects receipts from a dead or
+reused process. A stalled main loop cannot renew its receipt in the background.
+Missing, stale or invalid receipts report unhealthy. Health-write failure stops
+new work while retaining the existing independent cleanup, and exit removes the
+receipt. Deployment probes/restart behavior still require a separate reviewed
+activation; this image change does not enable the runner pool.
+
 ## GitHub-managed Code Quality jobs
 
 The 33 local jobs are not the complete live Actions inventory. On 2026-10-11,
