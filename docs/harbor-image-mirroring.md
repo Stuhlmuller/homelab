@@ -292,6 +292,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    compatibility migration may reference a private direct digest such as
    `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 
+   The native Python and curl policies must read back the integer `0` for
+   `dest_namespace_replace_count`. An omitted create/update field causes Harbor
+   to flatten both paths, and a successful scheduled execution can then leave
+   the declared private destinations absent. Let the bootstrap reconcile each
+   policy and the next hourly import complete before checking the receipt.
+   Existing flattened copies are retained.
+
    After that public source copy and Harbor's native Python/curl replication
    have both completed, verify the private imports from exact reviewed current
    `main`:

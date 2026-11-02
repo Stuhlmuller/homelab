@@ -128,6 +128,8 @@ def desired_replication_policy(rule, source_registry_id, paused=None):
         "name": f"chainguard-{rule['repository'].split('/', 1)[1]}",
         "description": "Repository-managed Chainguard import; exact stable tag",
         "dest_namespace": rule["destination"].split("/", 1)[0],
+        # Omission selects Harbor's legacy flattening mode (-1); zero preserves chainguard/<image>.
+        "dest_namespace_replace_count": 0,
         "dest_registry": {"id": 0},
         "src_registry": {"id": source_registry_id},
         "trigger": {"type": "scheduled", "trigger_settings": {"cron": "0 0 * * * *"}},
@@ -192,6 +194,9 @@ def reconcile_registry(client, name):
 
 
 def replication_matches(actual, desired):
+    # The API returns a numeric count; false, 0.0, or a missing field cannot prove zero.
+    if type(actual.get("dest_namespace_replace_count")) is not int:
+        return False
     # Harbor omits false policy flags from its JSON readback.
     return all((actual.get(key) or {}).get("id", 0) == value["id"]
                if key in {"src_registry", "dest_registry"}
@@ -215,11 +220,14 @@ def reconcile_replication(client, policy):
             identifier = created_id(headers, "/replication/policies")
         else:
             current = policies[0]
+            if not isinstance(current, dict) or current.get("name") != desired["name"]:
+                raise BootstrapError("Harbor returned the wrong replication policy")
             identifier = positive_id(current.get("id"))
             if not replication_matches(current, desired):
                 client.request("PUT", f"/replication/policies/{identifier}", desired, json_response=False)
         verified, _ = client.request("GET", f"/replication/policies/{identifier}")
-        if not isinstance(verified, dict) or not replication_matches(verified, desired):
+        if (not isinstance(verified, dict) or positive_id(verified.get("id")) != identifier
+                or not replication_matches(verified, desired)):
             raise BootstrapError("Harbor replication policy verification failed")
 
 

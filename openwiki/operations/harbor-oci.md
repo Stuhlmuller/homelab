@@ -392,6 +392,14 @@ a targeted plan from `main` at `f6506136` found no changes on 2026-10-18.
 The parameter alone does not create the robot or start a receipt workflow.
 See the [SSM contract](../../docs/secrets-aws-ssm.md).
 
+The [bootstrap](../../clusters/homelab/apps/harbor/bootstrap.py) requires
+`dest_namespace_replace_count: 0` on both hourly native imports. Harbor's
+legacy default `-1` drops the source `chainguard/` component even when the
+replication execution succeeds. Verify the numeric readback on the same
+policy ID and wait for the intended `homelab/chainguard/{python,curl}` artifacts
+before requesting the protected receipt. The repair keeps existing flattened
+artifacts. See the [Harbor runbook](../../clusters/homelab/apps/harbor/README.md).
+
 The protected native receipt copies complete source and authenticated Harbor
 indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability

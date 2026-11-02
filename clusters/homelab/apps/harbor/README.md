@@ -159,8 +159,19 @@ hourly, with seconds and minutes fixed to zero. Five-field schedules fail with
 HTTP 400. Creation endpoints return an empty HTTP 201 body; bootstrap verifies
 the object identified by the endpoint-scoped `Location` header and compares
 registry references by ID after Harbor expands them in readback responses.
-Omitted false flags are equivalent to false; an enabled deletion flag still
-fails verification.
+The Python and curl rules set `dest_namespace` to `homelab` and
+`dest_namespace_replace_count` to the integer `0`. Harbor keeps the source
+`chainguard/` component, publishing `homelab/chainguard/python` and
+`homelab/chainguard/curl`. Omitting the count selects legacy mode `-1`, which
+publishes at `homelab/python` and `homelab/curl`. Bootstrap corrects the owned
+rules in place and verifies their numeric count and identity on readback.
+Existing flattened artifacts stay in Harbor. Wait for the next scheduled run,
+then verify the complete private imports at their declared destinations.
+[Harbor's destination mapping](https://github.com/goharbor/harbor/blob/v2.15.2/src/controller/replication/flow/stage.go#L192-L214)
+explains how the count affects repository paths.
+
+Harbor may omit false boolean flags in readback. An enabled deletion flag
+still fails verification.
 See the [Harbor replication API](https://github.com/goharbor/harbor/blob/v2.15.2/src/server/v2.0/handler/replication.go)
 and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.2/src/controller/replication/model/model.go).
 

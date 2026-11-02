@@ -247,6 +247,54 @@ class BootstrapTest(unittest.TestCase):
         with self.assertRaises(bootstrap.BootstrapError):
             bootstrap.validate_replication_policy(bad)
 
+    def test_preserve_namespace_count_creates_and_repairs_owned_policies_once(self):
+        contract = bootstrap.CHAINGUARD_REPLICATION
+        bootstrap.reconcile_replication(self.client, contract)
+        stored = self.api.replication_policies
+        identities = {name: policy["id"] for name, policy in stored.items()}
+        self.assertEqual(set(identities), {"chainguard-python", "chainguard-curl"})
+        for rule in contract["rules"]:
+            policy = stored["chainguard-" + rule["repository"].split("/")[-1]]
+            self.assertIs(type(policy["dest_namespace_replace_count"]), int)
+            self.assertEqual(policy["dest_namespace_replace_count"], 0)
+            self.assertEqual(policy["dest_namespace"] + "/" + rule["repository"], rule["destination"])
+        for invalid in (-1, None, False, 0.0, "0", 1):
+            with self.subTest(previous=invalid):
+                for policy in stored.values():
+                    if invalid is None:
+                        policy.pop("dest_namespace_replace_count")
+                    else:
+                        policy["dest_namespace_replace_count"] = invalid
+                self.api.requests.clear()
+                bootstrap.reconcile_replication(self.client, contract)
+                writes = [(method, path) for method, path, _ in self.mutations()]
+                self.assertCountEqual(writes, [("PUT", f"/replication/policies/{identifier}")
+                                               for identifier in identities.values()])
+                for name, policy in stored.items():
+                    self.assertEqual(policy["id"], identities[name])
+                    self.assertIs(type(policy["dest_namespace_replace_count"]), int)
+                    self.assertEqual(policy["dest_namespace_replace_count"], 0)
+                self.api.requests.clear()
+                bootstrap.reconcile_replication(self.client, contract)
+                self.assertEqual(self.mutations(), [])
+
+    def test_replication_rejects_wrong_list_identity_or_unverified_count(self):
+        contract = bootstrap.CHAINGUARD_REPLICATION
+        bootstrap.reconcile_replication(self.client, contract)
+        python = self.api.replication_policies["chainguard-python"]
+        self.api.requests.clear()
+        self.api.override = lambda method, path, body: (
+            (200, [{**python, "name": "third-party"}], {})
+            if path.startswith("/replication/policies?name=chainguard-python") else None)
+        with self.assertRaisesRegex(bootstrap.BootstrapError, "wrong replication policy"):
+            bootstrap.reconcile_replication(self.client, contract)
+        self.assertEqual(self.mutations(), [])
+        for bad in ({"dest_namespace_replace_count": False}, {"id": python["id"] + 100}):
+            self.api.override = lambda method, path, body: (
+                (200, {**python, **bad}, {}) if path == f"/replication/policies/{python['id']}" else None)
+            with self.assertRaisesRegex(bootstrap.BootstrapError, "verification failed"):
+                bootstrap.reconcile_replication(self.client, contract)
+
     def test_kubernetes_tag_lock_pins_match_platform_and_catalog(self):
         platform = json.loads((ROOT / "scripts/config/platform-maintenance.json").read_text())
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
