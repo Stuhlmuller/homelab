@@ -73,9 +73,16 @@ held changes or count projected savings as available capacity.
 
 The apparent 512 MiB gain at 03:16 UTC came from the hourly Renovate Job
 finishing at 03:04:56 UTC. Its unsuspended Acer-only CronJob still reserves
-512 MiB each run. Budget that recurring reservation even between runs: do not
-release the hold because a snapshot omits the completed Job. Terminal Pods
-were already excluded from scheduler accounting; deleting them adds no room.
+512 MiB each run. Budget recurring reservations even between runs: do not
+release the hold because a snapshot omits completed Jobs. Other unsuspended
+Acer-eligible jobs add 448 MiB: Mastodon restore verification (128 MiB), media
+PostgreSQL backup (64 MiB), Fleet MySQL backup (128 MiB), Harbor PostgreSQL
+backup (64 MiB), and Octelium PostgreSQL backup (64 MiB). The last three are
+unpinned and can land on Acer. Their schedules differ, but overlap cannot be
+excluded without verified durations. Conservatively reserve 960 MiB for all
+six when absent. The earlier 241.3 MiB deficit is only the Renovate-inclusive
+minimum; the full conservative deficit at the job-free snapshot is 689.3 MiB.
+Terminal Pods were already excluded from accounting; deleting them adds no room.
 Fresh seven-day telemetry also invalidates PR #1656's old Dispatcharr Celery
 assumption: observed peak 666.72 MiB exceeds both its current 512 MiB request
 and the proposed 448 MiB. Do not count that reduction. ClickHouse and Langfuse
@@ -93,10 +100,14 @@ Before releasing the draft:
    including terminating Pods, restartable init containers and Pod overhead.
    Require room for **both** 1 GiB gateway Pods: at least 2 GiB unreserved while
    the old gateway has no request; after correction, at least 1 GiB unreserved
-   in addition to the running gateway. Also reserve the hourly Renovate Job's
-   512 MiB when it is absent: the first-rollout threshold is then 2.5 GiB
-   unreserved, or 1.5 GiB after one corrected gateway is running. Do not count
-   the Job twice when it is already included. Require actual memory margin for the
+   in addition to the running gateway. Inventory every unsuspended CronJob
+   eligible for Acer, including unpinned templates; account for verified run
+   durations and overlap, or conservatively include all of them. With all six
+   current jobs absent, reserve another 960 MiB: require 3,008 MiB unreserved
+   before correction, or 1,984 MiB after one corrected gateway is running.
+   Subtract reservations already counted for their active owned Job Pods to
+   avoid double-counting. The Renovate-only 2.5 GiB/1.5 GiB thresholds are
+   insufficient for this full inventory. Require actual memory margin for the
    additional measured startup peak and system/workload growth, with no active
    pressure. A `top` snapshot alone is not a capacity proof. Record the fresh
    receipt privately and keep the hold if any gate is uncertain.
