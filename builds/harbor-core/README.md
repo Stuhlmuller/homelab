@@ -25,6 +25,11 @@ nonbrowser requests remain allowed. Native tests cover UI/session-origin
 denials, valid same-origin requests and the existing non-session API exemption.
 Harbor's declared CSRF key contract and invalid-key refusal remain intact.
 
+The dependency patch pins `github.com/go-jose/go-jose/v4` to `v4.1.6` and
+`golang.org/x/net` to `v0.62.0` to address the next fixable findings from the
+container audit. Their Go checksums remain committed. Compatibility tests do
+not replace the exact rebuilt Linux container audit before publication.
+
 A local Linux binary scan after these changes still reports four Distribution
 v2 findings and one x/crypto finding as unfixed/unknown. Do not suppress these
 or treat the binary-only scan as final container or deployed-digest acceptance.
@@ -62,6 +67,23 @@ root descriptor exists. Neither prints IDs. The complete scanner output and
 report stay private, and an unknown or malformed diagnostic reports `unknown`.
 A stage narrows the failed operation; it does not establish the cause or grant
 vulnerability clearance.
+
+Failed validation retains the complete gzip-compressed report encrypted to
+the [enrolled operator subkey](../../scripts/ci/harbor-encrypt-diagnostic.py)
+for one day as `harbor-core-report-<run-id>-<attempt>`. Raw reports and logs are
+removed. The existing 1 MiB encryption-input limit applies after compression;
+oversized reports or encryption failure retain no artifact and never change the
+failed audit result. No finding is truncated. Decrypt the downloaded ciphertext
+only into a private local directory, then decompress it before inspecting JSON:
+
+```bash
+umask 077
+gpg --output report.json.gz --decrypt harbor-core-report.json.gz.gpg
+gzip --decompress report.json.gz
+```
+
+Do not publish the decrypted report. Reverting the retention wiring restores
+cleanup-only behavior; it does not relax the runtime or publication gates.
 
 ## Protected publication
 

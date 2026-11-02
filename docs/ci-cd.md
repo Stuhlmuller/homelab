@@ -863,11 +863,16 @@ Kubernetes secret materialization stacks. To review those locally, assume the
 production apply role, install the kubeconfig, and run a focused
 `terragrunt plan` from the stack directory.
 
-The local scripts rely on your current `main` ref for Terragrunt's
-`--filter-affected` comparison. Update `main` first when you want local output
-to match the GitHub pull request or push diff. Deleted-unit detection uses the
-same comparison base; set `TERRAGRUNT_FILTER_BASE_SHA` and
-`TERRAGRUNT_FILTER_HEAD_SHA` when reproducing an exact GitHub run locally.
+Automatic pull-request comparisons use the common ancestor of the fetched
+base branch and the PR merge commit. This prevents newer main-only units from
+appearing as PR deletions. Missing common ancestry, including truncated shallow
+history, stops the plan.
+Protected applies retain the exact last-successful `APPLY_BASE_SHA`, including
+retirements across multiple unapplied commits. Local runs otherwise use the
+current `main` ref. Set `TERRAGRUNT_FILTER_BASE_SHA` and
+`TERRAGRUNT_FILTER_HEAD_SHA` to reproduce an exact comparison locally;
+explicit bases are not normalized. Changed-unit and deleted-unit selection
+share this comparison base.
 
 The PR plan script emits only generic progress messages. Inspect detailed plans
 only in the trusted local session; do not paste them into GitHub.

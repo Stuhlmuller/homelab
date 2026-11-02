@@ -60,7 +60,7 @@ server address.
 From the trusted signer Mac with tailnet access and read-only cluster access, run:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 It binds the supplied IP to the online signed proxy and live Service, then
@@ -75,7 +75,9 @@ and HTTPS acceptance follow the owner change, before public record retirement.
 
 ## Recovery and later public retirement
 
-For an outage, run the same checker without `--initial-handoff`, inspect Argo,
+The `--initial-handoff` option is only for the fixed migration inventory;
+later approved hosts use the routine command above.
+For an outage, run the same checker, inspect Argo,
 Pods, Service status and the proxy's Tailnet Lock signature. Restore the failed
 declaration through reviewed Argo/Terragrunt desired state; if only its key
 rotated, use the fixed signer. Re-run direct UDP/TCP and normal client checks.
