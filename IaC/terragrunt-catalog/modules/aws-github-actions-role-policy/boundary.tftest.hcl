@@ -137,6 +137,33 @@ run "apply_role_reads_only_recovery_publisher_boundary" {
   }
 }
 
+run "apply_role_reads_only_recovery_publisher_role" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.parameter_reader_administration]
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : {
+        Sid       = statement.Sid
+        Effect    = statement.Effect
+        Actions   = toset(flatten([statement.Action]))
+        Resources = toset(flatten([statement.Resource]))
+      }
+      if statement.Sid == "ReadRecoveryPublisherRole"
+      ] == [{
+        Sid       = "ReadRecoveryPublisherRole"
+        Effect    = "Allow"
+        Actions   = toset(["iam:GetRole"])
+        Resources = toset(["arn:aws:iam::123456789012:role/homelab-oce-recovery-publisher"])
+    }]
+    error_message = "The CI role may read only the exact recovery publisher role; no IAM writes or broader role access."
+  }
+}
+
 run "operator_role_excludes_companion_renovate" {
   command = plan
 

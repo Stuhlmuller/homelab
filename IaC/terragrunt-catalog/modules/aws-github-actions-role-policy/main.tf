@@ -18,6 +18,7 @@ locals {
   ]
   langfuse_blob_storage_user_arn  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
   recovery_publisher_boundary_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/homelab-oce-recovery-publisher-boundary"
+  recovery_publisher_role_arn     = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/homelab-oce-recovery-publisher"
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
@@ -112,6 +113,13 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
     effect    = "Allow"
     actions   = ["iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyTags"]
     resources = [local.recovery_publisher_boundary_arn]
+  }
+
+  statement {
+    sid       = "ReadRecoveryPublisherRole"
+    effect    = "Allow"
+    actions   = ["iam:GetRole"]
+    resources = [local.recovery_publisher_role_arn]
   }
 }
 
