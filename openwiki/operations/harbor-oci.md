@@ -476,6 +476,13 @@ mirror copy had successful scans for all 62 uploaded runnable manifests and
 16 indexes inspected; 15 unscanned objects were in-toto attestations. This
 snapshot does not establish scan completion for images not yet uploaded.
 
+The [local-path controller rebuild](../../builds/local-path-provisioner/README.md)
+produces a local, two-platform OCI candidate from pinned Rancher source. Its
+scan records the complete linked Go package inventory, compiler and module
+sums, and fresh fixable HIGH/CRITICAL results for each immutable child.
+Protected private-image publication and non-destructive access to existing
+Cordium volumes are later acceptance steps.
+
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,

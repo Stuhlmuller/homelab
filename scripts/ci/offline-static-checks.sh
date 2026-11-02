@@ -1619,6 +1619,7 @@ fi
 echo "::endgroup::"
 
 echo "::group::Image digest pins"
+python3 -I builds/local-path-provisioner/scan-test.py
 cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
 terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/cert-manager/argocd \
   render --json --write=false --no-color \
