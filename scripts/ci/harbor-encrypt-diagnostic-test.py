@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Real encryption round trip and fail-closed recipient checks, offline."""
-import gzip
 import importlib.util
 import io
 import os
 import shlex
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -83,7 +83,10 @@ class Encryption(unittest.TestCase):
             (b"", 1, self.recipient, False, False),
             (b"PRIVATE_REPORT", 1, self.recipient, True, False),
         )
-        for payload, audit_status, recipient, gzip_failure, retained in cases:
+        cases = [(*case, ("json", "cyclonedx-json")) for case in cases]
+        cases.extend((b"PRIVATE_REPORT", 1, self.recipient, False, True, (formatter,))
+                     for formatter in ("json", "cyclonedx-json"))
+        for payload, audit_status, recipient, archive_failure, retained, formats in cases:
             with self.subTest(size=len(payload), status=audit_status, recipient=recipient), \
                  tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
@@ -103,19 +106,21 @@ class Encryption(unittest.TestCase):
                 grype = root / "scanner/bin"
                 grype.mkdir(parents=True)
                 (grype / "grype").write_text(
-                    "#!/bin/sh\nwhile [ \"$1\" != --file ]; do shift; done\n"
-                    f"cp {shlex.quote(str(report))} \"$2\"\n")
+                    "#!/bin/sh\nfor argument do\ncase \"$argument\" in\n" +
+                    "".join(f"{formatter}=*) cp {shlex.quote(str(report))} \"${{argument#{formatter}=}}\" ;;\n"
+                            for formatter in formats) + "esac\ndone\n")
                 (binary / "nix").write_text(
                     f"#!/bin/sh\nln -s {shlex.quote(str(grype.parent))} \"$3\"\n")
                 (binary / "docker").write_text("#!/bin/sh\n[ \"$1\" != image ] || echo sha256:fixture\n")
                 (binary / "uname").write_text("#!/bin/sh\necho Linux\n")
-                if gzip_failure:
-                    (binary / "gzip").write_text("#!/bin/sh\necho partial\nexit 9\n")
+                if archive_failure:
+                    (binary / "tar").write_text("#!/bin/sh\necho partial\nexit 9\n")
                 for path in [*binary.iterdir(), grype / "grype"]:
                     path.chmod(0o755)
-                destination = root / "report.json.gz.gpg"
+                destination = root / "reports.tar.gz.gpg"
                 destination.write_bytes(b"stale ciphertext")
                 environment = dict(os.environ, GITHUB_ACTIONS="true", RUNNER_TEMP=str(root),
+                                   COPYFILE_DISABLE="1",
                                    PATH=str(binary) + os.pathsep + os.environ["PATH"])
                 result = subprocess.run(
                     ["bash", str(ROOT / "builds/harbor-core/scan.sh"),
@@ -128,7 +133,12 @@ class Encryption(unittest.TestCase):
                 self.assertEqual(destination.exists(), retained)
                 self.assertFalse(destination.with_suffix(".partial").exists())
                 if retained:
-                    self.assertEqual(gzip.decompress(self.gpg("--decrypt", str(destination))), payload)
+                    with tarfile.open(fileobj=io.BytesIO(self.gpg("--decrypt", str(destination))), mode="r:gz") as bundle:
+                        files = [m for m in bundle if m.isfile()]
+                        self.assertEqual({m.name for m in files},
+                                         {"./report.json" if f == "json" else "./packages.json" for f in formats})
+                        for member in files:
+                            self.assertEqual(bundle.extractfile(member).read(), payload)
                     self.assertNotIn(b"PRIVATE_REPORT", destination.read_bytes())
                     self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
 

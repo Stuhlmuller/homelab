@@ -25,12 +25,13 @@ record_stage() {
 : "${RUNNER_TEMP:?GitHub runner temporary directory required}"
 umask 077
 scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-core-scan.XXXXXX")"
+mkdir "$scratch/reports"
 cleanup() {
   status=$?
-  if [[ "$status" -ne 0 && -n "$encrypted_report" && -s "$scratch/report.json" ]]; then
-    # Compress the complete report; the encryption helper rejects >1 MiB without truncation.
-    if ! gzip -c -- "$scratch/report.json" >"$scratch/report.json.gz" ||
-      ! python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$scratch/report.json.gz" \
+  if [[ "$status" -ne 0 && -n "$encrypted_report" && ( -s "$scratch/reports/report.json" || -s "$scratch/reports/packages.json" ) ]]; then
+    # Bundle both complete reports; the encryption helper rejects >1 MiB without truncation.
+    if ! tar -czf "$scratch/reports.tar.gz" -C "$scratch/reports" . ||
+      ! python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$scratch/reports.tar.gz" \
         "$encrypted_report" >/dev/null 2>&1; then
       rm -f -- "$encrypted_report"
       echo 'Encrypted runtime audit report unavailable; private details withheld.' >&2
@@ -49,12 +50,13 @@ nix build --out-link "$scratch/grype" --impure --expr '(builtins.getFlake (toStr
 printf 'check-for-app-update: false\nmatch-upstream-kernel-headers: true\ndb:\n  cache-dir: %s/db\n  auto-update: true\n' "$scratch" >"$scratch/grype.yaml"
 record_stage scanner-run
 "$scratch/grype/bin/grype" --config "$scratch/grype.yaml" --by-cve \
-  --platform linux/amd64 -o json --file "$scratch/report.json" "docker-archive:$scratch/image.tar"
+  --platform linux/amd64 -o "json=$scratch/reports/report.json" \
+  -o "cyclonedx-json=$scratch/reports/packages.json" "docker-archive:$scratch/image.tar"
 record_stage report-validation
 if [[ -n "$diagnostic_file" ]]; then
   python3 -I scripts/ci/harbor-core-scan-check.py --diagnostic-file "$diagnostic_file" \
-    --archive "$scratch/image.tar" "$scratch/report.json" "$(cat "$scratch/image-id")" "$@"
+    --archive "$scratch/image.tar" "$scratch/reports/report.json" "$scratch/reports/packages.json" "$(cat "$scratch/image-id")" "$@"
 else
   python3 -I scripts/ci/harbor-core-scan-check.py --archive "$scratch/image.tar" \
-    "$scratch/report.json" "$(cat "$scratch/image-id")" "$@"
+    "$scratch/reports/report.json" "$scratch/reports/packages.json" "$(cat "$scratch/image-id")" "$@"
 fi

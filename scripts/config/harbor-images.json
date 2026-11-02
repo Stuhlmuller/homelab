@@ -37,7 +37,7 @@
       "source": "cgr.dev/chainguard/valkey:latest@sha256:52e142902ab8edd43a7202e2f8422a6c87932d0bb29f89edf93e879e0450d3f1"
     },
     {
-      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:256c88bb066424045021090932d50be93c8e3f2ce3586707702a401b146f3e43"
+      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73"
     },
     {
       "source": "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
