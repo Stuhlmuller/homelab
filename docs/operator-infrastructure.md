@@ -85,10 +85,10 @@ The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
 current runtime-secret key. It also allows read-only IAM metadata for the exact
 `homelab/homelab-langfuse-s3` user and
-`homelab-oce-recovery-publisher-boundary` policy and `iam:GetRole` on the exact
-`homelab-oce-recovery-publisher` role, so protected plans can refresh those
-resources. The grant adds no cryptographic, key-administration, or IAM write
-actions. The role cannot manage this bootstrap
+`homelab-oce-recovery-publisher-boundary` policy and the provider's four IAM
+role metadata reads on the exact `homelab-oce-recovery-publisher` role, so
+protected plans can refresh those resources. The grant adds no cryptographic,
+key-administration, or IAM write actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,

@@ -118,7 +118,7 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
   statement {
     sid       = "ReadRecoveryPublisherRole"
     effect    = "Allow"
-    actions   = ["iam:GetRole"]
+    actions   = ["iam:GetRole", "iam:GetRolePolicy", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies"]
     resources = [local.recovery_publisher_role_arn]
   }
 }

@@ -155,9 +155,14 @@ run "apply_role_reads_only_recovery_publisher_role" {
       }
       if statement.Sid == "ReadRecoveryPublisherRole"
       ] == [{
-        Sid       = "ReadRecoveryPublisherRole"
-        Effect    = "Allow"
-        Actions   = toset(["iam:GetRole"])
+        Sid    = "ReadRecoveryPublisherRole"
+        Effect = "Allow"
+        Actions = toset([
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListRolePolicies",
+        ])
         Resources = toset(["arn:aws:iam::123456789012:role/homelab-oce-recovery-publisher"])
     }]
     error_message = "The CI role may read only the exact recovery publisher role; no IAM writes or broader role access."
