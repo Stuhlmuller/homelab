@@ -31,3 +31,15 @@ condition = "AND"
 paths = ['''docs/evidence/openclaw-enterprise-policy-review\.json''', '''scripts/ci/network-policy-inventory-test\.py''']
 regexTarget = "line"
 regexes = ['''(?m)^\s*"(?:secretman|octelium/octeliumee-secretman)": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1",?$''']
+
+[[allowlists]]
+description = "Reviewed public Istio gateway source pins"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(?m)^scripts/ci/istio-upgrade-gate\.py$''']
+regexTarget = "line"
+regexes = [
+  '''(?m)^\s*"clusters/homelab/apps/istio/octelium-api-gateway-values\.yaml": "3cc751beb194a4dfd7c7d29fe360794f0924caf416379cd412415b5e40b6e832",$''',
+  '''(?m)^\s*"clusters/homelab/apps/istio/octelium-api-gateway\.yaml": "737545be14f2ff76101139ee024e17c5ffc368d0541952ccaa09b3b1148e5038",$''',
+  '''(?m)^\s*\("gateway", "octelium-api-ingressgateway", "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"\),$''',
+]

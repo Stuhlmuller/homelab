@@ -28,6 +28,8 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
   exit 1
 fi
 terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+  render --json --write=false --no-color | python3 scripts/ci/istio-upgrade-gate.py check-source
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
   render --json --write=false --no-color \
   | jq -e '
       .inputs.manifest.spec as $spec |
