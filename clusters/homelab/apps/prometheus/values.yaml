@@ -2,6 +2,52 @@ grafana:
   enabled: false
 nodeExporter:
   enabled: false
+kubelet:
+  serviceMonitor:
+    # Helm replaces lists. Keep chart 85.2.0's drops before the mapped-root exception.
+    cAdvisorMetricRelabelings:
+      # Drop less useful container CPU metrics.
+      - sourceLabels: [__name__]
+        action: drop
+        regex: 'container_cpu_(cfs_throttled_seconds_total|load_average_10s|system_seconds_total|user_seconds_total)'
+      # Drop less useful container / always zero filesystem metrics.
+      - sourceLabels: [__name__]
+        action: drop
+        regex: 'container_fs_(io_current|io_time_seconds_total|io_time_weighted_seconds_total|reads_merged_total|sector_reads_total|sector_writes_total|writes_merged_total)'
+      # Drop less useful / always zero container memory metrics.
+      - sourceLabels: [__name__]
+        action: drop
+        regex: 'container_memory_(mapped_file|swap)'
+      # Drop less useful container process metrics.
+      - sourceLabels: [__name__]
+        action: drop
+        regex: 'container_(file_descriptors|tasks_state|threads_max)'
+      # Drop container_memory_failures_total{scope="hierarchy"} metrics,
+      # we only need the container scope.
+      - sourceLabels: [__name__, scope]
+        action: drop
+        regex: 'container_memory_failures_total;hierarchy'
+      # Drop container_network_... metrics that match various interfaces that
+      # correspond to CNI and similar interfaces. This avoids capturing network
+      # metrics for host network containers.
+      - sourceLabels: [__name__, interface]
+        action: drop
+        regex: 'container_network_.*;(cali|cilium|cni|lxc|nodelocaldns|tunl).*'
+      # Drop container spec metrics that overlap with kube-state-metrics.
+      - sourceLabels: [__name__]
+        action: drop
+        regex: 'container_spec.*'
+      # Only this mapping may set the volume label used by the rules.
+      - action: labeldrop
+        regex: homelab_talos_volume
+      - action: replace
+        sourceLabels: [id, pod, __name__, node, device]
+        regex: '/;;container_fs_(limit_bytes|usage_bytes|inodes_free|inodes_total);(acer;/dev/sda4|zimaboard-[0-2];/dev/mmcblk0p4)'
+        targetLabel: homelab_talos_volume
+        replacement: EPHEMERAL
+      - action: drop
+        sourceLabels: [id, pod, homelab_talos_volume]
+        regex: '.+;;'
 kube-state-metrics:
   image:
     registry: harbor.stinkyboi.com

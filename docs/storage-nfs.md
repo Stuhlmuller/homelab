@@ -218,6 +218,10 @@ spec:
       storage: 10Gi
 ```
 
+For volumes pinned to a Talos node, review the free bytes, inodes and
+runway in [EPHEMERAL filesystem monitoring](talos-ephemeral-monitoring.md)
+before moving or expanding data.
+
 ## Backup Coverage
 
 NFS backup coverage is a hard readiness gate. Persistent apps are registered

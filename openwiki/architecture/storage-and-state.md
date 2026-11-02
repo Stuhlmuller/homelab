@@ -228,6 +228,10 @@ control-plane node and its system disk. GitOps explicitly declares the retained
 `data-media-postgres-0` claim with `Prune=false,Delete=false`, so clean bootstrap
 creates the backup target independently of the active StatefulSet.
 
+Before placing or expanding retained local state, check per-node `/var` free
+bytes, inodes and depletion rate in the
+[EPHEMERAL monitoring runbook](../../docs/talos-ephemeral-monitoring.md).
+
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
 `zimaboard-0`, while using retained NFS claims as nightly archive targets. Their media paths still use static PV/PVC pairs against the
