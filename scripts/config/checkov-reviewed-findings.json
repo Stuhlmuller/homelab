@@ -165,6 +165,27 @@
       "fingerprint": "6619b8b0817a1234fed3177ed331400062f92402",
       "max_occurrences": 1,
       "reason": "Public Kubernetes Secret object name used for resource lookup and metadata comparison."
+    },
+    {
+      "path": "clusters/homelab/apps/codex-cloud-signer/externalsecret.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "e5229383b430e8538a5ec397f8683456c0f6e967",
+      "max_occurrences": 1,
+      "reason": "Public Kubernetes Secret key name in an ExternalSecret mapping; not a credential value."
+    },
+    {
+      "path": "clusters/homelab/apps/codex-cloud-signer/externalsecret.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "76816e3dd24434df5ee83ae03730fd126e9a65da",
+      "max_occurrences": 1,
+      "reason": "Public Kubernetes Secret key name in an ExternalSecret mapping; not a credential value."
+    },
+    {
+      "path": "clusters/homelab/apps/codex-cloud-signer/externalsecret.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "38abc48c1eb5838519ab0372fbf38f1eb0f3f73c",
+      "max_occurrences": 1,
+      "reason": "Public Kubernetes Secret key name in an ExternalSecret mapping; not a credential value."
     }
   ]
 }

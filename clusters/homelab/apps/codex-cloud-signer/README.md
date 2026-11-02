@@ -137,9 +137,22 @@ kubectl kustomize clusters/homelab/platform/storage
 ```
 
 Run the repository static/policy gates and protected PR checks. After rollout,
-verify the deployed revision with `scripts/verify-gitops.py`, inspect the
-ExternalSecret readiness and StatefulSet convergence, and start a **new real
-Codex cloud task**. Require its dedicated-tag node to become signed, private
+inspect the Application's source revision and StatefulSet convergence:
+
+```sh
+kubectl -n argocd get application codex-cloud-signer -o json
+kubectl -n automation rollout status statefulset/codex-cloud-signer --timeout=180s
+kubectl -n automation get statefulset codex-cloud-signer -o json
+kubectl -n automation get pods -l app.kubernetes.io/name=codex-cloud-signer -o json
+```
+
+Require Argo Synced/Healthy at the intended `main` commit, an observed current
+StatefulSet generation, equal current/update revisions, and one ready replica.
+The Pod's controller owner UID must match the StatefulSet and its
+`controller-revision-hash` must match that revision. The generic
+`verify-gitops.py` accepts only Deployments, so it cannot verify this workload.
+Inspect ExternalSecret readiness, then start a **new real Codex cloud task**.
+Require its dedicated-tag node to become signed, private
 DNS/HTTPS to work, and unrelated nodes to remain unsigned. Repeat after a
 signer pod restart, confirming the same public key. Real event payload,
 enrollment flag timing and startup deadline compatibility require this live
