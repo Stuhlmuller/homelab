@@ -1,0 +1,31 @@
+---
+name: PR Delivery
+on:
+  pull_request:
+    paths:
+      - scripts/pr-delivery.py
+      - scripts/ci/pr-delivery-test.py
+      - .github/workflows/pr-delivery.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/pr-delivery.py
+      - scripts/ci/pr-delivery-test.py
+      - .github/workflows/pr-delivery.yml
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: pr-delivery-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: chainguard-actions/actions-checkout@37298d8de412b35988dd165ffae45f45b329d365 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Exercise dependency and continuation decisions
+        run: python3 -I scripts/ci/pr-delivery-test.py
