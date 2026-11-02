@@ -29,6 +29,19 @@ The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
 by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/README.md).
 
+## Gateway capacity proposal (held)
+
+The staged LiteLLM values reserve 1 GiB and constrain the gateway to Acer,
+following memory pressure during overlapping unreserved Pods on the smallest
+worker. RollingUpdate and native PostgreSQL remain unchanged. Keep delivery
+held until fresh requested and actual memory evidence proves sustainable
+surge capacity; the first replacement fitting does not prove future rollouts.
+The November 2 snapshot was short by at least 241.3 MiB of reservations for
+two reserved gateway Pods. This is not a failure-capacity acceptance receipt.
+See the [capacity preflight and recovery separation](../../clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-held-capacity-proposal).
+Coordinate PR #1656's separate PostgreSQL/Cordium capacity assumptions. Existing
+worker recovery and #775/#793/#785 remain separate, open gates.
+
 ## Caller inventory
 
 ### UI-visible key migration (native cutover awaiting deployment)

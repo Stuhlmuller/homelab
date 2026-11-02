@@ -39,6 +39,70 @@ a read-only root filesystem need a separate writable-path rehearsal against
 the current native database startup. Roll back through a reviewed values
 revert if these controls prevent startup or normal inference.
 
+### Gateway memory reservation: held capacity proposal
+
+The gateway values reserve `1Gi` memory and select `kubernetes.io/hostname:
+acer`. This is staged prevention for #775/#793, not restored capacity or an
+instruction to recover a worker. Keep the PR draft and do not merge/apply until
+sustainable rollout headroom is proved. The gateway keeps one replica and the
+chart's default RollingUpdate strategy: one surge Pod, zero unavailable Pods.
+Its image, runtime controls, database and caller routes are unchanged.
+
+On November 2, overlapping unreserved gateway Pods on the 1.28 GiB allocatable
+worker coincided with severe memory pressure and a stalled kubelet. Their
+combined cgroup memory was about 869 MiB; the old gateway's recorded peak was
+800.5 MiB. The replacement on Acer used 479–539 MiB and became Ready without
+restarts. This supports a 1 GiB reservation and avoiding the small worker; it
+does not prove OOM or establish a maximum under all inference loads. No hard
+memory limit is added without that evidence. Other workers were already using
+82–84% of allocatable memory, so exclusion of only the smallest worker would
+allow an unsafe relocation. Acer-only placement is a temporary capacity
+constraint, not high availability or a completed failure-domain target.
+
+The 03:03 UTC snapshot left Acer 1,806.7 MiB unreserved and approximately
+2,391.7 MiB below allocatable actual usage. The first new 1 GiB Pod fits because
+the existing gateway has no request. After replacement, only 782.7 MiB would
+remain unreserved: a later surge could stay Pending. At least 241.3 MiB of
+additional reservations must be freed to fit two reserved Pods at that snapshot;
+this is arithmetic, not a safety margin or durable capacity receipt. Do not
+lower the request or move the gateway to a pressured worker to force rollout.
+[PR #1656](https://github.com/Stuhlmuller/homelab/pull/1656) changes native
+PostgreSQL placement and other workloads, not gateway placement. Coordinate
+its Cordium capacity assumptions with this new reservation; do not apply its
+held changes or count projected savings as available capacity.
+
+Before releasing the draft:
+
+1. Recheck node conditions, `kubectl top nodes`, and the actual gateway memory
+   and readiness with `kubectl -n ai top pod -l app.kubernetes.io/name=litellm
+   --containers` and `kubectl -n ai get pods -l app.kubernetes.io/name=litellm
+   -o wide`. Keep #844's native startup, caller and 24-hour acceptance gates.
+2. Recompute Acer scheduling requests from all nonterminal bound Pods,
+   including terminating Pods, restartable init containers and Pod overhead.
+   Require room for **both** 1 GiB gateway Pods: at least 2 GiB unreserved while
+   the old gateway has no request; after correction, at least 1 GiB unreserved
+   in addition to the running gateway. Require actual memory margin for the
+   additional measured startup peak and system/workload growth, with no active
+   pressure. A `top` snapshot alone is not a capacity proof. Record the fresh
+   receipt privately and keep the hold if any gate is uncertain.
+3. Run `python3 -I scripts/ci/litellm-runtime-hardening-check.py` in the pinned
+   Nix shell, then normal policy/PR checks. The actual declared chart render
+   checks the reservation, placement, strategy and security controls with
+   negative regressions; it does not certify live capacity.
+4. After reviewed delivery, require Argo's exact revision, Synced/Healthy,
+   a new Ready gateway Pod on Acer with `1Gi` requested memory, stable restart
+   counts and pressure, native PostgreSQL/caller behavior, and renewed surge
+   headroom. Keep #775/#793/#785 open until their wider acceptance is met.
+
+Existing processes on the stalled worker need separate repository-owned
+recovery and fencing checks. Desired placement does not stop an already bound
+Pod. Do not delete Pods, drain, reboot, or reuse dated recovery exceptions as
+part of this proposal. Preserve PostgreSQL data and out-of-band access.
+If the new Pod stays Pending, retain the serving old Pod and resolve capacity
+through reviewed source changes. Roll back only this proposal through a
+reviewed values revert after reassessing placement and memory; reverting also
+restores the old unreserved-placement risk, so it is not a node recovery tool.
+
 ### October 10, 2026 native-key rollout
 
 [PR #1243](https://github.com/Stuhlmuller/homelab/pull/1243) merged as
