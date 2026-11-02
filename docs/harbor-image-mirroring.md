@@ -294,7 +294,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    The receipt workflow accepts no image, registry, destination, or credential
    input. It verifies only the committed Python and curl plan and uploads the
-   bounded receipt artifact. Import it only through a receipt-state-only pull
+   bounded receipt artifact. Every required child needs both a zero-finding
+   vulnerability scan and a successful native SPDX SBOM containing real
+   versioned libraries. The verifier binds the SBOM accessory to the child
+   digest and checks accessory/document bytes against their SHA-256 digests;
+   container-root or OS-only SBOMs cannot pass. Version 2 entries carry only
+   digests and package counts, preserving private package details. Earlier
+   version 1 entries require regeneration before they can prove coverage.
+   Import it only through a receipt-state-only pull
    request. The trusted provenance workflow rechecks each changed entry against
    the exact protected Actions artifact and records its provenance; it does not
    migrate a consumer or deploy a workload. Its PR and main-push checks run

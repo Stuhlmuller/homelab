@@ -6,7 +6,10 @@ import base64
 import hashlib
 import json
 import re
+import resource
+import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -20,6 +23,8 @@ DEFAULT_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_INDEX_BYTES = 1024 * 1024
 MAX_SCAN_RESPONSE_BYTES = 4 * 1024 * 1024
+MAX_SBOM_BYTES = 16 * 1024 * 1024
+SBOM_CONFIG_TYPE = "application/vnd.goharbor.harbor.sbom.v1"
 SHA = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 IMAGE_ID = re.compile(r"^chainguard-[a-z0-9][a-z0-9-]{0,62}$")
@@ -70,7 +75,8 @@ class HarborScanClient:
     def artifact(self, repository, digest):
         encoded = urllib.parse.quote(urllib.parse.quote(repository, safe=""), safe="")
         request = urllib.request.Request(
-            f"{self.endpoint}/projects/homelab/repositories/{encoded}/artifacts/{digest}?with_scan_overview=true",
+            f"{self.endpoint}/projects/homelab/repositories/{encoded}/artifacts/{digest}"
+            "?with_scan_overview=true&with_sbom_overview=true",
             headers=self.headers,
             method="GET",
         )
@@ -86,10 +92,30 @@ class HarborScanClient:
             raise ReceiptError("Harbor scan receipt connection failed") from None
         if len(body) > MAX_SCAN_RESPONSE_BYTES:
             raise ReceiptError("Harbor scan receipt response exceeded its limit")
-        try:
-            return json.loads(body)
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            raise ReceiptError("Harbor scan receipt response is malformed") from None
+        return strict_json(body, "Harbor scan receipt response is malformed or ambiguous")
+
+    def registry_bytes(self, repository, digest, *, manifest=False):
+        # The runner supplies an isolated regctl config with the existing pull
+        # robot. Bound subprocess output on disk as well as in memory; never
+        # expose registry responses or credential-bearing diagnostics.
+        require(re.fullmatch(r"chainguard/[a-z0-9][a-z0-9.-]*", repository) is not None
+                and isinstance(digest, str) and SHA256.fullmatch(digest) is not None,
+                "SBOM registry reference is invalid")
+        reference = "harbor.stinkyboi.com/homelab/" + repository
+        limit = MAX_INDEX_BYTES if manifest else MAX_SBOM_BYTES
+        command = (["regctl", "manifest", "get", "--format", "raw-body", reference + "@" + digest]
+                   if manifest else ["regctl", "blob", "get", reference, digest])
+        with tempfile.TemporaryFile() as output:
+            try:
+                subprocess.run(command, stdout=output, stderr=subprocess.DEVNULL, check=True, timeout=60,
+                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit)))
+            except (OSError, subprocess.SubprocessError):
+                raise ReceiptError("SBOM registry read failed or exceeded its limit") from None
+            output.seek(0)
+            raw = output.read(limit + 1)
+        require(0 < len(raw) <= limit and bytes_digest(raw) == digest,
+                "SBOM registry bytes do not match their digest")
+        return raw
 
 
 def read_json(path, limit=MAX_JSON_BYTES):
@@ -116,6 +142,19 @@ def bytes_digest(value):
 def require(condition, message):
     if not condition:
         raise ReceiptError(message)
+
+
+def strict_json(raw, message):
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, message)
+            result[key] = value
+        return result
+    try:
+        return json.loads(raw, object_pairs_hook=unique_object)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+        raise ReceiptError(message) from None
 
 
 def config_images(config):
@@ -294,6 +333,132 @@ def scan_complete(artifact, digest, platform):
             "Harbor scan still reports CVEs")
 
 
+def sbom_package_count(document):
+    # Trivy emits a CONTAINER package even for an image with no inventory.
+    # Count only identified libraries reachable from that document's image.
+    require(isinstance(document, dict) and document.get("spdxVersion") == "SPDX-2.3"
+            and document.get("SPDXID") == "SPDXRef-DOCUMENT",
+            "Harbor SBOM is not a supported SPDX document")
+    packages, relationships = document.get("packages"), document.get("relationships")
+    require(isinstance(packages, list) and isinstance(relationships, list),
+            "Harbor SBOM inventory is missing")
+    indexed = {}
+    for package in packages:
+        require(isinstance(package, dict) and isinstance(package.get("SPDXID"), str)
+                and re.fullmatch(r"SPDXRef-[A-Za-z0-9.-]+", package["SPDXID"]) is not None
+                and package["SPDXID"] != "SPDXRef-DOCUMENT" and package["SPDXID"] not in indexed,
+                "Harbor SBOM package identities are invalid")
+        indexed[package["SPDXID"]] = package
+    identifiers = set(indexed) | {"SPDXRef-DOCUMENT"}
+    files = document.get("files", [])
+    require(isinstance(files, list), "Harbor SBOM file identities are invalid")
+    for file in files:
+        require(isinstance(file, dict) and isinstance(file.get("SPDXID"), str)
+                and re.fullmatch(r"SPDXRef-[A-Za-z0-9.-]+", file["SPDXID"]) is not None
+                and file["SPDXID"] not in identifiers, "Harbor SBOM file identities are invalid")
+        identifiers.add(file["SPDXID"])
+    roots, edges = set(), {}
+    for relationship in relationships:
+        require(isinstance(relationship, dict), "Harbor SBOM relationships are invalid")
+        source, target = relationship.get("spdxElementId"), relationship.get("relatedSpdxElement")
+        kind = relationship.get("relationshipType")
+        require(all(isinstance(item, str) for item in (source, target, kind)),
+                "Harbor SBOM relationships are invalid")
+        require(source in identifiers and target in identifiers,
+                "Harbor SBOM relationship references an unknown element")
+        if source == "SPDXRef-DOCUMENT" and kind == "DESCRIBES":
+            roots.add(target)
+        elif kind in ("CONTAINS", "DEPENDS_ON"):
+            edges.setdefault(source, set()).add(target)
+    require(len(roots) == 1 and all(indexed.get(root, {}).get("primaryPackagePurpose") == "CONTAINER"
+                                  for root in roots), "Harbor SBOM lacks its container root")
+    reached, pending = set(), list(roots)
+    while pending:
+        item = pending.pop()
+        if item not in reached:
+            reached.add(item)
+            pending.extend(edges.get(item, ()))
+    count = 0
+    for identifier in reached - roots:
+        package = indexed.get(identifier, {})
+        if package.get("primaryPackagePurpose") != "LIBRARY":
+            continue
+        if not all(isinstance(package.get(key), str) and package[key].strip()
+                   and package[key] not in ("NONE", "NOASSERTION", "unknown") for key in ("name", "versionInfo")):
+            continue
+        references = package.get("externalRefs")
+        if not isinstance(references, list):
+            continue
+        for reference in references:
+            if (not isinstance(reference, dict) or reference.get("referenceCategory") != "PACKAGE-MANAGER"
+                    or reference.get("referenceType") != "purl"):
+                continue
+            purl = reference.get("referenceLocator")
+            match = re.fullmatch(
+                r"pkg:(apk|deb|rpm|golang|npm|pypi|gem|cargo|maven|nuget|composer)/"
+                r"([^\s?#@]+)@([^\s/?#@]+)(?:\?[^\s#]+)?(?:#[^\s]+)?", purl,
+            ) if isinstance(purl, str) else None
+            if not match or not all(match[2].split("/")) or re.search(r"%(?![0-9A-Fa-f]{2})", purl):
+                continue
+            try:
+                name = urllib.parse.unquote(match[2].rsplit("/", 1)[-1], errors="strict")
+                version = urllib.parse.unquote(match[3], errors="strict")
+            except UnicodeDecodeError:
+                continue
+            if (all(value not in ("", "NONE", "NOASSERTION", "unknown")
+                    and not any(character.isspace() or ord(character) < 32 or character in "/@?#"
+                                for character in value) for value in (name, version))):
+                count += 1
+                break
+    require(count > 0, "Harbor SBOM has no supported package inventory")
+    return count
+
+
+def sbom_coverage(client, repository, artifact, digest):
+    overview = artifact.get("sbom_overview")
+    require(isinstance(overview, dict) and overview.get("scan_status") == "Success"
+            and isinstance(overview.get("sbom_digest"), str)
+            and SHA256.fullmatch(overview["sbom_digest"]) is not None,
+            "Harbor SBOM generation is incomplete")
+    manifest_digest = overview["sbom_digest"]
+    raw_manifest = client.registry_bytes(repository, manifest_digest, manifest=True)
+    require(len(raw_manifest) <= MAX_INDEX_BYTES and bytes_digest(raw_manifest) == manifest_digest,
+            "Harbor SBOM accessory digest does not match")
+    manifest = strict_json(raw_manifest, "Harbor SBOM accessory is malformed or ambiguous")
+    require(isinstance(manifest, dict) and manifest.get("schemaVersion") == 2
+            and manifest.get("mediaType") == "application/vnd.oci.image.manifest.v1+json"
+            and isinstance(manifest.get("config"), dict)
+            and manifest["config"].get("mediaType") == SBOM_CONFIG_TYPE,
+            "Harbor SBOM accessory has the wrong type")
+    subject = manifest.get("subject")
+    require(isinstance(subject, dict) and subject.get("digest") == digest
+            and subject.get("mediaType") in MANIFEST_MEDIA_TYPES
+            and type(subject.get("size")) is int and subject["size"] > 0,
+            "Harbor SBOM accessory describes a different image")
+    layers = manifest.get("layers")
+    require(isinstance(layers, list) and len(layers) == 1 and isinstance(layers[0], dict),
+            "Harbor SBOM accessory must contain one document")
+    layer = layers[0]
+    require(layer.get("mediaType") == "application/vnd.oci.image.layer.v1.tar"
+            and isinstance(layer.get("digest"), str) and SHA256.fullmatch(layer["digest"]) is not None
+            and type(layer.get("size")) is int and 0 < layer["size"] <= MAX_SBOM_BYTES,
+            "Harbor SBOM document descriptor is invalid")
+    raw_document = client.registry_bytes(repository, layer["digest"])
+    require(len(raw_document) == layer["size"] and bytes_digest(raw_document) == layer["digest"],
+            "Harbor SBOM document does not match its descriptor")
+    document = strict_json(raw_document, "Harbor SBOM document is malformed or ambiguous")
+    return {"manifest_digest": manifest_digest, "document_digest": layer["digest"],
+            "package_count": sbom_package_count(document)}
+
+
+def valid_coverage(coverage, platforms):
+    return (isinstance(coverage, dict) and set(coverage) == set(platforms)
+            and all(isinstance(value, dict) and set(value) == {"manifest_digest", "document_digest", "package_count"}
+                    and type(value["package_count"]) is int and value["package_count"] > 0
+                    and all(isinstance(value[key], str) and SHA256.fullmatch(value[key]) is not None
+                            for key in ("manifest_digest", "document_digest")) for value in coverage.values()))
+
+
 def scan_receipt(plan, destination_digest, platforms, password, client_type=HarborScanClient):
     require(SHA256.fullmatch(destination_digest) is not None
             and destination_digest == plan["source_digest"],
@@ -303,27 +468,33 @@ def scan_receipt(plan, destination_digest, platforms, password, client_type=Harb
             "required platform digests are invalid")
     repository = plan["destination_repository"].removeprefix("harbor.stinkyboi.com/homelab/")
     client = client_type(password)
+    coverage = {}
     for platform, digest in sorted(platforms.items()):
-        scan_complete(client.artifact(repository, digest), digest, platform)
+        artifact = client.artifact(repository, digest)
+        scan_complete(artifact, digest, platform)
+        coverage[platform] = sbom_coverage(client, repository, artifact, digest)
     return {
-        "schema_version": 1,
-        "kind": "native-chainguard-scan-v1",
+        "schema_version": 2,
+        "kind": "native-chainguard-scan-v2",
         "image_id": plan["image_id"],
         "config_digest": plan["config_digest"],
         "destination_digest": destination_digest,
         "platforms": dict(sorted(platforms.items())),
         "scan_status": {platform: "Success" for platform in sorted(platforms)},
+        "sbom_coverage": coverage,
     }
 
 
 def validate_scan_receipt(value, plan, platforms):
-    required = {"schema_version", "kind", "image_id", "config_digest", "destination_digest", "platforms", "scan_status"}
+    required = {"schema_version", "kind", "image_id", "config_digest", "destination_digest", "platforms", "scan_status",
+                "sbom_coverage"}
     require(isinstance(value, dict) and set(value) == required
-            and value.get("schema_version") == 1 and value.get("kind") == "native-chainguard-scan-v1"
+            and value.get("schema_version") == 2 and value.get("kind") == "native-chainguard-scan-v2"
             and value.get("image_id") == plan["image_id"]
             and value.get("config_digest") == plan["config_digest"]
             and value.get("destination_digest") == plan["source_digest"]
             and value.get("platforms") == platforms
+            and valid_coverage(value.get("sbom_coverage"), platforms)
             and isinstance(value.get("scan_status"), dict)
             and set(value["scan_status"]) == set(platforms)
             and all(status == "Success" for status in value["scan_status"].values()),
@@ -343,8 +514,8 @@ def receipt_for(plan, repository_sha, source_index, destination_index, pulled_in
             "native Harbor platform descriptors differ from the source")
     validate_scan_receipt(scan_receipt, plan, platforms)
     return {
-        "schema_version": 1,
-        "kind": "native-chainguard-v1",
+        "schema_version": 2,
+        "kind": "native-chainguard-v2",
         "repository_sha": repository_sha,
         "config_digest": plan["config_digest"],
         "image_id": plan["image_id"],
@@ -354,6 +525,7 @@ def receipt_for(plan, repository_sha, source_index, destination_index, pulled_in
         "destination_digest": source_digest,
         "platforms": platforms,
         "scan_status": dict(sorted(scan_receipt["scan_status"].items())),
+        "sbom_coverage": dict(sorted(scan_receipt["sbom_coverage"].items())),
         "consumer_access": True,
     }
 
@@ -361,10 +533,10 @@ def receipt_for(plan, repository_sha, source_index, destination_index, pulled_in
 def verify_native_receipt(plan, receipt):
     fields = {"schema_version", "kind", "repository_sha", "config_digest", "image_id", "source_ref",
               "source_digest", "destination_ref", "destination_digest", "platforms", "scan_status",
-              "consumer_access"}
+              "consumer_access", "sbom_coverage"}
     if not isinstance(receipt, dict) or set(receipt) != fields:
         return False, "native receipt fields are incomplete or unknown"
-    if receipt.get("schema_version") != 1 or receipt.get("kind") != "native-chainguard-v1":
+    if receipt.get("schema_version") != 2 or receipt.get("kind") != "native-chainguard-v2":
         return False, "native receipt schema is invalid"
     if not isinstance(receipt.get("repository_sha"), str) or SHA.fullmatch(receipt["repository_sha"]) is None:
         return False, "native receipt repository revision is invalid"
@@ -384,6 +556,8 @@ def verify_native_receipt(plan, receipt):
         return False, "native receipt scans are incomplete"
     if receipt.get("consumer_access") is not True:
         return False, "native receipt does not prove an authenticated pull"
+    if not valid_coverage(receipt.get("sbom_coverage"), platforms):
+        return False, "native receipt package coverage is incomplete"
     return True, "native receipt matches the configured image"
 
 

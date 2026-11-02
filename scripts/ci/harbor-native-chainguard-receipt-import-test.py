@@ -126,9 +126,12 @@ class ReceiptImportTests(unittest.TestCase):
         self.plans = IMPORT.native_plans(self.config)
         plan = self.plans["chainguard-python"]
         scan = {
-            "schema_version": 1, "kind": "native-chainguard-scan-v1", "image_id": plan["image_id"],
+            "schema_version": 2, "kind": "native-chainguard-scan-v2", "image_id": plan["image_id"],
             "config_digest": plan["config_digest"], "destination_digest": plan["source_digest"],
             "platforms": {"linux/amd64": AMD64, "linux/arm64": ARM64},
+            "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
             "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
         }
         self.receipt = NATIVE.receipt_for(plan, SHA, self.raw, self.raw, self.raw, scan)

@@ -57,9 +57,12 @@ def configuration(raw):
 
 
 def scan_receipt(plan):
-    return {"schema_version": 1, "kind": "native-chainguard-scan-v1", "image_id": plan["image_id"],
+    return {"schema_version": 2, "kind": "native-chainguard-scan-v2", "image_id": plan["image_id"],
             "config_digest": plan["config_digest"],
             "destination_digest": plan["source_digest"], "platforms": {"linux/amd64": AMD64, "linux/arm64": ARM64},
+            "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
             "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"}}
 
 
@@ -128,10 +131,35 @@ class VerificationTests(TestCase):
         self.assertFalse(VERIFY.verify_native_receipt(self.plan, forged)[0])
 
 
+def sbom_document():
+    return {"spdxVersion": "SPDX-2.3", "SPDXID": "SPDXRef-DOCUMENT", "packages": [
+        {"SPDXID": "SPDXRef-image", "name": "fixture", "primaryPackagePurpose": "CONTAINER"},
+        {"SPDXID": "SPDXRef-package", "name": "musl", "versionInfo": "1.2.5-r0",
+         "primaryPackagePurpose": "LIBRARY", "externalRefs": [{"referenceCategory": "PACKAGE-MANAGER",
+         "referenceType": "purl", "referenceLocator": "pkg:apk/alpine/musl@1.2.5-r0?arch=aarch64"}]}],
+        "relationships": [
+            {"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES", "relatedSpdxElement": "SPDXRef-image"},
+            {"spdxElementId": "SPDXRef-image", "relationshipType": "CONTAINS", "relatedSpdxElement": "SPDXRef-package"}]}
+
+
+def sbom_blobs(digest, document=None, change=None):
+    raw = json.dumps(sbom_document() if document is None else document).encode()
+    manifest = {"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                "config": {"mediaType": VERIFY.SBOM_CONFIG_TYPE},
+                "subject": {"digest": digest, "mediaType": "application/vnd.oci.image.manifest.v1+json", "size": 123},
+                "layers": [{"mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": VERIFY.bytes_digest(raw),
+                            "size": len(raw)}]}
+    if change:
+        change(manifest)
+    raw_manifest = json.dumps(manifest).encode()
+    return VERIFY.bytes_digest(raw_manifest), {VERIFY.bytes_digest(raw_manifest): raw_manifest, VERIFY.bytes_digest(raw): raw}
+
+
 def artifact(digest, platform, counts=None, status="Success"):
     os_name, architecture = platform.split("/", 1)
     return {"type": "IMAGE", "digest": digest, "media_type": "application/vnd.oci.image.config.v1+json",
             "extra_attrs": {"os": os_name, "architecture": architecture},
+            "sbom_overview": {"scan_status": "Success", "sbom_digest": sbom_blobs(digest)[0]},
             "scan_overview": {VERIFY.SCAN_REPORT_TYPE: {"scan_status": status,
                               "summary": {"summary": counts if counts is not None else {"Critical": 0, "High": 0}}}}}
 
@@ -142,7 +170,9 @@ class ScanReceiptTests(TestCase):
         self.plan = VERIFY.selected_plan(self.config, self.replication, self.catalog, "chainguard-python")
         self.artifacts = {AMD64: artifact(AMD64, "linux/amd64"), ARM64: artifact(ARM64, "linux/arm64")}
 
-    def client(self, artifacts):
+    def client(self, artifacts, blobs=None):
+        blobs = blobs if blobs is not None else {key: value for digest in artifacts
+                                                for key, value in sbom_blobs(digest)[1].items()}
         class FakeClient:
             def __init__(self, password):
                 self.password = password
@@ -150,6 +180,9 @@ class ScanReceiptTests(TestCase):
             def artifact(self, repository, digest):
                 self.repository = repository
                 return artifacts[digest]
+
+            def registry_bytes(self, repository, digest, *, manifest=False):
+                return blobs[digest]
         return FakeClient
 
     def test_only_cve_free_completed_children_produce_a_bounded_receipt(self):
@@ -190,6 +223,118 @@ class ScanReceiptTests(TestCase):
                                       {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                       self.client(artifacts))
         self.assertEqual(receipt["scan_status"]["linux/arm64"], "Success")
+
+    def test_success_without_package_coverage_is_rejected(self):
+        for overview in (None, {}, {"scan_status": "Running"}, {"scan_status": "Success"}):
+            with self.subTest(overview=overview):
+                artifacts = copy.deepcopy(self.artifacts)
+                artifacts[ARM64]["sbom_overview"] = overview
+                with self.assertRaises(VERIFY.ReceiptError):
+                    VERIFY.scan_receipt(self.plan, self.plan["source_digest"],
+                                        {"linux/amd64": AMD64, "linux/arm64": ARM64}, "test", self.client(artifacts))
+
+    def test_native_trivy_output_distinguishes_alpine_from_package_empty_busybox(self):
+        fixtures = ROOT / "scripts/ci/fixtures"
+        alpine = json.loads((fixtures / "trivy-0.72.0-alpine.spdx.json").read_text())
+        busybox = json.loads((fixtures / "trivy-0.72.0-busybox.spdx.json").read_text())
+        self.assertEqual(VERIFY.sbom_package_count(alpine), 16)
+        self.assertEqual(len(busybox["packages"]), 1)
+        with self.assertRaisesRegex(VERIFY.ReceiptError, "no supported package inventory"):
+            VERIFY.sbom_package_count(busybox)
+
+    def test_root_os_file_unknown_unversioned_or_unrelated_inventory_is_rejected(self):
+        for change in (
+            lambda d: d.update(packages=d["packages"][:1]),
+            lambda d: d["packages"][1].update(primaryPackagePurpose="OPERATING-SYSTEM"),
+            lambda d: d["packages"][1].update(primaryPackagePurpose="FILE"),
+            lambda d: d["packages"][1].update(versionInfo=""),
+            lambda d: d["packages"][1]["externalRefs"][0].update(referenceLocator="pkg:generic/musl@1"),
+            lambda d: d.update(relationships=d["relationships"][:1]),
+        ):
+            document = sbom_document()
+            change(document)
+            with self.assertRaises(VERIFY.ReceiptError):
+                VERIFY.sbom_package_count(document)
+
+    def test_dangling_relationships_cannot_connect_inventory_to_the_image(self):
+        document = sbom_document()
+        document["relationships"][1]["relatedSpdxElement"] = "SPDXRef-MISSING"
+        document["relationships"].append({"spdxElementId": "SPDXRef-MISSING", "relationshipType": "CONTAINS",
+                                          "relatedSpdxElement": "SPDXRef-package"})
+        with self.assertRaisesRegex(VERIFY.ReceiptError, "unknown element"):
+            VERIFY.sbom_package_count(document)
+        # Real file nodes remain valid relationship endpoints, but do not count.
+        document["files"] = [{"SPDXID": "SPDXRef-MISSING", "fileName": "/lib/example.so"}]
+        self.assertEqual(VERIFY.sbom_package_count(document), 1)
+
+    def test_malformed_purl_names_and_versions_do_not_prove_coverage(self):
+        for purl in ("pkg:apk/@@1", "pkg:apk/@1", "pkg:apk/alpine/@1", "pkg:apk//musl@1",
+                     "pkg:apk/musl@", "pkg:apk/musl@%", "pkg:apk/%40@1", "pkg:apk/%20@1",
+                     "pkg:apk/%2F@1", "pkg:apk/musl@%20", "pkg:apk/musl@%FF"):
+            with self.subTest(purl=purl):
+                document = sbom_document()
+                document["packages"][1]["externalRefs"][0]["referenceLocator"] = purl
+                with self.assertRaises(VERIFY.ReceiptError):
+                    VERIFY.sbom_package_count(document)
+        document = sbom_document()
+        document["packages"][1]["externalRefs"][0]["referenceLocator"] = "pkg:npm/%40example/package@1.2.3"
+        self.assertEqual(VERIFY.sbom_package_count(document), 1)
+
+    def test_duplicate_json_members_are_ambiguous_even_when_hashes_match(self):
+        manifest_digest, blobs = sbom_blobs(AMD64)
+        manifest = json.loads(blobs[manifest_digest])
+        raw_document = blobs[manifest["layers"][0]["digest"]]
+        for duplicate_manifest in (False, True):
+            with self.subTest(manifest=duplicate_manifest):
+                modified = copy.deepcopy(manifest)
+                changed_blobs = dict(blobs)
+                if duplicate_manifest:
+                    raw_manifest = b'{"subject": {},' + blobs[manifest_digest][1:]
+                else:
+                    raw = b'{"packages": [],' + raw_document[1:]
+                    modified["layers"][0].update(digest=VERIFY.bytes_digest(raw), size=len(raw))
+                    changed_blobs[VERIFY.bytes_digest(raw)] = raw
+                    raw_manifest = json.dumps(modified).encode()
+                digest = VERIFY.bytes_digest(raw_manifest)
+                changed_blobs[digest] = raw_manifest
+                image = artifact(AMD64, "linux/amd64")
+                image["sbom_overview"]["sbom_digest"] = digest
+                with self.assertRaisesRegex(VERIFY.ReceiptError, "ambiguous"):
+                    VERIFY.sbom_coverage(self.client({}, changed_blobs)("test"), "chainguard/python", image, AMD64)
+
+    def test_accessory_subject_layer_and_document_bytes_are_bound(self):
+        for change in (
+            lambda m: m["subject"].update(digest=ARM64),
+            lambda m: m["config"].update(mediaType="application/vnd.oci.image.config.v1+json"),
+            lambda m: m["layers"].append(m["layers"][0]),
+            lambda m: m["layers"][0].update(size=VERIFY.MAX_SBOM_BYTES + 1),
+            lambda m: m["layers"][0].update(size=1),
+        ):
+            manifest_digest, blobs = sbom_blobs(AMD64, change=change)
+            image = artifact(AMD64, "linux/amd64")
+            image["sbom_overview"]["sbom_digest"] = manifest_digest
+            with self.assertRaises(VERIFY.ReceiptError):
+                VERIFY.sbom_coverage(self.client({}, blobs)("test"), "chainguard/python", image, AMD64)
+        manifest_digest, blobs = sbom_blobs(AMD64)
+        for key in blobs:
+            corrupted = dict(blobs)
+            corrupted[key] += b" "
+            with self.assertRaises(VERIFY.ReceiptError):
+                VERIFY.sbom_coverage(self.client({}, corrupted)("test"), "chainguard/python",
+                                     artifact(AMD64, "linux/amd64"), AMD64)
+
+    def test_old_or_empty_coverage_receipts_are_rejected(self):
+        value = scan_receipt(self.plan)
+        for change in (
+            lambda v: v.pop("sbom_coverage"),
+            lambda v: v.update(schema_version=1, kind="native-chainguard-scan-v1"),
+            lambda v: v["sbom_coverage"]["linux/arm64"].update(package_count=0),
+            lambda v: v["sbom_coverage"]["linux/arm64"].update(package_count=True),
+        ):
+            broken = copy.deepcopy(value)
+            change(broken)
+            with self.assertRaises(VERIFY.ReceiptError):
+                VERIFY.validate_scan_receipt(broken, self.plan, value["platforms"])
 
     def test_scan_cli_accepts_contract_digests(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -251,7 +396,8 @@ class ScanReceiptTests(TestCase):
         self.assertEqual(client.artifact("chainguard/python", AMD64), self.artifacts[AMD64])
         self.assertEqual(
             opener.request.full_url,
-            f"https://harbor.stinkyboi.com/api/v2.0/projects/homelab/repositories/chainguard%252Fpython/artifacts/{AMD64}?with_scan_overview=true",
+            f"https://harbor.stinkyboi.com/api/v2.0/projects/homelab/repositories/chainguard%252Fpython/artifacts/{AMD64}"
+            "?with_scan_overview=true&with_sbom_overview=true",
         )
         self.assertEqual(opener.timeout, 15)
         authorization = opener.request.get_header("Authorization")
