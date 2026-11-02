@@ -1474,6 +1474,15 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+# Native parser/CEL regression runs in the network static gate; keep its exact reviewed policy offline.
+private_policy_hash="$(
+  yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' \
+    docs/examples/octelium/homelab-services.yaml | jq -cS . | sha256sum | cut -d' ' -f1
+)"
+[[ "$private_policy_hash" == d232749dfe13897937645fa8fe3e47a62e5cb6ee307b1ab42326fcab0ae584ab ]] || {
+  echo "Private Kubernetes policy changed; review the native boundary test and update its exact security hash." >&2
+  exit 1
+}
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
@@ -1485,46 +1494,6 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
-    $policies[0].spec.rules == [
-      {
-        "name": "cordium-sensitive-read-deny",
-        "effect": "DENY",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"any": {"of": [
-            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
-            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
-          ]}}
-        ]}}
-      },
-      {
-        "name": "operator-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
-        ]}}
-      },
-      {
-        "name": "cordium-read-only-client",
-        "effect": "ALLOW",
-        "condition": {"all": {"of": [
-          {"match": "ctx.user.spec.type == \"HUMAN\""},
-          {"match": "ctx.session.status.type == \"CLIENT\""},
-          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
-        ]}}
-      }
-    ] and
     ($services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
     $services[0].spec.mode == "KUBERNETES" and
