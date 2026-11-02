@@ -842,6 +842,12 @@ attest and test actual Fleet console SAML and local recovery login. See the
 
 ## GitHub Workflow Checks
 
+Static validation creates a private temporary Terragrunt download directory
+outside the checkout and removes it on exit. The cache location is inherited by
+child fixtures; it does not change infrastructure inputs. The artifact scanner
+still rejects saved plan/state files in ignored checkout paths. See the
+[validation runbook](../../docs/validation-runbook.md).
+
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.
 Authorized signed-history repair must preserve a backup ref and exact content,
@@ -862,7 +868,11 @@ reviewers map the immutable pin back to the upstream release tag.
 
 GitHub workflows pin their Chainguard Actions references by full commit SHA.
 Checkout, artifact publication, Nix installation, AWS credential setup, CodeQL,
-semantic release and linting retain explicit reviewed versions.
+and linting retain explicit reviewed versions. Semantic-release uses the
+flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
+Its PR preview is tokenless; only the serialized `main` publisher receives the
+release token. The [release contract](../../docs/ci-cd.md#release-publication)
+includes a disposable Git-remote test for preview, coalescing, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
@@ -881,7 +891,7 @@ its status has not been verified locally. GitHub's repository policy was checked
 Actions are enabled, all publishers are allowed, and SHA pinning is required.
 See the
 [vendor prerequisites](https://edu.chainguard.dev/chainguard/actions/overview/).
-The selected Nix and semantic-release actions include vendor usage telemetry;
+The selected Nix action includes vendor usage telemetry;
 the Nix action sends repository/action identity and uses an audience-specific
 OIDC token when the job already permits it. No new credentials or permissions
 are added. Review each pinned `source.json`, `action.yml`, and `HARDENING.md`

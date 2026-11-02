@@ -81,6 +81,7 @@ secrets/
 .talos/talosconfig
 
 #Ignore vscode AI rules
+node_modules/
 .github/copilot-instructions.md
 
 # Talos generated/local credential material

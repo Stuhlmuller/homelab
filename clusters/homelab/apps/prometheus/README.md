@@ -187,14 +187,16 @@ Render Prometheus-owned resources:
 kubectl kustomize clusters/homelab/apps/prometheus
 ```
 
-After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
+After Argo CD and Prometheus sync, verify the Argo CD scrape wiring through
+the existing authorized Octelium Kubernetes context. Replace the context
+placeholder with its configured name; these checks need only read access:
 
 ```sh
-kubectl -n argocd get svc argocd-application-controller-metrics \
+kubectl --context '<octelium-cluster-context>' -n argocd get svc argocd-application-controller-metrics \
   argocd-repo-server-metrics argocd-server-metrics
-kubectl -n monitoring get servicemonitor argocd-application-controller \
+kubectl --context '<octelium-cluster-context>' -n monitoring get servicemonitor argocd-application-controller \
   argocd-repo-server argocd-server
-kubectl -n monitoring get prometheusrule argocd-application-health
-kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
-kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl --context '<octelium-cluster-context>' -n monitoring get prometheusrule argocd-application-health
+kubectl --context '<octelium-cluster-context>' -n monitoring get externalsecret alertmanager-discord-webhook
+kubectl --context '<octelium-cluster-context>' -n monitoring get secret alertmanager-discord-webhook
 ```
