@@ -4,8 +4,8 @@ The live-owned `IaC/homelab/us-west-2/apps/istio/stack.hcl` stays at Istio
 1.27.3 with its existing auto-sync and self-heal behavior. This directory's
 [`upgrade-1.28.10.json`](upgrade-1.28.10.json) records a **disabled** candidate
 for the first adjacent hop. It is not included in `kustomization.yaml` or the
-Argo Application. Even if this preparation merges, it changes no Istio
-runtime object or Application sync policy.
+Argo Application. That disabled 1.28.10 candidate changes no Istio runtime
+object or Application sync policy.
 
 The target's four digest-pinned images already live in the reviewed
 [`platform-maintenance.json`](../../../../scripts/config/platform-maintenance.json)
@@ -19,14 +19,30 @@ that the 1.28.10 istiod chart omits the old `istiod` PodDisruptionBudget.
 The candidate uses [Istio's replacement chart repository](https://istio.io/latest/blog/2026/retirement-of-gcp/)
 at `https://blob.istio.io/istio-release/charts`; its downloaded archives match
 these pins. The declared 1.27.3 sources and chart inventories use that same
-repository with unchanged versions and package hashes. Apply the Application
-source change through a reviewed scoped Terragrunt plan, then require the
+repository with unchanged versions and package hashes. Apply the chart-source-only
+Application change through a reviewed scoped Terragrunt plan, then require the
 `istio` Application Synced/Healthy with unchanged workload images and no
 unexpected resource diff. Keep the old GCS AppProject entry for rollback until
 that live check passes. A failed chart fetch blocks the 1.28 hop; restore the
 previous source only through another reviewed plan and apply.
 The gateway chart keeps `image: auto`; verify the injected proxy's live image
 ID against the published `proxyv2` digest during rollout.
+
+## ztunnel bootstrap image
+
+The reviewed stack declares the upstream Docker Hub reference at the unchanged
+1.27.3 digest. On 2026-10-27, `ztunnel` on the Traefik node could not pull its
+Harbor reference through the node's `10.96.0.50` registry alias. Renovate's
+registry requests failed while that destination HBONE listener was unavailable.
+All four nodes had no active `docker.io` mirror at that readback, so this
+reference selects Docker Hub instead of the Harbor alias. Keep the staged
+strict Talos mirror rollout held until ztunnel has an independent bootstrap
+path; that mirror would send this reference back through Harbor. After the
+reviewed Terragrunt and Argo CD rollout, require ztunnel available on all four
+nodes and a scheduled Renovate dry run without Harbor Docker-token errors.
+If upstream pulls fail, restore a working Harbor node route through the
+reviewed rollback path before reverting this image parameter through
+Terragrunt and Argo CD.
 
 The [Istio 1.28 release](https://istio.io/latest/news/releases/1.28.x/announcing-1.28/)
 supports Kubernetes 1.34. Its [upgrade notes](https://istio.io/latest/news/releases/1.28.x/announcing-1.28/upgrade-notes/)

@@ -20,8 +20,10 @@ Terragrunt client needs read access plus write scopes for each managed surface:
 Kubernetes operator credential to administer the tailnet.
 
 The imported DNS configuration preserves MagicDNS, two global resolvers with
-local-DNS override off, and the `stinkyboi.com` split DNS resolver. The fixed
-split DNS IP must match the `homelab-dns` Tailscale Service before any update.
+local-DNS override off, and the `stinkyboi.com` split DNS resolver. The split
+resolver stays active when a client selects an exit node; otherwise the exit
+node's resolver cannot find private app names. The fixed split DNS IP must match
+the `homelab-dns` Tailscale Service before any update.
 The imported tailnet settings preserve existing approval, key-duration, HTTPS,
 auto-update, logging, posture, and routing flags. Provider 0.29.2 does not
 expose the live `routeSelection` setting; keep that gap visible when reviewing
