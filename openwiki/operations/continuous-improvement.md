@@ -1027,3 +1027,27 @@ observations below retain their original dates.
   are absent.
 - **Next step:** keep the guarded startup, native AirVPN provider, and verified
   nightly archives; use the documented restore path if corruption recurs.
+
+## November 2, 2026: worker pressure during LiteLLM rollout
+
+Read-only inspection at 02:59 UTC found `zimaboard-2` still Ready=Unknown
+(last full kubelet status 02:39:20), while the other three nodes were Ready.
+Authenticated Talos remained reachable with the same boot ID; kubelet health
+checks timed out. The 1,792 MiB node had roughly 48–52 MiB available and severe
+memory/I/O pressure. Exact old and new LiteLLM Pod cgroups consumed about
+869 MiB combined during RollingUpdate. Both had zero memory requests; no OOM
+counter or matching OOM log established a kill. The timing supports a rollout
+pressure correlation, not a proven sole root cause.
+
+The same hardened gateway revision recovered automatically on `acer`, Ready
+with zero restarts and about 539 MiB resident memory. Runtime checks confirmed
+zero effective/bounding capabilities, NoNewPrivs, seccomp filtering and no
+ServiceAccount token mount. This verifies Phase 1 controls, not the #844
+24-hour/caller acceptance or Phase 2 writable-path requirement.
+
+Issues #775, #793 and #785 remain open. Prepare a measured gateway memory
+request and placement correction; coordinate capacity with #1656, which moves
+PostgreSQL only. A current reviewed node-recovery path and its preconditions
+are required before any reboot or drain. No live cleanup, reboot or credential
+change occurred. Hold #1805's Descheduler repair until readiness/capacity
+preflight is restored; keep its existing eviction guards.

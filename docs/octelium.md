@@ -283,13 +283,28 @@ cordium run --rm --domain stinkyboi.com \
 Each running Workspace already has its own Octelium client session. Inside the
 Workspace, run `octelium config kubernetes-api.homelab --domain
 stinkyboi.com`, run the printed `KUBECONFIG` export, set it to mode `0600`, and
-run the same `kubectl` check. Cordium is limited to nonsensitive `get`, `list`,
-and `watch`; verify Secret reads and a server-side dry-run create are denied:
+run `kubectl --request-timeout=15s -n ai get pods` (replace this homelab
+namespace as needed). The staged Cordium allowlist permits GET-based
+`get`, `list`, and `watch` only for namespaced core/v1 events, pods and services;
+apps/v1 daemonsets, deployments, replicasets and statefulsets; and batch/v1
+cronjobs and jobs. Discovery is limited to `/api`, `/api/v1`, `/apis`,
+`/apis/apps/v1` and `/apis/batch/v1`. Nodes, cluster-wide lists, subresources,
+unknown resources and other API groups are denied. Verify these denials plus
+Secret reads and server-side dry-run creates after protected activation:
 
 ```sh
 ! kubectl get secrets --all-namespaces
+! kubectl get nodes
+! kubectl get pods --all-namespaces
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
+
+Run `python3 -I scripts/ci/octelium-kubernetes-policy-check.py` in the pinned
+Nix shell for the actual v0.35.0 parser/CEL regression. Merging this catalog
+does not apply it. Use the existing exact-main private Kubernetes workflow;
+retain #846 until the separate identity/credential and live owner/Cordium
+acceptance gates pass. Rollback uses a reviewed catalog change through that
+same path; do not restore broad reads merely to make a probe pass.
 
 Neither path needs the Tailscale subnet route.
 

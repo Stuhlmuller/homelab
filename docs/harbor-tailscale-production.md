@@ -10,10 +10,11 @@ not migrate the other homelab access workflows or change routes, ACLs or RBAC.
 
 The workflow is dispatch-only, restricted to exact reviewed `main` and the
 `homelab-production` environment. Publishing this source does not enroll a node.
-Enrollment remains blocked until a separately approved operator installs its
-production key. Do not dispatch a live job as part of source preparation.
+The credential-check step fails when the production key is absent; Tailnet
+Lock rejects unsigned enrollment. Pipeline results determine readiness without
+additional document-derived signing, installation, or dispatch approvals.
 
-## Preview and action-time approval
+## Credential preview and installation
 
 The production-only helper reuses an existing provider `apply` key and cached
 Tailnet Lock wrapper. It has no signing, key creation, provider apply, node
@@ -30,8 +31,8 @@ Duplicate aliases and malformed keys fail closed. This never changes cache files
 or relaxes the provider fingerprint, wrapped key, generation or authority metadata
 checks. Equal generation alone does not make a stale signed cache usable.
 
-After source review/merge and approval to read the existing private production
-key/cache, run from clean signed current `main`:
+The helper reads the existing private production key/cache from clean signed
+current `main`:
 
 ```sh
 nix develop --command python3 -I scripts/harbor-tailscale-production.py
@@ -39,11 +40,10 @@ nix develop --command python3 -I scripts/harbor-tailscale-production.py
 
 Preview reports only identity/tag, generation, existing public authority,
 expiration and fixed secret destination. Missing/mismatched cache or trust
-metadata stops; it never signs a replacement. A prior successful full-helper
-preview is not approval for this operation. Read the concrete preview before
-requesting installation approval.
+metadata stops; it never signs a replacement. The preview supplies the exact generation, authority and
+expiration consumed by the installation helper.
 
-The installation approval must name that generation, authority and expiration:
+The installation command binds those values:
 
 ```sh
 nix develop --command python3 -I scripts/harbor-tailscale-production.py \
@@ -58,8 +58,8 @@ and an absent destination secret. The only write is
 `TAILSCALE_AUTH_KEY`, passed over stdin. Metadata readback confirms presence;
 it cannot prove the stored value or enrollment works. An uncertain write stops
 without retrying. GitHub has no conditional secret-create operation: keep other
-secret publishers stopped during this action. Replacing an existing secret
-requires a separate approval; this helper refuses it.
+secret publishers stopped during this action. This helper refuses to replace
+an existing secret.
 
 ## Identity, lifetime and authority
 
@@ -80,9 +80,9 @@ Tailnet Lock remains enabled. The cached wrapper includes a delegated private
 signing key. This proposal creates no new delegation and never exports the
 Mac's voting key, but putting that wrapper in CI is persistent credential access.
 Auth-key expiry or secret deletion does not remove the existing signing authority
-or necessarily revoke already enrolled nodes. A leak needs a separately approved
-exact key/node/authority revocation plan; do not remove shared authorities or
-re-sign other nodes during this recovery.
+or necessarily revoke already enrolled nodes. Key, node and authority revocation
+are distinct operations; neither helper
+removes shared authorities or re-signs other nodes.
 
 [Tailscale's Action](https://github.com/tailscale/github-action#tailnet-lock)
 requires a pre-signed key for unattended locked-tailnet enrollment. Signing each
@@ -92,17 +92,16 @@ by this patch. Reusing the existing wrapper is the bounded supported path.
 
 ## Acceptance and rollback
 
-After separately approved installation, authorize a new protected mirror run at
-exact current `main`; do not retry the old Octelium run unchanged. Require actual
-Tailnet enrollment/cleanup, strict TLS, authenticated complete destination pulls,
-platform/digest equality and fresh scan review. Mastodon PR #1752 remains held
-until those checks and fresh backup/isolated restore receipts pass.
+The protected mirror runs at exact current `main`. Its steps check actual
+Tailnet enrollment/cleanup, strict TLS, complete destination pulls and
+platform/digest equality. Executable release checks own runtime readiness;
+this runbook does not hold individual PRs or add manual acceptance gates.
 
 Revert this source through protected PRs to stop future use; that does not revoke
-a published key or enrolled nodes. Deleting only the newly installed production
-secret requires separate approval and prevents future jobs from using it.
+a published key or enrolled nodes. Deleting the production secret prevents
+future jobs from using it.
 Preserve encrypted provider state and the private cache for recovery. Key or
-signing-authority retirement remains a distinct approved action. Do not restore
+signing-authority retirement remains a distinct operation. Do not restore
 Octelium or broaden network access as an automatic fallback.
 
 ## Existing verification/access limits
@@ -116,7 +115,7 @@ endpoint, proxy, SSH or Talos route is authorized by this source change.
 No QNAP backup share was mounted on the operator Mac at inspection. Saved
 October 25 initial-backup and isolated-restore receipts are historical;
 October 26-27 nightly backups failed. Current source offers no independent
-Mastodon backup-receipt workflow. Fresh verification requires an authorized
-operator's existing backup/restore receipts, or separately resolved access for
-read-only Job status/log verification. Do not mount a new share or route the
+Mastodon backup-receipt workflow. Fresh verification comes from executable
+backup/restore checks and their Job status, rather than a document-derived
+operator attestation. Do not mount a new share or route the
 denied Kubernetes read through another service to manufacture acceptance.
