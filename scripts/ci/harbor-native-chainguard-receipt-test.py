@@ -77,6 +77,31 @@ class VerificationTests(TestCase):
         self.assertTrue(VERIFY.verify_native_receipt(self.plan, receipt)[0])
         self.assertEqual(receipt["platforms"], {"linux/amd64": AMD64, "linux/arm64": ARM64})
 
+    def test_history_preserves_the_current_import_contract_in_either_order(self):
+        current = self.catalog["images"][0]
+        historical = {"source": "cgr.dev/chainguard/python@sha256:" + "b" * 64}
+        for rows in ([current, historical], [historical, current]):
+            with self.subTest(rows=rows):
+                plan = VERIFY.selected_plan(self.config, self.replication, {"images": rows}, "chainguard-python")
+                self.assertEqual(plan, self.plan)
+
+    def test_ambiguous_or_invalid_history_cannot_supply_a_native_alias(self):
+        current = self.catalog["images"][0]["source"]
+        historical = "cgr.dev/chainguard/python@sha256:" + "b" * 64
+        for sources in (
+            [historical],
+            [current, historical.replace("python@", "orphan@")],
+            [current, historical.replace("cgr.dev/", "foreign.example/")],
+            [current, historical.replace("python@", "python/extra@")],
+            [current, historical.replace("python@", "python:@")],
+            [current, historical[:-1]],
+            [current, historical, historical],
+            [current, current.replace(":latest@", "@")],
+            [current, current.replace(self.plan["source_digest"], "sha256:" + "b" * 64)],
+        ):
+            with self.subTest(sources=sources), self.assertRaises(VERIFY.ReceiptError):
+                VERIFY.build_plan(self.config, self.replication, {"images": [{"source": s} for s in sources]})
+
     def test_unmanaged_replication_rule_or_catalog_digest_is_rejected(self):
         broken = copy.deepcopy(self.replication)
         broken["rules"][0]["destination"] = "homelab/other"

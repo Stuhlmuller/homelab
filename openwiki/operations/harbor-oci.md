@@ -955,8 +955,11 @@ Static rendering did not catch either runtime validation issue.
 
 ## Expanded publication and egress prerequisites
 
-Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*`
-sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six
+Both publication catalogs list thirteen tagged `cgr.dev/chainguard/*` sources
+and one retained Python digest for the staged network-policy canary. Native
+Python and curl receipts resolve the current reviewed `:latest` rows. See the
+[mirror alias and receipt contract](../../docs/harbor-image-mirroring.md#chainguard-source-provenance).
+Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six
 additions to the original seven-image scope. Earlier seven-image receipts exclude
 those additions, so expanded publication requires protected approval and complete
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong

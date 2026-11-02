@@ -7,7 +7,7 @@
       "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
     },
     {
-      "source": "cgr.dev/chainguard/curl:latest@sha256:878ba999bcb4d4534c24aeb67631466eb494cde2d12001c139582bc56c87b120"
+      "source": "cgr.dev/chainguard/curl:latest@sha256:ee621e3d81722b857242dc8068161ed435436b69f09e329cb31a318bcfc7d3d4"
     },
     {
       "source": "cgr.dev/chainguard/go:latest@sha256:9540b140744c9f17f0752d19374fa4b26fd27fc79f3c07fc4cd2307187d9ada5"
@@ -25,7 +25,10 @@
       "source": "cgr.dev/chainguard/postgres:latest@sha256:4c8ef6bcf82ab05f4cca769d44847809fc069b5113893f3dc68b95983189a874"
     },
     {
-      "source": "cgr.dev/chainguard/python:latest@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
+      "source": "cgr.dev/chainguard/python:latest@sha256:60e3c0d33ab77e50ace0850ccdf6eaec825ce89dad9b1ec2b0300a2070892b05"
+    },
+    {
+      "source": "cgr.dev/chainguard/python@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
     },
     {
       "source": "cgr.dev/chainguard/redis:latest@sha256:deddaf0f4b0b81113096bd0ff91bd0f20edc9c7314aaa6276266d8854da33902"

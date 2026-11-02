@@ -26,10 +26,18 @@ and re-run the protected publication workflow before asking Argo CD to sync.
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
 public Chainguard source catalog. The protected `harbor-mirror.yml`
-`chainguard` scope copies its thirteen entries to
+`chainguard` scope copies its thirteen tagged sources and one retained digest to
 `mirror/cgr.dev/chainguard/<image>`. That proves source provenance and Harbor
 custody only; it does not make an artifact deployment-eligible or move a
 consumer to the public `mirror` project.
+
+Python retains one digest-only catalog entry for the staged network-policy
+canary. Its existing Harbor reference uses the digest hex as both tag and
+pinned digest. A request for upstream `python:latest@<old-digest>` still maps
+to that immutable mirror reference. `python:latest` maps to the current
+reviewed digest. A direct Harbor `:latest@<old-digest>` reference is outside
+the admission allowlist after the alias moves. Use the retained digest-tagged
+reference for that version. Only the current tagged rows select native imports.
 
 Native Harbor replication is currently limited to
 `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
@@ -247,7 +255,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    remains enrolled for Harbor; this preparation changes no live database.
    Publish and inspect fresh scan results before changing the Mastodon consumer.
 
-   The `chainguard` scope selects the thirteen digest-pinned public candidates in
+   The `chainguard` scope selects the digest-pinned public sources in
    `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
    Wolfi base and static runtime. It publishes to the same normal
