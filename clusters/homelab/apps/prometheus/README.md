@@ -153,6 +153,12 @@ Application unhealthy.
   metrics.
 - Rollback: preserve PVCs unless the operator accepts metrics loss.
 
+## Talos filesystem capacity
+
+The [EPHEMERAL monitoring runbook](../../../../docs/talos-ephemeral-monitoring.md)
+explains the four mapped cAdvisor gauges, Homelab Overview panels, exhaustion
+thresholds and the response to a missing node.
+
 ## Talos Component Metrics
 
 The kube-prometheus-stack defaults for kube-controller-manager, kube-scheduler,

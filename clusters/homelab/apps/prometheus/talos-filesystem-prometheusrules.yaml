@@ -1,0 +1,93 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: talos-ephemeral-filesystems
+  namespace: monitoring
+spec:
+  groups:
+    - name: homelab.talos-ephemeral-filesystems
+      interval: 5m
+      rules:
+        - record: node_device:talos_ephemeral_free_bytes
+          expr: |
+            min by (node, device) (
+              (container_fs_limit_bytes{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} > 0)
+              - (container_fs_usage_bytes{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} >= 0)
+            ) >= 0
+        - record: node_device:talos_ephemeral_free_inodes
+          expr: |
+            min by (node, device) (
+              (container_fs_inodes_free{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} >= 0)
+              <= (container_fs_inodes_total{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} > 0)
+            )
+        - record: node_device:talos_ephemeral_free_ratio
+          labels: {resource: bytes}
+          expr: |
+            node_device:talos_ephemeral_free_bytes / max by (node, device) (
+              container_fs_limit_bytes{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} > 0
+            )
+        - record: node_device:talos_ephemeral_free_ratio
+          labels: {resource: inodes}
+          expr: |
+            node_device:talos_ephemeral_free_inodes / max by (node, device) (
+              container_fs_inodes_total{job="kubelet",metrics_path="/metrics/cadvisor",homelab_talos_volume="EPHEMERAL"} > 0
+            )
+        # Fit six hours of absolute free capacity. Require 60 of 72 five-minute samples.
+        - record: node_device:talos_ephemeral_runway_hours
+          labels: {resource: bytes}
+          expr: |
+            -node_device:talos_ephemeral_free_bytes / (deriv(node_device:talos_ephemeral_free_bytes[6h]) < 0) / 3600
+            and (count_over_time(node_device:talos_ephemeral_free_bytes[6h]) >= 60)
+        - record: node_device:talos_ephemeral_runway_hours
+          labels: {resource: inodes}
+          expr: |
+            -node_device:talos_ephemeral_free_inodes / (deriv(node_device:talos_ephemeral_free_inodes[6h]) < 0) / 3600
+            and (count_over_time(node_device:talos_ephemeral_free_inodes[6h]) >= 60)
+        - record: node:talos_ephemeral_observed
+          expr: count by (node) (node_device:talos_ephemeral_free_ratio >= 0 and node_device:talos_ephemeral_free_ratio <= 1) == 2
+        - alert: TalosEphemeralTelemetryMissing
+          expr: |
+            absent(node:talos_ephemeral_observed{node="acer"})
+            or absent(node:talos_ephemeral_observed{node="zimaboard-0"})
+            or absent(node:talos_ephemeral_observed{node="zimaboard-1"})
+            or absent(node:talos_ephemeral_observed{node="zimaboard-2"})
+          for: 15m
+          labels: {severity: warning}
+          annotations:
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/talos-ephemeral-monitoring.md
+            summary: '{{ $labels.node }} lacks complete EPHEMERAL filesystem telemetry'
+            description: 'Check kubelet reachability and the Talos /var partition mapping before placing local state.'
+        - alert: TalosEphemeralAlmostFull
+          expr: node_device:talos_ephemeral_free_ratio < 0.05
+          for: 30m
+          labels: {severity: warning}
+          annotations:
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/talos-ephemeral-monitoring.md
+            summary: '{{ $labels.node }} has less than 5% of its EPHEMERAL {{ $labels.resource }} free'
+        - alert: TalosEphemeralAlmostFull
+          expr: node_device:talos_ephemeral_free_ratio < 0.03
+          for: 30m
+          labels: {severity: critical}
+          annotations:
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/talos-ephemeral-monitoring.md
+            summary: '{{ $labels.node }} has less than 3% of its EPHEMERAL {{ $labels.resource }} free'
+        - alert: TalosEphemeralFillingUp
+          expr: |
+            (node_device:talos_ephemeral_free_ratio{resource="bytes"} < 0.15
+            or node_device:talos_ephemeral_free_ratio{resource="inodes"} < 0.40)
+            and node_device:talos_ephemeral_runway_hours < 24
+          for: 1h
+          labels: {severity: warning}
+          annotations:
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/talos-ephemeral-monitoring.md
+            summary: '{{ $labels.node }} may exhaust EPHEMERAL {{ $labels.resource }} within 24 hours'
+        - alert: TalosEphemeralFillingUp
+          expr: |
+            (node_device:talos_ephemeral_free_ratio{resource="bytes"} < 0.10
+            or node_device:talos_ephemeral_free_ratio{resource="inodes"} < 0.20)
+            and node_device:talos_ephemeral_runway_hours < 4
+          for: 1h
+          labels: {severity: critical}
+          annotations:
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/talos-ephemeral-monitoring.md
+            summary: '{{ $labels.node }} may exhaust EPHEMERAL {{ $labels.resource }} within 4 hours'
