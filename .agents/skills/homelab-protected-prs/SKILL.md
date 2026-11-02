@@ -10,7 +10,7 @@ Read [the approval policy](../../../.policy.yml),
 [CI security model](../../../docs/ci-cd.md#security-model). Inspect GitHub's
 current rules and checks; historical check lists are not current evidence.
 This skill does not grant permission to post comments/reviews or merge; use
-the user's existing requested scope.
+the user's existing requested scope. Use the [delivery helper and runbook](../../../docs/pr-delivery.md#delivery-helper-and-recurring-runner) for dependency planning and durable checkpoints.
 
 1. Inventory the requested PRs with `gh pr list` / `gh pr view`; for an all-PR
    sweep, preserve the complete set and refresh it before declaring completion.

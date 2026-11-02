@@ -1149,6 +1149,51 @@ kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
 
+## Dormant Octelium resource-store capture
+
+`scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
+the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
+Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
+PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
+single Talos sandbox/container matching its 12-hex ID prefix, three matching
+archive hashes, complete tar members, publisher
+allowlisting, and isolated extraction. Run it with the existing application
+backup fixtures and render the active app. The active render must still show
+one `octeliumee-rscstore` replica and no inspector; the candidate inspector
+resource and fence component render only when added to a temporary copy of the
+app Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
+```sh
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
+python3 -I scripts/ci/application-backup-test.py
+kubectl kustomize clusters/homelab/apps/octelium-enterprise
+python3 -I scripts/ci/openwiki-check.py
+```
+
+Before any future fence, the inspector-only GitOps stage must be Synced and
+the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+ownership and modes: retain the proposed inspector UID/GID 0 only if complete
+file access requires it; otherwise revise to a proven nonroot UID. Readiness
+checks `store.db` readability, while capture must read the whole PVC. The
+later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
+and no other Pod mounting the claim. The capture guard also requires explicit
+Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
+writer still running on a disconnected node; a missing node inventory does not
+count as zero writers. Capture then requires private off-NAS
+storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
+readback, and isolated file extraction. The capture helper repeats the
+current-main and Argo fence checks before issuing its receipt; the proof
+command fetches fresh S3 versions itself and cannot accept a supplied local
+retrieval directory. Repeat the exact-main and zero-writer checks before
+publication or a recovery decision. These gates do not prove a DuckDB
+reopen or authorize WAL quarantine or writer restart.
+
+The source guard requires the future fenced Kustomization to retain the
+inspector's exact-label NetworkPolicy. The Argo guard reads the live
+Application's single `spec.sources` and `status.sync.revisions` entries;
+singular source/revision fields do not exist there. It rejects extra entries,
+source drift, and any revision other than the reviewed `main` SHA.
+
 ## Octelium Cutover Checks
 
 Before running `octops init`, validate the self-hosted Cluster prerequisites:

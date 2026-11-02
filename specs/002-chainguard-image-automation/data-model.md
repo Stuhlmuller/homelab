@@ -78,6 +78,11 @@ the verified Harbor alias/receipt, not the branch's other contents.
 | `checks` | Actual check/run IDs, exact C, expected App/workflow identities and conclusions. |
 | `deployment_id` | Native GitHub deployment record for reconciliation after interruption. |
 
+`candidate_sha` belongs to the validator's runtime record. Committed candidate
+metadata omits it; trusted jobs resolve C from the fetched proposal ref, read
+the metadata from C, and pass C separately. A commit cannot embed its own SHA
+without changing that SHA.
+
 All operations require current main B, a signed C with sole parent B, exact-C
 checks and an allowed semantic diff. Image-changing operations also require
 publication evidence and current pullability. Operation-specific gates are:

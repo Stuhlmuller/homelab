@@ -38,6 +38,15 @@ Merge completion is verified in GitHub and `main`; deployment acceptance remains
 separate. A durable runner must resume pending work after checks or dependencies
 change; instructions alone do not schedule another agent session.
 
+The [planner](../../scripts/pr-delivery.py) orders live PR dependencies and
+records checkout-local branch ownership and continuation. Its output is
+advisory: protected merge still verifies signatures, reviews, integration
+identities, and activation gates. The
+[regression suite](../../scripts/ci/pr-delivery-test.py) exercises conflicting
+parents, restacking, missing checks, and interrupted ownership; it runs in the
+repository offline gate and focused PR Delivery workflow. A Codex heartbeat
+provides recurring delivery using the authenticated agent runtime.
+
 ## Task Lifecycle
 
 The [lifecycle skill](../../.agents/skills/homelab-task-lifecycle/SKILL.md) and

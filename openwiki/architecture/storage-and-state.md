@@ -523,6 +523,21 @@ candidate validation first; do not edit the live PVC manually. See the
 [Enterprise README](../../clusters/homelab/apps/octelium-enterprise/README.md)
 and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
 
+The November 1 resource-store capture candidate is dormant under
+`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
+activated and observed Ready before a separate GitOps fence reduces only
+`octeliumee-rscstore` to zero replicas. The source-owned capture helper requires
+Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
+namespaced PodList without another claim mount, and stable whole-PVC tar hashes
+before and after transfer. It includes any current WAL, dated quarantines and
+recovery markers. `scripts/application-backup.py` then publishes both archive
+parts and the private capture receipt to the existing versioned application
+backup bucket; exact-version readback and isolated file extraction are required
+before recovery review. The proof command itself fetches fresh S3 versions;
+local receipt files alone do not qualify. This is a prepared path, not a
+deployed backup or a DuckDB reopen proof. No WAL file is changed or store
+writer resumed by this stage. See the [workload runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
@@ -665,6 +680,16 @@ bounded health timeout remains necessary even though NFS is no longer in that
 path.
 The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
 the CronJob's archive listing validation.
+
+During torrent-catalog rebuilding, the
+[recovery script](../../clusters/homelab/apps/deluge/recover-torrent-catalog.py)
+checks current fast-resume data before opening retained archives. Fallback
+snapshots are tried newest first; unreadable, truncated, and invalid snapshots
+are skipped. A complete match for every torrent is still required before any
+state is replaced. The
+[recovery fixture](../../scripts/ci/deluge-catalog-recovery-test.py)
+checks current-source priority, truncated-archive fallback, and refusal of
+incomplete recovery.
 
 Radarr and Sonarr use retained static 10 Gi `hostPath` config volumes at
 `/var/lib/radarr` and `/var/lib/sonarr`, pinned to `zimaboard-0`. Their guarded
