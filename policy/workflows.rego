@@ -1160,7 +1160,14 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "04151b8a1f51dfb08cd22beceee39e93178c878550472ce49649e585e1d3a757"
+	crypto.sha256(json.marshal(canonical)) == "b9c7f703b4d89f4558f2cbbd17764cc258fb21184571709f21999ea35f57e799"
+}
+
+tailnet_workflow_requested if {
+	walk(input, [_, value])
+	is_string(value)
+	contains(value, "${{")
+	regex.match(`(?i)\bsecrets\s*(?:\.\s*tailscale_auth_key\b|\[\s*['"]tailscale_auth_key['"]\s*\])`, value)
 }
 
 tailnet_workflow_requested if {

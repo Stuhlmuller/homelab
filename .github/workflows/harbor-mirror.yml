@@ -113,20 +113,42 @@ jobs:
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
 
-      - name: Require Approved Production Tailnet Enrollment
-        env:
-          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
-        run: test -n "$TAILSCALE_AUTH_KEY"
+      - name: Install Verified Tailscale Client
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir "$RUNNER_TEMP/tailscale-state"
+          cd "$RUNNER_TEMP/tailscale-state"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --retry 3 --max-time 120 \
+            https://pkgs.tailscale.com/stable/tailscale_1.102.3_amd64.tgz -o release.tgz
+          sha256sum --check --status <<<'36ddd9b51be57ffc2990cf76323cfa13643bfbb1b8a969f6183fa164741cdef5  release.tgz'
+          tar xzf release.tgz tailscale_1.102.3_amd64/tailscale tailscale_1.102.3_amd64/tailscaled
 
       - name: Join Production Tailnet
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
-          version: 1.102.3
-          statedir: ${{ runner.temp }}/tailscale-state
-          hostname: harbor-mirror-${{ github.run_id }}-${{ github.run_attempt }}
-          tags: tag:homelab-ci-apply
-          args: --accept-routes=false --accept-dns=true
+        id: join
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: |
+          set +x
+          set -euo pipefail
+          exec >/dev/null 2>&1
+          : "${TAILSCALE_AUTH_KEY:?Production enrollment key is missing}"
+          export -n TAILSCALE_AUTH_KEY
+          dir="$RUNNER_TEMP/tailscale-state"
+          bin="$dir/tailscale_1.102.3_amd64"
+          sudo systemd-run --quiet --collect --unit=harbor-mirror-tailscaled --property=Type=exec --property=TimeoutStopSec=20s \
+            --property=StandardOutput=null \
+            --property=StandardError=null "$bin/tailscaled" --statedir="$dir/state" --socket="$dir/tailscaled.sock"
+          for _ in {1..30}; do
+            [[ -S "$dir/tailscaled.sock" ]] && break
+            sleep 0.5
+          done
+          test -S "$dir/tailscaled.sock"
+          builtin printf '%s' "$TAILSCALE_AUTH_KEY" | sudo "$bin/tailscale" --socket="$dir/tailscaled.sock" up \
+            --auth-key=file:/dev/stdin --hostname="harbor-mirror-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --accept-routes=false --accept-dns=true --timeout=2m >/dev/null 2>&1
+          sudo "$bin/tailscale" --socket="$dir/tailscaled.sock" status --json 2>/dev/null | \
+            jq -e '.BackendState == "Running" and .Self.Tags == ["tag:homelab-ci-apply"]' >/dev/null
 
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
@@ -206,3 +228,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: false
+
+      - name: Leave Production Tailnet
+        if: always() && steps.join.outcome != 'skipped'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/tailscale-state"
+          result=0
+          if [[ -S "$dir/tailscaled.sock" ]]; then
+            sudo timeout 20 "$dir/tailscale_1.102.3_amd64/tailscale" --socket="$dir/tailscaled.sock" logout >/dev/null 2>&1 || result=1
+          fi
+          sudo systemctl stop harbor-mirror-tailscaled || result=1
+          sudo "$dir/tailscale_1.102.3_amd64/tailscaled" --cleanup >/dev/null 2>&1 || result=1
+          sudo rm -rf -- "$dir"
+          exit "$result"

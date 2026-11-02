@@ -2167,16 +2167,97 @@ class TailnetMirrorWorkflow(unittest.TestCase):
         self.assertEqual(job["environment"]["name"], "homelab-production")
         steps = {step["name"]: step for step in job["steps"]}
         join = steps["Join Production Tailnet"]
-        self.assertEqual(join["uses"], "tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c")
-        self.assertEqual(join["with"]["authkey"], "${{ secrets.TAILSCALE_AUTH_KEY }}")
-        self.assertEqual(join["with"]["tags"], "tag:homelab-ci-apply")
-        self.assertEqual(join["with"]["statedir"], "${{ runner.temp }}/tailscale-state")
-        self.assertEqual(join["with"]["args"], "--accept-routes=false --accept-dns=true")
+        self.assertEqual(join["env"], {"TAILSCALE_AUTH_KEY": "${{ secrets.TAILSCALE_AUTH_KEY }}"})
+        self.assertEqual(join["run"].count("--accept-routes"), 1)
+        self.assertIn("--accept-routes=false --accept-dns=true", join["run"])
+        self.assertIn('--auth-key=file:/dev/stdin', join["run"])
+        self.assertIn('.Self.Tags == ["tag:homelab-ci-apply"]', join["run"])
+        self.assertEqual(steps["Leave Production Tailnet"]["if"], "always() && steps.join.outcome != 'skipped'")
         self.assertNotIn("OCTELIUM", path.read_text())
         copy = steps["Copy And Verify Fixed Public Digests"]
         for line in copy["run"].splitlines():
             if "bash scripts/ci/harbor-publish.sh mirror" in line:
                 self.assertTrue(line.endswith(" --tailscale"))
+
+    def test_native_enrollment_and_cleanup_without_services(self):
+        workflow = json.loads(subprocess.check_output([
+            "yq", "-o=json", ".", str(ROOT / ".github/workflows/harbor-mirror.yml"),
+        ], text=True))
+        steps = {s["name"]: s for s in workflow["jobs"]["mirror"]["steps"]}
+        phases = ["Verify Current Main Commit Before Credentials", "Install Verified Tailscale Client",
+                  "Join Production Tailnet", "Configure AWS Credentials", "Copy And Verify Fixed Public Digests",
+                  "Leave Production Tailnet"]
+        self.assertEqual([name for name in steps if name in phases], phases)
+        for name in phases[1:-1]:
+            self.assertNotIn("if", steps[name])  # GitHub skips these steps after failure.
+        self.assertNotIn("env", steps["Leave Production Tailnet"])
+
+        # Intercept every privileged command. Only the fake daemon creates a local socket.
+        for failure in ("", "enroll", "wrong-tag", "crash", "logout", "stop", "cleanup"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+                root = Path(temporary)
+                state = root / "tailscale-state"
+                state.mkdir()
+                sudo = root / "sudo"
+                sudo.write_text(textwrap.dedent("""\
+                    #!/usr/bin/env python3
+                    import json, os, pathlib, shutil, socket, sys
+                    root = pathlib.Path(os.environ["RUNNER_TEMP"])
+                    state = root / "tailscale-state"
+                    args = sys.argv[1:]
+                    if args[:2] == ["timeout", "20"]:
+                        args = args[2:]
+                    name, arguments = pathlib.Path(args[0]).name, args[1:]
+                    assert "TAILSCALE_AUTH_KEY" not in os.environ
+                    assert all("inert-wrapped-fixture" not in v for v in os.environ.values())
+                    with (root / "calls").open("a") as log:
+                        print(json.dumps([name, *arguments]), file=log)
+                    failure = os.environ["FAIL_AT"]
+                    if name == "systemd-run":
+                        sock = socket.socket(socket.AF_UNIX)
+                        sock.bind(str(state / "tailscaled.sock"))
+                    elif name == "tailscale" and "up" in arguments:
+                        assert sys.stdin.read() == "inert-wrapped-fixture"
+                        print("private-fixture-diagnostic", file=sys.stderr)
+                        sys.exit(failure == "enroll")
+                    elif name == "tailscale" and "status" in arguments:
+                        tag = "other" if failure == "wrong-tag" else "homelab-ci-apply"
+                        print(json.dumps({"BackendState":"Running", "Self":{"Tags":["tag:"+tag]}}))
+                    elif name == "tailscale" and "logout" in arguments:
+                        sys.exit(failure == "logout")
+                    elif name == "systemctl" and arguments == ["stop", "harbor-mirror-tailscaled"]:
+                        sys.exit(failure in ("stop", "crash"))
+                    elif name == "tailscaled" and arguments == ["--cleanup"]:
+                        sys.exit(failure == "cleanup")
+                    elif name == "rm" and arguments == ["-rf", "--", str(state)]:
+                        shutil.rmtree(state)
+                    else:
+                        sys.exit("unexpected invocation")
+                    """))
+                sudo.chmod(0o700)
+                env = {"PATH": str(root) + os.pathsep + os.environ["PATH"], "RUNNER_TEMP": str(root),
+                       "GITHUB_RUN_ID": "11", "GITHUB_RUN_ATTEMPT": "2", "FAIL_AT": failure,
+                       "key": "inherited-export", "SHELLOPTS": "allexport"}
+                fixture_value = "inert-wrapped-fixture"
+                def execute(name, extra):
+                    result = subprocess.run(["bash", "-c", steps[name]["run"]], env=env | extra,
+                                            capture_output=True, text=True, timeout=10)
+                    for private in (fixture_value, "private-fixture-diagnostic"):
+                        self.assertNotIn(private, result.stdout + result.stderr)
+                    return result.returncode
+                joined = execute("Join Production Tailnet", {"TAILSCALE_AUTH_KEY": fixture_value})
+                self.assertEqual(joined == 0, failure not in ("enroll", "wrong-tag"))
+                if failure == "crash":
+                    (state / "tailscaled.sock").unlink()
+                left = execute("Leave Production Tailnet", {})
+                self.assertEqual(left == 0, failure not in ("logout", "stop", "cleanup", "crash"))
+                calls = [json.loads(line) for line in (root / "calls").read_text().splitlines()]
+                self.assertEqual(calls[1], ["tailscale", "--socket=" + str(state / "tailscaled.sock"), "up",
+                    "--auth-key=file:/dev/stdin", "--hostname=harbor-mirror-11-2", "--accept-routes=false",
+                    "--accept-dns=true", "--timeout=2m"])
+                self.assertEqual([c[0] for c in calls[-3:]], ["systemctl", "tailscaled", "rm"])
+                self.assertEqual(any("logout" in c for c in calls), failure != "crash")
+                self.assertFalse(state.exists())
 
 
 class MirrorWorkflowStatusPin(unittest.TestCase):

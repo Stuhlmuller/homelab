@@ -220,7 +220,8 @@ The public mirror workflow now declares direct private Tailscale HTTPS and a
 strict TLS/401 registry challenge, without Kubernetes forwarding or host-file
 changes. Legacy private-publication callers retain the bounded Octelium-backed
 Kubernetes port-forward and disposable loopback mapping. Both paths retain TLS
-verification; see [the production path](../../docs/harbor-tailscale-production.md)
+verification. The protected mirror's checksum-pinned Tailscale client accepts
+private DNS and declines subnet routes from its first connection. See [the production path](../../docs/harbor-tailscale-production.md)
 and `scripts/ci/harbor-publish.sh`. Source publication alone does not install a
 credential, enroll a runner, or prove live mirror acceptance.
 

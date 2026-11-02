@@ -72,9 +72,11 @@ RBAC expansion is proposed.
 The provider key is reusable, ephemeral and preauthorized, with a 90-day maximum
 lifetime. Preview requires 7-90 days remaining; it does not extend expiration.
 Each job uses its own Tailnet Key Authority state directory, accepts tailnet
-DNS, and declines subnet routes. The pinned Tailscale
-Action logs out on cleanup; ephemeral nodes are removed. Existing AWS role and
-Harbor robot credentials are retained.
+DNS and declines subnet routes on its first connection. The mirror verifies the
+official Linux amd64 1.102.3 archive against its reviewed checksum and passes
+the key to the native client over stdin. It checks the authenticated node's
+production tag before AWS access. Cleanup logs out, stops the daemon, runs its native network cleanup and
+removes the job's private state. The job uses the existing AWS role and Harbor robot.
 
 Tailnet Lock remains enabled. The cached wrapper includes a delegated private
 signing key. This proposal creates no new delegation and never exports the

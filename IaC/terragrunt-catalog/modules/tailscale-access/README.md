@@ -141,9 +141,10 @@ and repository `TAILSCALE_CORDIUM_CLIENT_ID`. It changes no other secret or
 variable. Partial publication keeps all old variables; rerunning is safe.
 Retained provider identity outputs must not be republished.
 
-Each CI consumer must use the pinned Tailscale action's `authkey` input and a
-per-job `statedir` for Tailnet Key Authority state. The action logs out on cleanup;
-ephemeral nodes are removed. Plan/apply secrets stay behind their existing
+CI consumers use the protected pre-signed key and a per-job state directory for
+Tailnet Key Authority state. The [Harbor mirror](../../../../docs/harbor-tailscale-production.md)
+enrolls with its checksum-pinned native client and logs out its ephemeral node
+on cleanup. Plan/apply secrets stay behind their existing
 protected environments; Cordium's separate repository secret supports trusted
 branch denial tests and has no Kubernetes RBAC binding. The workflow's exact-main
 and trusted-PR checks remain necessary: signed keys do not carry GitHub OIDC

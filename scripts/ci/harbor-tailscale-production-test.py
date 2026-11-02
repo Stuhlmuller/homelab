@@ -268,6 +268,24 @@ class WorkflowPolicy(unittest.TestCase):
                                        str(path)], capture_output=True, text=True)
             result = verdict(workflow)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            # An unrelated workflow cannot consume the same key through a different
+            # action, environment name, or expression indexing syntax.
+            other = {"name": "Other", "on": {"workflow_dispatch": {}}, "jobs": {"other": {
+                "runs-on": "ubuntu-24.04", "environment": {"name": "homelab-production"},
+                "steps": [{"uses": "actions/checkout@" + "a" * 40}]}}}
+            for field, ref in (("env", "${{ secrets.TAILSCALE_AUTH_KEY }}"),
+                               ("with", "${{ secrets['TAILSCALE_AUTH_KEY'] }}"),
+                               ("workflow", "${{ secrets.TAILSCALE_AUTH_KEY }}")):
+                bad = copy.deepcopy(other)
+                if field == "workflow":
+                    bad["env"] = {"alias": ref}
+                else:
+                    bad["jobs"]["other"]["steps"][0][field] = {"alias": ref}
+                result = verdict(bad)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Tailnet workflow access requires", result.stdout)
+            other["jobs"]["other"]["steps"][0]["env"] = {"alias": "${{ secrets.SOMETHING_ELSE }}"}
+            self.assertEqual(verdict(other).returncode, 0)
             for change in ['environment', 'tag', 'secret', 'action', 'event', 'event_alias', 'output', 'permissions', 'name']:
                 bad = copy.deepcopy(workflow)
                 job = bad['jobs']['mirror']
@@ -275,9 +293,9 @@ class WorkflowPolicy(unittest.TestCase):
                 if change == 'environment':
                     job['environment']['name'] = 'homelab-plan'
                 if change == 'tag':
-                    join['with']['tags'] = 'tag:homelab-ci-cordium'
+                    join['run'] = join['run'].replace('tag:homelab-ci-apply', 'tag:homelab-ci-cordium')
                 if change == 'secret':
-                    join['with']['authkey'] = '${{ secrets.TAILSCALE_CORDIUM_AUTH_KEY }}'
+                    join['env']['TAILSCALE_AUTH_KEY'] = '${{ secrets.TAILSCALE_CORDIUM_AUTH_KEY }}'
                 if change == 'action':
                     join['uses'] = 'tailscale/github-action@v4'
                 if change == 'event':
