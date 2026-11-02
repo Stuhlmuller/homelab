@@ -78,6 +78,76 @@ Also exercise interrupted continuation, an absent required context, competing
 writers, and a genuine activation hold. Verify results from Git/GitHub state;
 a successful agent exit or a passing subset of checks is not completion.
 
+## Delivery helper and recurring runner
+
+The read-only planner uses the authenticated `gh` CLI. It reads current `main`
+rules and paginated PR/check data; it never pushes, marks ready, or merges:
+
+```sh
+python3 -I scripts/pr-delivery.py plan --pr 1795
+python3 -I scripts/pr-delivery.py plan
+python3 -I scripts/pr-delivery.py state
+```
+
+`--pr` may repeat to scope a delivery. Without it, all open PRs are inventoried.
+Use `Depends-On: #123` for each explicit same-repository prerequisite. Malformed,
+missing, closed-unmerged, ambiguous, or cyclic dependencies require inspection.
+A `delivery/hold` label is an explicit operational hold. Existing draft reasons
+and activation gates still require review; the absence of a label is not consent.
+If a whole-repository scan encounters invalid metadata, scope independent PRs
+with `--pr` while resolving the reported graph problem.
+
+The JSON actions are ordered ancestors first. `repair-conflicts` can precede
+readiness review for a draft ancestor; it does not mark that PR ready.
+`verify-and-merge` is a candidate for the protected-PR procedure, not a merge
+receipt. The agent still verifies all signatures, reviews, actual required App
+identities, current metadata, and operational gates. Status names alone cannot
+prove that the required integration produced a check.
+
+Before editing, record ownership and the concrete continuation using the full
+head SHA returned by the planner (replace the teaching values below):
+
+```sh
+python3 -I scripts/pr-delivery.py record --pr 123 --head <full-head-sha> \
+  --owner <task-id> --blocker CI --next-action 'Inspect failed static job'
+python3 -I scripts/pr-delivery.py release --pr 123 --owner <task-id>
+```
+
+Checkpoint writes recheck the live head and atomically persist owner, head/base,
+blocker and next action under the checkout's Git common directory in
+`pr-delivery/state.json`. Worktrees sharing that Git directory share ownership;
+separate clones and hosts do not. Coordinate those externally before writing.
+A competing owner cannot overwrite an active record. The same owner can resume
+after interruption; only that owner releases the record for a new owner.
+The short filesystem lock protects record writes and releases on process exit.
+It is not held while CI runs. Never infer abandoned ownership just from its age.
+Changed heads or bases mark old records stale and require fresh inspection.
+
+A Codex heartbeat attached to the delivery chat supplies the recurring worker.
+Its saved prompt names the exact authorized PRs and a completion stop condition.
+A repository-wide mandate requires separate explicit owner authorization. Within
+that scope, prioritize actionable ancestors, repair routine conflicts/CI, and
+merge through current protection using the signed-in GitHub user. Do not expand
+a bounded delivery to other drafts, current PRs, or future PRs.
+It reads the merged runbook and helper from current `main` before each pass.
+An external prerequisite produces a durable next action and one notification;
+unchanged waits remain quiet. Local runner availability and account capacity
+are required. The heartbeat is configured in Codex, not by committing a cron
+expression or introducing another cluster service.
+
+[PR Delivery CI](../.github/workflows/pr-delivery.yml) runs the small regression
+suite immediately when its implementation changes. The same suite is included
+in the required repository offline checks. It needs no GitHub write token or
+cluster access. Run it locally with:
+
+```sh
+python3 -I scripts/ci/pr-delivery-test.py
+```
+
+To stop unattended delivery, pause its Codex heartbeat. Revert the helper and CI
+registration together if rolling back the implementation, keeping unfinished
+ownership records until the delivery owner reconciles them.
+
 ## Why this workflow
 
 The workflow adapts the explicit review/repair loop in
