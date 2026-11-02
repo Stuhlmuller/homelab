@@ -890,6 +890,8 @@ test_allows_visible_terragrunt_plan if {
 
 test_rejects_changed_visible_terragrunt_plan if {
 	every changed in [
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `kubectl get pods -A -o json`),
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF" || true`),
 		replace(visible_terragrunt_plan_run, `bash scripts/ci/terragrunt-plan.sh`, `bash scripts/ci/terragrunt-apply.sh`),
 		concat("\n", [visible_terragrunt_plan_run, `cat "$azuread_report"`]),
 		replace(visible_terragrunt_plan_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `echo "$azuread_report"`),

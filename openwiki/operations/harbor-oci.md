@@ -395,7 +395,12 @@ See the [SSM contract](../../docs/secrets-aws-ssm.md).
 The protected native receipt copies complete source and authenticated Harbor
 indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability
-report type before accepting complete zero-count scans. Pull-request lint lacks
+report type before accepting complete zero-count scans. Version 2 receipts also
+require successful native SBOM generation for every required child. The existing
+pull robot reads the immutable SBOM accessory and document; the verifier checks
+both SHA-256 hashes, the exact subject child, and reachable SPDX library packages
+with supported versioned package identifiers. Container-root, OS-only and
+file-only inventories fail. Version 1 receipts cannot prove this coverage. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
 receipt status. It checks the event PR head only after confirming that head is
 still in the open `main` PR list, then rechecks on `main` pushes only when exact
@@ -415,14 +420,15 @@ for backup schedule, restore sequence and limitations.
 ## Image Scanning
 
 The chart enables Trivy with a retained 5 Gi cache. The repository-owned
-PostSync bootstrap sets and verifies `auto_scan: "true"` for the private
-`homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
-trigger scans. Bootstrap also submits missing scans for retained private
+PostSync bootstrap sets and verifies `auto_scan: "true"` and
+`auto_sbom_generation: "true"` for the `homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
+trigger scans and SBOM generation. Bootstrap also submits missing reports of each type for retained private
 `homelab` image artifacts, leaving existing reports and active scans alone and
 excluding signatures and attestations. Verify completed reports after sync;
 successful submission does not prove a successful scan.
 Backfill traverses the complete repository/artifact inventory, including histories
-over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail closed.
+over 1,000 artifacts, bounded at 1,000 repositories and 10,000 total artifacts
+before submitting scans; duplicate IDs and inconsistent pagination fail closed.
 The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
