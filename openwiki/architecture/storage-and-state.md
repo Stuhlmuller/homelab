@@ -666,6 +666,16 @@ path.
 The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
 the CronJob's archive listing validation.
 
+During torrent-catalog rebuilding, the
+[recovery script](../../clusters/homelab/apps/deluge/recover-torrent-catalog.py)
+checks current fast-resume data before opening retained archives. Fallback
+snapshots are tried newest first; unreadable, truncated, and invalid snapshots
+are skipped. A complete match for every torrent is still required before any
+state is replaced. The
+[recovery fixture](../../scripts/ci/deluge-catalog-recovery-test.py)
+checks current-source priority, truncated-archive fallback, and refusal of
+incomplete recovery.
+
 Radarr and Sonarr use retained static 10 Gi `hostPath` config volumes at
 `/var/lib/radarr` and `/var/lib/sonarr`, pinned to `zimaboard-0`. Their guarded
 `Recreate` cutovers copied the retained NFS config trees and recovered invalid
