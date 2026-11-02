@@ -2791,3 +2791,41 @@ HTTP, WebFinger, media and streaming remain distinct runtime observations.
 The DNS workflow checks Mastodon and the shared connector Synced/Healthy at
 its reviewed revision; this page adds no separate activation approval.
 See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).
+
+## Reviewed secret-scan findings
+
+The separately pinned Checkov hooks (3.2.495) and Nix static gate (3.2.529) share
+[`checkov-reviewed-findings.py`](../../scripts/ci/checkov-reviewed-findings.py).
+Reviewed public identifiers and synthetic fixtures are bound to exact repository
+paths, check IDs, value fingerprints and occurrence limits in
+[`checkov-reviewed-findings.json`](../../scripts/config/checkov-reviewed-findings.json).
+A copied value in another file, changed value or extra occurrence needs review.
+Unreadable, non-UTF-8 or over-5-MB inputs fail before Checkov can silently skip
+them. Malformed reports, parser failures and scanner failures remain blocking; a valid
+pinned zero-finding report is accepted. Raw diagnostics stay in private temporary
+files; public output contains only check IDs, paths and line numbers.
+
+Static scanning uses tracked regular files, matching the hooks' symlink exclusion.
+The older Checkov baseline is not used for these secret exemptions because its
+matching does not bind a finding to its reviewed path. Two exact Terragrunt files, `IaC/root.hcl` and the operator
+`entra-emergency-global-admin/terragrunt.hcl`, use native syntax unsupported by
+Checkov's Terraform parser. Only the Diff hook routes these to the existing
+Terragrunt format/parser check and static native HCL validation. The Secrets hook
+and static secret scan still inspect both; all Terraform modules and other HCL
+files retain their Diff scans. No backend key or emergency-admin guard is changed.
+Remove this narrow compatibility split when the pinned parser supports both.
+The Cordium controller image reports bounded main-loop progress through its
+read-only health command; it never restarts active jobs. Activation and live
+probe behavior remain separate rollout acceptance.
+
+### Harbor runtime audit follow-up
+
+The [November 2 compatibility job](https://github.com/Stuhlmuller/homelab/actions/runs/41383677711/job/125083851520)
+passed its 14 audit fixtures, then failed the actual image audit with
+`validation:remediation`. The
+[audit validator](../../scripts/ci/harbor-core-scan-check.py) rejects matches
+reported as fixed or with available fix versions. Package-specific details
+were deliberately withheld, so the affected component is unconfirmed.
+Reproduce the protected Linux audit privately, identify the package and fixed
+version, then deliver the image correction and rerun the complete audit. Do
+not waive the finding or infer runtime clearance from passing fixtures.

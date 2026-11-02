@@ -282,35 +282,10 @@ if command -v checkov >/dev/null 2>&1; then
     checkov_output="$(mktemp "${TMPDIR:-/tmp}/homelab-checkov.XXXXXX")"
     trap 'rm -f "$checkov_output"' EXIT
 
-    # These four exact findings are public PVC/Secret names in the pinned
-    # OpenClaw profile and a generated NetworkPolicy name paired with its
-    # reviewed spec hash. Reject any wider secrets-scan baseline or changed
-    # finding fingerprint.
-    jq -e '.failed_checks == [
-      {"file":"/clusters/homelab/apps/openclaw-enterprise/installation.yaml","findings":[
-        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
-      ]},
-      {"file":"/clusters/homelab/apps/openclaw-enterprise/profile-input.json","findings":[
-        {"resource":"4c854688a8888c241dae89b2c0036f1014dd193b","check_ids":["CKV_SECRET_6"]},
-        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
-      ]},
-      {"file":"/docs/evidence/openclaw-enterprise-policy-review.json","findings":[
-        {"resource":"900d958341a77ac728b81edab1190560c72fd655","check_ids":["CKV_SECRET_6"]}
-      ]}
-    ]' .checkov.baseline >/dev/null || {
-      echo "Checkov secrets baseline differs from the four reviewed public names." >&2
-      exit 1
-    }
-
     run_checkov() {
       local framework="$1"
       local directory="$2"
-      local -a extra_args=()
-      if [[ "$framework" == secrets ]]; then
-        extra_args+=(--baseline .checkov.baseline)
-      fi
-
-      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" "${extra_args[@]}" >"$checkov_output" 2>&1; then
+      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" >"$checkov_output" 2>&1; then
         echo "Checkov ${framework} scan failed; detailed output was withheld to prevent publishing a detected secret." >&2
         return 1
       fi
@@ -318,7 +293,18 @@ if command -v checkov >/dev/null 2>&1; then
 
     run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
-    run_checkov secrets .
+    # Match pre-commit's tracked regular files; symlinks are not scan inputs.
+    python3 -I - <<'PYTHON'
+from pathlib import Path
+import subprocess
+import sys
+
+root = Path.cwd().resolve()
+tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+files = [name for name in tracked if name and (root / name).is_file()
+         and (root / name).resolve() == root / name]
+subprocess.run([sys.executable, "scripts/ci/checkov-reviewed-findings.py", "secrets", "-f", *files], check=True)
+PYTHON
   )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2

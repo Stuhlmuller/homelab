@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "checkov_versions": [
+    "3.2.495",
+    "3.2.529"
+  ],
+  "findings": [
+    {
+      "path": "clusters/homelab/apps/openclaw-enterprise/installation.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd",
+      "max_occurrences": 1,
+      "reason": "Public transport Secret name prefix; installation desired state references the object, not its contents."
+    },
+    {
+      "path": "clusters/homelab/apps/openclaw-enterprise/profile-input.json",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "4c854688a8888c241dae89b2c0036f1014dd193b",
+      "max_occurrences": 1,
+      "reason": "Public bootstrap password claim name or transport Secret prefix; profile desired state references objects, not their contents."
+    },
+    {
+      "path": "clusters/homelab/apps/openclaw-enterprise/profile-input.json",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd",
+      "max_occurrences": 1,
+      "reason": "Public bootstrap password claim name or transport Secret prefix; profile desired state references objects, not their contents."
+    },
+    {
+      "path": "docs/evidence/openclaw-enterprise-policy-review.json",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "900d958341a77ac728b81edab1190560c72fd655",
+      "max_occurrences": 1,
+      "reason": "Public SHA-256 policy evidence fingerprint, recomputed by the policy inventory."
+    },
+    {
+      "path": "scripts/ci/cordium-ci-reconcile-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "64d9d529439e61d794b78f5d8164fc70c1f1570f",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in a mocked reconciliation test."
+    },
+    {
+      "path": "scripts/ci/cordium-runner-credentials-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "27d5eafb834d0c78d644bd21d9bae6796181c107",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in temporary-file credential regression fixtures."
+    },
+    {
+      "path": "scripts/ci/cordium-runner-credentials-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "9e8a2a17b3ffa976d0d73a0c8a5d953ea4c6efb5",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in temporary-file credential regression fixtures."
+    },
+    {
+      "path": "scripts/ci/fleet-google-login-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "5d2985c4f3c0724c46e8f6030f43e494b86d9965",
+      "max_occurrences": 1,
+      "reason": "Synthetic password returned by mocked private.read_password and asserted in a mocked request."
+    },
+    {
+      "path": "scripts/ci/n8n-ai-migration-check.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "7a300ee1940230060f23f691b9f78d5f03cac6c1",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in the offline migration regression fixture."
+    },
+    {
+      "path": "scripts/ci/n8n-github-webhooks-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "3efc34c44c497449b75e34912071666ba1b49d67",
+      "max_occurrences": 1,
+      "reason": "Deliberately invalid webhook secret marker in a negative verifier test."
+    },
+    {
+      "path": "scripts/ci/network-policy-inventory-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "900d958341a77ac728b81edab1190560c72fd655",
+      "max_occurrences": 1,
+      "reason": "Expected public SHA-256 policy fingerprint; the test recomputes it with hashlib.sha256."
+    },
+    {
+      "path": "scripts/ci/octelium-ci-credential-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "530c7e5285735631daa021da693353d38841a181",
+      "max_occurrences": 1,
+      "reason": "Public Secret reference field or resource name in a mocked Service response."
+    },
+    {
+      "path": "scripts/ci/octelium-ci-credential-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "c25bfdc08df8d478ffdbe9acb03754bc1d4d5214",
+      "max_occurrences": 1,
+      "reason": "Public Secret reference field or resource name in a mocked Service response."
+    },
+    {
+      "path": "scripts/ci/octelium-private-kubernetes-apply-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "076c027c5c130ce24914fc3e593dfcddd4c24fd4",
+      "max_occurrences": 1,
+      "reason": "Public GitHub repository identifier in the GITHUB_REPOSITORY environment fixture, not a credential."
+    },
+    {
+      "path": "scripts/ci/openclaw-enterprise-operations-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "076c027c5c130ce24914fc3e593dfcddd4c24fd4",
+      "max_occurrences": 1,
+      "reason": "Public GitHub repository identifier in the GH_REPO environment fixture, not a credential."
+    },
+    {
+      "path": "scripts/ci/openclaw-enterprise-postgres-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "334c502b062b10a9094fa4664cf00d5b19e83b25",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in a mocked database regression fixture."
+    },
+    {
+      "path": "scripts/ci/openclaw-enterprise-preflight-test.mjs",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "7f2483cfef4869a6f1fdfe487ecc27ab849ba357",
+      "max_occurrences": 1,
+      "reason": "Base64-encoded fixture marker in a mocked HTTPS Secret response; no live credential."
+    },
+    {
+      "path": "scripts/ci/renovate-acceptance-review-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "f5b17e9ed2515a06d9cdfefc661190025c1ff514",
+      "max_occurrences": 1,
+      "reason": "Base64-encoded synthetic schema and owner JSON passed to a mocked command."
+    },
+    {
+      "path": "scripts/ci/tailscale-operator-oauth-rotate-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "1ce44b244712f9d8e195f1fb848f90c3dc8c5cbc",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in isolated OAuth rotation regression fixtures."
+    },
+    {
+      "path": "scripts/ci/tailscale-operator-oauth-rotate-test.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "62f6d3ae0a0cfe4182f21382823c97f388532070",
+      "max_occurrences": 1,
+      "reason": "Synthetic credential marker in isolated OAuth rotation regression fixtures."
+    },
+    {
+      "path": "scripts/octelium-ci-credential.sh",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "530c7e5285735631daa021da693353d38841a181",
+      "max_occurrences": 1,
+      "reason": "Public kubeconfig Secret resource name used in a jq equality assertion, not kubeconfig contents."
+    },
+    {
+      "path": "scripts/openclaw-discord-offline-cache.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "754c55074849b2563820ee39b7f506ea34cc74ec",
+      "max_occurrences": 1,
+      "reason": "Public SHA-512 package SRI used to verify the pinned package cache."
+    },
+    {
+      "path": "scripts/renovate-acceptance-review.py",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "6619b8b0817a1234fed3177ed331400062f92402",
+      "max_occurrences": 1,
+      "reason": "Public Kubernetes Secret object name used for resource lookup and metadata comparison."
+    }
+  ]
+}
