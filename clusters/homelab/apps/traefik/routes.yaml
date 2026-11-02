@@ -63,6 +63,11 @@ http:
       rule: Host(`litellm.stinkyboi.com`)
       service: litellm
       tls: {}
+    mastodon:
+      entryPoints: [websecure]
+      rule: Host(`mastodon.stinkyboi.com`)
+      service: mastodon
+      tls: {}
     multica:
       entryPoints: [websecure]
       rule: Host(`multica.stinkyboi.com`)
@@ -174,6 +179,8 @@ http:
         customRequestHeaders:
           Host: stinkyboi.com
   serversTransports:
+    mastodon:
+      serverName: mastodon.stinkyboi.com
     octelium-console:
       serverName: console.stinkyboi.com
   services:
@@ -225,6 +232,12 @@ http:
       loadBalancer:
         servers:
           - url: http://litellm.ai.svc.cluster.local:4000
+    mastodon:
+      loadBalancer:
+        # Retain Istio's web/streaming split and authenticated gateway identity.
+        serversTransport: mastodon
+        servers:
+          - url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
     multica:
       loadBalancer:
         servers:

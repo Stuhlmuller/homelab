@@ -18,7 +18,8 @@ repos:
         files: ^\.github/workflows/.*\.ya?ml$
       - id: shellcheck
         name: Bash lint
-        entry: shellcheck
+        # Explicit helpers stay visible even when pre-commit batches their callers.
+        entry: shellcheck .specify/scripts/bash/common.sh scripts/ci/terragrunt-filter-base.sh
         language: system
         types: [shell]
       - id: markdownlint
@@ -63,19 +64,29 @@ repos:
     rev: 63c8f8312b7559622c0d82815639671ae42132ac
     hooks:
       - id: codespell
-        args: ["--ignore-words-list", "notin,Unknwon,parth,OCE,oce"]
+        args:
+          - --ignore-words-list
+          - notin,Unknwon,parth,OCE,oce
+          - --ignore-regex
+          # Generated SRI bytes are not prose; retain spelling checks on other JSON values.
+          - '^\s*"integrity":\s*"sha(?:1|256|384|512)-[A-Za-z0-9+/]+={0,2}",?\s*$'
 
   - repo: https://github.com/bridgecrewio/checkov.git
     # 3.2.495
     rev: 9ea6d83d477afb3691795eda79d8f4dd56851d4b
     hooks:
       - id: checkov_diff
-        exclude: ^clusters/.*\.ya?ml$
+        entry: python3 scripts/ci/checkov-reviewed-findings.py diff
+        # Native Terragrunt validates these two constructs unsupported by Checkov's parser.
+        # The Octelium catalog is multi-document YAML, not a CloudFormation template.
+        # Secrets and native format validators still cover these exact paths.
+        exclude: ^clusters/.*\.ya?ml$|^IaC/root\.hcl$|^IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt\.hcl$|^docs/examples/octelium/homelab-services\.yaml$
       - id: checkov
         name: Checkov Kubernetes context
         entry: checkov -d clusters --framework kubernetes
         files: ^clusters/.*\.ya?ml$
       - id: checkov_secrets
+        entry: python3 scripts/ci/checkov-reviewed-findings.py secrets
         always_run: false
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit

@@ -127,6 +127,8 @@ configure_octelium_api_host_alias() {
   if [ -w /etc/hosts ]; then
     cat "${hosts_tmp}" >/etc/hosts
   elif command -v sudo >/dev/null 2>&1; then
+    # The caller created and can read this temporary file; only /etc/hosts needs sudo.
+    # shellcheck disable=SC2024
     sudo tee /etc/hosts <"${hosts_tmp}" >/dev/null
   else
     rm -f "${hosts_tmp}"

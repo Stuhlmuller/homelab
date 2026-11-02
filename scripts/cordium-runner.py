@@ -182,8 +182,10 @@ def queued_jobs(api, pool):
     return False
 
 
-def serve(pool, key_file, client, checkout, auth_file, refresh_credentials=None, reviewed_main=None):
+def serve(pool, key_file, client, checkout, auth_file, refresh_credentials=None, reviewed_main=None, progress=None):
     while True:
+        if progress:
+            progress("poll")
         if reviewed_main:
             checkout = reviewed_main()
         else:
@@ -193,16 +195,23 @@ def serve(pool, key_file, client, checkout, auth_file, refresh_credentials=None,
         environment = native_environment(auth_file)
         native_identity(pool, client, environment)
         api = installation_client(pool, key_file)
-        if queued_jobs(api, pool):
+        def polling_api(*args):
+            result = api(*args)
+            if progress:
+                progress("poll")
+            return result
+        if queued_jobs(polling_api, pool):
             def cleanup_api():
                 if refresh_credentials:
                     refresh_credentials()
                 return installation_client(pool, key_file)
-            provision(api, client, checkout, environment, refresh_api=cleanup_api)
+            provision(api, client, checkout, environment, refresh_api=cleanup_api, progress=progress)
+        if progress:
+            progress("idle")
         time.sleep(30)
 
 
-def provision(api, client, checkout, environment=None, refresh_api=None):
+def provision(api, client, checkout, environment=None, refresh_api=None, progress=None):
     pool = json.loads((ROOT / ".cordium/runner-pool.json").read_text())
     repository = pool["repository"]
     workspace = runner_id = None
@@ -219,6 +228,8 @@ def provision(api, client, checkout, environment=None, refresh_api=None):
         return json.loads(call("get", "workspace", "--out", "json").stdout).get("items", [])
 
     try:
+        if progress:
+            progress("provision")
         isolation_backend(pool)
         if inventory():
             raise RuntimeError("Dedicated runner identity has retained Workspaces; inspect before creating another")
@@ -270,12 +281,20 @@ def provision(api, client, checkout, environment=None, refresh_api=None):
         if not isinstance(encoded, str) or not re.fullmatch(r"[A-Za-z0-9+/=]{1,131072}", encoded):
             raise RuntimeError("GitHub returned an invalid JIT configuration")
         print(f"Canary runner {runner_id} in Cordium Workspace {workspace}", flush=True)
+        if progress:
+            progress("runner")
         # Only the one-job configuration enters stdin; App credentials stay outside.
         call("exec", workspace, "--root", "--workdir", "/workspace/repo", "--",
              "bash", "scripts/ci/cordium-runner-probe.sh", "runner", timeout=RUNNER_EXEC_TIMEOUT,
              input=encoded.encode(), capture=False)
     finally:
-        cleanup_failed = False
+        cleanup_failed = health_failed = False
+        try:
+            if progress:
+                progress("cleanup")
+        except Exception:
+            # Health reporting failure must never prevent disposing the runner.
+            health_failed = True
         if workspace:
             try:
                 call("delete", "workspace", workspace)
@@ -316,6 +335,8 @@ def provision(api, client, checkout, environment=None, refresh_api=None):
             print("Runner registration result unknown; inspect repository runners before retrying", file=sys.stderr)
         if cleanup_failed:
             raise RuntimeError("Runner cleanup is incomplete; inspect the dedicated identity and repository runner")
+        if health_failed and sys.exc_info()[0] is None:
+            raise RuntimeError("Runner health reporting failed after cleanup")
 
 
 def main():

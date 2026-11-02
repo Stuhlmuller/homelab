@@ -24,9 +24,3 @@ variable "manifest" {
     error_message = "manifest must be an argoproj.io/v1alpha1 Application."
   }
 }
-
-variable "computed_fields" {
-  description = "Additional manifest field paths that may be changed by the API server or admission controllers"
-  type        = list(string)
-  default     = null
-}

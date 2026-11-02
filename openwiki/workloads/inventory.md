@@ -817,8 +817,10 @@ repository owner email, and preserves an existing matching account.
 
 ```mermaid
 flowchart TD
-  Client[Public Mastodon client] --> Edge[Cloudflare Tunnel]
-  Edge --> Gateway[Shared Istio gateway]
+  Client[Tailnet Mastodon client] --> Traefik[Private Traefik]
+  Traefik --> Gateway[Shared Istio gateway]
+  Remote[Remote federation server] --> Edge[Cloudflare federation allowlist]
+  Edge --> Gateway
   Gateway --> Web[Web on port 3000]
   Gateway --> Streaming[Streaming on port 4000]
   Web --> Database[Private PostgreSQL]
@@ -831,7 +833,10 @@ flowchart TD
   Worker --> Media
 ```
 
-The declared public connector and Istio route split website and streaming traffic.
+Private split DNS sends Mastodon clients through Traefik to the Istio HTTPS
+gateway, which splits web and streaming traffic. Public transport admits only
+federation/media paths and returns 404 for login, APIs and all other paths.
+No Octelium Service or authentication is required for Mastodon clients.
 
 PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-1`; Redis uses a
 separate retained 1 GiB local claim with AOF on the same worker. The backup Job
