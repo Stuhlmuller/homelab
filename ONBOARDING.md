@@ -605,7 +605,8 @@ octelium disconnect --domain stinkyboi.com
 ```
 
 If the upstream kubeconfig stored in Octelium is stale, refresh it from Acer on
-the homelab LAN before updating the server-side Octelium Secret:
+the homelab LAN, then stage a new server-side Secret under an approved unique
+name. The example name below must match the reviewed cutover:
 
 ```sh
 talosctl --talosconfig .talos/talosconfig \
@@ -615,8 +616,14 @@ talosctl --talosconfig .talos/talosconfig \
 
 kubectl config set-cluster homelab --server=https://10.1.0.199:6443
 kubectl get nodes
-scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
+scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config \
+  --secret-name homelab-ci-kubeconfig-20261101t120000z
 ```
+
+Staging validates the credential but does not change either active Service.
+Follow the [reviewed consumer cutover and rollback](docs/octelium.md#private-kubernetes-access)
+before considering rotation complete. The helper never overwrites or deletes
+the previous Secret.
 
 The active Kubernetes server should be:
 
