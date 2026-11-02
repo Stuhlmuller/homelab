@@ -11,6 +11,14 @@ serviceAccount:
   create: true
   name: litellm
   automount: false
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 service:
   type: ClusterIP
   port: 4000

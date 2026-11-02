@@ -11,6 +11,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "scripts/config/platform-maintenance.json"
@@ -26,7 +27,7 @@ def require_current_main(source_sha):
     CLEANUP["require_current_main"](source_sha)
 
 
-def node_state(config, placement):
+def node_state(config, placement, *, admission=False):
     node = CLEANUP["kubernetes_json"]("get", "node", config["canary"]["node"])
     metadata, spec = node["metadata"], node["spec"]
     labels, taints = metadata.get("labels", {}), spec.get("taints", [])
@@ -43,6 +44,8 @@ def node_state(config, placement):
     owned = [item for item in taints if item.get("key") == CANARY]
     if len(owned) > 1 or owned and owned[0] != TAINT or labels.get(CANARY) not in (None, "true"):
         raise ValueError("unexpected canary label or taint")
+    if admission and any(item.get("effect") == "NoExecute" for item in taints):
+        raise ValueError("NoExecute taint requires protected handoff before admission")
     return node, labels.get(CANARY) == "true", bool(owned)
 
 
@@ -124,10 +127,19 @@ def validate_placement(placement, config, source_sha, fresh):
 
 def verify_live_pods(config, placement):
     node_name = config["canary"]["node"]
-    listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
-                                          f"spec.nodeName={node_name}", "--chunk-size=0")
+    path = "/api/v1/pods?" + urlencode({"fieldSelector": f"spec.nodeName={node_name}",
+                                        "limit": "0"})
+    listing = json.loads(CLEANUP["command"]("kubectl", "--request-timeout=20s",
+                                            "get", "--raw", path))
+    if (not isinstance(listing, dict) or listing.get("kind") != "PodList" or
+            not isinstance(listing.get("metadata"), dict) or
+            not isinstance(listing["metadata"].get("resourceVersion"), str) or
+            not listing["metadata"]["resourceVersion"] or
+            listing["metadata"].get("continue") or
+            not isinstance(listing.get("items"), list)):
+        raise ValueError("canary Pod inventory is incomplete")
     actual = []
-    for pod in CLEANUP["complete_items"](listing, "canary Pod"):
+    for pod in listing["items"]:
         if not isinstance(pod, dict):
             raise ValueError("canary Pod inventory has an invalid entry")
         metadata, spec = pod.get("metadata"), pod.get("spec")
@@ -233,7 +245,8 @@ def execute(args):
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("canary output already exists")
-    node, labeled, tainted = node_state(config, placement)
+    node, labeled, tainted = node_state(config, placement,
+                                        admission=args.action == "admit")
     require_runtime_absent(args.action == "admit")
     if args.action == "admit":
         if labeled:
@@ -261,7 +274,7 @@ def execute(args):
                 taint_add = {"op": "add", "path": "/spec/taints/-", "value": TAINT} if taints \
                     else {"op": "add", "path": "/spec/taints", "value": [TAINT]}
                 patch(node, [taint_add], args.expected_sha)
-            node, labeled, tainted = node_state(config, placement)
+            node, labeled, tainted = node_state(config, placement, admission=True)
             if labeled or not tainted:
                 raise ValueError("canary Node taint readback differs")
             require_runtime_absent(True)
@@ -286,20 +299,32 @@ def execute(args):
                 patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
                              {"op": "remove", "path": f"/spec/taints/{index}"}],
                       args.expected_sha)
-        require_current_main(args.expected_sha)
-        node, labeled, tainted = node_state(config, placement)
-        if (labeled, tainted) != ((True, True) if args.action == "admit" else (False, False)):
-            raise ValueError("canary Node readback differs")
         if args.action == "admit":
             try:
+                require_current_main(args.expected_sha)
+                node, labeled, tainted = node_state(config, placement, admission=True)
+                if (labeled, tainted) != (True, True):
+                    raise ValueError("canary Node readback differs")
                 require_exclusive_canary_label(config, placement, True)
                 verify_live_pods(config, placement)
+                node, labeled, tainted = node_state(config, placement, admission=True)
+                if (labeled, tainted) != (True, True):
+                    raise ValueError("canary Node changed after admission probes")
             except (OSError, ValueError, KeyError, TypeError,
                     subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 require_runtime_absent(True)
-                patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
-                             {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
+                rollback_node, rollback_labeled, _ = node_state(config, placement)
+                if rollback_labeled:
+                    patch(rollback_node, [{"op": "test", "path": LABEL_PATH,
+                                           "value": "true"},
+                                          {"op": "remove", "path": LABEL_PATH}],
+                          args.expected_sha)
                 raise
+        else:
+            require_current_main(args.expected_sha)
+            node, labeled, tainted = node_state(config, placement)
+            if (labeled, tainted) != (False, False):
+                raise ValueError("canary Node readback differs")
         record.update({"status": "verified", "verified": True,
                        "resourceVersion": node["metadata"]["resourceVersion"],
                        "completedAt": datetime.now(timezone.utc).isoformat()})

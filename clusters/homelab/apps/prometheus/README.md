@@ -135,6 +135,13 @@ the high-value Grafana-managed Argo CD alerts so Alertmanager still receives
 Argo CD application failures directly when Grafana provisioning, rule
 evaluation, or Grafana's Alertmanager contact point is unhealthy.
 
+The OutOfSync alert links to [stalled rollout recovery](../../../../docs/autonomous-task-lifecycle.md#recover-a-stalled-rollout):
+inspect the recorded revision and prior effects before retrying through GitOps.
+Changing this annotation leaves alert expressions and thresholds unchanged.
+Verify delivery with Argo's reconciled revision and Prometheus `/api/v1/rules`:
+the named rule must retain its expression and duration, report `health: ok`,
+and expose the updated `runbook_url`. Roll back the URL through a reviewed revert.
+
 `deluge-servicemonitor.yaml` scrapes the Deluge metrics sidecar in the `media`
 namespace. That sidecar exposes `deluge_daemon_rpc_healthy`, which checks
 whether `deluge-console status` can reach `deluged`. This catches Deluge daemon
@@ -187,14 +194,16 @@ Render Prometheus-owned resources:
 kubectl kustomize clusters/homelab/apps/prometheus
 ```
 
-After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
+After Argo CD and Prometheus sync, verify the Argo CD scrape wiring through
+the existing authorized Octelium Kubernetes context. Replace the context
+placeholder with its configured name; these checks need only read access:
 
 ```sh
-kubectl -n argocd get svc argocd-application-controller-metrics \
+kubectl --context '<octelium-cluster-context>' -n argocd get svc argocd-application-controller-metrics \
   argocd-repo-server-metrics argocd-server-metrics
-kubectl -n monitoring get servicemonitor argocd-application-controller \
+kubectl --context '<octelium-cluster-context>' -n monitoring get servicemonitor argocd-application-controller \
   argocd-repo-server argocd-server
-kubectl -n monitoring get prometheusrule argocd-application-health
-kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
-kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl --context '<octelium-cluster-context>' -n monitoring get prometheusrule argocd-application-health
+kubectl --context '<octelium-cluster-context>' -n monitoring get externalsecret alertmanager-discord-webhook
+kubectl --context '<octelium-cluster-context>' -n monitoring get secret alertmanager-discord-webhook
 ```

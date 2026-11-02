@@ -140,11 +140,11 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
@@ -272,6 +272,8 @@ sources:
     resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-039f74d4187431e0344dd883
+    resource: repo://scripts/ci/renovate-cache-stats-log-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -356,14 +358,18 @@ sources:
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-7bc39840de078c7eb3baf2e5
+    resource: repo://specs/004-run-renovate-in-cluster/quickstart.md
+  - id: openwiki-source-ec40e0ee801281b6064f8319
+    resource: repo://specs/004-run-renovate-in-cluster/reliability-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-30T03:10:21.033Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # Validation Gates
@@ -385,6 +391,13 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
+
+For Descheduler values or chart changes, run
+`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
+rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
+exactly one `--descheduling-interval=30m` argument. Update the check alongside
+the pinned chart when upgrading. Live revision, argument and execution-cadence
+acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
 
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
@@ -609,6 +622,13 @@ Before mesh acceptance, run `tailscale-ingress-sign.py` in preview mode, then
 execute only from reviewed current main. Each proxy's public node and rotation
 keys must match the exact controller-owned Kubernetes resource and local lock
 peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
+The `scripts/tailscale-service-host-approve.py` fixture rejects broad tailnet
+grants, source/live policy drift, auto-approval, wrong Service ports or host
+ID, stale StatefulSet/Pod revisions, changed Pod placement/state, widened
+listeners or TLS mounts, unsigned or mismatched node identity, wrong Serve
+target, and a changed preview fingerprint before its only approval POST.
+It is offline proof of refusal paths; the Service, pending host, policy
+readback, signed canary, and TailVIP traffic still need live qualification.
 
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium
@@ -634,7 +654,7 @@ and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
 Deployment specify zero replicas and no live replicas remain. Other application
 5xx responses fail. These stopped-app exceptions check routing, not runtime
 health. Deployed Traefik routes and TLS must match the reviewed checkout.
@@ -689,6 +709,13 @@ Drift labels consider both live and rendered policy types, so a transition
 between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
+
+The read-only [Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+joins complete namespace Service, Pod, and EndpointSlice snapshots to the 25
+source-declared emergency Deployments. Offline fixtures cover stale Service
+UID ownership, false Ready endpoints, selector drift, and fallback loss. Its
+sanitized output stays `admission: unproven` without a reviewed exact
+54-Service baseline, direct-path probes, and protected CI checks.
 
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
@@ -822,6 +849,12 @@ attest and test actual Fleet console SAML and local recovery login. See the
 
 ## GitHub Workflow Checks
 
+Static validation creates a private temporary Terragrunt download directory
+outside the checkout and removes it on exit. The cache location is inherited by
+child fixtures; it does not change infrastructure inputs. The artifact scanner
+still rejects saved plan/state files in ignored checkout paths. See the
+[validation runbook](../../docs/validation-runbook.md).
+
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.
 Authorized signed-history repair must preserve a backup ref and exact content,
@@ -842,7 +875,11 @@ reviewers map the immutable pin back to the upstream release tag.
 
 GitHub workflows pin their Chainguard Actions references by full commit SHA.
 Checkout, artifact publication, Nix installation, AWS credential setup, CodeQL,
-semantic release and linting retain explicit reviewed versions.
+and linting retain explicit reviewed versions. Semantic-release uses the
+flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
+Its PR preview is tokenless; only the serialized `main` publisher receives the
+release token. The [release contract](../../docs/ci-cd.md#release-publication)
+includes a disposable Git-remote test for preview, coalescing, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
@@ -861,7 +898,7 @@ its status has not been verified locally. GitHub's repository policy was checked
 Actions are enabled, all publishers are allowed, and SHA pinning is required.
 See the
 [vendor prerequisites](https://edu.chainguard.dev/chainguard/actions/overview/).
-The selected Nix and semantic-release actions include vendor usage telemetry;
+The selected Nix action includes vendor usage telemetry;
 the Nix action sends repository/action identity and uses an audience-specific
 OIDC token when the job already permits it. No new credentials or permissions
 are added. Review each pinned `source.json`, `action.yml`, and `HARDENING.md`
@@ -909,7 +946,7 @@ The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
 guard. Regression fixtures reject a reusable `workflow_call` trigger, shell or
 working-directory overrides, and shell-prelude environment variables. The
-credentialed legacy operation has an exact four-variable environment map. These
+credentialed legacy operation has an exact eight-variable environment map. These
 are source checks, not evidence that either workflow has run.
 
 The live-plan and protected-apply diagnostic exceptions check a classifier's
@@ -1018,6 +1055,70 @@ inspection errors, mismatched metadata or nonblank stored data. Failed ID
 listing, workflow export, malformed JSON or node shape, duplicate target node,
 or write error fails the Job without blocking app startup.
 It does not prove deployment or live workflow execution.
+`scripts/ci/n8n-github-trigger-migration-check.py` exercises the excluded
+Emergency GitHub Trigger Job against synthetic old and migrated workflows. It
+checks the six-node graph and parameter guards, GitHub App credential
+reference preservation, expression rewrite, stale-state refusal, and retry
+idempotence. A zero-exit import that skips the workflow must fail the Job's
+readback before publishing the old graph. The fixture also verifies the Job
+remains outside the live n8n values and Kustomize inputs. A passing fixture
+does not establish the required paired
+database/PVC backup, GitHub App `Webhooks: write` permission, hook registration,
+or live signature verification.
+On 2026-10-31, read-only GitHub API inspection found `repository_hooks`
+absent from both the n8n App registration and its organization installation.
+GitHub requires repository `Webhooks: write` to create a hook, and an installed
+App's added repository permission takes effect only after account approval
+([webhook permission](https://docs.github.com/en/rest/repos/webhooks#create-a-repository-webhook),
+[App permission approval](https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration)).
+Migration activation remains blocked until the registration and installation
+both show the permission and a fresh signed delivery passes.
+The [n8n callback helper](../../scripts/n8n-github-webhooks.py) now has a
+read-only `--verify-signed-trigger --activated-after ACTIVATION_UTC` gate for
+after a separately approved activation and restart. Record the UTC boundary
+immediately before activation. The gate discovers one exact active JSON/TLS
+native hook, reads back a masked signing secret, and requires the latest pull
+request delivery after both that boundary and the hook's `updated_at` to have
+a SHA-256 signature header and 2xx response. It confirms the old hook's
+Funnel path retains Traefik's plain-text 404 under safe OPTIONS. It sends no
+webhook and does not prove HMAC validation or workflow execution; verify a real
+workflow run separately before retiring the old unsigned hook. Run
+`python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
+The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
+the active values render one Deployment replica and the fence overlay renders
+zero, with no migration Job in either render. Its
+[workload runbook](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
+requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
+before a paired capture; source rendering alone is not a live backup.
+The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
+is manual and exact-main. It pins the capture script, restore helper,
+excluded reader Job, and deny-all policy by SHA-256 before AWS or Octelium
+access. Read-only GitHub API inspection on 2026-10-31 found
+`homelab-production` has a branch policy but no required reviewer; a live
+dispatch needs explicit operator approval before starting. The offline
+`n8n-paired-checkpoint-test.py` checks stale-main, UID, permission, and
+zero-writer failures before Job creation, committed creates with lost responses,
+foreign ownership refusal, bounded stream and control-plane timeouts, lingering
+reader Pods that keep the deny-all policy, cleanup failure without a success
+receipt, partial expected output followed by a failed GitHub, AWS,
+Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
+database role;
+`n8n-pvc-restore-check-test.py`
+checks safe extraction and persisted-key validation without logging a key.
+`n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
+path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
+remaining reader Pod must prevent deny-all policy removal. It does not run
+against the cluster during source validation.
+Only a live success receipt binding both exact S3 object versions and an
+isolated restore qualifies for migration activation.
+`scripts/ci/litellm-runtime-hardening-check.py` lints and renders the declared
+LiteLLM chart with anonymous registry access. It verifies the tokenless
+ServiceAccount, RuntimeDefault seccomp, disabled privilege escalation and
+capability drop, including negative-control fixtures. Static CI runs it before
+delivery; it does not prove native database startup or active caller behavior.
+Issue #844 still requires live Pod checks and its 24-hour acceptance window;
+nonroot/read-only-root controls need a separate current-image rehearsal.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
@@ -1036,6 +1137,13 @@ and exact usage. Include the real authentication-failure logging path; a
 pre-call-hook-only fixture misses dynamic callback extraction. Confirm actual
 Langfuse generations after rollout; a Ready Secret may still contain a provider
 placeholder and direct Astra recovery is outside gateway-only accounting.
+The [Langfuse capture fixture](../../scripts/ci/langfuse-postgres-checkpoint-test.py)
+checks protected CI capture and local upload-only mode, including source UID,
+exact-main, S3 readback and no verified receipt on local capture. The separate
+[object restore fixture](../../scripts/ci/langfuse-postgres-object-restore-test.py)
+rejects wrong key, version, digest, UID metadata and advanced main before a
+networkless Docker restore or final receipt. These mocked results do not
+replace the live exact-version restore receipt before moving PostgreSQL.
 
 Use the renderer that matches the changed source:
 
@@ -1064,6 +1172,51 @@ dig +short A iptorrents.com @1.1.1.1
 kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
+
+## Dormant Octelium resource-store capture
+
+`scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
+the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
+Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
+PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
+single Talos sandbox/container matching its 12-hex ID prefix, three matching
+archive hashes, complete tar members, publisher
+allowlisting, and isolated extraction. Run it with the existing application
+backup fixtures and render the active app. The active render must still show
+one `octeliumee-rscstore` replica and no inspector; the candidate inspector
+resource and fence component render only when added to a temporary copy of the
+app Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
+```sh
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
+python3 -I scripts/ci/application-backup-test.py
+kubectl kustomize clusters/homelab/apps/octelium-enterprise
+python3 -I scripts/ci/openwiki-check.py
+```
+
+Before any future fence, the inspector-only GitOps stage must be Synced and
+the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+ownership and modes: retain the proposed inspector UID/GID 0 only if complete
+file access requires it; otherwise revise to a proven nonroot UID. Readiness
+checks `store.db` readability, while capture must read the whole PVC. The
+later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
+and no other Pod mounting the claim. The capture guard also requires explicit
+Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
+writer still running on a disconnected node; a missing node inventory does not
+count as zero writers. Capture then requires private off-NAS
+storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
+readback, and isolated file extraction. The capture helper repeats the
+current-main and Argo fence checks before issuing its receipt; the proof
+command fetches fresh S3 versions itself and cannot accept a supplied local
+retrieval directory. Repeat the exact-main and zero-writer checks before
+publication or a recovery decision. These gates do not prove a DuckDB
+reopen or authorize WAL quarantine or writer restart.
+
+The source guard requires the future fenced Kustomization to retain the
+inspector's exact-label NetworkPolicy. The Argo guard reads the live
+Application's single `spec.sources` and `status.sync.revisions` entries;
+singular source/revision fields do not exist there. It rejects extra entries,
+source drift, and any revision other than the reviewed `main` SHA.
 
 ## Octelium Cutover Checks
 
@@ -1140,6 +1293,14 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
+The E2E checker records a catalog parse failure without aborting its final
+summary or printing YAML diagnostics. It requires exactly one private
+Kubernetes policy and one private Talos policy. The offline regression
+`python3 -I scripts/ci/octelium-catalog-test.py` exercises the actual catalog
+check and summary with valid, missing, malformed and duplicate inputs.
+Issue #848 remains open until the authenticated owner/Cordium matrix and
+trusted access-log attestation also pass.
+
 For retained native Cordium access, validate the existing human and Workspace
 paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
@@ -1171,6 +1332,12 @@ secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
 Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
+The 90-minute apply job requests a 7,200-second AWS session.
+`scripts/ci/terragrunt-credential-duration-test.py` checks that the explicit
+request covers the job timeout without exceeding the declared IAM maximum,
+and rejects missing, shorter and dynamic durations. Confirm the live role's
+maximum before dispatch; #873 remains open until a same-session AWS read
+succeeds after the former 3,600-second expiry boundary.
 During production apply, the script rechecks current `main` immediately before
 each import, untaint, direct Kubernetes write, and apply. The root Terragrunt
 `before_hook` also checks before each unit's `apply` in a multi-unit run; the
@@ -1219,7 +1386,7 @@ Rendered Kubernetes policy also enforces the access contract:
 `policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the three
 reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
@@ -1242,10 +1409,11 @@ alone is insufficient. Keep raw logs outside git.
 The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
 is disabled and outside Argo. The offline static gate pins all six active
 1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
-replacement chart URL and archive hashes. The active GCS chart source is due
-for retirement in December 2026. A later reviewed PR must migrate the Argo
-AppProject allowlist, active source, and chart mirror inventory even if the
-version hop remains held; this source gate is not a live upgrade receipt.
+replacement chart URL and archive hashes. All six declared active sources and
+the chart inventories now use `https://blob.istio.io/istio-release/charts` with
+unchanged 1.27.3 versions and package hashes. The old GCS AppProject entry stays
+for rollback until a scoped Terragrunt apply and live Argo source verification
+pass; this source gate is not a live upgrade receipt.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
@@ -1819,7 +1987,9 @@ archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
-dangling external targets also need an explicit disposition. A rehearsal needs
+external `/home` targets are absent in the fresh reader; the October 25
+report also identifies an already-dangling NAS skill link. Their former
+purpose still needs disposition. A rehearsal needs
 writable UID 1000 local-state and isolated NAS copies, and an enforced offline
 network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
@@ -2112,6 +2282,8 @@ wrapper or a shared/host PID namespace. It also requires failure on corrupt or
 stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
+The fixture and normal failure cleanup stop PostgreSQL with fast shutdown;
+candidate cleanup tries bounded immediate shutdown only if fast stop fails.
 Rendered timing guards include the backup's late-start and execution deadlines
 plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and
@@ -2438,9 +2610,10 @@ allow only fixed public blob/manifest write-stage categories when the private
 diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
 copy errors terminal as `command-failed`. These source checks do not pass T004:
 full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
-failed at this Prometheus image, and no complete catalog receipt exists.
+failed at this Prometheus image without a complete receipt; the later
+protected `all` run `40011909180` passed the revised catalog.
 
-The fixed Renovate scope contains seven cataloged update digests. Publisher
+The fixed Renovate scope contains eight cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
@@ -2467,6 +2640,40 @@ prove general cache freshness, eligible Harbor discovery, full owner/App
 policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
+The historical cache-timing diagnostic has a separate pinned
+[`renovate-cache-stats-log-test.mjs`](../../scripts/ci/renovate-cache-stats-log-test.mjs)
+fixture. Run it with the installed Renovate 44.167.4 package path using the
+[quickstart command](../../specs/004-run-renovate-in-cluster/quickstart.md).
+It verifies the actual logger, package statistics, and cleanup messages with
+cleared and stale repository context, while rejecting cache-key, URL, and
+package fields in promoted records. That fixture supplies its own remaps;
+the config fixture now requires runtime remaps to be absent while retaining
+the pinned image, full dry-run mode, hourly schedule, and `Forbid`. Local
+success proves diagnostic behavior, not live cache latency or the mutex
+failure's cause. Publish only numeric aggregates from restricted logs.
+
+The same config suite validates the retained local-cache SC/PV/PVC binding,
+`acer` placement, unchanged schedule/deadline/image, initializer privilege and
+credential boundaries, and preservation of the old NFS claim and staged NAS
+resources. Its initializer fixture checks real warm file bytes and metadata,
+symlink preservation, repeat execution, and failure on ownership/mode errors;
+the root ownership syscall is simulated locally. Render both Renovate and
+platform-storage and run policy checks. After protected merge, verify both
+Argo Applications, exact binding and successful real initialization, then
+observe distinct scheduled runs through all repositories and cleanup. See
+the [reliability receipt](../../specs/004-run-renovate-in-cluster/reliability-receipt.md).
+Local tests do not prove deployment, same-key reuse, or capacity recovery.
+
+The recorded October 30 local-cache verification passed both Argo Applications,
+exact storage identities, and real initialization on distinct 02:00/03:00
+scheduled Pods. Each completed all nine discovered repositories exactly once
+with zero exits and no error or mutex markers; both Jobs completed within the
+unchanged deadline. Runtime was 304/267 seconds and cleanup 13.299/13.720
+seconds, versus NFS baselines of 1,679/1,566 and 518.455/415.454 seconds.
+Node observations showed Ready without pressure. This proves scoped runtime
+improvement, not isolated NFS causality, same-key reuse or the separate
+migration gates. Ordinary protected static and policy checks remain required.
+
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
@@ -2548,6 +2755,19 @@ sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
 
+## Task lifecycle verification
+
+The [read-only GitOps verifier](../../scripts/verify-gitops.py) binds Application
+source comparisons to an exact homelab revision, checks Deployment convergence
+and ReplicaSet/Pod ownership, then rechecks for drift. Last successful operation
+revisions are separate because unchanged manifests need no new apply.
+Its [failure fixtures](../../scripts/ci/verify-gitops-test.py) run in the existing
+offline gate. The receipt explicitly excludes service-specific acceptance.
+The [lifecycle runbook](../../docs/autonomous-task-lifecycle.md) requires that
+acceptance before closure and retains blocked handoffs outside the cluster.
+Prometheus's OutOfSync annotation routes operators to the same recovery path;
+its loaded-rule API check is distinct from controller health.
+
 ## Mastodon activation gates
 
 The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
@@ -2556,12 +2776,18 @@ DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
 the DNS job installs Nix and runs both kubeconfig setup and publication inside
 the pinned shell. These fixtures do not contact SMTP or publish DNS.
 
-Before activation, require current-head protected checks and live Terragrunt
-plan, complete fixed-image publication, worker capacity, ready upstream
-Applications and declared SSM credentials. Register only the Mastodon target
-through the saved-plan apply path. Then verify actual Argo revision/health,
-migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
-WebFinger, media and streaming. The DNS workflow requires Mastodon and the
-shared connector Synced/Healthy at its reviewed revision. Preserve data and
-stable keys through recovery; prove backups and isolated restore separately.
+The [scheduled verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)
+runs at 03:35 America/Los_Angeles after the backup execution window. Kustomize
+copies that same isolated template into `mastodon-restore-verification-v2` for
+immediate verification. The route/recovery fixtures check template equality,
+schedule, read-only backup access, disabled API-token mounting, and absence of
+production database or credential mounts. The verifier checks the dump checksum,
+restored schema, owner and media catalog; failures cannot report success.
+
+These declarations and fixtures are not live recovery receipts. Job outcomes
+record individual database rehearsals; they do not prove media-file or stable-key
+recovery. Protected CI and GitOps own delivery conditions. Login, SMTP, public
+HTTP, WebFinger, media and streaming remain distinct runtime observations.
+The DNS workflow checks Mastodon and the shared connector Synced/Healthy at
+its reviewed revision; this page adds no separate activation approval.
 See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).

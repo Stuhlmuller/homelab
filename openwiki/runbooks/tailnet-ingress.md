@@ -91,7 +91,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-30T00:29:31.345Z
 ---
 
 # Tailnet And App Ingress
@@ -204,6 +204,21 @@ these selectors. Recheck live Service and EndpointSlice routes and Pod labels,
 then prove allowed paths and denied peers on the isolated canary before
 enforcement; Mastodon's app Pods were absent at source review.
 
+### Legacy app ingress bypass
+
+The old Istio and Octelium ingress ClusterIPs remain callable from unrelated
+Pods. An audit probe from `media/radarr` reached Grafana through the Istio
+gateway, so private Traefik DNS alone does not remove the old app path. The
+[retirement source audit](../../scripts/ci/legacy-ingress-retirement-check.py)
+tracks 17 Istio-backed public WEB Services and direct Bazarr against their
+Traefik replacements. Its normal mode reports the retained catalog,
+Cloudflared, VirtualService, and broad Gateway hosts; `--retired` must pass
+after their reviewed removal. Confirm denial from an unrelated Pod and normal
+access from a mesh client, since source checks do not prove live enforcement.
+The [cutover runbook](../../clusters/homelab/apps/traefik/CUTOVER.md#legacy-application-bypass)
+records the exact positive and negative probes. Mastodon needs separate private
+routing and a public federation path boundary before its old route can retire.
+
 ## Tailnet Lock
 
 Keep Tailnet Lock enabled. A new operator proxy can be Ready and authorized yet
@@ -224,6 +239,25 @@ signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
+The [pinned lock peer](https://github.com/tailscale/tailscale/blob/v1.102.3/ipn/ipnstate/ipnstate.go#L92-L100)'s
+numeric `ID`, stable `StableID`, and DNS `Name` must match the
+Pod status `Self.NodeID`, `Self.ID`, and `Self.DNSName`; tags come from the Pod
+status because lock peers do not carry them.
+
+The staged Traefik sidecar uses a separate `--canary-only` preview/execute path;
+the default five targets remain unchanged. Its preview binds the current ready
+StatefulSet and Pod on `acer` to the canary tag, pinned images, state Secret
+UID and public node key. It also checks the signer peer and raw TCP 443 Serve
+to Traefik's loopback TLS listener. Execute requires clean, verified current
+`main` and reads the applied policy with the private Terragrunt OAuth
+client. It compares the complete live JSON policy with committed source and
+rejects destinations outside the ten reviewed legacy selectors. The current
+wildcard grant therefore blocks signing. First apply the reviewed narrow policy
+through Terragrunt, sign while all canary clients are denied, then add a
+reviewed test-client grant and prove TLS/route traffic. The signer verifies the
+TLS Secret mount, not certificate bytes; live TLS acceptance remains required.
+Tailscale v1.102.3 emits the raw ServeConfig from `serve status --json`,
+including the TCP forward target.
 
 CI uses three provider-managed reusable ephemeral keys, signed on the trusted
 Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
@@ -368,8 +402,13 @@ owned-file rollback. After any later public retirement, wait the old TTL and
 verify normal DNS, canonical TLS and native gRPC.
 
 The callback helpers keep the surviving Github Emergency Bot hook `636944763`
-and Policy Bot App webhook on Funnel. The unused Codex Review Helper hook
-`589400612` is retired through the reviewed
+and Policy Bot App webhook configured on Funnel. Temporary Traefik containment
+returns edge 404 for the Emergency Bot path
+`/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`; other n8n webhook IDs
+remain routed. Defer legacy-hook delivery acceptance and helper retirement
+while containment is active.
+
+The unused Codex Review Helper hook `589400612` is retired through the reviewed
 [`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) command from
 clean current `main`, after a fresh Emergency delivery. It verifies the exact
 helper identity and URL before deleting that ID, then requires its ID and
@@ -392,6 +431,29 @@ The pinned app registers POST only: GET proves routing, not HMAC validation.
 Fresh successful signed delivery remains the acceptance gate. The surviving
 Emergency Bot POST-only hook uses a non-executing OPTIONS probe before its URL
 change; the inactive helper workflow stays unpublished.
+
+### Pending n8n signed Emergency callback
+
+Before Traefik containment on 2026-10-31, read-only GitHub delivery detail
+showed a fresh HTTP 200 for Emergency hook `636944763` without
+`X-Hub-Signature-256`. Its form-encoded hook has no signing secret. The active
+n8n workflow uses an unauthenticated
+generic Webhook node, so HTTP success did not establish a trusted event.
+[`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) now rejects an
+unsigned delivery under `--require-delivery`. Header presence establishes that
+GitHub signed the request, while n8n must verify its HMAC before execution.
+
+The excluded [GitHub Trigger migration Job](../../clusters/homelab/apps/n8n/migration-github-trigger-v1.values.yaml)
+guards the exact workflow graph and parameter fingerprints, preserves its
+GitHub App credential reference, and prepares a separate signed JSON callback
+path. It changes no live workflow until a separate activation PR includes the
+values file. Activation needs a verified paired off-NAS n8n PostgreSQL dump
+and PVC backup with restore path, plus the GitHub App's repository
+`Webhooks: write` permission. After activation, verify a fresh signed delivery
+on the new hook, then retire the old unsigned hook through a reviewed
+repository-owned helper update. Keep the old-path Traefik exclusion until the
+old hook is confirmed absent. The new path remains routed by the existing
+callback rule. The current helper still targets the old ID.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,

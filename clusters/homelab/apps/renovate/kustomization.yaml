@@ -11,6 +11,7 @@ resources:
   - acceptance-final-report-networkpolicy.yaml
   - cronjob.yaml
   - externalsecret.yaml
+  - local-cache-pvc.yaml
   - networkpolicy.yaml
   - pvc.yaml
   - serviceaccount.yaml
@@ -30,3 +31,6 @@ configMapGenerator:
   - name: renovate-config
     files:
       - config.js
+  - name: renovate-cache-init
+    files:
+      - cache-init.cjs
