@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5260ef16cd2a99074cf6e93ee7c767cc18278a6d8ac6867648f585b0f70a24dc",
+  "pageVersion": "sha256:e05b404200a3f394df3942e5e79d1aaf9db1b5d8e21cfa29240869c8804a15a7",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
       "statement": "Phase2a routes the canonical Octelium API and Harbor cluster DNS names to Traefik's private Service while preserving separate registry-only Talos node ingress and staged mesh/CI acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L138",
-          "version": "repo-lines-v1:sha256:3a9176448d62224d1e829f77eeb7bb3573823e95502616bec9d839d787040964:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L103-L140",
+          "version": "repo-lines-v1:sha256:869242810c1e70b1418c9745b66670d7dc18ad0e21e9ef4bd40c1c6bc65c5e48:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjJmZDQ2MDFjMjNmNzg5N2EwMTk4NDkwYmI1YmU1ZjBmN2NlYWQ1NWE5M2FlYzE2NWE4OGYwOTkzNjU2ZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
-          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
         }
       ]
     },
@@ -25,7 +25,7 @@
           "version": "repo-lines-v1:sha256:52bace20ae4062be2619cd7d635e092aa90dfe8f2e260565d06bf29af5a0ff98:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MTNjYzVmNTBjNDljYWVkMWYwNzM2YmFkOGEwMWJjZjcxMDE1NzllNGU2NzBjOTI2ZTQwMjkyNmZmODg1ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwZjI4YzVmNTE3Nzk2ZDhiNTNkMjJlOGU5NjFkNGVmYmFjMTYzNWVhNGE4NmQxY2YxNDk5MTRkZTI5NzAyZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L1013-L1024",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1106-L1117",
           "version": "repo-lines-v1:sha256:9e729255c797cca582a8be66d5c4b722eb9feda3d60be5501d17810f4d5beb38:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5M2MwMTNiYTYyNDM2ODkwZjVmNmRiZTY4ODM2NDQ5OTBmYWRjMjg4MDI1NjhiNGEwZTg5MTY1Y2E4YzE3ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmZDk4MGNhMTgxN2IwNDRkODEzNjQ3YWQwZGYyOGY0ZDA3M2YxYWY1OTM1NTk0YzAzZmJiNjNhNTU3NWYxODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNTU3ZjA2N2M4ZDVmOWNmNTIxMTViYjIyODhhNjU2OTAwNGIwN2U3OGE4ODFhZTc3MmJmNTM0ZGNiYzZiZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwOTYzYTQ5MWRjZjQ2OWUzMGVkNjM3ZmZmYjVkNTAwMGZjNWNjOTZjYTQ0ZjdlMmVlMTk1YTEzYjUzMmI4MzkifQ"
         }
       ]
@@ -35,11 +35,11 @@
       "statement": "Repository Helm values use required node affinity to exclude zimaboard-2 from Argo CD components and the Langfuse worker.",
       "evidence": [
         {
-          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L73-L84",
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L82-L93",
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L94-L102",
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L96-L104",
           "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzk5NTA3MTQ4N2Y5MmNjNTJiYWRlY2EyNzExMWQ0NzllZDA4NzllYTk1ODViOWZjYjdmOTg1ZDJiOGUwYTY2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
         }
       ]
@@ -49,11 +49,11 @@
       "statement": "The other three nodes remain eligible for Argo CD; two controller replicas are requested, but the committed values do not guarantee separate-node placement.",
       "evidence": [
         {
-          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L123-L125",
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L132-L134",
           "version": "repo-lines-v1:sha256:0bcee64e73392aea987d564f9d815b66b3760fffd3933f46b322c972ab5758be:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2UyZWUxNjJjMWI0YzJmMGJjOGE1MTRlODgxYTdmMzYzZTNiMThhYTViMGRkN2JjN2FjYmU4MDUyMDk2MDdlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDhlMzFiZDZiZmRhNjU1ZTUwMmJkMGRmYTM1YTIwOWIxYjc2Yzk5Y2U0MTZiNWNiZWVmYWM3NDIyYWI3NDgzNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTU4YWNiOTUwY2E1ZDNjNWMwYzA5N2U2OTI1NmQ0ZjAyM2JiMWUyZTdlMTdlMThiOGMwZWIwNDg1Mjk2YjE0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWZmMjk2ZGZjOGU4ZmI4YzgzODRlMTUxODk5ZWViNWI5ZTRkMjY5YTIzMTk0Y2VhODY2N2Q5NDBiZTkwYWM2ZCJ9"
         },
         {
-          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L73-L84",
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L82-L93",
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         }
       ]
@@ -64,7 +64,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
-          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+          "version": "repo-file-v1:sha256:57b3dda23a2024b739e261c593bf8249f304b040311fed69ba3896f095bd2fdd"
         },
         {
           "resource": "repo://clusters/homelab/platform/crossplane/README.md",
@@ -82,7 +82,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/langfuse/README.md",
-          "version": "repo-file-v1:sha256:1a6a0ba669f51bc8ca6e78afcdfd9d9579c24ac17427b3b05b64acf1f65229d9"
+          "version": "repo-file-v1:sha256:918d0709abb84c3625e4c1da9368f1701d44bc8a0db0288c8ca63bdabd166613"
         },
         {
           "resource": "repo://clusters/homelab/platform/crossplane/README.md",
@@ -125,6 +125,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T16:49:06.466Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

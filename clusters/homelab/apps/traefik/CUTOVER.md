@@ -251,6 +251,68 @@ separate retirement change. That change removes old application/native catalog
 routes, obsolete credentials, the Cloudflare Tunnel, and finally legacy DNS.
 This preparation DNS helper has no legacy-route retirement action.
 
+### Legacy application bypass
+
+The old Istio gateway and Octelium ingress dataplane are ClusterIP Services.
+An unrelated in-cluster Pod can call their app hosts directly, bypassing the
+tailnet listener. Flannel does not enforce the declared NetworkPolicies, so a
+new policy alone would not close this path. The 18-app retirement set is the
+17 Istio-backed public Octelium WEB Services plus direct Bazarr; Mastodon,
+Fleet, Cordium, OpenClaw Enterprise, native API, and callbacks have separate
+caller gates and remain outside this set.
+
+Before removing a route, run the read-only source inventory:
+
+```sh
+nix develop --command python3 -I scripts/ci/legacy-ingress-retirement-check.py
+```
+
+It checks that each candidate has a direct private Traefik route and private
+DNS declaration, and reports remaining catalog, Cloudflared, VirtualService,
+and gateway wildcard sources. A passing inventory is not live acceptance.
+From a real mesh client, open every app URL and exercise its authenticated
+workflow; verify Harbor login and image pulls separately. Record the client,
+time, response, and merged revision. Keep Fleet's off-LAN check-in, Cordium
+execution/reconnection, signed callbacks, native API, and Mastodon federation
+as independent gates.
+
+Only after the 18 app callers are accepted, submit a reviewed GitOps/catalog
+change that removes those public WEB entries, their Cloudflared app hosts, and
+their 17 Istio application VirtualService files and Kustomization entries.
+Replace the Istio gateway's broad `*.stinkyboi.com` host with the exact hosts
+still served by its retained control, Fleet, Mastodon, Cordium, and callback
+routes. The catalog reconciler does not prune Services: use the reviewed-main
+`scripts/octelium-service-retire.py` for each removed Service, then read back
+the live catalog. Keep the old control and callback routes until their own
+acceptance gates pass. Mastodon needs a private Traefik route and split public
+federation path enforcement before its old route can retire.
+
+After Argo sync and native Service retirement, run the source closure gate:
+
+```sh
+nix develop --command python3 -I scripts/ci/legacy-ingress-retirement-check.py --retired
+```
+
+Then test from an unrelated existing Pod, for example `media/radarr`. The
+Istio request keeps the target Host and SNI while connecting to the gateway:
+
+```sh
+gateway=istio-ingressgateway.istio-system.svc.cluster.local
+kubectl -n media exec deploy/radarr -- curl -ksS --max-time 8 \
+  --connect-to "grafana.stinkyboi.com:443:${gateway}:443" \
+  -D - https://grafana.stinkyboi.com/
+kubectl -n media exec deploy/radarr -- curl -sS --max-time 8 \
+  -H 'Host: grafana.stinkyboi.com' -D - \
+  http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080/
+```
+
+Repeat for representative protected hosts and Bazarr through Octelium. The
+response must not expose the target app or offer its old Octelium login route;
+inspect headers, redirect, and body rather than trusting a status code alone.
+Verify the same app still works through private Traefik from the authorized
+client. A source-only pass cannot establish live denial, and the Mastodon and
+control paths must keep working.
+
 Until then, preserve Enterprise PVCs, Cordium state, existing credentials, and
 owned Mac backups. Roll back through reviewed desired-state changes or the
 retained carrier installer; never restore an old desktop token/profile backup

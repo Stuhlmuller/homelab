@@ -28,7 +28,9 @@ cr:
       strategy: anonymous
     deployment:
       image_name: harbor.stinkyboi.com/mirror/quay.io/kiali/kiali
-      image_version: v2.26.0@sha256:59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9
+      # The operator composes the image digest and uses image_version in resource labels.
+      image_version: 59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9
+      image_digest: sha256
       namespace: monitoring
       cluster_wide_access: true
       network_policy:

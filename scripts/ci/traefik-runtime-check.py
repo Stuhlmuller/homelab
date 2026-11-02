@@ -109,7 +109,7 @@ args = [arg.replace('/etc/traefik/dynamic', str(DYNAMIC))
         .replace('trustedips=10.244.0.0/16', 'trustedips=127.0.0.1/32') for arg in args]
 
 
-def request(host, path='/', entry='websecure', headers=(), websocket=False):
+def request(host, path='/', entry='websecure', headers=(), websocket=False, method=None):
     secure = entry in ('websecure', 'registry')
     port = PORTS[entry]
     command = ['curl', '--silent', '--show-error', '--noproxy', '*', '--max-time', '3',
@@ -117,6 +117,8 @@ def request(host, path='/', entry='websecure', headers=(), websocket=False):
                f'{"https" if secure else "http"}://{host}:{port}{path}']
     for header in headers:
         command += ['-H', header]
+    if method:
+        command += ['--request', method]
     if websocket:
         command += ['--http1.1', '-H', 'Connection: Upgrade', '-H', 'Upgrade: websocket',
                     '-H', 'Sec-WebSocket-Version: 13', '-H',
@@ -212,6 +214,18 @@ try:
         for path in ('/','/rest/settings','/setup','/api/v1/setup','/api/github/hook-extra','/webhook-admin'):
             assert request(host,path,entry='funnel')[0] == 404, (host,path)
             checks += 1
+    emergency = '/webhook/7d4342d3-103b-437a-a941-811a75dacb2f'
+    for path in (emergency, emergency+'/', '/webhook//7d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/7D4342D3-103B-437A-A941-811A75DACB2F', emergency+'?retry=1',
+                 '/webhook/%37d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/./7d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/other/../7d4342d3-103b-437a-a941-811a75dacb2f'):
+        assert request('n8n-webhook.tail67beb.ts.net', path, entry='funnel', method='POST')[0] == 404, path
+        checks += 1
+    for path in ('/webhook/another-workflow', emergency+'-other', '/webhook-test/test'):
+        status, body = request('n8n-webhook.tail67beb.ts.net', path, entry='funnel', method='POST')
+        assert status == 200 and json.loads(body)['name'] == 'n8n', (path, status, body)
+        checks += 1
     for path in ('/webhook/../rest/settings', '/webhook/%2e%2e/rest/settings',
                  '/webhook/%2f../rest/settings', '/webhook/%252e%252e%252frest/settings'):
         status, body = request('n8n-webhook.tail67beb.ts.net', path, entry='funnel')

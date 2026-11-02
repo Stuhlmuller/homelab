@@ -68,6 +68,48 @@ access before relying on a live run. Offline fixture:
 nix develop --command python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
 ```
 
+If the protected runner cannot reach Kubernetes, use the same script's local
+upload mode from a clean checkout of exact current `main`. It requires an
+authenticated TLS kubeconfig for `https://10.1.0.199:6443` and the AWS
+`default` profile for the declared backup account. The local script verifies
+the source Pod/PVC/PV, uploads a versioned SSE-KMS object, downloads that exact
+version, and compares its SHA-256 digest. It does **not** restore the dump or
+declare the backup verified. The pending receipt stays in a private mode-0700
+directory outside Git.
+
+```sh
+main_sha="$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+receipt_dir="$(mktemp -d)"
+nix develop --command bash scripts/ci/langfuse-postgres-checkpoint.sh \
+  --local-upload --expected-sha "$main_sha" \
+  --expected-pvc-uid '<pre-move-pvc-uid>' \
+  --expected-pv-uid '<pre-move-pv-uid>' --receipt-dir "$receipt_dir"
+```
+
+Dispatch the protected [object restore workflow](../../../../.github/workflows/langfuse-postgres-object-restore.yml)
+on that same current `main`, supplying the exact key, version ID, digest, byte
+count, and PVC/PV UIDs from the pending receipt. It uses S3 metadata and
+readback to bind the object, then restores in Docker with networking disabled.
+It does not contact Kubernetes or independently recheck live PVC/PV state.
+
+```sh
+gh workflow run langfuse-postgres-object-restore.yml -R Stuhlmuller/homelab \
+  --ref main -f expected_sha="$main_sha" \
+  -f object_key='<pending-key>' -f object_version='<pending-version>' \
+  -f object_sha256='<pending-sha256>' -f object_bytes='<pending-bytes>' \
+  -f expected_pvc_uid='<pending-pvc-uid>' -f expected_pv_uid='<pending-pv-uid>'
+```
+
+Only its successful final receipt qualifies as the off-NAS PostgreSQL
+checkpoint for the proposed move. Compare the final key, version, digest and
+source UIDs with the pending receipt, then recheck the live binding before
+cutover. If `main` advances between capture and restore, repeat the capture.
+Keep both receipts off Git. The offline restore fixture is:
+
+```sh
+nix develop --command python3 -I scripts/ci/langfuse-postgres-object-restore-test.py
+```
+
 This proves only PostgreSQL logical restore. It does not recover ClickHouse,
 Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
