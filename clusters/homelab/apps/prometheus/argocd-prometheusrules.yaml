@@ -51,4 +51,4 @@ spec:
           annotations:
             summary: Argo CD application {{ $labels.name }} is OutOfSync.
             description: Argo CD reports application {{ $labels.name }} in project {{ $labels.project }} as OutOfSync for at least 30 minutes.
-            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/autonomous-task-lifecycle.md#recover-a-stalled-rollout
