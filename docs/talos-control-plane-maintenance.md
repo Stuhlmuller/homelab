@@ -1305,3 +1305,155 @@ preflight, even with image pre-pulling disabled.
 - If a version change requires machine-config schema migration, commit the
   desired config update first, render it locally, and validate it before the
   live upgrade.
+
+## Held: November 2 Zimaboard-2 Incident Recovery
+
+The repository-owned [incident helper](../scripts/zimaboard-2-incident-recovery.py)
+prepares, submits once, and verifies a normal authenticated Talos reboot for
+only the November 2 incident on `zimaboard-2` (`10.1.0.202`). It does not authorize
+execution. The earlier maintenance exceptions above do not apply. Recovery
+remains held until the prevention change merges and converges, sustainable
+capacity is proved, a fresh off-node snapshot is verified, and the owner approves
+the resulting exact plan.
+
+The incident identity is node UID `30e383bf-7a29-436e-b02c-e2b9687f2cb5`, boot ID
+`5644f3a6-2785-42d8-ac4d-8c0f7f9b3891`, Talos `v1.11.3`, stale Kubernetes lease,
+`Ready=Unknown`, and unhealthy kubelet with direct authenticated Talos reachable.
+Any different incident needs new review. No drain, force deletion, service
+restart, power cycle, config write, Secret change, or retry is implemented.
+
+### Preconditions and private evidence
+
+Use a clean checkout of the owner-reviewed current `main` commit. Refresh and
+independently verify its remote revision before approval. The helper binds HEAD
+and the local `origin/main` tracking ref to `--reviewed-sha`; that local check
+cannot establish remote freshness by itself. Execution does not require GitHub,
+Actions, or an Octelium tunnel.
+
+The helper checks these facts again before submission:
+
+- An explicit absolute `--talosctl` executable reporting client `v1.11.3` before
+  API access. The private plan and attempt bind its resolved path, version and
+  SHA-256; every Talos call checks the bytes again. PATH cannot substitute a
+  different client. Use the matched client, not a newer Nix-shell default.
+- Direct Kubernetes endpoint `https://10.1.0.199:6443`, an embedded trusted CA and
+  embedded client certificate/key or token. Exec plugins, proxy overrides,
+  alternate TLS names and insecure verification are rejected. Both client files
+  must be private regular files owned by the operator, mode `0600`.
+- Exact node/boot identity, healthy peers with fresh leases, direct Talos
+  services, API readiness including etcd, and available DNS, Istio and emergency
+  access deployments with Ready replacement Pods outside the failed worker.
+- Healthy, Synced LiteLLM Argo Application at the reviewed source revision;
+  declared and live gateway request `1Gi`, placement on Acer, and one Ready
+  replacement. Extra active gateway Pods on Acer block recovery. The node must
+  have room for two `1Gi` gateway requests after other active requests and the
+  all unsuspended Acer-eligible recurring Job reservations, including hourly
+  Renovate (`512Mi`) and backup/restore jobs, even between runs. Unpinned jobs
+  are included conservatively; unbounded concurrency, parallel/indexed Jobs or
+  missing requests block. Terminating Job Pods do not cancel the next reservation.
+  Acer's current `MemAvailable` must also cover a full `2Gi` gateway budget plus
+  any absent recurring reservation. This conservative memory check is separate
+  from scheduler arithmetic; neither proves future workload peaks.
+- Every bound Pod, including deleting Pods, has a classified controller and
+  volume contract. Normal and init containers are inspected; block devices,
+  PVC/NFS/CSI volumes, ephemeral containers and unknown host paths block the
+  attempt. Only the enumerated platform DaemonSet host paths and exact CNI mount
+  propagation combinations are allowed. A Deployment's stale availability count
+  alone cannot prove that its replacement is running elsewhere.
+- A local off-node etcd snapshot no more than six hours old, from the canonical
+  control plane, passing the existing private-file and checksum verifier. This
+  is integrity evidence, not a restore rehearsal or a workload-data backup.
+
+The Tailscale exception is an exact classification, not an override: the existing
+`ts-bulldozer-hook-tccs6` StatefulSet must still have one ordinal, matching native
+parent labels, unchanged controller revision, the pinned proxy image and one
+retained identity Secret. Its single deleting Pod must use the native
+`POD_NAME=metadata.name` then `TS_KUBE_SECRET=$(POD_NAME)` expansion, with no
+command override or second identity writer. Secret metadata is
+requested through a temporary private Unix-socket `kubectl proxy` with exact-path
+and method filters and `PartialObjectMetadata` content negotiation; full-object
+fallbacks are rejected and the proxy is stopped on every exit. There is no TCP
+listener or credential extraction; only the identity UID enters the receipt.
+Tailscale's pinned [operator implementation][tailscale-sts] and
+[StatefulSet identity contract][tailscale-identity] preserve that identity across
+Pod restarts. A normal same-host reboot ends the old process before a new boot;
+force deletion would not provide that guarantee and remains excluded.
+
+Use one operator account on one workstation for this incident. Create its private
+persistent registry at `<account-home>/.local/state/homelab/incident-recovery`
+with mode `0700`, outside Git. The helper rejects alternate registry paths and
+symlinks. Keep this directory and every receipt through failures; changing
+accounts or hosts, removing receipts, or using another maintenance tool would
+circumvent the local one-shot guard and is not authorized by the plan.
+
+After the source and capacity prerequisites are satisfied, prepare read-only
+facts using explicit file paths; substitute the OS account's actual home path:
+
+```bash
+recovery=(python3 -I scripts/zimaboard-2-incident-recovery.py
+  --reviewed-sha <reviewed-current-main-sha>
+  --kubeconfig <private-direct-kubeconfig>
+  --context <direct-context>
+  --talosconfig <private-talosconfig>
+  --talosctl <absolute-matched-v1.11.3-talosctl>
+  --receipt-dir <account-home>/.local/state/homelab/incident-recovery)
+
+"${recovery[@]}" prepare \
+  --snapshot-dir <private-verified-etcd-snapshot-directory> \
+  --plan <account-home>/.local/state/homelab/incident-recovery/plan.json
+```
+
+A nonzero result and nonempty `blockers` mean stop and resolve the named
+prerequisite through its reviewed code path. No mutation is submitted by
+`prepare`. Private plans contain selected identities and hashes, not raw Pod
+specifications, Secret data, certificates or service logs. Do not commit them.
+Review the private plan and its printed SHA-256 before seeking approval.
+
+The concrete owner approval must identify the reviewed main SHA, this node UID,
+this boot ID, the plan SHA-256, and the sole operator account/workstation. Suggested
+wording: “I approve exactly one normal Talos reboot of `zimaboard-2`
+(`10.1.0.202`), node UID `30e383bf-7a29-436e-b02c-e2b9687f2cb5`, boot ID
+`5644f3a6-2785-42d8-ac4d-8c0f7f9b3891`, under plan `<sha256>` at reviewed main
+`<sha>`, using `<account/host>`.
+No recovery operation is already in flight. Preserve the identity Secret and all
+volumes; do not retry, force-delete, power-cycle, or use another account/host.”
+The command-line digest binds the approved plan; it cannot establish that a human
+actually granted approval.
+
+Only after that direct approval, within the plan's five-minute lifetime:
+
+```bash
+"${recovery[@]}" execute \
+  --snapshot-dir <private-verified-etcd-snapshot-directory> \
+  --plan <account-home>/.local/state/homelab/incident-recovery/plan.json \
+  --approve-plan-sha256 <owner-approved-plan-sha256>
+```
+
+The helper repeats the preflight and writer checks, then creates and fsyncs an
+exclusive `zimaboard-2-2026-11-02.attempt.json` **before** its single
+`talosctl reboot --mode=default --wait --timeout=10m` submission. The pinned
+[Talos reboot implementation][talos-reboot] supplies its normal wait behavior.
+A timeout, crash, interruption, or command failure consumes the attempt because
+submission may already have happened. Retain the receipt; never retry or remove
+it. There is no rollback for the reboot itself. An uncertain outcome requires
+read-only diagnosis and a separately reviewed recovery decision.
+
+Read-only verification may be repeated:
+
+```bash
+"${recovery[@]}" verify
+```
+
+Verification requires a changed boot ID on the same node UID, fresh Ready state
+and lease, healthy kubelet/peers, critical service replacements and preventive
+placement/capacity. Success saves an immutable completion receipt. It does not
+claim application-level functional acceptance or close the broader worker
+pressure/access issues. The offline regression is:
+
+```sh
+python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
+```
+
+[tailscale-sts]: https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/k8s-operator/sts.go
+[tailscale-identity]: https://github.com/tailscale/tailscale/blob/v1.102.3/k8s-operator/reconciler/tailscaled/statefulset.go
+[talos-reboot]: https://github.com/siderolabs/talos/blob/v1.11.3/cmd/talosctl/cmd/talos/reboot.go
