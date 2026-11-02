@@ -27,10 +27,12 @@ yq -o=json '.' "$values" |
   jq -e '.kind == "Deployment" and .deschedulingInterval == "30m" and (has("schedule") | not)' >/dev/null
 
 # Check the chart output: Deployment mode ignores the CronJob schedule value.
+rendered="$(mktemp)"
+trap 'rm -f "$rendered"' EXIT
 helm template descheduler descheduler --repo https://kubernetes-sigs.github.io/descheduler \
   --version 0.33.0 --namespace kube-system --values "$values" |
-  yq ea -o=json -I=0 '[.]' - |
-  jq -e '
+  yq ea -o=json -I=0 '[.]' - >"$rendered"
+jq -e '
     ([.[] | select(.kind == "CronJob")] | length == 0) and
     ([.[] | select(.kind == "Deployment")] |
       length == 1 and
@@ -38,5 +40,6 @@ helm template descheduler descheduler --repo https://kubernetes-sigs.github.io/d
       ([.[0].spec.template.spec.containers[] |
         select(.name == "descheduler") | .args[] |
         select(startswith("--descheduling-interval="))] == ["--descheduling-interval=30m"]))
-  ' >/dev/null
+  ' "$rendered" >/dev/null
 echo "Descheduler: Deployment renders exactly one 30-minute interval"
+python3 -I scripts/ci/descheduler-policy-check.py "$rendered"

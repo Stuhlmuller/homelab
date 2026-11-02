@@ -396,8 +396,21 @@ For Descheduler values or chart changes, run
 `bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
 rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
 exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. Live revision, argument and execution-cadence
+the pinned chart when upgrading. The same render feeds
+`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
+enabled strategy, valid LowNodeUtilization thresholds and the existing
+DefaultEvictor guards. Missing strategy configuration prevents profile
+construction even while the Pod remains Ready.
+Live revision, argument and execution-cadence
 acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
+
+On November 2, 2026, revision-bound inspection verified cadence PR #1803:
+Argo applied `07672f6d13114a6e695c28339dd99e401c840972`, then compared its
+descendant `94cce69604b9dc019f9ae470a767c7a905daaca5` as Synced/Healthy.
+Four cycles from the same Pod occurred 30 minutes apart, satisfying #893.
+Each cycle also exposed the pre-existing missing-plugin configuration error;
+Issue #1805 tracks its source repair and two-cycle functional acceptance.
+Do not equate zero evictions or Ready status with successful policy evaluation.
 
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
@@ -1281,9 +1294,16 @@ paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
-config, mode, and `kubectl` check inside a Cordium Workspace, whose client
-session is created automatically. Also require Secret reads and a server-side
-dry-run create to be denied there; Cordium has restricted read-only access.
+config and file-mode steps inside a Cordium Workspace, whose client session
+is created automatically, then use `kubectl --request-timeout=15s -n ai get pods`
+for its positive probe. After protected catalog activation, nodes, cluster-wide
+lists, Secret reads and server-side dry-run creates must be denied there.
+Cordium's staged resource/API allowlist is tested against the pinned native
+request parser and CEL evaluator by
+`python3 -I scripts/ci/octelium-kubernetes-policy-check.py` in network static CI.
+The test includes missing-field cases and rejects a broadened read policy.
+It does not prove live identity enforcement or separate credential boundaries;
+Issues #846, #847, #848 and #879 retain their remaining acceptance requirements.
 Keep Tailscale for private applications and remote Talos/LAN access. These legacy
 checks do not replace the staged Traefik DNS and CI acceptance gates above.
 

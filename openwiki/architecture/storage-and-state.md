@@ -291,7 +291,10 @@ ready, but they must not be treated as production-ready until:
   Prometheus and Alertmanager through a backed-up, fenced migration to
   supported repo-owned block or local storage. Map each retained PV before
   owner-approved cleanup. Add a declared QNAP management path before disabling
-  NFSv2, and first confirm no other client needs it.
+  NFSv2, and first confirm no other client needs it. The [NFS runbook](../../docs/storage-nfs.md#nas-configuration)
+  tracks this prerequisite under [#868](https://github.com/Stuhlmuller/homelab/issues/868);
+  the narrow Renovate volume/export exception does not authorize a manual
+  QTS protocol change.
 
 ## Stateful Apps
 
