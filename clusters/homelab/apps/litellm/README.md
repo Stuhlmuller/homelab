@@ -71,6 +71,18 @@ PostgreSQL placement and other workloads, not gateway placement. Coordinate
 its Cordium capacity assumptions with this new reservation; do not apply its
 held changes or count projected savings as available capacity.
 
+The apparent 512 MiB gain at 03:16 UTC came from the hourly Renovate Job
+finishing at 03:04:56 UTC. Its unsuspended Acer-only CronJob still reserves
+512 MiB each run. Budget that recurring reservation even between runs: do not
+release the hold because a snapshot omits the completed Job. Terminal Pods
+were already excluded from scheduler accounting; deleting them adds no room.
+Fresh seven-day telemetry also invalidates PR #1656's old Dispatcharr Celery
+assumption: observed peak 666.72 MiB exceeds both its current 512 MiB request
+and the proposed 448 MiB. Do not count that reduction. ClickHouse and Langfuse
+worker also exceeded their requests. Smaller candidate reductions remain
+unverified because startup/recovery samples are absent and scrape availability
+was only about 76%; instantaneous free memory does not justify them.
+
 Before releasing the draft:
 
 1. Recheck node conditions, `kubectl top nodes`, and the actual gateway memory
@@ -81,7 +93,10 @@ Before releasing the draft:
    including terminating Pods, restartable init containers and Pod overhead.
    Require room for **both** 1 GiB gateway Pods: at least 2 GiB unreserved while
    the old gateway has no request; after correction, at least 1 GiB unreserved
-   in addition to the running gateway. Require actual memory margin for the
+   in addition to the running gateway. Also reserve the hourly Renovate Job's
+   512 MiB when it is absent: the first-rollout threshold is then 2.5 GiB
+   unreserved, or 1.5 GiB after one corrected gateway is running. Do not count
+   the Job twice when it is already included. Require actual memory margin for the
    additional measured startup peak and system/workload growth, with no active
    pressure. A `top` snapshot alone is not a capacity proof. Record the fresh
    receipt privately and keep the hold if any gate is uncertain.

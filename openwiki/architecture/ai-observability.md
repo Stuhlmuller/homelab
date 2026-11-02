@@ -40,7 +40,12 @@ The November 2 snapshot was short by at least 241.3 MiB of reservations for
 two reserved gateway Pods. This is not a failure-capacity acceptance receipt.
 See the [capacity preflight and recovery separation](../../clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-held-capacity-proposal).
 Coordinate PR #1656's separate PostgreSQL/Cordium capacity assumptions. Existing
-worker recovery and #775/#793/#785 remain separate, open gates.
+worker recovery and #775/#793/#785 remain separate, open gates. Budget the
+hourly Acer Renovate Job's 512 MiB even between runs; its completion produced
+a transient gap, not permanent capacity. Fresh observed Dispatcharr Celery
+usage exceeds PR #1656's proposed lower request, invalidating that old saving.
+Incomplete startup/recovery evidence and telemetry gaps keep smaller reduction
+candidates unverified; do not change reservations from an instantaneous sample.
 
 ## Caller inventory
 
