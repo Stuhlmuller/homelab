@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: codex-cloud-signer
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV2_K8S_6=Ingress is restricted by the sibling networkpolicy.yaml.
+spec:
+  replicas: 1
+  serviceName: codex-cloud-signer
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: codex-cloud-signer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codex-cloud-signer
+        istio.io/dataplane-mode: none
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      initContainers:
+        - name: state-permissions
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          imagePullPolicy: IfNotPresent
+          command: [python3, -I, -B, /app/init-state.py]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, FOWNER]
+          volumeMounts:
+            - {name: code, mountPath: /app, readOnly: true}
+            - {name: state, mountPath: /state}
+      containers:
+        - name: api
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          imagePullPolicy: IfNotPresent
+          command: [python3, -I, -B, /app/server.py]
+          ports:
+            - {name: http, containerPort: 8080}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 12
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 30
+            timeoutSeconds: 12
+            failureThreshold: 6
+          volumeMounts:
+            - {name: code, mountPath: /app, readOnly: true}
+            - {name: credentials, mountPath: /secrets, readOnly: true}
+            - {name: socket, mountPath: /run/tailscale}
+        - name: tailscale
+          image: harbor.stinkyboi.com/mirror/docker.io/tailscale/tailscale:v1.102.3@sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680
+          imagePullPolicy: IfNotPresent
+          command: [/usr/local/bin/tailscaled]
+          args:
+            - --tun=userspace-networking
+            - --state=/var/lib/tailscale/tailscaled.state
+            - --statedir=/var/lib/tailscale
+            - --socket=/run/tailscale/tailscaled.sock
+          lifecycle:
+            postStart:
+              exec:
+                command: [/bin/sh, /app/activate.sh]
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --json]
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --json]
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: code, mountPath: /app, readOnly: true}
+            - name: enrollment
+              mountPath: /auth
+              readOnly: true
+            - {name: socket, mountPath: /run/tailscale}
+            - {name: state, mountPath: /var/lib/tailscale, subPath: tailscale}
+      volumes:
+        - name: code
+          configMap: {name: codex-cloud-signer-code, defaultMode: 0444}
+        - name: credentials
+          secret:
+            secretName: codex-cloud-signer
+            defaultMode: 0440
+            items:
+              - {key: webhook-secret, path: webhook-secret}
+              - {key: oauth-client-id, path: oauth-client-id}
+              - {key: oauth-client-secret, path: oauth-client-secret}
+        - name: enrollment
+          secret:
+            secretName: codex-cloud-signer
+            defaultMode: 0440
+            items:
+              - {key: auth-key, path: auth-key}
+        - name: socket
+          emptyDir: {}
+        - name: state
+          persistentVolumeClaim: {claimName: codex-cloud-signer-state}

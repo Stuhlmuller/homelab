@@ -17,6 +17,16 @@ provider "tailscale" {
 EOF
 }
 
+generate "aws_provider" {
+  path      = "aws-provider.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "aws" {
+  region = "${read_terragrunt_config(find_in_parent_folders("root.hcl")).locals.aws_region}"
+}
+EOF
+}
+
 inputs = {
   # Generation 2 exists in encrypted state since 2026-10-14 UTC; rotate 60 days after provider creation.
   ci_key_generation = 2

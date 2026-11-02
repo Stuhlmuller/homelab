@@ -9,3 +9,4 @@ resources:
   - openclaw-runtime.yaml
   - multica-runtime.yaml
   - renovate-cache-local.yaml
+  - codex-cloud-signer.yaml

@@ -28,3 +28,7 @@ variable "ci_key_generation" {
     error_message = "CI key generation must be a positive integer no greater than 999999."
   }
 }
+
+variable "aws_region" {
+  type = string
+}

@@ -1071,3 +1071,14 @@ existing account. `OnChange` and subPath consumers need declared secret/runtime
 revisions after rotation. Preserve stable keys with the database. Source
 registration and credential storage do not prove deployment, owner login or
 email delivery; see the [workload runbook](../../clusters/homelab/apps/mastodon/README.md).
+
+## Codex Cloud enrollment signer
+
+The [signer](../../clusters/homelab/apps/codex-cloud-signer/README.md) keeps its
+Tailnet Lock private key on a retained local volume. Its public Funnel accepts
+only HMAC-authenticated Tailscale events, then checks exact Codex tag,
+ephemerality, OS, device age and unchanged public keys using a read-only OAuth
+client. This enrolls the dedicated policy class, not independently attested
+OpenAI workloads. The owner adds the signer to trusted keys; the API never
+promotes itself or an agent. The cloud auth key is excluded from the External
+Secrets reader's four runtime SSM grants.

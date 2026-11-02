@@ -879,3 +879,13 @@ remain distinct milestones.
 
 Web, Sidekiq, streaming and migration/owner Jobs select Acer for memory
 headroom. Datastores and the local-socket backup Job remain on `zimaboard-1`.
+
+## Codex Cloud signer
+
+The staged [Codex signer](../../clusters/homelab/apps/codex-cloud-signer/README.md)
+registers in `automation` with automatic sync disabled. Its authenticated
+Tailscale Funnel callback signs only newly enrolled ephemeral Linux nodes with
+exactly `tag:codex-cloud`. The owner must trust its persistent daemon before
+readiness succeeds; source registration is not live acceptance. The complete
+state stays on a retained local volume on `acer`, with no automatic off-node
+copy of signing authority.

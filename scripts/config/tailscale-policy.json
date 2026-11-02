@@ -21,6 +21,12 @@
     ],
     "tag:homelab-ci-cordium": [
       "autogroup:admin"
+    ],
+    "tag:codex-cloud": [
+      "autogroup:admin"
+    ],
+    "tag:codex-cloud-signer": [
+      "autogroup:admin"
     ]
   },
   "acls": [],
@@ -123,6 +129,30 @@
       "ip": [
         "tcp:443"
       ]
+    },
+    {
+      "src": [
+        "tag:codex-cloud"
+      ],
+      "dst": [
+        "tag:homelab-ingress"
+      ],
+      "ip": [
+        "tcp:443",
+        "tcp:53",
+        "udp:53"
+      ]
+    },
+    {
+      "src": [
+        "tag:codex-cloud"
+      ],
+      "dst": [
+        "tag:k8s-operator"
+      ],
+      "ip": [
+        "tcp:443"
+      ]
     }
   ],
   "tests": [
@@ -151,6 +181,17 @@
       "deny": [
         "tag:k8s-operator:443",
         "10.1.0.199:6443"
+      ]
+    },
+    {
+      "src": "tag:codex-cloud",
+      "accept": [
+        "tag:homelab-ingress:443",
+        "tag:k8s-operator:443"
+      ],
+      "deny": [
+        "10.1.0.199:6443",
+        "tag:homelab-ingress:80"
       ]
     }
   ]

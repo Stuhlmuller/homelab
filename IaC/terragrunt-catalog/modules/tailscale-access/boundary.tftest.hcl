@@ -1,6 +1,8 @@
 mock_provider "tailscale" {}
+mock_provider "aws" {}
 
 variables {
+  aws_region        = "us-west-2"
   ci_key_generation = 1
   policy            = "{\"grants\":[]}"
   kms_key_id        = "alias/test-only"
@@ -54,4 +56,28 @@ run "reject_untracked_rotation" {
     ci_key_generation = 0
   }
   expect_failures = [var.ci_key_generation]
+}
+
+run "codex_signer_boundary" {
+  command = plan
+  assert {
+    condition     = tailscale_webhook.codex_signer.subscriptions == toset(["categoryTailnetManagement"])
+    error_message = "Use the pinned provider management category; only signature events are handled."
+  }
+  assert {
+    condition     = tailscale_oauth_client.codex_signer.scopes == toset(["devices:core:read"])
+    error_message = "The runtime reader must not write device or tailnet configuration."
+  }
+  assert {
+    condition     = tailscale_tailnet_key.codex_cloud.ephemeral && tailscale_tailnet_key.codex_cloud.reusable && tailscale_tailnet_key.codex_cloud.tags == toset(["tag:codex-cloud"])
+    error_message = "Cloud enrollment must use only the dedicated ephemeral Codex tag."
+  }
+  assert {
+    condition     = !tailscale_tailnet_key.codex_signer.ephemeral && !tailscale_tailnet_key.codex_signer.reusable && tailscale_tailnet_key.codex_signer.tags == toset(["tag:codex-cloud-signer"])
+    error_message = "Signer enrollment must be single-use and persistent."
+  }
+  assert {
+    condition     = alltrue([for parameter in aws_ssm_parameter.codex_signer : parameter.type == "SecureString" && parameter.key_id == "alias/aws/ssm"])
+    error_message = "Enrollment and webhook credentials belong in encrypted SSM parameters."
+  }
 }

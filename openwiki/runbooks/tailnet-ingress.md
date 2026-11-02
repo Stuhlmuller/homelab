@@ -519,3 +519,13 @@ receipts and callback follow-up.
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and
 [Workload Inventory](../workloads/inventory.md).
+
+## Codex signer callback
+
+The [Codex signing API](../../clusters/homelab/apps/codex-cloud-signer/README.md)
+adds `codex-signer` through the existing Traefik Funnel. Only POST
+`/webhooks/tailscale` is routed, with buffering/body limits and rate limiting;
+health endpoints and the local daemon API stay private. The fixed proxy helper
+supports `--codex-funnel-only`; signing that proxy does not trust the separate
+API daemon. HMAC authentication and a dedicated ephemeral enrollment tag are
+required before any agent node signature is issued.

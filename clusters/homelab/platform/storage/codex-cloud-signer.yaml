@@ -1,0 +1,43 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: codex-cloud-signer-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: codex-cloud-signer-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: codex-cloud-signer
+    app.kubernetes.io/part-of: homelab-automation
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  claimRef:
+    name: codex-cloud-signer-state
+    namespace: automation
+  hostPath:
+    path: /var/lib/codex-cloud-signer
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: codex-cloud-signer-local
+  volumeMode: Filesystem

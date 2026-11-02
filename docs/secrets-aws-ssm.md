@@ -879,3 +879,16 @@ uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
 rotation. Native-image activation still waits for reviewed publication, scans,
 recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
 declared annotation revision after rotation.
+
+## Codex Cloud signer
+
+The administrator-owned `tailscale-access` module directly owns five
+SecureStrings under `/homelab/tailscale/codex-cloud-signer/`: `auth-key`,
+`oauth-client-id`, `oauth-client-secret`, `webhook-secret`, and `cloud-auth-key`.
+The shared SSM module grants External Secrets only the first four exact names;
+`automation/codex-cloud-signer` projects the reader/webhook files into the API
+and only the single-use enrollment key into its daemon. `cloud-auth-key` is
+operator-only for Codex Cloud's managed VPN. The OAuth client is limited to
+`devices:core:read`; no signing private key is stored in SSM. The retained local
+volume holds signing authority. See the [signer runbook](../clusters/homelab/apps/codex-cloud-signer/README.md)
+for owner trust, 90-day enrollment-key renewal and disk-loss revocation.

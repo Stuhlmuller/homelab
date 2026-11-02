@@ -126,6 +126,10 @@ class IngressSigning(unittest.TestCase):
         data[3]["NodeKeySigned"] = True
         self.assertTrue(SIGNER.validate_target(SIGNER.TARGETS[4], *data)["signed"])
 
+    def test_codex_funnel_is_a_fixed_target_not_a_trusted_signer(self):
+        self.assertEqual(SIGNER.TARGETS[5],
+                         ("traefik", "ingress", "codex-signer", "codex-signer", "tag:homelab-funnel"))
+
     def test_bulldozer_proxy_is_a_fixed_funnel_target(self):
         self.assertEqual(SIGNER.TARGETS[3],
                          ("traefik", "ingress", "bulldozer-hook", "bulldozer-hook", "tag:homelab-funnel"))
