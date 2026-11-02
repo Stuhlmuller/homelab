@@ -8,9 +8,10 @@ import sys
 
 
 def check(policy):
-    assert set(policy) == {"apiVersion", "kind", "profiles"}
+    assert set(policy) == {"apiVersion", "kind", "profiles", "maxNoOfPodsToEvictTotal"}
     assert policy["apiVersion"] == "descheduler/v1alpha2"
     assert policy["kind"] == "DeschedulerPolicy"
+    assert type(policy["maxNoOfPodsToEvictTotal"]) is int and policy["maxNoOfPodsToEvictTotal"] == 1
     assert len(policy["profiles"]) == 1
     profile = policy["profiles"][0]
     assert set(profile) == {"name", "pluginConfig", "plugins"}
@@ -26,11 +27,11 @@ def check(policy):
     enabled = {name for extension in profile["plugins"].values() for name in extension["enabled"]}
     assert set(names) == enabled | {"DefaultEvictor"}, "Every enabled plugin needs a configuration"
     args = {config["name"]: config.get("args", {}) for config in configs}
-    for flag in ("evictSystemCriticalPods", "ignorePvcPods"):
-        assert type(args["DefaultEvictor"][flag]) is bool
+    for flag in ("evictSystemCriticalPods", "ignorePvcPods", "nodeFit"):
+        assert type(args["DefaultEvictor"].get(flag)) is bool
     assert type(args["DefaultEvictor"]["minReplicas"]) is int
     assert args["DefaultEvictor"] == {
-        "evictSystemCriticalPods": False, "ignorePvcPods": True, "minReplicas": 2,
+        "evictSystemCriticalPods": False, "ignorePvcPods": True, "minReplicas": 2, "nodeFit": True,
     }, "Preserve the existing eviction guards"
     assert args["RemovePodsViolatingInterPodAntiAffinity"] == {}
     utilization = args["LowNodeUtilization"]
@@ -55,11 +56,14 @@ def main():
     ], input=configs[0]["data"]["policy.yaml"], text=True))
     check(policy)
     for defect in ("missing-anti-affinity", "missing-utilization", "duplicate", "empty",
-                   "different-resources", "out-of-range", "reversed", "unsafe-guard", "extra-plugin"):
+                   "different-resources", "out-of-range", "reversed", "unsafe-guard", "extra-plugin",
+                   "no-node-fit", "disabled-node-fit", "untyped-node-fit", "no-total-limit",
+                   "zero-total-limit", "raised-total-limit", "untyped-total-limit"):
         changed = copy.deepcopy(policy)
         profile = changed["profiles"][0]
         configs = profile["pluginConfig"]
         utilization = next(item["args"] for item in configs if item["name"] == "LowNodeUtilization")
+        evictor = next(item["args"] for item in configs if item["name"] == "DefaultEvictor")
         if defect.startswith("missing-"):
             name = ("LowNodeUtilization" if defect == "missing-utilization"
                     else "RemovePodsViolatingInterPodAntiAffinity")
@@ -75,7 +79,21 @@ def main():
         elif defect == "reversed":
             utilization["thresholds"]["cpu"] = 51
         elif defect == "unsafe-guard":
-            next(item for item in configs if item["name"] == "DefaultEvictor")["args"]["ignorePvcPods"] = False
+            evictor["ignorePvcPods"] = False
+        elif defect == "no-node-fit":
+            evictor.pop("nodeFit")
+        elif defect == "disabled-node-fit":
+            evictor["nodeFit"] = False
+        elif defect == "untyped-node-fit":
+            evictor["nodeFit"] = 1
+        elif defect == "no-total-limit":
+            changed.pop("maxNoOfPodsToEvictTotal")
+        elif defect == "zero-total-limit":
+            changed["maxNoOfPodsToEvictTotal"] = 0
+        elif defect == "raised-total-limit":
+            changed["maxNoOfPodsToEvictTotal"] = 2
+        elif defect == "untyped-total-limit":
+            changed["maxNoOfPodsToEvictTotal"] = True
         else:
             profile["plugins"]["balance"]["enabled"].append("RemoveDuplicates")
         try:
@@ -83,7 +101,7 @@ def main():
         except AssertionError:
             continue
         raise AssertionError(f"Unsafe Descheduler policy accepted: {defect}")
-    print("Descheduler: rendered plugin configuration, eviction guards and nine negative cases passed")
+    print("Descheduler: rendered plugin configuration, eviction guards and sixteen negative cases passed")
 
 
 if __name__ == "__main__":

@@ -399,8 +399,10 @@ exactly one `--descheduling-interval=30m` argument. Update the check alongside
 the pinned chart when upgrading. The same render feeds
 `scripts/ci/descheduler-policy-check.py`, which requires configuration for each
 enabled strategy, valid LowNodeUtilization thresholds and the existing
-DefaultEvictor guards. Missing strategy configuration prevents profile
-construction even while the Pod remains Ready.
+DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
+cycle. NodeFit covers only a subset of scheduler checks; physical headroom
+and recurring Job demand still need executable activation checks. Missing
+strategy configuration prevents profile construction even while the Pod remains Ready.
 Live revision, argument and execution-cadence
 acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
 
