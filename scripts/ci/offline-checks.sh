@@ -7,6 +7,9 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/release-test.py
+python3 -I scripts/ci/static-cache-test.py
+node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
@@ -31,6 +34,8 @@ python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-service-host-approve-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
+python3 -I scripts/ci/octelium-catalog-test.py
+python3 -I scripts/ci/terragrunt-credential-duration-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations

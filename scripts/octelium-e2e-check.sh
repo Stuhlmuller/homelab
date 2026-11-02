@@ -170,6 +170,43 @@ fail() {
   printf 'FAIL: %s\n' "$*" >&2
 }
 
+check_catalog() {
+  local policies_json policy_name policy_json expected_variable
+  EXPECTED_KUBERNETES_POLICY=""
+  EXPECTED_TALOS_POLICY=""
+
+  if [ ! -f "${CATALOG}" ]; then
+    fail "catalog file is missing: ${CATALOG}"
+    return
+  fi
+
+  if ! policies_json="$(
+    yq ea -o=json -I=0 '[select(.kind == "Policy")]' "${CATALOG}" 2>/dev/null
+  )"; then
+    fail "catalog could not be parsed: ${CATALOG}"
+    return
+  fi
+
+  for policy_name in kubernetes talos; do
+    if ! policy_json="$(
+      jq -ce --arg name "homelab-private-${policy_name}-access" '
+        if type == "array" then
+          map(select(.metadata.name == $name)) |
+          if length == 1 then .[0] else error("expected exactly one policy") end
+        else error("expected policy array") end
+      ' <<<"${policies_json}" 2>/dev/null
+    )"; then
+      fail "catalog must contain exactly one Policy homelab-private-${policy_name}-access: ${CATALOG}"
+      continue
+    fi
+    case "${policy_name}" in
+      kubernetes) expected_variable=EXPECTED_KUBERNETES_POLICY ;;
+      talos) expected_variable=EXPECTED_TALOS_POLICY ;;
+    esac
+    printf -v "${expected_variable}" '%s' "${policy_json}"
+  done
+}
+
 require_command() {
   if command -v "$1" >/dev/null 2>&1; then
     pass "found $1"
@@ -412,23 +449,7 @@ else
 fi
 
 note "Checking Octelium service catalog"
-if [ ! -f "${CATALOG}" ]; then
-  fail "catalog file is missing: ${CATALOG}"
-else
-  pass "catalog file exists: ${CATALOG}"
-  EXPECTED_KUBERNETES_POLICY="$(
-    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' "${CATALOG}"
-  )"
-  EXPECTED_TALOS_POLICY="$(
-    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")' "${CATALOG}"
-  )"
-  if [ -z "${EXPECTED_KUBERNETES_POLICY}" ]; then
-    fail "catalog is missing Policy homelab-private-kubernetes-access"
-  fi
-  if [ -z "${EXPECTED_TALOS_POLICY}" ]; then
-    fail "catalog is missing Policy homelab-private-talos-access"
-  fi
-fi
+check_catalog
 
 if [ "${GRPC_READY}" -eq 1 ]; then
   if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get identityprovider >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then

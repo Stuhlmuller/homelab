@@ -601,9 +601,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `--apply-catalog`.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
-  receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
-  affects CI, operator, and Cordium Kubernetes access, so validate both Services
-  after rotation.
+  receive only Octelium-generated kubeconfigs. The
+  [staging helper](../../scripts/octelium-ci-kubeconfig-secret.sh) validates and
+  minifies the selected context, verifies TLS and authenticated access, then
+  creates a new Secret without overwriting an existing one. Rotation stages a
+  timestamped replacement before a separate reviewed Service/helper cutover;
+  retain the previous binding for rollback and verify CI, operator, and Cordium
+  access before retirement. Source tests do not certify a live rotation.
   The protected Talos maintenance lane has a separate CLIENT authentication
   token, `OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, limited by
   `homelab-platform-talos-ci-access` to the private TCP

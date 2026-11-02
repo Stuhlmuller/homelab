@@ -6,6 +6,16 @@ old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
 is verified and its entire workflow is removed through a reviewed PR. Only
 then may a reviewed homelab change remove `dryRun: 'full'`.
 
+On November 1, 2026, legacy scheduled run
+[41272850456](https://github.com/Stuhlmuller/renovate/actions/runs/41272850456)
+failed before App-token creation: its anonymous Harbor route probe could not
+resolve the registry hostname. Dependency Dashboard #159 was last updated
+October 25. Local extraction tests do not establish hosted discovery while
+this prerequisite fails. Restore the declared registry route or reviewed
+runner connectivity, then verify a successful legacy scan and dashboard
+coverage before closing #875, #887 or #888. Keep the cluster writer suspended
+until its separate cutover gates pass.
+
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
 settings. Repository files still override eligible settings. Autodiscovery
@@ -102,6 +112,33 @@ projects. In dry-run verification, distinguish a transport failure from an
 expected authentication denial. Hold writer cutover if an eligible private
 package requires a credential. Revert this route change through GitOps if it
 breaks registry access.
+
+### Homelab dependency discovery
+
+The repository's [`renovate.json`](../../../../renovate.json) enables native
+Nix input discovery and matches the authored Terragrunt Helm chart pins in
+`IaC/homelab/us-west-2/apps/*/stack.hcl` plus the bootstrap Argo CD catalog
+unit. HTTPS charts use the Helm datasource; OCI charts use their full registry
+and chart name with the Docker datasource. The native Argo CD manager matches
+only the NFS provisioner Application, preserving Git-backed `main` references.
+GitHub Actions retain their exact SHAs with same-line release metadata.
+The existing Image Updater ownership exclusions remain unchanged.
+
+Helm updates remain separate reviewed PRs. Nix updates form one `Nix toolchain`
+group with auto-merge disabled. Before merging a lock refresh, review the tool
+and supported-platform changes, run `nix flake check --all-systems --no-build`,
+then the normal static, Conftest, HCL and shell gates from the candidate shell.
+An insecure package or unsupported platform blocks that refresh; keep the
+previous lock until a compatible candidate passes. Roll back a bad refresh by
+reverting its `flake.lock` change through a reviewed PR and rerunning the gates.
+
+Run `node --test scripts/ci/renovate-repository-test.js` for chart-coverage,
+action-metadata and ownership checks. Validate the config and extraction with
+the pinned Renovate version before delivery. After merge, confirm the Dependency
+Dashboard lists the chart and Nix inputs without duplicates and a Nix refresh
+PR passes validation. Local extraction does not establish hosted discovery or
+change the separate cluster writer-cutover gates. Revert the config change to
+remove this discovery coverage.
 
 ### Cache failure and recovery
 
