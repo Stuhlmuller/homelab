@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "clusters/homelab/apps/istio/upgrade-1.28.10.json"
 NEW_REPOSITORY = "https://blob.istio.io/istio-release/charts"
-BASELINE_MANIFEST_SHA256 = "96984fb763dc2d36c50d1730cf640ae80b3155907205e76a0e49bb4f0dd43fa6"
+BASELINE_MANIFEST_SHA256 = "27f1d21e5ff1d4060f5a915974c605b17eabce37e73d4ded5d153b5ba115bef0"
 REFERENCED_FILES = {
     ".argocd-values-ref-placeholder.yaml": "cb1d512dd7021fe32904661dec7f52219c58ae5ba049303f84c681a4c4f75df6",
     "clusters/homelab/apps/istio/values.yaml": "f9d20e2fb93e22e78dc07db649def6cb1c426c3ef8e8b0c89f050d4dc37211c9",
