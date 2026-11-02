@@ -433,13 +433,15 @@ and federation access below. Then remove only the obsolete native catalog
 Service, if present, using the repository's declared retirement command:
 
 ```sh
-octeliumctl get service mastodon.default --domain stinkyboi.com -o json
-# Only after the private route and public denial checks pass:
-octeliumctl delete service mastodon.default --domain stinkyboi.com
+nix develop --command python3 -I scripts/octelium-service-retire.py \
+  --service mastodon --homedir <EXISTING_OPERATOR_LOGIN_DIRECTORY> \
+  --removal-sha <MERGED_REMOVAL_SHA> --expected-sha <CURRENT_MAIN_SHA> --execute
 ```
 
-A native `NotFound` means retirement is complete; authentication/transport
-errors do not. Do not prune the shared catalog or change other Services.
+The existing helper verifies clean/current main, the catalog-removal commit,
+the exact live Service contract, and absence after deletion. A native `NotFound`
+means retirement is complete; authentication/transport errors do not. Do not
+prune the shared catalog or change other Services.
 
 ### Public federation boundary
 
