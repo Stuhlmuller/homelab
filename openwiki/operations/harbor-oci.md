@@ -678,6 +678,12 @@ refusal stay intact. The complete middleware suite and ten
 [browser/session compatibility cases](../../builds/harbor-core/csrf-compat_test.go)
 passed locally against Harbor's actual middleware.
 
+The subsequent container audit identified fixable JOSE and networking findings.
+The source patch now selects `github.com/go-jose/go-jose/v4 v4.1.6` and
+`golang.org/x/net v0.62.0`, with verified Go module checksums. The duplicate-index
+repair and middleware protections remain intact. Rebuild and audit the exact
+Linux container; these dependency updates alone do not establish CVE clearance.
+
 The [rebuilt Linux binary receipt](../../docs/evidence/harbor-core-binary-scan-2026-10-11.json)
 still records five matches: four Distribution v2 advisories and one x/crypto
 advisory, all unfixed/unknown (two high, two medium, one unknown severity).
