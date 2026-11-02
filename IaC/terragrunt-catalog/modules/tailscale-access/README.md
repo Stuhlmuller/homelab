@@ -55,7 +55,7 @@ umask 077
 review_dir="$(mktemp -d /private/tmp/homelab-tailscale-review.XXXXXX)"
 cd IaC
 terragrunt stack generate
-cd operator/tailscale-access
+cd homelab/us-west-2/operator/tailscale-access
 terragrunt init
 terragrunt state list >"$review_dir/state-list.txt"
 for entry in \
@@ -271,3 +271,16 @@ nix develop --command python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 ```
+
+## Codex Cloud enrollment
+
+`codex-signer.tf` owns the dedicated ephemeral Codex auth key, persistent
+signer enrollment key, read-only device OAuth client, management-event webhook
+and five encrypted SSM values. Runtime SSM encryption uses `alias/aws/ssm` in
+`us-west-2`; state/plan encryption remains in `us-east-1`. The shared SSM unit
+must grant External Secrets the four exact runtime paths before activation;
+the cloud auth key stays operator-only. This adds AWS provider 6.56.0 to the
+existing administrator unit; workload CI does not apply it. Review the full
+saved plan, including unrelated tailnet drift, before applying. Follow the
+[signer runbook](../../../../clusters/homelab/apps/codex-cloud-signer/README.md)
+for staged activation, owner signer trust, recovery and actual cloud acceptance.
