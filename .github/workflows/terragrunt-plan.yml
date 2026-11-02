@@ -47,12 +47,12 @@ jobs:
           requires_runtime_check=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md) ;;
-              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*)
+              clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md|clusters/homelab/apps/descheduler/*.md|IaC/*/descheduler/*.md) ;;
+              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|clusters/homelab/apps/descheduler/*|IaC/*/descheduler/*|scripts/ci/descheduler-release-check.py|scripts/ci/descheduler-release-check-test.py|scripts/ci/descheduler-policy-check.py|scripts/ci/descheduler-cadence-check.sh|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
                 requires_live_plan=true
                 requires_runtime_check=true
                 ;;
-              .github/workflows/terragrunt-plan.yml|IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
+              IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
               scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*)
@@ -163,6 +163,8 @@ jobs:
           kubectl --request-timeout=15s version >/dev/null
           echo "::group::Mastodon database release checks"
           python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
+          echo "::group::Descheduler activation checks"
+          python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"
           echo "::group::Argo CD bootstrap plan"
           bash scripts/ci/terragrunt-plan.sh
           EOF

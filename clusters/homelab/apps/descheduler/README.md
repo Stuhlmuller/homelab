@@ -35,6 +35,23 @@ individually fitting Pods cannot be evicted together against the same spare
 capacity. Physical headroom and recurring demand require separate executable
 checks.
 
+The protected PR live-plan job runs `scripts/ci/descheduler-release-check.py`
+for runtime and gate changes. It requires all four declared nodes to have fresh
+healthy conditions and leases, complete inventories and settled Ready Pods.
+It reserves the largest single movable Pod plus recurring Job demand against
+both scheduling requests and fresh kubelet available memory on every possible
+destination. Explicit container memory limits bound physical demand; unknown
+limits, unsupported placement and overlapping Jobs fail closed. Existing Job
+memory is credited once using UID-bound measurements; active old Job templates
+remain reserved after a CronJob moves or suspends.
+
+This conservative check does not implement Kubernetes scheduling: native
+NodeFit still owns its placement checks. It does not prove N-1 capacity or
+future workload growth. It reads cluster state only, prints fixed status text,
+and grants no new access. A denied kubelet-summary read fails the gate.
+After a failed check, repair the owning desired-state contract and rerun; do
+not waive missing measurements or treat zero requests as zero physical demand.
+
 The cadence check also validates the rendered ConfigMap policy, including
 plugin coverage and the existing eviction guards. After rollout, check private
 logs for successful profile initialization and complete cycles without
