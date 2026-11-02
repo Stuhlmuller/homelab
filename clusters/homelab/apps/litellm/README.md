@@ -39,12 +39,12 @@ a read-only root filesystem need a separate writable-path rehearsal against
 the current native database startup. Roll back through a reviewed values
 revert if these controls prevent startup or normal inference.
 
-### Gateway memory reservation: held capacity proposal
+### Gateway memory reservation and executable rollout gate
 
 The gateway values reserve `1Gi` memory and select `kubernetes.io/hostname:
 acer`. This is staged prevention for #775/#793, not restored capacity or an
-instruction to recover a worker. Keep the PR draft and do not merge/apply until
-sustainable rollout headroom is proved. The gateway keeps one replica and the
+instruction to recover a worker. The protected PR pipeline checks sustainable
+rollout headroom before merge. The gateway keeps one replica and the
 chart's default RollingUpdate strategy: one surge Pod, zero unavailable Pods.
 Its image, runtime controls, database and caller routes are unchanged.
 
@@ -90,7 +90,22 @@ worker also exceeded their requests. Smaller candidate reductions remain
 unverified because startup/recovery samples are absent and scrape availability
 was only about 76%; instantaneous free memory does not justify them.
 
-Before releasing the draft:
+The read-only `scripts/ci/litellm-release-check.py` runs after CI installs its
+existing kubeconfig, before the live Terragrunt plan. The aggregate
+`Terragrunt Gate` fails on an unhealthy target, stale/incomplete evidence,
+unclassified recurring overlap or insufficient reservation/actual memory.
+It counts every eligible unsuspended CronJob conservatively, deducts only
+already counted active owned Job Pods, and retains terminating Pod requests.
+It reuses the existing Kubernetes request calculator for init sidecars,
+Pod-level resources and overhead; unresolved resize or pending placement fails.
+The actual memory check uses fresh kubelet Summary available bytes: two gateway
+reservations plus absent recurring demand, minus the exact serving gateway
+Pod's already consumed working set (at most 1 GiB). Node/Pod metrics must be
+fresh and collected within 30 seconds of each other. API denial fails closed;
+this change grants no new access and prints no private metrics. This proves the
+specific two-Pod rollout budget, not the wider #793 failure-domain target.
+
+For diagnosis and post-merge acceptance:
 
 1. Recheck node conditions, `kubectl top nodes`, and the actual gateway memory
    and readiness with `kubectl -n ai top pod -l app.kubernetes.io/name=litellm
@@ -109,8 +124,7 @@ Before releasing the draft:
    avoid double-counting. The Renovate-only 2.5 GiB/1.5 GiB thresholds are
    insufficient for this full inventory. Require actual memory margin for the
    additional measured startup peak and system/workload growth, with no active
-   pressure. A `top` snapshot alone is not a capacity proof. Record the fresh
-   receipt privately and keep the hold if any gate is uncertain.
+   pressure. A `top` snapshot alone is not a capacity proof. Keep raw evidence private; unavailable evidence fails the executable gate.
 3. Run `python3 -I scripts/ci/litellm-runtime-hardening-check.py` in the pinned
    Nix shell, then normal policy/PR checks. The actual declared chart render
    checks the reservation, placement, strategy and security controls with
