@@ -46,3 +46,9 @@ desired state in the bootstrap Terragrunt values, not an SSM parameter.
 The ExternalSecret uses `refreshPolicy: OnChange`; if only the SSM values
 change, roll that through a repo-owned metadata or spec change and let Argo CD
 sync it instead of patching the live resource.
+
+`harbor-helm-repository.yaml` also creates Argo CD's OCI Helm repository Secret
+from the existing `mirror` pull robot password. Verify its ExternalSecret is
+Ready and Argo CD can read the Harbor repository before switching any chart
+source. Rotate the password through a reviewed ExternalSecret change because
+its refresh policy is `OnChange`.
