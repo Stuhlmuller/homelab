@@ -122,15 +122,14 @@ run "apply_role_reads_only_recovery_publisher_boundary" {
         Actions   = toset(flatten([statement.Action]))
         Resources = toset(flatten([statement.Resource]))
       }
-      if statement.Sid == "ReadEnterpriseRecoveryPublisherBoundary"
+      if statement.Sid == "ReadRecoveryPublisherBoundary"
       ] == [{
-        Sid    = "ReadEnterpriseRecoveryPublisherBoundary"
+        Sid    = "ReadRecoveryPublisherBoundary"
         Effect = "Allow"
         Actions = toset([
           "iam:GetPolicy",
           "iam:GetPolicyVersion",
           "iam:ListPolicyTags",
-          "iam:ListPolicyVersions",
         ])
         Resources = toset(["arn:aws:iam::123456789012:policy/homelab-oce-recovery-publisher-boundary"])
     }]

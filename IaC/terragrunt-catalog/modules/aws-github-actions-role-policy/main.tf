@@ -108,9 +108,9 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
   }
 
   statement {
-    sid       = "ReadEnterpriseRecoveryPublisherBoundary"
+    sid       = "ReadRecoveryPublisherBoundary"
     effect    = "Allow"
-    actions   = ["iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyTags", "iam:ListPolicyVersions"]
+    actions   = ["iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyTags"]
     resources = [local.recovery_publisher_boundary_arn]
   }
 }
