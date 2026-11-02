@@ -53,7 +53,7 @@ class RouteTests(unittest.TestCase):
     def test_complete_private_inventory_and_direct_backends(self):
         controls = {"cordium", "octelium-cluster", "octelium-alias",
                     "octelium-api", "octelium-console", "oce-console",
-                    "oce-native-admin"}
+                    "oce-native-admin", "mastodon"}
         self.assertEqual(set(ROUTERS), set(APPS) | controls |
                          {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "harbor-registry"})
         for app, backend in APPS.items():
@@ -167,6 +167,7 @@ class RouteTests(unittest.TestCase):
             "servers": [{"url": "https://istio-ingressgateway.istio-system.svc.cluster.local:443"}],
         })
         self.assertEqual(HTTP["serversTransports"], {
+            "mastodon": {"serverName": "mastodon.stinkyboi.com"},
             "octelium-console": {"serverName": "console.stinkyboi.com"},
         })
         self.assertEqual(ROUTERS["octelium-alias"]["rule"], "Host(`octelium.stinkyboi.com`)")

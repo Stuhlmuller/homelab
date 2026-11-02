@@ -116,7 +116,7 @@ def verify(server, initial=False):
             if status != "NOERROR" or "aa" not in flags or "ra" in flags or records:
                 raise RuntimeError(f"Private AAAA must be authoritative NODATA: {query}")
     for name, kind in (("stinkyboi.com", "MX"), ("stinkyboi.com", "TXT"),
-                       ("mastodon.stinkyboi.com", "A")):
+                       ("unrelated.stinkyboi.com", "A")):
         public_status, _, public_records = dns_answer("1.1.1.1", name, kind)
         if kind != "A" and (public_status != "NOERROR" or not public_records):
             raise RuntimeError(f"Public {kind} baseline is unavailable: {name}")

@@ -19,7 +19,7 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
-    def test_tunnel_only_bypasses_human_access_for_federation(self):
+    def test_tunnel_exposes_only_federation(self):
         configmap = ROOT / "clusters/homelab/apps/octelium-public/configmap.yaml"
         config = subprocess.check_output(["yq", "-r", '.data["config.yaml"]', str(configmap)], text=True)
         with tempfile.TemporaryDirectory() as directory:
@@ -52,7 +52,7 @@ class Routes(unittest.TestCase):
                 "/inbox/admin", "/inbox.json", "/.well-known/webfinger/../../admin",
             ]
             for uri, origin in [(uri, "https://istio-ingressgateway.") for uri in public] + [
-                    (uri, "http://octelium-ingress-dataplane.") for uri in private]:
+                    (uri, "http_status:404") for uri in private]:
                 with self.subTest(uri=uri):
                     result = subprocess.check_output([
                         "cloudflared", "tunnel", "--config", str(path), "ingress", "rule",
@@ -60,24 +60,30 @@ class Routes(unittest.TestCase):
                     ], text=True, stderr=subprocess.STDOUT)
                     self.assertIn("service: " + origin, result)
 
-    def test_private_client_service_requires_human_access(self):
+    def test_private_client_uses_tailnet_without_octelium(self):
+        def read(path):
+            return json.loads(subprocess.check_output(
+                ["yq", "-o=json", ".", str(ROOT / path)], text=True))
+        http = read("clusters/homelab/apps/traefik/routes.yaml")["http"]
+        self.assertEqual(http["routers"]["mastodon"], {
+            "entryPoints": ["websecure"], "rule": "Host(`mastodon.stinkyboi.com`)",
+            "service": "mastodon", "tls": {},
+        })
+        self.assertEqual(http["services"]["mastodon"]["loadBalancer"], {
+            "serversTransport": "mastodon",
+            "servers": [{"url": "https://istio-ingressgateway.istio-system.svc.cluster.local:443"}],
+        })
+        self.assertEqual(http["serversTransports"]["mastodon"], {
+            "serverName": "mastodon.stinkyboi.com"})
+        names = read("clusters/homelab/apps/traefik/values.yaml")["service"]["private"]["annotations"]["coredns.io/hostname"]
+        self.assertIn("mastodon.stinkyboi.com", names.split(","))
         catalog = json.loads(subprocess.check_output([
             "yq", "ea", "-o=json", ". as $doc ireduce ([]; . + [$doc])",
             str(ROOT / "docs/examples/octelium/homelab-services.yaml"),
         ], text=True))
-        service, = [r for r in catalog if r.get("kind") == "Service"
-                    and r["metadata"]["name"] == "mastodon"]
-        spec = service["spec"]
-        self.assertEqual((spec["mode"], spec["port"]), ("WEB", 80))
-        self.assertTrue(spec["isPublic"])
-        self.assertFalse(spec["isAnonymous"])
-        self.assertEqual(spec["authorization"]["policies"], ["homelab-human-web-access"])
-        self.assertEqual(spec["config"]["upstream"]["url"],
-                         "https://istio-ingressgateway.istio-system.svc.cluster.local:443")
-        header = spec["config"]["http"]["header"]
-        self.assertEqual(header["host"]["value"], "mastodon.stinkyboi.com")
-        self.assertEqual(header["authorizationMode"], "PASS")
-        self.assertEqual(header["forwardedMode"], "TRANSPARENT")
+        self.assertFalse(any(r.get("kind") == "Service" and
+                             r["metadata"]["name"] in ("mastodon", "mastodon.default")
+                             for r in catalog))
 
     def test_fresh_bootstrap_creates_backup_before_verification(self):
         rendered = subprocess.check_output(["kubectl", "kustomize", str(APP)], text=True)

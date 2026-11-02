@@ -216,8 +216,10 @@ Cloudflared, VirtualService, and broad Gateway hosts; `--retired` must pass
 after their reviewed removal. Confirm denial from an unrelated Pod and normal
 access from a mesh client, since source checks do not prove live enforcement.
 The [cutover runbook](../../clusters/homelab/apps/traefik/CUTOVER.md#legacy-application-bypass)
-records the exact positive and negative probes. Mastodon needs separate private
-routing and a public federation path boundary before its old route can retire.
+records the exact positive and negative probes. Mastodon uses split DNS and
+private Traefik to its existing Istio web/streaming gateway. Its public tunnel
+retains only the federation/media allowlist; all other paths return 404.
+The obsolete Octelium Service is retired after tailnet login verification.
 
 ## Tailnet Lock
 
@@ -352,8 +354,10 @@ Tailscale DNS. Check normal client DNS and HTTPS before removing any public
 records. The [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 limits the later `tailscale-private-dns.sh --retire-private` helper to public
 A/AAAA/CNAME records for the 26 approved non-apex app subdomains, including
-the Cordium wildcard owner. The current source declares 29 private resolver
-names: the original 27-name migration set plus two Enterprise names. The helper
+the Cordium wildcard owner. The current source declares 30 private resolver
+names: the original 27-name migration set, two Enterprise names and Mastodon.
+The fixed migration inventory excludes Mastodon; its public CNAME remains for
+federation. Routine DNS validation follows the current Service annotation. The helper
 cannot publish or restore records. Preserve the public apex
 A/MX/TXT and any CAA, DNS-01 validation, the public zone, four legacy callback/
 CI/carrier names, and unrelated public services. Keep the public records during
@@ -388,7 +392,7 @@ TLS must match the reviewed checkout.
 `--retire-private --check` probes the original 27 migration HTTPS routes;
 bare `--check` also probes both staged Enterprise routes. The Agent probe uses
 a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
-router and rejects edge 404. All 29 current names still require private DNS
+router and rejects edge 404. All 29 migration/Enterprise inventory names require private DNS
 answers before retirement; staged Enterprise backend readiness is separate.
 
 For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
