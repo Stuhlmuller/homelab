@@ -29,11 +29,6 @@ variable "data_revision" {
   }
 }
 
-variable "type" {
-  description = "Kubernetes Secret type."
-  type        = string
-  default     = "Opaque"
-}
 
 variable "labels" {
   description = "Labels to apply to the Kubernetes Secret."
@@ -45,10 +40,4 @@ variable "annotations" {
   description = "Annotations to apply to the Kubernetes Secret."
   type        = map(string)
   default     = {}
-}
-
-variable "placeholder_value" {
-  description = "Placeholder value that must be replaced before creating the Kubernetes Secret."
-  type        = string
-  default     = "REPLACE_ME"
 }
