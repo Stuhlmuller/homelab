@@ -26,7 +26,7 @@ UID = "11111111-2222-3333-4444-555555555555"
 class Lifecycle(unittest.TestCase):
     def exercise(self, *, failure=False, wrong_sha=False, retained=False, cleanup_fails=False, invalid_name=False, invalid_jit=False,
                  invalid_uid=False, policy_mismatch=False, backend_missing=False, pod_retained=False, deployment_retained=False, pvc_retained=False,
-                 wrong_context=False, enforcer_unready=False, conflicting_backend=False, wrong_node=False, mounted_token=False, host_namespace=False, expired_api=False, refresh_fails=False):
+                 wrong_context=False, enforcer_unready=False, conflicting_backend=False, wrong_node=False, mounted_token=False, host_namespace=False, expired_api=False, refresh_fails=False, progress=None):
         calls = []
         api_calls = []
         present = [True]
@@ -134,7 +134,7 @@ class Lifecycle(unittest.TestCase):
              contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             try:
                 runner.provision(api, ["cordium", "--homedir", "/private/fixture", "--domain", "stinkyboi.com"], SHA,
-                                 refresh_api=refresh_api)
+                                 refresh_api=refresh_api, progress=progress)
             except (RuntimeError, subprocess.CalledProcessError) as caught:
                 error = caught
         self.assertNotIn(JIT, output.getvalue())
@@ -149,6 +149,30 @@ class Lifecycle(unittest.TestCase):
         self.assertIn(("DELETE", "/repos/Stuhlmuller/homelab/actions/runners/23", None), api_calls)
         self.assertLess(self.events.index("kube-create"), self.events.index("start"))
         self.assertGreater(self.events.index("kube-delete"), self.events.index("delete"))
+        self.assertFalse(self.policy_retained)
+
+    def test_progress_tracks_job_and_cleanup_and_health_failure_never_skips_disposal(self):
+        progress = Mock()
+        error, _, _ = self.exercise(progress=progress)
+        self.assertIsNone(error)
+        self.assertEqual([call.args[0] for call in progress.call_args_list], ["provision", "runner", "cleanup"])
+        for failed_phase in ("runner", "cleanup"):
+            def update(phase):
+                if phase == failed_phase:
+                    raise RuntimeError("health write failed")
+            error, calls, api_calls = self.exercise(progress=update)
+            self.assertIsNotNone(error)
+            self.assertIn(["delete", "workspace", "abc"], [args for args, _ in calls])
+            self.assertIn(("DELETE", "/repos/Stuhlmuller/homelab/actions/runners/23", None), api_calls)
+            self.assertFalse(self.policy_retained)
+        def failed_cleanup_health(phase):
+            if phase == "cleanup":
+                raise RuntimeError("health write failed")
+        error, calls, api_calls = self.exercise(failure=True, progress=failed_cleanup_health)
+        self.assertIsInstance(error, subprocess.CalledProcessError)
+        self.assertEqual(error.returncode, 17)
+        self.assertIn(["delete", "workspace", "abc"], [args for args, _ in calls])
+        self.assertIn(("DELETE", "/repos/Stuhlmuller/homelab/actions/runners/23", None), api_calls)
         self.assertFalse(self.policy_retained)
 
     def test_expired_registration_client_is_refreshed_without_blocking_workspace_cleanup(self):
@@ -374,7 +398,7 @@ class Queue(unittest.TestCase):
                 runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"),
                              reviewed_main=lambda: current, refresh_credentials=refresh)
             strict.assert_not_called()
-            provision.assert_called_once_with("private-api", ["cordium"], current, {}, refresh_api=ANY)
+            provision.assert_called_once_with("private-api", ["cordium"], current, {}, refresh_api=ANY, progress=None)
             refresh.assert_called_once()
             self.assertEqual(provision.call_args.kwargs["refresh_api"](), "private-api")
             self.assertEqual(refresh.call_count, 2)
@@ -397,8 +421,10 @@ class Queue(unittest.TestCase):
              patch.object(runner, "queued_jobs", return_value=False), \
              patch.object(runner, "provision") as provision, \
              patch.object(runner.time, "sleep", side_effect=[None, SystemExit(0)]):
+            progress = Mock()
             with self.assertRaises(SystemExit):
-                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"), progress=progress)
+            self.assertEqual([call.args[0] for call in progress.call_args_list], ["poll", "idle", "poll", "idle"])
             self.assertEqual(client.call_count, 2)
             provision.assert_not_called()
 

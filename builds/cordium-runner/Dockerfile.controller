@@ -25,4 +25,5 @@ LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.revision="$SOURCE_SHA"
 WORKDIR /opt/homelab
 USER runner
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 CMD ["python3", "-I", "/opt/homelab/scripts/cordium-runner-controller.py", "--healthcheck"]
 ENTRYPOINT ["python3", "-I", "/opt/homelab/scripts/cordium-runner-controller.py"]
