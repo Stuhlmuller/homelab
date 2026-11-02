@@ -401,6 +401,13 @@ migrates the verified existing account while preserving credentials and
 owned-file rollback. After any later public retirement, wait the old TTL and
 verify normal DNS, canonical TLS and native gRPC.
 
+Clients using a Tailscale exit node need the `stinkyboi.com` split resolver's
+`use_with_exit_node` setting in the
+[tailnet DNS configuration](../../IaC/terragrunt-catalog/modules/tailscale-access/main.tf).
+Without it, the exit node's DNS resolver cannot resolve private app names.
+Check on an exit-node client that `sonarr.stinkyboi.com` resolves and HTTPS
+loads; repeat with the exit node disabled to isolate this setting.
+
 The callback helpers keep the surviving Github Emergency Bot hook `636944763`
 and Policy Bot App webhook configured on Funnel. Temporary Traefik containment
 returns edge 404 for the Emergency Bot path

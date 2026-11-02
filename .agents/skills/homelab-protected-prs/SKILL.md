@@ -5,6 +5,9 @@ description: Complete authorized homelab pull-request repair and protected merge
 
 # Homelab Protected PRs
 
+GitHub checks and protections own merge conditions. Documentation does not add
+maintainer comments, reviews, or chat approvals to the configured policy.
+
 Read [the approval policy](../../../.policy.yml),
 [review instructions](../../../AGENTS.md) and the
 [CI security model](../../../docs/ci-cd.md#security-model). Inspect GitHub's

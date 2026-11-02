@@ -48,9 +48,17 @@ Win/Mac/NFS/WebDAV > NFS Service. Kubernetes mounts the export with
 
 Security audit note from 2026-05-25: read-only `rpcinfo -p 10.1.0.2` showed
 the NAS advertising both NFSv2 and NFSv3. Kubernetes does not need NFSv2.
-Disable NFSv2 in QTS after confirming no non-Kubernetes clients depend on it,
-then re-run `rpcinfo -p 10.1.0.2` and confirm only the required NFS version is
-advertised.
+NFSv2 retirement remains open in [#868](https://github.com/Stuhlmuller/homelab/issues/868).
+First inventory all clients and establish a reviewed, repository-owned QNAP
+management path through Octelium or a documented emergency recovery route.
+The change must include verification and rollback before execution through
+that declared path; this runbook does not authorize a manual QTS protocol
+change. The narrow Renovate exception in [AGENTS.md](../AGENTS.md#safety-rules)
+covers only its dedicated volume and export.
+
+Retain before/after `rpcinfo -p 10.1.0.2` evidence privately. Completion requires
+only the needed NFS versions advertised and all Kubernetes NFS workloads
+verified to mount, read and write through NFSv3 after the reviewed change.
 
 The `homelab` shared folder grants NFS read/write access only to the Talos node
 addresses. The `Media` shared folder uses the same node allow-list:
@@ -259,8 +267,9 @@ app has acceptable backup and restore coverage.
   temporary PVC, pod, and smoke-test StorageClass.
 - Read-only QNAP checks on 2026-05-25 confirmed `/homelab` remains exported
   only to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`. The same
-  audit found NFSv2 still advertised through RPC; disable it in QTS because the
-  Kubernetes StorageClass mounts with NFSv3.
+  audit found NFSv2 still advertised through RPC, while the Kubernetes
+  StorageClass mounts with NFSv3. Retirement remains subject to the declared
+  management prerequisite under [NAS Configuration](#nas-configuration).
 - Read-only inspection on 2026-07-29 measured 311 `media-postgres` NFS writes
   over 20 seconds with roughly 26.9 seconds queued, 8.1 seconds RPC round-trip,
   and 35.0 seconds total execution per write. Concurrent failures affected

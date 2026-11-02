@@ -125,15 +125,15 @@ elif name == "kubectl":
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = [call for call in calls if call[0] == "argocd"]
         self.assertEqual([(call[1:3]) for call in commands], [
-            ["app", "wait"], ["app", "sync"], ["app", "wait"],
+            ["app", "wait"], ["app", "wait"], ["app", "sync"], ["app", "wait"],
             ["app", "sync"], ["app", "wait"],
         ])
-        self.assertIn("--revisions", commands[1])
-        self.assertIn("--source-positions", commands[1])
-        self.assertIn(SHA, commands[1])
-        self.assertEqual(commands[3].count("--revisions"), 3)
-        self.assertEqual(commands[3].count(SHA), 2)
-        self.assertEqual(commands[3].count(UPSTREAM), 1)
+        self.assertIn("--revisions", commands[2])
+        self.assertIn("--source-positions", commands[2])
+        self.assertIn(SHA, commands[2])
+        self.assertEqual(commands[4].count("--revisions"), 3)
+        self.assertEqual(commands[4].count(SHA), 2)
+        self.assertEqual(commands[4].count(UPSTREAM), 1)
         self.assertEqual(len([call for call in calls if call[0] == "gh"]), 3)
         self.assertFalse(any(flag in call for call in commands for flag in
                              ("--force", "--prune", "--resource", "--skip-hooks",
@@ -158,6 +158,7 @@ elif name == "kubectl":
                 result, calls = self.run_stage(enterprise_sync_exit=exit_code)
                 self.assertEqual(result.returncode, exit_code, result.stderr)
                 self.assertEqual([call[1:4] for call in calls if call[0] == "argocd"], [
+                    ["app", "wait", "platform-gateway-api-crds"],
                     ["app", "wait", "platform-envoy-gateway"],
                     ["app", "sync", "openclaw-enterprise-foundation"],
                     ["app", "wait", "openclaw-enterprise-foundation"],

@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["istio", "cert-manager"]
+  dependencies = ["istio", "cert-manager", "platform-gateway-api-crds"]
   metadata = {
     annotations = {
       "argocd.argoproj.io/compare-options" = "ServerSideDiff=true"
@@ -15,16 +15,6 @@ inputs = {
       namespace = "envoy-gateway-system"
     }
     sources = [
-      {
-        repoURL        = "docker.io/envoyproxy"
-        chart          = "gateway-crds-helm"
-        path           = "."
-        targetRevision = "v1.9.2"
-        helm = {
-          releaseName = "envoy-gateway-crds"
-          valueFiles  = ["$values/clusters/homelab/platform/envoy-gateway/crds-values.yaml"]
-        }
-      },
       {
         repoURL        = "docker.io/envoyproxy"
         chart          = "gateway-helm"
@@ -62,10 +52,6 @@ inputs = {
         name  = "activation"
         value = "disabled until published images, platform prerequisites, and private route qualification pass"
       },
-      {
-        name  = "ownership"
-        value = "gateway-crds-helm owns shared CRDs and safe-upgrade resources; no retirement prune"
-      }
     ]
   }
 }
