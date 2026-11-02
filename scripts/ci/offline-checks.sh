@@ -10,8 +10,10 @@ python3 -I scripts/ci/speckit-check.py
 python3 -I scripts/ci/release-test.py
 python3 -I scripts/ci/static-cache-test.py
 python3 -I scripts/ci/checkov-reviewed-findings-test.py
+python3 -I scripts/ci/argocd-computed-fields-test.py
 node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
+python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py

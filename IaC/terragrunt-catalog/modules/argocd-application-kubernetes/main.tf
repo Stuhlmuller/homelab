@@ -44,19 +44,18 @@ locals {
     # directory entries. Keep only that API-owned field computed so revision
     # pins and every other repository-owned source field remain declarative.
     for idx, source in local.sources : "spec.sources[${idx}].path"
-    if contains([null, "."], try(source.path, null)) && (
+    if(try(source.path, null) == null || try(source.path, null) == ".") && (
       try(source.chart, null) != null ||
       try(source.ref, null) != null ||
       try(source.directory, null) != null
     )
   ] : []
   computed_field_defaults = concat(local.default_computed_fields, local.multi_source_computed_fields)
-  computed_fields         = var.computed_fields == null ? local.computed_field_defaults : distinct(concat(local.computed_field_defaults, var.computed_fields))
 }
 
 resource "kubernetes_manifest" "this" {
   manifest        = var.manifest
-  computed_fields = length(local.computed_fields) > 0 ? local.computed_fields : null
+  computed_fields = local.computed_field_defaults
 
   field_manager {
     force_conflicts = true
