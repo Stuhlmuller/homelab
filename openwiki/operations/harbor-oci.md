@@ -711,21 +711,32 @@ Docker-save config bytes. Grype's raw config hash and reported image ID must
 equal that selected config digest. This preserves the immutable export binding
 when Docker inspect reports an index or manifest digest instead of a config
 digest. It also verifies platform/distro, a fresh report/database,
-and absence of filtering, exclusions or VEX input. Available fixes fail this
-audit. Unfixed/unknown matches remain counted; successful collection does not
+and absence of filtering, exclusions or VEX input. The same Grype invocation
+also emits a mandatory CycloneDX 1.6 inventory. A nonempty OS/file list is not
+package coverage: at least one library/application must have a name, version,
+reference and native Syft `rpm` or `go-module` type, matching the Core runtime
+and Go binary. Unknown types do not establish coverage. Missing/empty package
+evidence fails, even with zero vulnerability matches. Each report is bounded to 64 MiB. The
+inventory's scanner identity and timestamp are checked against the JSON report;
+its container version identifies the manifest digest, whose verified bytes and
+config descriptor bind it to the already checked image config. The public
+receipt adds only supported package count and inventory hash. Available fixes
+fail this audit. Unfixed/unknown matches remain counted; successful collection does not
 mean CVE clearance or authorize publication. CI emits only an identity/report-
 hash/database/severity-count receipt while raw metadata and transport logs stay
 private and temporary inputs are removed. On failure, the [bounded diagnostic
 helper](../../scripts/ci/harbor-core-audit-status.sh) prints only a fixed scan
 stage or report-validation category from a separate temporary status file.
 Malformed status becomes `unknown`; the private log and report remain withheld.
-Failed Linux validation additionally retains the complete gzip-compressed
-report as ciphertext for one day, using the [fixed enrolled operator
+Failed Linux validation additionally retains both complete reports in a
+compressed tar as ciphertext for one day, using the [fixed enrolled operator
 recipient](../../scripts/ci/harbor-encrypt-diagnostic.py). The helper's 1 MiB
-input bound applies after compression, with no truncation or plaintext fallback.
+input bound applies to the combined archive after compression, with no
+truncation or plaintext fallback. Partial scanner failures retain only the
+report files that were produced.
 Encryption failure keeps the audit failed and retains no report. The [operator
 instructions](../../builds/harbor-core/README.md) describe private decryption;
-publication and scan acceptance checks are unchanged.
+existing remediation and zero-match publication checks remain enforced.
 The category narrows investigation but does not relax the audit or establish
 vulnerability clearance. Identity failures distinguish archive structure,
 archive path/byte hash mismatch, missing inspected root descriptor, invalid

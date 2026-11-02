@@ -10,7 +10,7 @@ case "$diagnostic" in
   validation:identity-report-config|\
   validation:identity-platform|validation:identity-distro|\
   validation:scanner|validation:database|validation:freshness|\
-  validation:filtering|validation:schema|validation:remediation|validation:clearance)
+  validation:filtering|validation:schema|validation:remediation|validation:coverage|validation:clearance)
     ;;
   *) diagnostic=unknown ;;
 esac

@@ -7,6 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 from contextlib import redirect_stderr, redirect_stdout
 import io
 import os
@@ -19,6 +20,9 @@ scan = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scan)
 CONFIG = json.dumps({"os": "linux", "architecture": "amd64"}).encode()
 IMAGE = "sha256:" + hashlib.sha256(CONFIG).hexdigest()
+MANIFEST = json.dumps({"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                       "config": {"digest": IMAGE, "size": len(CONFIG)}}).encode()
+MANIFEST_ID = "sha256:" + hashlib.sha256(MANIFEST).hexdigest()
 CORE_PUBLICATION_WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/harbor-core-images.yml"
 SCAN_SCRIPT = Path(__file__).resolve().parents[2] / "builds/harbor-core/scan.sh"
 STATUS_SCRIPT = Path(__file__).with_name("harbor-core-audit-status.sh")
@@ -29,19 +33,33 @@ class ScanTests(unittest.TestCase):
     def report(self):
         now = datetime.now(timezone.utc).isoformat()
         return {"source": {"type": "image", "target": {"imageID": IMAGE, "os": "", "architecture": "",
-            "layers": ["fixture"], "imageSize": 1, "config": base64.b64encode(CONFIG).decode()}},
+            "layers": ["fixture"], "imageSize": 1, "config": base64.b64encode(CONFIG).decode(),
+            "manifest": base64.b64encode(MANIFEST).decode(), "manifestDigest": MANIFEST_ID}},
             "distro": {"name": "photon", "version": "5.0"}, "matches": [], "descriptor": {
             "name": "grype", "version": "0.112.0", "timestamp": now,
             "db": {"status": {"valid": True, "built": now}}, "configuration": {
             "only-fixed": False, "only-notfixed": False, "ignore-wontfix": "", "ignore": [],
             "exclude": [], "vex-documents": [], "search": {"scope": "squashed"}}}}
 
+    def packages(self):
+        return {"bomFormat": "CycloneDX", "specVersion": "1.6", "metadata": {
+            "timestamp": datetime.now(timezone.utc).isoformat(), "tools": {"components": [
+                {"type": "application", "author": "anchore", "name": "grype", "version": "0.112.0"}]},
+            "component": {"type": "container", "version": MANIFEST_ID}},
+            "components": [{"type": "library", "name": "fixture", "version": "1.0", "bom-ref": "fixture",
+                            "properties": [{"name": "syft:package:type", "value": "rpm"}]}]}
+
+    def package_file(self, root, packages=None):
+        path = Path(root) / "packages.json"
+        path.write_text(json.dumps(self.packages() if packages is None else packages))
+        return str(path)
+
     def test_unresolved_findings_remain_unchanged(self):
         for state in ("not-fixed", "unknown", "wont-fix", ""):
             report = self.report()
             report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": {"state": state, "versions": []}}}]
             original = copy.deepcopy(report)
-            scan.verify(report, IMAGE)
+            scan.verify(report, IMAGE, self.packages())
             self.assertEqual(report, original)
 
     def test_refuses_available_fixes(self):
@@ -51,14 +69,14 @@ class ScanTests(unittest.TestCase):
             report = self.report()
             report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": fix}}]
             with self.assertRaisesRegex(AssertionError, "remediation"):
-                scan.verify(report, IMAGE)
+                scan.verify(report, IMAGE, self.packages())
 
     def test_publication_clearance_requires_zero_matches(self):
-        scan.verify(self.report(), IMAGE, require_zero_matches=True)
+        scan.verify(self.report(), IMAGE, self.packages(), require_zero_matches=True)
         report = self.report()
         report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": {"state": "unknown", "versions": []}}}]
         with self.assertRaisesRegex(AssertionError, "clearance"):
-            scan.verify(report, IMAGE, require_zero_matches=True)
+            scan.verify(report, IMAGE, self.packages(), require_zero_matches=True)
 
     def test_publication_switch_requires_zero_matches(self):
         report = self.report()
@@ -68,7 +86,7 @@ class ScanTests(unittest.TestCase):
             path.write_text(json.dumps(report))
             error = io.StringIO()
             with redirect_stderr(error):
-                self.assertEqual(scan.main([str(path), IMAGE, "--require-zero-matches"]), 1)
+                self.assertEqual(scan.main([str(path), self.package_file(root), IMAGE, "--require-zero-matches"]), 1)
         self.assertIn("clearance", error.getvalue())
 
     def test_protected_publication_wires_the_zero_match_gate(self):
@@ -88,7 +106,7 @@ class ScanTests(unittest.TestCase):
             path.write_text(json.dumps(report))
             error = io.StringIO()
             with redirect_stderr(error):
-                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), IMAGE]), 1)
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:remediation\n")
             self.assertNotIn("PRIVATE_VERSION", error.getvalue())
 
@@ -108,7 +126,7 @@ class ScanTests(unittest.TestCase):
                 diagnostic = Path(root) / "diagnostic"
                 path.write_text(json.dumps(report))
                 with redirect_stderr(io.StringIO()):
-                    self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), image]), 1)
+                    self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), self.package_file(root), image]), 1)
                 self.assertEqual(diagnostic.read_text(), f"validation:{category}\n")
         with tempfile.TemporaryDirectory() as root:
             report = self.report()
@@ -119,7 +137,7 @@ class ScanTests(unittest.TestCase):
             diagnostic = Path(root) / "diagnostic"
             path.write_text(json.dumps(report))
             with redirect_stderr(io.StringIO()):
-                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), image]), 1)
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), self.package_file(root), image]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-platform\n")
 
     def test_archive_and_report_config_are_bound_to_inspected_id(self):
@@ -142,19 +160,19 @@ class ScanTests(unittest.TestCase):
             for config_name in (IMAGE[7:] + ".json", "blobs/sha256/" + IMAGE[7:]):
                 write_archive(CONFIG, config_name)
                 with redirect_stdout(io.StringIO()):
-                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), IMAGE]), 0)
+                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), self.package_file(root), IMAGE]), 0)
 
             config_name = "blobs/sha256/" + IMAGE[7:]
             write_archive(b"PRIVATE_WRONG_CONFIG", config_name)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), IMAGE]), 1)
+                                            str(report_path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config-hash\n")
 
             write_archive(CONFIG, "blobs/sha256/" + "1" * 64)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), IMAGE]), 1)
+                                            str(report_path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config-hash\n")
 
             other_config = b'{"os":"linux","architecture":"amd64","other":true}'
@@ -162,7 +180,7 @@ class ScanTests(unittest.TestCase):
             write_archive(other_config, other_name)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), IMAGE]), 1)
+                                            str(report_path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-inspect-id\n")
 
             write_archive(CONFIG, config_name)
@@ -170,7 +188,7 @@ class ScanTests(unittest.TestCase):
             report_path.write_text(json.dumps(report))
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), IMAGE]), 1)
+                                            str(report_path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-report-config\n")
 
             report = self.report()
@@ -178,7 +196,7 @@ class ScanTests(unittest.TestCase):
             report_path.write_text(json.dumps(report))
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), IMAGE]), 1)
+                                            str(report_path), self.package_file(root), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-image-id\n")
 
     def test_containerd_archive_binds_target_descriptor_to_selected_config(self):
@@ -231,23 +249,23 @@ class ScanTests(unittest.TestCase):
             for direct_manifest in (False, True):
                 target_id = write_oci(direct_manifest=direct_manifest)
                 with redirect_stdout(io.StringIO()):
-                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), target_id]), 0)
+                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), self.package_file(root), target_id]), 0)
 
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), "sha256:" + "1" * 64]), 1)
+                                            str(report_path), self.package_file(root), "sha256:" + "1" * 64]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-inspect-id\n")
 
             target_id = write_oci(manifest_config="sha256:" + "1" * 64)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), target_id]), 1)
+                                            str(report_path), self.package_file(root), target_id]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-descriptor\n")
 
             target_id = write_oci(corrupt_target=True)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
-                                            str(report_path), target_id]), 1)
+                                            str(report_path), self.package_file(root), target_id]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-descriptor\n")
 
     def test_status_printer_whitelists_diagnostics(self):
@@ -256,7 +274,7 @@ class ScanTests(unittest.TestCase):
             for status in ("launcher", "scanner-run", "validation:identity-archive-config-hash",
                            "validation:identity-archive-inspect-id", "validation:identity-archive-descriptor",
                            "validation:identity-report-config",
-                           "validation:identity-distro", "validation:remediation"):
+                           "validation:identity-distro", "validation:remediation", "validation:coverage"):
                 path.write_text(status + "\n")
                 result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
                                         capture_output=True, text=True, check=True)
@@ -291,8 +309,8 @@ class ScanTests(unittest.TestCase):
     def test_ci_keeps_raw_scan_output_in_private_log(self):
         workflow = VALIDATE_WORKFLOW.read_text()
         self.assertIn('--diagnostic-file "$diagnostic_file" >"$private_log" 2>&1', workflow)
-        self.assertIn('--encrypted-report "$RUNNER_TEMP/harbor-core-report.json.gz.gpg"', workflow)
-        self.assertIn('path: ${{ runner.temp }}/harbor-core-report.json.gz.gpg', workflow)
+        self.assertIn('--encrypted-report "$RUNNER_TEMP/harbor-core-reports.tar.gz.gpg"', workflow)
+        self.assertIn('path: ${{ runner.temp }}/harbor-core-reports.tar.gz.gpg', workflow)
         self.assertIn('retention-days: 1', workflow)
         self.assertIn('bash scripts/ci/harbor-core-audit-status.sh "$diagnostic_file"', workflow)
         self.assertIn('trap \'rm -f "$private_log" "$diagnostic_file"\' EXIT', workflow)
@@ -312,26 +330,115 @@ class ScanTests(unittest.TestCase):
             lambda r: r["descriptor"]["configuration"].update(exclude=["fixture"]),
             lambda r: r.update(ignoredMatches=["fixture"]),
         ]
-        scan.verify(self.report(), IMAGE)
+        scan.verify(self.report(), IMAGE, self.packages())
         for change in changes:
             report = self.report()
             change(report)
             with self.assertRaises(AssertionError):
-                scan.verify(report, IMAGE)
+                scan.verify(report, IMAGE, self.packages())
+
+    def test_missing_empty_and_malformed_package_inventory_fails_closed(self):
+        changes = [
+            lambda p: p.clear(),
+            lambda p: p.update(components=None),
+            lambda p: p.update(components=[]),
+            lambda p: p.update(components=[None]),
+            lambda p: p.update(components=[{"type": "operating-system", "name": "photon", "version": "5.0"},
+                                           {"type": "file", "name": "/usr/bin/fixture"}]),
+            lambda p: p["components"][0].update(name=""),
+            lambda p: p["components"][0].update(version=""),
+            lambda p: p["components"][0].update(properties=[]),
+            lambda p: p["components"][0]["properties"][0].update(value="unknown"),
+            lambda p: p["components"][0]["properties"][0].update(value="file"),
+            lambda p: p["components"][0].update(properties=[None]),
+            lambda p: p["components"][0]["properties"].append({"name": "syft:package:type", "value": "rpm"}),
+            lambda p: p["metadata"]["tools"]["components"][0].update(version="other"),
+            lambda p: p.update(specVersion="1.5"),
+            lambda p: p["metadata"]["component"].update(type="file"),
+            lambda p: p["metadata"]["component"].update(version=IMAGE),
+            lambda p: p["metadata"].update(timestamp=(datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()),
+            lambda p: p["metadata"].update(timestamp=False),
+            lambda p: p["metadata"].update(timestamp=datetime.now().isoformat()),
+        ]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "report.json"
+            path.write_text(json.dumps(self.report()))
+            for change in changes:
+                packages = self.packages()
+                change(packages)
+                output = io.StringIO()
+                with redirect_stdout(output), redirect_stderr(output):
+                    self.assertEqual(scan.main([str(path), self.package_file(root, packages), IMAGE,
+                                                "--require-zero-matches"]), 1)
+                self.assertNotIn("Runtime audit receipt:", output.getvalue())
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main([str(path), str(Path(root) / "missing.json"), IMAGE]), 1)
+                self.assertEqual(scan.main([str(path), IMAGE, "--require-zero-matches"]), 1)
+
+    def test_unknown_inventory_cannot_replace_supported_packages(self):
+        packages = self.packages()
+        extra = copy.deepcopy(packages["components"][0])
+        extra["properties"][0]["value"] = "unknown"
+        packages["components"].append(extra)
+        self.assertEqual(scan.verify(self.report(), IMAGE, packages, require_zero_matches=True), 1)
+        packages["components"][0]["properties"][0]["value"] = "go-module"
+        self.assertEqual(scan.verify(self.report(), IMAGE, packages, require_zero_matches=True), 1)
+
+    def test_oversized_reports_are_rejected_before_parsing(self):
+        with tempfile.TemporaryDirectory() as root:
+            report_path = Path(root) / "report.json"
+            package_path = Path(self.package_file(root))
+            for oversized in (report_path, package_path):
+                report_path.write_text(json.dumps(self.report()))
+                package_path.write_text(json.dumps(self.packages()))
+                with oversized.open("wb") as output:
+                    output.truncate(64 * 1024 * 1024 + 1)
+                with patch.object(scan.json, "loads", wraps=json.loads) as parse, redirect_stderr(io.StringIO()):
+                    self.assertEqual(scan.main([str(report_path), str(package_path), IMAGE]), 1)
+                    self.assertEqual(parse.call_count, 0 if oversized == report_path else 1)
+
+    def test_package_manifest_hash_and_config_binding(self):
+        for change in (lambda m: m["config"].update(digest="sha256:" + "1" * 64),
+                       lambda m: m["config"].update(size=len(CONFIG) + 1),
+                       lambda m: m.update(mediaType="unknown")):
+            report = self.report()
+            manifest = json.loads(MANIFEST)
+            change(manifest)
+            raw = json.dumps(manifest).encode()
+            digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+            report["source"]["target"].update(manifest=base64.b64encode(raw).decode(), manifestDigest=digest)
+            packages = self.packages()
+            packages["metadata"]["component"]["version"] = digest
+            with self.assertRaisesRegex(AssertionError, "coverage"):
+                scan.verify(report, IMAGE, packages, require_zero_matches=True)
+        report = self.report()
+        report["source"]["target"]["manifestDigest"] = "sha256:" + "1" * 64
+        with self.assertRaisesRegex(AssertionError, "coverage"):
+            scan.verify(report, IMAGE, self.packages())
 
     def test_summary_withholds_raw_image_metadata_and_clearance(self):
         report = self.report()
         raw = json.dumps({"os": "linux", "architecture": "amd64", "env": ["PRIVATE_VALUE=fixture-do-not-print"]}).encode()
         image = "sha256:" + hashlib.sha256(raw).hexdigest()
         report["source"]["target"].update(imageID=image, config=base64.b64encode(raw).decode())
+        manifest = json.loads(MANIFEST)
+        manifest["config"].update(digest=image, size=len(raw))
+        raw_manifest = json.dumps(manifest).encode()
+        manifest_id = "sha256:" + hashlib.sha256(raw_manifest).hexdigest()
+        report["source"]["target"].update(manifest=base64.b64encode(raw_manifest).decode(), manifestDigest=manifest_id)
+        packages = self.packages()
+        packages["metadata"]["component"]["version"] = manifest_id
+        packages["components"][0]["name"] = "PRIVATE_PACKAGE_NAME"
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "report.json"
             path.write_text(json.dumps(report))
             output = io.StringIO()
             with redirect_stdout(output):
-                self.assertEqual(scan.main([str(path), image]), 0)
+                self.assertEqual(scan.main([str(path), self.package_file(root, packages), image]), 0)
         text = output.getvalue()
         self.assertNotIn("fixture-do-not-print", text)
+        self.assertNotIn("PRIVATE_PACKAGE_NAME", text)
+        self.assertIn('"supported_package_count": 1', text)
         self.assertIn('"cve_clearance": false', text)
         self.assertIn(image, text)
 
