@@ -87,7 +87,7 @@
     "chart": "compass",
     "repoURL": "ghcr.io/adinhodovic/charts",
     "source": "IaC/homelab/us-west-2/apps/compass/stack.hcl",
-    "targetRevision": "0.6.0"
+    "targetRevision": "0.11.0"
   },
   {
     "chart": "crossplane",

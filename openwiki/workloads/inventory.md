@@ -693,8 +693,8 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   yet. The namespace is not default-denied because callback traffic and
   database source-identity validation still need live validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
-  kube-state-metrics by service account. Compass allows only the Istio gateway
-  path used by Octelium service proxies, Prometheus scraper, and Octelium
+  kube-state-metrics by service account. [Compass](../../clusters/homelab/apps/compass/README.md) receives traffic from
+  the private Traefik route, Istio gateway, Prometheus scraper, and Octelium
   connector. Compass also owns
   discovery-only `Ingress` resources with an inert `compass-discovery` class;
   those resources intentionally ignore Argo CD health checks because no
