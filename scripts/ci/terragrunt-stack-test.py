@@ -2,6 +2,7 @@
 """Exercise shared app generation and deployment selection without remote state."""
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -71,6 +72,95 @@ APPLY_BASE_SHA="$2"
 APPLY_HEAD_SHA="$3"
 eval "$4"
 ''', "fixture", str(FILTERS), self.base, head, command, cwd=self.root)
+
+    def prepared(self, head, overrides=None, cwd=None):
+        environment = {key: value for key, value in os.environ.items()
+                       if not key.startswith(("GITHUB_", "APPLY_", "TERRAGRUNT_"))}
+        environment.update(CI="true", GITHUB_EVENT_NAME="pull_request",
+                           GITHUB_BASE_REF="main", GITHUB_SHA=head)
+        environment.update(overrides or {})
+        return subprocess.run(["bash", "-euo", "pipefail", "-c", '''
+source "$1"
+prepare_terragrunt_filter_base
+printf 'base=%s\\n' "$TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF"
+terragrunt_deleted_unit_paths
+''', "fixture", str(FILTERS)], cwd=cwd or self.root, env=environment,
+            capture_output=True, text=True)
+
+    def diverged_pr(self):
+        run("git", "checkout", "-qb", "pr", cwd=self.root)
+        self.stack.write_text(self.locals + unit("kept") + self.azure + self.operator)
+        self.commit()
+        run("git", "checkout", "-qb", "preview", self.base, cwd=self.root)
+        run("git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+            "-c", "commit.gpgsign=false", "merge", "--no-ff", "-qm", "PR preview", "pr", cwd=self.root)
+        preview = run("git", "rev-parse", "HEAD", cwd=self.root)
+        run("git", "checkout", "-qb", "new-main", self.base, cwd=self.root)
+        self.stack.write_text(self.stack.read_text() + unit("main-only"))
+        main = self.commit()
+        run("git", "update-ref", "refs/remotes/origin/main", main, cwd=self.root)
+        return preview, main
+
+    def test_pr_uses_common_ancestor_without_retiring_main_only_addition(self):
+        preview, _ = self.diverged_pr()
+        result = self.prepared(preview)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(),
+                         [f"base={self.base}", "IaC/live/argocd-apps/retired"])
+
+    def test_pr_explicit_filter_and_apply_bases_remain_exact(self):
+        preview, main = self.diverged_pr()
+        for variable in ("TERRAGRUNT_FILTER_BASE_SHA", "APPLY_BASE_SHA"):
+            with self.subTest(variable=variable):
+                result = self.prepared(preview, {variable: main})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.splitlines(), [f"base={main}",
+                                 "IaC/live/argocd-apps/main-only", "IaC/live/argocd-apps/retired"])
+
+    def test_pr_without_base_advance_preserves_real_retirement(self):
+        self.stack.write_text(self.locals + unit("kept") + self.azure + self.operator)
+        head = self.commit()
+        run("git", "update-ref", "refs/remotes/origin/main", self.base, cwd=self.root)
+        result = self.prepared(head)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(),
+                         [f"base={self.base}", "IaC/live/argocd-apps/retired"])
+
+    def test_apply_keeps_last_successful_base_across_two_retirements(self):
+        self.stack.write_text(self.stack.read_text() + unit("main-only"))
+        applied = self.commit()
+        self.stack.write_text(self.locals + unit("kept") + unit("main-only") + self.azure + self.operator)
+        self.commit()
+        self.stack.write_text(self.locals + unit("kept") + self.azure + self.operator)
+        head = self.commit()
+        result = self.prepared(head, {"GITHUB_EVENT_NAME": "workflow_dispatch",
+                                    "APPLY_BASE_SHA": applied, "APPLY_HEAD_SHA": head})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), [f"base={applied}",
+                         "IaC/live/argocd-apps/main-only", "IaC/live/argocd-apps/retired"])
+
+    def test_pr_missing_base_fails_before_export_or_checkout(self):
+        result = self.prepared(self.base)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("refusing", result.stderr)
+        self.assertEqual(run("git", "rev-parse", "HEAD", cwd=self.root), self.base)
+
+    def test_pr_shallow_history_with_both_tips_present_fails_closed(self):
+        self.stack.write_text(self.locals + unit("kept") + self.azure + self.operator)
+        head = self.commit()
+        with tempfile.TemporaryDirectory() as directory:
+            shallow = Path(directory) / "shallow"
+            run("git", "clone", "--quiet", "--depth=1", self.root.resolve().as_uri(), str(shallow), cwd=self.root)
+            run("git", "fetch", "--quiet", "--depth=1", "origin",
+                f"{self.base}:refs/remotes/origin/main", cwd=shallow)
+            self.assertEqual(run("git", "rev-parse", "--is-shallow-repository", cwd=shallow), "true")
+            run("git", "cat-file", "-e", self.base, cwd=shallow)
+            run("git", "cat-file", "-e", head, cwd=shallow)
+            result = self.prepared(head, cwd=shallow)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            self.assertIn("common ancestor", result.stderr)
 
     def test_current_stack_is_checked_before_commit(self):
         self.stack.write_text(self.stack.read_text() + unit("new-app"))

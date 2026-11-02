@@ -327,6 +327,12 @@ terragrunt_filter_base_ref() {
 
   if [[ -z "$base_ref" && -n "${GITHUB_BASE_REF:-}" ]]; then
     base_ref="origin/${GITHUB_BASE_REF}"
+    # A queued PR merge may predate new units on main; those are not PR retirements.
+    if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]] &&
+      ! base_ref="$(git merge-base "$base_ref" "$(terragrunt_filter_head_ref)")"; then
+      echo "No common ancestor is available for the Terragrunt PR comparison; refusing deleted-unit detection." >&2
+      return 1
+    fi
   fi
 
   if [[ -z "$base_ref" && "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
