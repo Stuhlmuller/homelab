@@ -50,7 +50,7 @@ def ownership():
 
 def node(admitted=False):
     labels = {"foreign.example/owner": "keep"}
-    taints = [{"key": "foreign.example/maintenance", "value": "yes", "effect": "NoExecute"}]
+    taints = [{"key": "foreign.example/maintenance", "value": "yes", "effect": "NoSchedule"}]
     if admitted:
         labels[CANARY] = "true"
         taints.append(copy.deepcopy(TAINT))
@@ -74,6 +74,11 @@ def cleanup_pod():
     pod["metadata"].update({"name": "cleanup-pod", "uid": "cleanup-pod-uid"})
     pod["metadata"]["ownerReferences"][0]["name"] = SUT["CLEANUP"]["CLEANUP"]
     return pod
+
+
+def raw_pod_list(items, metadata=None):
+    return json.dumps({"kind": "PodList", "metadata": metadata or
+                       {"resourceVersion": "20"}, "items": items})
 
 
 def apply_patch(state, operations):
@@ -283,8 +288,8 @@ class CanaryNodeTests(unittest.TestCase):
                                            "uid": "app-uid"}]
         with self.assertRaisesRegex(ValueError, "system DaemonSet"):
             SUT["validate_placement"](receipt, CONFIG, SHA, True)
-        with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"metadata": {}, "items": [app_pod]}}):
+        with patch.dict(SUT["CLEANUP"], {"command": lambda *args:
+                         raw_pod_list([app_pod])}):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
@@ -300,8 +305,8 @@ class CanaryNodeTests(unittest.TestCase):
                                                    "name": f"{owner}-1",
                                                    "uid": f"{owner}-uid"}]
                 SUT["validate_placement"](receipt, CONFIG, SHA, True)
-                with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                                 {"metadata": {}, "items": [pod]}}):
+                with patch.dict(SUT["CLEANUP"], {"command": lambda *args:
+                                 raw_pod_list([pod])}):
                     SUT["verify_live_pods"](CONFIG, receipt)
 
     def test_other_istio_daemonset_is_rejected_even_with_exact_uid(self):
@@ -312,34 +317,44 @@ class CanaryNodeTests(unittest.TestCase):
         receipt["systemDaemonSetPods"] = [{"namespace": "istio-system",
                                            "name": "other-1", "uid": "other-uid"}]
         SUT["validate_placement"](receipt, CONFIG, SHA, True)
-        with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"metadata": {}, "items": [pod]}}):
+        with patch.dict(SUT["CLEANUP"], {"command": lambda *args:
+                         raw_pod_list([pod])}):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
     def test_canary_pod_inventory_rejects_incomplete_or_terminating_entries(self):
-        for listing in ({"items": [system_pod()]},
-                        {"metadata": {"continue": "next"}, "items": [system_pod()]},
-                        {"metadata": {}, "items": [system_pod() | {
-                            "metadata": system_pod()["metadata"] | {
-                                "deletionTimestamp": "2026-10-20T00:00:00Z"}}]}):
+        for listing in ({"kind": "List", "metadata": {"resourceVersion": "20"},
+                         "items": [system_pod()]},
+                        {"kind": "PodList", "metadata": {}, "items": [system_pod()]},
+                        {"kind": "PodList", "metadata": {"resourceVersion": "20",
+                                                          "continue": "next"},
+                         "items": [system_pod()]},
+                        {"kind": "PodList", "metadata": {"resourceVersion": "20"},
+                         "items": [system_pod() | {
+                             "metadata": system_pod()["metadata"] | {
+                                 "deletionTimestamp": "2026-10-20T00:00:00Z"}}]}):
             with self.subTest(listing=listing), patch.dict(SUT["CLEANUP"], {
-                    "kubernetes_json": lambda *args: listing}):
+                    "command": lambda *args: json.dumps(listing)}):
                 with self.assertRaisesRegex(ValueError, "incomplete|foreign"):
                     SUT["verify_live_pods"](CONFIG, placement())
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
-                   cleanup_pods=None, label_inventory=None):
+                   cleanup_pods=None, label_inventory=None, on_node_read=None):
         commands, records, events = [], [], []
         self.last_records = records
         self.last_events = events
         cleanup_inventory = iter(([cleanup_pod()], [])) if cleanup_pods is None else None
         initial_foreign_labels = {"foreign.example/owner": "keep"}
         initial_foreign_taints = [{"key": "foreign.example/maintenance",
-                                   "value": "yes", "effect": "NoExecute"}]
+                                   "value": "yes", "effect": "NoSchedule"}]
+        node_reads = 0
 
         def kube_json(*args):
+            nonlocal node_reads
             if args[:2] == ("get", "node"):
+                node_reads += 1
+                if on_node_read is not None:
+                    on_node_read(node_reads, state)
                 return copy.deepcopy(state)
             if args[:2] == ("get", "nodes"):
                 if label_inventory is not None:
@@ -363,6 +378,11 @@ class CanaryNodeTests(unittest.TestCase):
             return {"items": []}
 
         def command(*args):
+            if args[:4] == ("kubectl", "--request-timeout=20s", "get", "--raw"):
+                events.append("inventory")
+                current_pods = pods() if callable(pods) else pods
+                return raw_pod_list(copy.deepcopy(
+                    [system_pod()] if current_pods is None else current_pods))
             if "patch" in args:
                 operations = json.loads(args[args.index("-p") + 1])
                 self.assertEqual(operations[0]["path"], "/metadata/resourceVersion")
@@ -422,6 +442,74 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual(self.last_events, ["taint", "inventory", "label", "inventory"])
         self.assertEqual(state["metadata"]["labels"][CANARY], "true")
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
+
+    def test_admit_refuses_noexecute_before_any_mutation(self):
+        state = node()
+        state["spec"]["taints"][0]["effect"] = "NoExecute"
+        with self.assertRaisesRegex(ValueError, "protected handoff"):
+            self.run_action("admit", state)
+        self.assertEqual(self.last_records, [])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(len(state["spec"]["taints"]), 1)
+
+    def test_admit_refuses_noexecute_added_after_own_taint(self):
+        state = node()
+
+        def introduce_noexecute(read_count, current):
+            if read_count == 2:
+                current["spec"]["taints"].append(
+                    {"key": "foreign.example/evacuation", "value": "yes",
+                     "effect": "NoExecute"})
+                current["metadata"]["resourceVersion"] = "12"
+
+        with self.assertRaisesRegex(ValueError, "protected handoff"):
+            self.run_action("admit", state, on_node_read=introduce_noexecute)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][1], TAINT)
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_admit_rolls_back_label_when_noexecute_arrives_at_post_label_read(self):
+        state = node()
+
+        def introduce_noexecute(read_count, current):
+            if read_count == 3:
+                current["spec"]["taints"].append(
+                    {"key": "foreign.example/evacuation", "value": "yes",
+                     "effect": "NoExecute"})
+                current["metadata"]["resourceVersion"] = "13"
+
+        with self.assertRaisesRegex(ValueError, "protected handoff"):
+            self.run_action("admit", state, on_node_read=introduce_noexecute)
+        self.assertEqual(self.last_events,
+                         ["taint", "inventory", "label", "unlabel"])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][1], TAINT)
+        self.assertEqual(state["spec"]["taints"][2]["effect"], "NoExecute")
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_admit_rechecks_noexecute_after_post_label_pod_inventory(self):
+        state = node()
+        pod_reads = 0
+
+        def assigned_pods():
+            nonlocal pod_reads
+            pod_reads += 1
+            if pod_reads == 2:
+                state["spec"]["taints"].append(
+                    {"key": "foreign.example/evacuation", "value": "yes",
+                     "effect": "NoExecute"})
+                state["metadata"]["resourceVersion"] = "13"
+            return [system_pod()]
+
+        with self.assertRaisesRegex(ValueError, "protected handoff"):
+            self.run_action("admit", state, pods=assigned_pods)
+        self.assertEqual(pod_reads, 2)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][1], TAINT)
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
 
     def test_release_removes_only_owned_label_then_taint(self):
         commands, state = self.run_action("release", node(admitted=True))

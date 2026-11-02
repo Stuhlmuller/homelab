@@ -8,3 +8,4 @@ resources:
   - nfs-subdir-external-provisioner-application.yaml
   - openclaw-runtime.yaml
   - multica-runtime.yaml
+  - renovate-cache-local.yaml

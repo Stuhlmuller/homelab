@@ -7,6 +7,7 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -14,21 +15,31 @@ python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
+python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
+ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
+python3 -I scripts/ci/octelium-ci-credential-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-operator-oauth-rotate-test.py
+python3 -I scripts/ci/harbor-tailscale-production-test.py
+python3 -I scripts/ci/harbor-tailscale-production-sign-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
+python3 -I scripts/ci/tailscale-service-host-approve-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
+python3 -I scripts/ci/octelium-catalog-test.py
+python3 -I scripts/ci/terragrunt-credential-duration-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
+python3 -I scripts/ci/n8n-github-trigger-migration-check.py
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-runner-test.py
 python3 -I scripts/ci/cordium-runner-controller-test.py
@@ -41,11 +52,16 @@ python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/octelium-service-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
+python3 -I scripts/ci/bulldozer-credential-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 -I scripts/ci/litellm-provider-credential-test.py
 python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
+python3 -I scripts/ci/langfuse-postgres-object-restore-test.py
+python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
+python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py
@@ -55,6 +71,7 @@ python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
 python3 -I scripts/ci/bazarr-bootstrap-test.py
 python3 -I scripts/ci/nas-media-permissions-test.py
+python3 -I scripts/ci/arr-playback-policy-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
@@ -83,6 +100,8 @@ python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
+python3 -I scripts/ci/network-policy-candidate-report-test.py
+python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 -I scripts/ci/talos-nri-preparation-check-test.py
@@ -101,6 +120,7 @@ python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
 python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py

@@ -13,7 +13,7 @@ sources:
 generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Continuous Improvement
@@ -77,6 +77,28 @@ while Dependabot automated fixes stay disabled to avoid duplicate PRs. The
 organization-policy blocker is tracked below.
 
 ## Open Findings
+
+- **Status:** PostgreSQL move superseded; CI credential follow-up open as of
+  2026-11-01.
+- **Area:** Langfuse / CI access and storage recovery.
+- **Evidence:** The proposed [evacuation PR #1584](https://github.com/Stuhlmuller/homelab/pull/1584)
+  and [PostgreSQL move PR #1583](https://github.com/Stuhlmuller/homelab/pull/1583)
+  were closed after the [existing-node decision](https://github.com/Stuhlmuller/homelab/pull/1772)
+  chose `zimaboard-0` without moving Langfuse. The October 31
+  [checkpoint run 40452838353](https://github.com/Stuhlmuller/homelab/actions/runs/40452838353)
+  failed without a backup receipt; its private capture failure remains
+  unclassified. Both GitHub environment `OCTELIUM_CI_AUTH_TOKEN` secrets still
+  show 2026-09-26 update times on November 1, beyond the 30-day token lifetime
+  configured for the `homelab-ci` User. The saved values cannot be read back,
+  so their validity is not proven by those timestamps alone.
+- **Risk:** Protected diagnostics and backup jobs may fail authentication. No
+  Langfuse database relocation is currently queued.
+- **Next step:** Rotate the shared token through the guarded
+  [CI credential helper](../../scripts/octelium-ci-credential.sh), then verify
+  authenticated read-only Kubernetes access through the protected
+  [diagnostics workflow](../../.github/workflows/homelab-diagnostics.yml).
+  Any future PostgreSQL move needs fresh PVC/PV identity checks, versioned
+  off-NAS readback, and an isolated restore receipt before merge.
 
 - **Status:** recovered; capacity follow-up open
 - **Area:** Talos / Argo CD reconciliation, 2026-10-10

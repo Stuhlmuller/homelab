@@ -56,6 +56,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-c0340a70f42e716d4daed12a
+    resource: repo://clusters/homelab/apps/renovate/cache-init.cjs
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -134,16 +136,14 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
-    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
+generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # Secrets And Identity
@@ -286,6 +286,10 @@ durable aggregate receipt closes T022. Cache-fault recovery, full parity, and
 writer cutover remain open. The legacy GitHub Action remains the only writer. The App
 lacks repository Administration read, a recorded migration exception whose
 first write-enabled outcome still needs policy review.
+The local-cache initializer runs as root only to set mount-root ownership and
+mode. It mounts the cache and its non-secret script, never the App Secret or a
+Kubernetes token; the Renovate process remains UID 12021. Both containers share
+Pod networking. See the [cache contract](storage-and-state.md#renovate-cache).
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name
@@ -329,8 +333,8 @@ from generated app and migrator passwords. Both URLs name the private
 `occ-postgres` Service and require `sslmode=verify-full` with the retained
 `occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
 password is a separate target. cert-manager declares that CA and a server
-certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
-and live TLS verification remain pending.
+certificate for the Service DNS name. The dormant PostgreSQL StatefulSet and chart consumers are declared; storage
+prebinding, recovery acceptance, and live TLS verification remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
@@ -353,7 +357,9 @@ has a dedicated ServiceAccount with automatic token mounting disabled. Its
 one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
 read-only RBAC can GET only the exact reviewed Installation Secret and selected
 workload proofs. Reconcile and stop require the chart's bootstrap service key
-as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
+as a UID-1000-owned `0600` file on the retained bootstrap claim. The disabled
+operator configuration retains UID 10001 until ownership proof permits its
+reviewed switch to 1000. The bundle
 is not registered in Argo CD, that file ownership is unproved, and the operator
 gate remains disabled; these permissions are source intent, not live access.
 
@@ -447,7 +453,17 @@ gate remains disabled; these permissions are source intent, not live access.
   Alertmanager does not call the hook because its standard webhook body lacks
   OpenClaw's required `message` field.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
-  target Secret `operator-oauth`.
+  target Secret `operator-oauth`. A repo-owned one-shot helper creates an
+  operator client through the Tailscale keys API using a separate Owner/Admin
+  API key file, verifies its `devices:core`, `auth_keys`, `services` scopes and
+  `tag:k8s-operator`, then stores the pair in the existing SSM SecureStrings.
+  Its private receipt makes partial SSM writes resumable. Because this
+  ExternalSecret uses `OnChange`, a reviewed metadata revision must refresh the
+  target Secret before a separate reviewed operator pod-annotation revision
+  restarts the chart's mounted-Secret consumer. The staged ingress canary's
+  `tag:homelab-ingress-canary` still needs a reviewed tailnet policy ownership
+  delegation to `tag:k8s-operator` before activation. See
+  [the rotation runbook](../../clusters/homelab/apps/tailscale/README.md).
 - Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced
   from `/homelab/cordium/agent-auth-token`, for the policy-bound
   `homelab-cordium-agent` Workload User. The PostSync configuration hook uses
@@ -507,14 +523,16 @@ gate remains disabled; these permissions are source intent, not live access.
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The pinned daemon asks the backend to renew that token in place
   when seven days or less remain; revoked or expired tokens fail startup rather
-  than silently creating a replacement. The main container exposes only
-  its own profile, including native ChatGPT OAuth state retained on the runtime
-  PVC; it does not mount the backend JWT, database password, fixed code, or a
-  model API key. This remains a trusted operator runtime because tasks can read
-  that profile. Its dedicated ServiceAccount has no Kubernetes token and
-  receives explicit Istio access only to the Multica backend. OAuth is created
-  through an interactive Codex device login and must not be copied into SSM or
-  a Kubernetes Secret.
+  than silently creating a replacement. A Ready daemon starts the renewal loop
+  but does not prove a successful renewal; verify expiry metadata during the
+  eligible window without exposing token material. The main container retains
+  its own profile and mounts the dedicated `multica-litellm` token as a read-only
+  file for model access. The committed OpenCode configuration routes through
+  LiteLLM; no ChatGPT/Codex OAuth runtime is configured. It does not mount the
+  backend JWT, database password, fixed code, or upstream OpenRouter key.
+  This remains a trusted operator runtime because tasks can read that profile.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access only to the Multica backend.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
@@ -572,9 +590,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
   21 days with
-  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry, then retries
-  GitHub environment writes until both store the replacement token.
+  `scripts/octelium-ci-credential.sh`; routine rotation first verifies the
+  existing User, Policy, Service, and credential binding without applying the
+  full catalog. It rejects unknown or duplicate Service policy attachments;
+  only the primary CI policy and optional staged plan policy are accepted, and
+  it checks all three staged plan rules when that policy is attached.
+  The helper deletes the dedicated User's Sessions so Octelium
+  cannot retain an older Session expiry, then retries each GitHub environment
+  write up to five times. Bootstrap catalog application is explicit with
+  `--apply-catalog`.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly

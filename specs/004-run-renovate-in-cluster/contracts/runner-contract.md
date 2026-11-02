@@ -39,7 +39,7 @@ The existing workflow calls its issuer secret RENOVATE_APP_ID but passes it as a
 
 | Item | Contract |
 | --- | --- |
-| Storage | One retained, protected nfs-default PVC mounted at /cache/renovate, set as Renovate's cacheDir in committed config. Clones and working files use an ephemeral baseDir. |
+| Storage | One retained, protected renovate-cache-local PVC mounted at /cache/renovate, set as Renovate's cacheDir in committed config. Its static PV uses /var/lib/renovate-cache on acer; 20 GiB is advisory, with no quota, reservation, or node failover. A credential-free initializer changes only root ownership/mode, preserving warm entries. The former nfs-default claim remains retained for rollback. Clones and working files use an ephemeral baseDir. Dedicated capacity and recovery acceptance remain open before writer cutover. |
 | Reuse | Enable Renovate repository extraction and private-package metadata caches; retain Renovate's default soft/hard refresh and expiry. A second Job, including after Pod replacement, must reuse valid entries and revalidate expired ones. |
 | Loss | A missing or corrupt cache may be rebuilt by Renovate. No repository state or credential lives only in the cache; no backup is required. PVC reset, if needed, is a reviewed desired-state change. |
 | Evidence | Kubernetes Job timestamps/status show start, completion, and duration; access-restricted Renovate logs show per-repository outcomes and errors. Never publish logs containing private repository names or package metadata. |

@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0fdbc7c94174d790687d5278a7bc89c124a0cb050b8d328ad4d52bfdd828bba6",
+  "pageVersion": "sha256:947e57b423c4beb50dfa1aea74f2f53b746b6105c5e7bca740cd17f77ae29d13",
   "claims": [
     {
       "id": "claim_f813a679b7d145dfbfc81a595d98b9e8",
       "statement": "Application chart inputs and Git values remain owned by per-app stack files while the shared Terragrunt template generates Argo CD Application metadata and defaults.",
       "evidence": [
         {
-          "resource": "repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:b929eb66be11208e97fac1079090f392cc403209cb8be70375f97ead3faf58c1"
+          "resource": "repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         },
         {
-          "resource": "repo://IaC/traefik/stack.hcl",
-          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+          "resource": "repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:88ffbf886b2323f3a1561824425ccd979f3ef2f5975a099a8ecf138468ba3720"
         }
       ]
     },
@@ -21,12 +21,12 @@
       "statement": "The dormant OpenClaw Enterprise candidate uses the pinned upstream Helm chart with app-local values, reviewed Installation bytes, Kustomize lifecycle hooks and one EnvoyProxy image override; a root Terragrunt unit declares its Application with automatic sync disabled, but the chart has not been synced.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
           "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
+          "version": "repo-file-v1:sha256:6ab7376353fad6debdb7c743e5f8206bcd4bc3abeb33b3f7d319418baef76940"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml",
@@ -41,6 +41,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

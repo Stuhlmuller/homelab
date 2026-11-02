@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: traefik-sidecar-canary-deny-direct
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik-sidecar-canary
+      app.kubernetes.io/instance: traefik-sidecar-canary
+  action: DENY
+  rules:
+    - to:
+        - operation:
+            ports: ["80", "443", "8000", "8080", "8443", "9443"]

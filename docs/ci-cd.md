@@ -133,6 +133,14 @@ checks remain fresh.
   can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
+  The 90-minute apply job requests a 7,200-second session; the operator-owned
+  role declares a 25,200-second maximum. Verify the live role allows at least
+  7,200 seconds before dispatch. The offline duration regression rejects a
+  missing or shorter request and requests above the declared maximum.
+  Full #873 acceptance requires a same-session AWS call after 3,600 seconds;
+  a short successful run does not prove that boundary. If an apply stops
+  partway, inspect state read-only and prepare a fresh reviewed plan from
+  current `main`; do not reuse expired credentials or manually undo resources.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
   and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
   Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
@@ -384,26 +392,31 @@ create or rotate the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
-scripts/octelium-ci-credential.sh
+scripts/octelium-ci-credential.sh --apply-catalog
 ```
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
-and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
-or rotates the `homelab-ci` credential, pipes the generated token directly into
-the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
+and GitHub CLI access to `Stuhlmuller/homelab`. The bootstrap command applies
+the full catalog before creating the credential. Routine rotations omit
+`--apply-catalog` and verify the existing dedicated User, Policy, Service, and
+credential binding without changing the catalog. The helper pipes the token
+directly into the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
 For existing credentials, the helper verifies GitHub environment secret write
-access by writing and deleting a temporary preflight secret, reconciles the
-credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
-User so Octelium cannot reuse its old expiry, then rotates the token. It
-refuses to rotate an existing credential when GitHub secret updates are
+access by writing and deleting a temporary preflight secret. Routine rotation
+fails if the credential binding differs from User `homelab-ci` and Policy
+`homelab-ci-kubernetes-api-access`; explicit catalog application may reconcile
+that binding. The helper deletes every Session for the dedicated User so
+Octelium cannot reuse its old expiry, then rotates the token. It reads every
+listing page first and stops before deletion if that inventory is incomplete.
+It refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
 Run rotation in a quiet window: deleting the old Session invalidates the
 current bearer before the two GitHub environment secrets are updated. After
-token generation, the helper retries each secret write until both environments
-hold the replacement; if interrupted, rerun the helper.
+token generation, the helper retries each secret write five times. If either
+environment still fails, or rotation is interrupted, rerun the helper to put a
+fresh replacement in both environments.
 When recovering through a temporary Octelium CLI session, pass the unique home
 created by the recovery block below. If the public Octelium API path is not
 carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
@@ -419,10 +432,11 @@ Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
 policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog and rotate the credential with
-`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
-failure before rotating. Reconcile the upstream kubeconfig Secret when its
-Kubernetes credential changes.
+`kubernetes-api-ci`, first try routine rotation with
+`scripts/octelium-ci-credential.sh`. Apply the full catalog with
+`--apply-catalog` only after reviewing a relevant catalog change or drift.
+Treat `403` as a policy or User-state failure before rotating. Reconcile the
+upstream kubeconfig Secret when its Kubernetes credential changes.
 Recover the primary credential directly with the checked helper. Run this block
 from the repository root; it uses a private, unique admin home and removes it
 only after Octelium confirms logout:
@@ -459,9 +473,9 @@ only after Octelium confirms logout:
 )
 ```
 
-The helper applies the primary catalog with checked resource verification,
-invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Dispatch and bind verification to the exact `main` commit:
+The helper verifies the primary CI access resources, invalidates stale Sessions,
+and writes the replacement token to both GitHub environments. Dispatch and bind
+verification to the exact `main` commit:
 
 ```sh
 set -euo pipefail
