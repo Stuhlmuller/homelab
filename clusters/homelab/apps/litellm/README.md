@@ -39,6 +39,118 @@ a read-only root filesystem need a separate writable-path rehearsal against
 the current native database startup. Roll back through a reviewed values
 revert if these controls prevent startup or normal inference.
 
+### Gateway memory reservation and executable rollout gate
+
+The gateway values reserve `1Gi` memory and select `kubernetes.io/hostname:
+acer`. This is staged prevention for #775/#793, not restored capacity or an
+instruction to recover a worker. The protected PR pipeline checks sustainable
+rollout headroom before merge. The gateway keeps one replica and the
+chart's default RollingUpdate strategy: one surge Pod, zero unavailable Pods.
+Its image, runtime controls, database and caller routes are unchanged.
+
+On November 2, overlapping unreserved gateway Pods on the 1.28 GiB allocatable
+worker coincided with severe memory pressure and a stalled kubelet. Their
+combined cgroup memory was about 869 MiB; the old gateway's recorded peak was
+800.5 MiB. The replacement on Acer used 479–539 MiB and became Ready without
+restarts. This supports a 1 GiB reservation and avoiding the small worker; it
+does not prove OOM or establish a maximum under all inference loads. No hard
+memory limit is added without that evidence. Other workers were already using
+82–84% of allocatable memory, so exclusion of only the smallest worker would
+allow an unsafe relocation. Acer-only placement is a temporary capacity
+constraint, not high availability or a completed failure-domain target.
+
+The 03:03 UTC snapshot left Acer 1,806.7 MiB unreserved and approximately
+2,391.7 MiB below allocatable actual usage. The first new 1 GiB Pod fits because
+the existing gateway has no request. After replacement, only 782.7 MiB would
+remain unreserved: a later surge could stay Pending. At least 241.3 MiB of
+additional reservations must be freed to fit two reserved Pods at that snapshot;
+this is arithmetic, not a safety margin or durable capacity receipt. Do not
+lower the request or move the gateway to a pressured worker to force rollout.
+[PR #1656](https://github.com/Stuhlmuller/homelab/pull/1656) changes native
+PostgreSQL placement and other workloads, not gateway placement. Coordinate
+its Cordium capacity assumptions with this new reservation; do not apply its
+held changes or count projected savings as available capacity.
+
+The apparent 512 MiB gain at 03:16 UTC came from the hourly Renovate Job
+finishing at 03:04:56 UTC. Its unsuspended Acer-only CronJob still reserves
+512 MiB each run. Budget recurring reservations even between runs: do not
+ignore future demand because a snapshot omits completed Jobs. Other unsuspended
+Acer-eligible jobs add 448 MiB: Mastodon restore verification (128 MiB), media
+PostgreSQL backup (64 MiB), Fleet MySQL backup (128 MiB), Harbor PostgreSQL
+backup (64 MiB), and Octelium PostgreSQL backup (64 MiB). The last three are
+unpinned and can land on Acer. Their schedules differ, but overlap cannot be
+excluded without verified durations. Conservatively reserve 960 MiB for all
+six when absent. For a future 1-GiB-to-1-GiB rollout, the earlier 241.3 MiB
+deficit is only the Renovate-inclusive minimum; the full conservative deficit
+at the job-free snapshot is 689.3 MiB. These deficits concern that future
+two-reserved-Pod state, not the initial transition from the unreserved Pod.
+Terminal Pods were already excluded from accounting; deleting them adds no room.
+Fresh seven-day telemetry also invalidates PR #1656's old Dispatcharr Celery
+assumption: observed peak 666.72 MiB exceeds both its current 512 MiB request
+and the proposed 448 MiB. Do not count that reduction. ClickHouse and Langfuse
+worker also exceeded their requests. Smaller candidate reductions remain
+unverified because startup/recovery samples are absent and scrape availability
+was only about 76%; instantaneous free memory does not justify them.
+
+The read-only `scripts/ci/litellm-release-check.py` runs after CI installs its
+existing kubeconfig, before the live Terragrunt plan. The aggregate
+`Terragrunt Gate` fails on an unhealthy target, stale/incomplete evidence,
+unclassified recurring overlap or insufficient reservation/actual memory.
+It counts every eligible unsuspended CronJob conservatively, deducts only
+already counted active owned Job Pods, and retains terminating Pod requests.
+It reuses the existing Kubernetes request calculator for init sidecars,
+Pod-level resources and overhead; unresolved resize or pending placement fails.
+Scheduler accounting reserves the serving Pod's actual effective request plus
+the new Pod's 1 GiB request. RollingUpdate retains the old revision's resources:
+the initial unreserved-to-1-GiB transition needs 1 GiB, while later 1-GiB-to-1-GiB
+rollouts need 2 GiB, in addition to other Pods and recurring reservations.
+The physical check still requires fresh kubelet Summary available bytes for a
+2 GiB gateway envelope plus absent recurring demand, minus the exact serving
+Pod's already consumed working set (at most 1 GiB). This is a sampled physical
+margin, not a hard memory bound: neither gateway revision has a memory limit.
+Node/Pod metrics must be fresh and collected within 30 seconds of each other.
+API denial fails closed; this change grants no new access and prints no private
+metrics. The check covers this rollout's scheduler budget and sampled memory
+margin; it does not prove the wider #793 failure-domain target.
+
+For diagnosis and post-merge acceptance:
+
+1. Recheck node conditions, `kubectl top nodes`, and the actual gateway memory
+   and readiness with `kubectl -n ai top pod -l app.kubernetes.io/name=litellm
+   --containers` and `kubectl -n ai get pods -l app.kubernetes.io/name=litellm
+   -o wide`. Keep #844's native startup, caller and 24-hour acceptance gates.
+2. Recompute Acer scheduling requests from all nonterminal bound Pods,
+   including terminating Pods, restartable init containers and Pod overhead.
+   Retain the serving Pod's actual request and reserve another 1 GiB for the
+   candidate. The initial transition has a combined 1 GiB gateway request;
+   subsequent rollouts have 2 GiB combined. Inventory every unsuspended CronJob
+   eligible for Acer, including unpinned templates; account for verified run
+   durations and overlap, or conservatively include all of them. With all six
+   current jobs absent, reserve another 960 MiB: require 1,984 MiB unreserved
+   after counting the serving gateway's actual request.
+   Subtract reservations already counted for their active owned Job Pods to
+   avoid double-counting. The Renovate-only 2.5 GiB/1.5 GiB thresholds are
+   insufficient for this full inventory. Require actual memory margin for the
+   additional measured startup peak and system/workload growth, with no active
+   pressure. A `top` snapshot alone is not a capacity proof. Keep raw evidence private; unavailable evidence fails the executable gate.
+3. Run `python3 -I scripts/ci/litellm-runtime-hardening-check.py` in the pinned
+   Nix shell, then normal policy/PR checks. The actual declared chart render
+   checks the reservation, placement, strategy and security controls with
+   negative regressions; it does not certify live capacity.
+4. After reviewed delivery, require Argo's exact revision, Synced/Healthy,
+   a new Ready gateway Pod on Acer with `1Gi` requested memory, stable restart
+   counts and pressure, native PostgreSQL/caller behavior, and renewed surge
+   headroom. Keep #775/#793/#785 open until their wider acceptance is met.
+
+Existing processes on the stalled worker need separate repository-owned
+recovery and fencing checks. Desired placement does not stop an already bound
+Pod. Do not delete Pods, drain, reboot, or reuse dated recovery exceptions as
+part of this proposal. Preserve PostgreSQL data and out-of-band access.
+If the new Pod stays Pending, retain the serving old Pod and resolve capacity
+through reviewed source changes. Roll back only this proposal through a
+reviewed values revert after reassessing placement and memory; reverting also
+restores the old unreserved-placement risk, so it is not a node recovery tool.
+
 ### October 10, 2026 native-key rollout
 
 [PR #1243](https://github.com/Stuhlmuller/homelab/pull/1243) merged as

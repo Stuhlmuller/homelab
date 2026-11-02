@@ -29,6 +29,28 @@ The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
 by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/README.md).
 
+## Gateway capacity and protected rollout check
+
+The staged LiteLLM values reserve 1 GiB and constrain the gateway to Acer,
+following memory pressure during overlapping unreserved Pods on the smallest
+worker. RollingUpdate and native PostgreSQL remain unchanged. The protected
+capacity check requires fresh requested and actual memory evidence for sustainable
+surge capacity; the first replacement fitting does not prove future rollouts.
+The November 2 snapshot was short by at least 241.3 MiB of reservations for
+two reserved gateway Pods. This is not a failure-capacity acceptance receipt.
+See the [capacity preflight and recovery separation](../../clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-and-executable-rollout-gate).
+Coordinate PR #1656's separate PostgreSQL/Cordium capacity assumptions. Existing
+worker recovery and #775/#793/#785 remain separate, open gates. Budget the
+full inventory of unsuspended Acer-eligible CronJobs, including unpinned
+backups: currently 960 MiB conservatively when all are absent, counting each
+active owned Job only once. Reduce that budget only with verified duration and
+overlap evidence. The hourly Renovate Job's 512 MiB completion produced a
+transient gap, not permanent capacity; its budget alone is insufficient.
+Fresh observed Dispatcharr Celery
+usage exceeds PR #1656's proposed lower request, invalidating that old saving.
+Incomplete startup/recovery evidence and telemetry gaps keep smaller reduction
+candidates unverified; do not change reservations from an instantaneous sample.
+
 ## Caller inventory
 
 ### UI-visible key migration (native cutover awaiting deployment)
@@ -400,3 +422,22 @@ reported by `v4-legacy-api-usage-job`. Ingestion eventually completed, so this
 does not establish the cause of its delay. Diagnose the worker termination and
 ClickHouse part integrity before proposing repository-owned recovery; do not
 delete data or restart workloads manually. No repair was performed.
+
+### LiteLLM rollout capacity check
+
+The protected PR plan runs
+[`litellm-release-check.py`](../../scripts/ci/litellm-release-check.py) for gateway
+runtime or check changes. It requires fresh target health, complete Pod/Job/CronJob
+inventories and scheduler room for the serving Pod's actual effective request
+plus the new Pod's 1 GiB request and all eligible recurring reservations.
+RollingUpdate keeps the old revision's resources: the first unreserved-to-1-GiB
+transition needs 1 GiB; future 1-GiB-to-1-GiB rollouts need 2 GiB. Existing active
+Job requests are counted once; terminating Pods, init sidecars and overhead
+retain their cost. Unknown scheduling, resize or parallel recurring behavior
+fails closed. A fresh kubelet Summary must still show a 2 GiB gateway envelope
+plus absent recurring demand, crediting only the exact serving Pod's existing
+working set (at most 1 GiB). This sampled physical margin is not a hard memory
+bound; neither gateway revision has a memory limit. The check uses existing CI
+access and withholds private metrics; a denied read fails `Terragrunt Gate`.
+It does not prove N-1 capacity, recover a worker or activate an extra approval
+step.
