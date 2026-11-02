@@ -152,6 +152,7 @@ deny contains msg if {
 	public_external_route
 	not octelium_access_plane
 	not reviewed_funnel_ingress
+	not internal_waypoint_gateway
 	kind := object.get(input, "kind", "<unknown>")
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("%s %q exposes a public route and must declare homelab.rst.io/access-plane=octelium", [kind, name])
@@ -355,6 +356,15 @@ octelium_access_plane if {
 	object.get(annotations, "homelab.rst.io/access-plane", "") == "octelium"
 }
 
+internal_waypoint_gateway if {
+	input.apiVersion == "gateway.networking.k8s.io/v1"
+	input.kind == "Gateway"
+	input.metadata.namespace == "istio-egress"
+	input.metadata.annotations["networking.istio.io/service-type"] == "ClusterIP"
+	input.spec.gatewayClassName == "istio-waypoint"
+	input.spec.listeners == [{"name": "mesh", "port": 15008, "protocol": "HBONE"}]
+}
+
 public_external_route if {
 	input.kind == "VirtualService"
 	gateway := object.get(object.get(input, "spec", {}), "gateways", [])[_]
@@ -374,7 +384,7 @@ external_secret_allowed_prefixes := {
 	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
-	"argocd": {"/homelab/argocd/"},
+	"argocd": {"/homelab/argocd/", "/homelab/harbor/mirror-robot-pull-password"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},

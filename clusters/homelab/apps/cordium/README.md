@@ -183,14 +183,19 @@ octelium config kubernetes-api.homelab --domain stinkyboi.com
 ```
 
 Run the `KUBECONFIG` export printed by that command, set the generated file to
-mode `0600`, then run `kubectl --request-timeout=15s get nodes`. The upstream
+mode `0600`, then run `kubectl --request-timeout=15s -n ai get pods` (substitute
+the intended homelab namespace). The upstream
 kubeconfig remains in the Octelium gateway Secret; the Workspace receives no
 long-lived Kubernetes credential and does not need a Tailscale route. The
-Octelium policy permits only nonsensitive `get`, `list`, and `watch`; verify
-Secret reads and a server-side dry-run create are denied:
+staged Octelium policy permits only explicit namespaced workload resources and
+five discovery paths; see the [exact allowlist](../../../../docs/octelium.md#private-kubernetes-access).
+After protected activation, require Secret reads, node reads, cluster-wide
+lists and a server-side dry-run create to be denied:
 
 ```sh
 ! kubectl get secrets --all-namespaces
+! kubectl get nodes
+! kubectl get pods --all-namespaces
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
 
@@ -252,7 +257,7 @@ git -C /workspace/repo remote get-url origin
 octelium config kubernetes-api.homelab --domain stinkyboi.com
 # Export the KUBECONFIG path printed above.
 chmod 0600 "$KUBECONFIG"
-kubectl --request-timeout=15s get nodes
+kubectl --request-timeout=15s -n ai get pods
 exit
 ```
 

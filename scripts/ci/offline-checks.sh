@@ -9,12 +9,15 @@ terragrunt_generate_stack
 python3 -I scripts/ci/speckit-check.py
 python3 -I scripts/ci/release-test.py
 python3 -I scripts/ci/static-cache-test.py
+python3 -I scripts/ci/argocd-computed-fields-test.py
 node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
+python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
 python3 -I scripts/ci/mastodon-routes-test.py
+python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
@@ -118,6 +121,7 @@ python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
+python3 -I scripts/ci/istio-egress-test.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
