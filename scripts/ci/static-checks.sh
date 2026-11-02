@@ -62,6 +62,7 @@ python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
 python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/codex-cloud-signer-test.py
+python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py

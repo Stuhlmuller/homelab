@@ -5,6 +5,7 @@ metadata:
   namespace: automation
   annotations:
     checkov.io/skip1: CKV2_K8S_6=Ingress is restricted by the sibling networkpolicy.yaml.
+    checkov.io/skip2: CKV_K8S_25=Only state-permissions receives CHOWN and FOWNER to initialize the dedicated local directory; manifest tests enforce no capabilities on either steady container.
 spec:
   replicas: 1
   serviceName: codex-cloud-signer
