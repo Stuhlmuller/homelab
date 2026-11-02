@@ -1,4 +1,4 @@
-"""Render the declared LiteLLM chart and check its Phase 1 runtime controls."""
+"""Render the declared LiteLLM chart and check runtime controls and gateway placement."""
 
 import copy
 import json
@@ -19,7 +19,17 @@ def check(objects):
     assert accounts[0].get("automountServiceAccountToken") is False
     deployments = [item for item in objects if item["kind"] == "Deployment"]
     assert len(deployments) == 1
-    pod = deployments[0]["spec"]["template"]["spec"]
+    deployment = deployments[0]["spec"]
+    assert deployment["replicas"] == 1
+    # The pinned chart omits strategy, retaining Kubernetes RollingUpdate defaults.
+    strategy = deployment.get("strategy", {})
+    assert strategy.get("type", "RollingUpdate") == "RollingUpdate"
+    rolling = strategy.get("rollingUpdate", {})
+    assert rolling.get("maxSurge", "25%") == "25%"
+    assert rolling.get("maxUnavailable", "25%") == "25%"
+    pod = deployment["template"]["spec"]
+    assert pod["nodeSelector"] == {"kubernetes.io/hostname": "acer"}
+    assert not pod.get("affinity")
     assert pod["serviceAccountName"] == "litellm"
     assert pod.get("automountServiceAccountToken") is not True
     assert pod["securityContext"]["seccompProfile"] == {"type": "RuntimeDefault"}
@@ -30,6 +40,7 @@ def check(objects):
     )
     containers = pod["containers"]
     assert len(containers) == 1 and containers[0]["name"] == "litellm"
+    assert containers[0]["resources"] == {"requests": {"memory": "1Gi"}}
     security = containers[0]["securityContext"]
     assert security.get("privileged") is not True
     assert security["allowPrivilegeEscalation"] is False
@@ -80,10 +91,16 @@ def main():
         "yq", "ea", "-o=json", "-I=0", "[.]", "-",
     ], input=rendered, text=True))
     check(objects)
-    for control in ("token", "seccomp", "privileged", "escalation", "capabilities"):
+    controls = (
+        "token", "seccomp", "privileged", "escalation", "capabilities",
+        "missing-request", "low-request", "unmeasured-limit", "missing-placement",
+        "wrong-node", "recreate", "replicas", "unavailable",
+    )
+    for control in controls:
         changed = copy.deepcopy(objects)
         account = next(item for item in changed if item["kind"] == "ServiceAccount")
-        pod = next(item for item in changed if item["kind"] == "Deployment")["spec"]["template"]["spec"]
+        deployment = next(item for item in changed if item["kind"] == "Deployment")["spec"]
+        pod = deployment["template"]["spec"]
         if control == "token":
             account["automountServiceAccountToken"] = True
         elif control == "seccomp":
@@ -92,14 +109,30 @@ def main():
             pod["containers"][0]["securityContext"]["privileged"] = True
         elif control == "escalation":
             pod["containers"][0]["securityContext"]["allowPrivilegeEscalation"] = True
-        else:
+        elif control == "capabilities":
             pod["containers"][0]["securityContext"]["capabilities"] = {}
+        elif control == "missing-request":
+            pod["containers"][0]["resources"] = {}
+        elif control == "low-request":
+            pod["containers"][0]["resources"]["requests"]["memory"] = "512Mi"
+        elif control == "unmeasured-limit":
+            pod["containers"][0]["resources"]["limits"] = {"memory": "1Gi"}
+        elif control == "missing-placement":
+            pod["nodeSelector"] = {}
+        elif control == "wrong-node":
+            pod["nodeSelector"]["kubernetes.io/hostname"] = "zimaboard-2"
+        elif control == "recreate":
+            deployment["strategy"] = {"type": "Recreate"}
+        elif control == "replicas":
+            deployment["replicas"] = 2
+        else:
+            deployment["strategy"] = {"rollingUpdate": {"maxUnavailable": 1}}
         try:
             check(changed)
         except AssertionError:
             continue
         raise AssertionError(f"Unsafe LiteLLM {control} control accepted")
-    print("LiteLLM: pinned chart lint/render and five negative runtime-control checks passed")
+    print(f"LiteLLM: pinned chart lint/render and {len(controls)} negative runtime/placement checks passed")
 
 
 if __name__ == "__main__":

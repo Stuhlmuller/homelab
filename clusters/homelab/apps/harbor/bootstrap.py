@@ -24,8 +24,10 @@ SECRET_DIRECTORY = Path("/secrets")
 REPLICATION_FILE = Path("/replication/chainguard-replication.json")
 PREFIX = "robot$"
 PROJECTS = {
-    "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher", "scan")},
-    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("pull", "publisher")},
+    "homelab": {"metadata": {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"},
+                "robots": ("pull", "publisher", "scan")},
+    "mirror": {"metadata": {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"},
+               "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 CHAINGUARD_REPLICATION = {
@@ -61,6 +63,8 @@ SECRET_FILES = {
     ("mirror", "publisher"): "mirror-robot-push-password",
 }
 MAX_RESPONSE_BYTES = 1024 * 1024
+MAX_SCAN_REPOSITORIES = 1000
+MAX_SCAN_ARTIFACTS = 10000
 # Enable only after the protected full mirror receipt for these exact digests.
 KUBERNETES_TAG_LOCK_ENABLED = False
 KUBERNETES_TAG = "v1.35.9"
@@ -427,50 +431,61 @@ def read_robots(client, project_id):
     return robots
 
 
-def unscanned_image(artifact):
+def missing_image_scan(artifact, scan_type):
     attributes = artifact.get("extra_attrs") or {}
     return (artifact.get("type") == "IMAGE" and artifact.get("media_type") in (
         "application/vnd.oci.image.config.v1+json", "application/vnd.docker.container.image.v1+json"
     ) and isinstance(attributes, dict) and all(
         isinstance(attributes.get(key), str) and attributes[key] not in ("", "unknown")
         for key in ("os", "architecture")
-    ) and artifact.get("scan_overview") in (None, {}))
+    ) and artifact.get("scan_overview" if scan_type == "vulnerability" else "sbom_overview") in (None, {}))
 
 
 def backfill_scans(client):
     # Only private application image manifests: scanning an index would also
     # rescan its already-scanned children. Signatures/attestations are excluded.
     pending = []
-    for repository in read_pages(client, "/projects/homelab/repositories", {"sort": "id"}):
+    inventoried = 0
+    for repository in read_pages(client, "/projects/homelab/repositories", {"sort": "id"},
+                                 max_count=MAX_SCAN_REPOSITORIES):
         name = repository.get("name")
         if not isinstance(name, str) or not name.startswith("homelab/") or not name[8:]:
             raise BootstrapError("Harbor returned the wrong image repository")
         encoded = urllib.parse.quote(urllib.parse.quote(name[8:], safe=""), safe="")
         path = f"/projects/homelab/repositories/{encoded}/artifacts"
         artifacts = read_pages(client, path, {"sort": "id", "with_scan_overview": "true",
-                                              "with_accessory": "true", "with_tag": "false"})
+                                              "with_sbom_overview": "true",
+                                              "with_accessory": "true", "with_tag": "false"},
+                               max_count=MAX_SCAN_ARTIFACTS)
+        inventoried += len(artifacts)
+        if inventoried > MAX_SCAN_ARTIFACTS:
+            raise BootstrapError("Harbor image scan inventory exceeds its fixed limit")
         accessories = {item["artifact_id"] for artifact in artifacts
                        for item in (artifact.get("accessories") or [])}
         for artifact in artifacts:
-            if artifact["id"] in accessories or not unscanned_image(artifact):
+            missing = [scan_type for scan_type in ("vulnerability", "sbom")
+                       if missing_image_scan(artifact, scan_type)]
+            if artifact["id"] in accessories or not missing:
                 continue
             digest = artifact.get("digest")
             if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
                 raise BootstrapError("Harbor returned an invalid image digest")
-            pending.append((f"{path}/{digest}", artifact["id"]))
-    queued = 0
-    for path, identifier in pending:
+            pending.append((f"{path}/{digest}", artifact["id"], missing))
+    queued = {"vulnerability": 0, "sbom": 0}
+    for path, identifier, missing in pending:
         # A push or another bootstrap may have started scanning since listing.
-        artifact, _ = client.request("GET", path + "?with_scan_overview=true")
+        artifact, _ = client.request("GET", path + "?with_scan_overview=true&with_sbom_overview=true")
         if not isinstance(artifact, dict) or artifact.get("id") != identifier or (
             artifact.get("digest") != path.rsplit("/", 1)[1]
         ):
             raise BootstrapError("Harbor returned the wrong image artifact")
-        if unscanned_image(artifact):
-            client.request("POST", path + "/scan", {"scan_type": "vulnerability"},
-                           expected=(202,), json_response=False)
-            queued += 1
-    print(f"Harbor queued {queued} missing homelab image vulnerability scans.")
+        for scan_type in missing:
+            if missing_image_scan(artifact, scan_type):
+                client.request("POST", path + "/scan", {"scan_type": scan_type},
+                               expected=(202,), json_response=False)
+                queued[scan_type] += 1
+    print(f"Harbor queued {queued['vulnerability']} missing vulnerability scans and "
+          f"{queued['sbom']} missing SBOM generations for homelab images.")
 
 
 def permissions(name, project_name):

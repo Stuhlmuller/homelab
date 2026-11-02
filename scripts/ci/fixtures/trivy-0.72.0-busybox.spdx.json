@@ -1,0 +1,58 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "/tmp/homelab-issue-burndown/920-trivy-native/busybox.tar",
+  "documentNamespace": "http://trivy.dev/container_image//tmp/homelab-issue-burndown/920-trivy-native/busybox.tar-0ae36d76-2843-48ce-a9c7-1fa687268d81",
+  "creationInfo": {
+    "creators": [
+      "Organization: aquasecurity",
+      "Tool: trivy-0.72.0"
+    ],
+    "created": "2026-11-02T05:31:14Z"
+  },
+  "packages": [
+    {
+      "name": "/tmp/homelab-issue-burndown/920-trivy-native/busybox.tar",
+      "SPDXID": "SPDXRef-ContainerImage-e9b7d1bee23426df",
+      "downloadLocation": "NONE",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "primaryPackagePurpose": "CONTAINER",
+      "annotations": [
+        {
+          "annotator": "Tool: trivy-0.72.0",
+          "annotationDate": "2026-11-02T05:31:14Z",
+          "annotationType": "OTHER",
+          "comment": "DiffID: sha256:0958e0fef2d6a31e1325b8bfecd99dead933363682d69850a7606599023751bc"
+        },
+        {
+          "annotator": "Tool: trivy-0.72.0",
+          "annotationDate": "2026-11-02T05:31:14Z",
+          "annotationType": "OTHER",
+          "comment": "ImageID: sha256:c6348fa86ba0fb2108c9334f5fe913ddc6d853313e655891f133a0127c30099f"
+        },
+        {
+          "annotator": "Tool: trivy-0.72.0",
+          "annotationDate": "2026-11-02T05:31:14Z",
+          "annotationType": "OTHER",
+          "comment": "SchemaVersion: 2"
+        },
+        {
+          "annotator": "Tool: trivy-0.72.0",
+          "annotationDate": "2026-11-02T05:31:14Z",
+          "annotationType": "OTHER",
+          "comment": "Size: 4679680"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relatedSpdxElement": "SPDXRef-ContainerImage-e9b7d1bee23426df",
+      "relationshipType": "DESCRIBES"
+    }
+  ]
+}

@@ -928,7 +928,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "6315b4b2fd7276680db24e3dd2a7e68f093bd9d3d526be755c6e4401d6073c82" ]] || {
+[[ "$scope_body_sha256" == "740a997c97c462c4adeac3f81c20f9928efdd44f8c0ec8915b2b4d980ed4dffb" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1120,8 +1120,8 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
-.github/workflows/terragrunt-plan.yml 22ba1e6b185a5a1ebe4527abd4c5459cb95cf2ed857b8aa7dfc8736555ee7ce9
-.github/workflows/validate.yml ea0547f9a8980c2683a57fb2cab18d208d36bf970b02ff5dac471fef440f9d9f
+.github/workflows/terragrunt-plan.yml 5ec71b1ff22b58cc82e3290710b1a96d55a7cce173424ffe3e3e40bfd1f777bb
+.github/workflows/validate.yml 1e4fabe31ae2780dbc1a7738d952f82e8cbf95e26ee77c7b2389a8f863faf17e
 EOF
 echo "::endgroup::"
 
@@ -1266,7 +1266,7 @@ while read -r source expected_hash; do
   }
 done <<'EOF'
 scripts/ci/harbor-native-chainguard-receipt-import.py a2ac20c35e1b57d9238bb8ab76a4f154a20e0a98b17cb248fd0935ac241a2b22
-scripts/ci/harbor-native-chainguard-receipt.py 7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688
+scripts/ci/harbor-native-chainguard-receipt.py 843aa578f15e74f3ecb6bfb9c9ba9eea7cc023ee7ce462fd7448aaf5a548c64d
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '

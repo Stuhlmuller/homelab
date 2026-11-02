@@ -395,7 +395,12 @@ See the [SSM contract](../../docs/secrets-aws-ssm.md).
 The protected native receipt copies complete source and authenticated Harbor
 indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability
-report type before accepting complete zero-count scans. Pull-request lint lacks
+report type before accepting complete zero-count scans. Version 2 receipts also
+require successful native SBOM generation for every required child. The existing
+pull robot reads the immutable SBOM accessory and document; the verifier checks
+both SHA-256 hashes, the exact subject child, and reachable SPDX library packages
+with supported versioned package identifiers. Container-root, OS-only and
+file-only inventories fail. Version 1 receipts cannot prove this coverage. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
 receipt status. It checks the event PR head only after confirming that head is
 still in the open `main` PR list, then rechecks on `main` pushes only when exact
@@ -415,14 +420,15 @@ for backup schedule, restore sequence and limitations.
 ## Image Scanning
 
 The chart enables Trivy with a retained 5 Gi cache. The repository-owned
-PostSync bootstrap sets and verifies `auto_scan: "true"` for the private
-`homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
-trigger scans. Bootstrap also submits missing scans for retained private
+PostSync bootstrap sets and verifies `auto_scan: "true"` and
+`auto_sbom_generation: "true"` for the `homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
+trigger scans and SBOM generation. Bootstrap also submits missing reports of each type for retained private
 `homelab` image artifacts, leaving existing reports and active scans alone and
 excluding signatures and attestations. Verify completed reports after sync;
 successful submission does not prove a successful scan.
 Backfill traverses the complete repository/artifact inventory, including histories
-over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail closed.
+over 1,000 artifacts, bounded at 1,000 repositories and 10,000 total artifacts
+before submitting scans; duplicate IDs and inconsistent pagination fail closed.
 The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
@@ -717,21 +723,32 @@ Docker-save config bytes. Grype's raw config hash and reported image ID must
 equal that selected config digest. This preserves the immutable export binding
 when Docker inspect reports an index or manifest digest instead of a config
 digest. It also verifies platform/distro, a fresh report/database,
-and absence of filtering, exclusions or VEX input. Available fixes fail this
-audit. Unfixed/unknown matches remain counted; successful collection does not
+and absence of filtering, exclusions or VEX input. The same Grype invocation
+also emits a mandatory CycloneDX 1.6 inventory. A nonempty OS/file list is not
+package coverage: at least one library/application must have a name, version,
+reference and native Syft `rpm` or `go-module` type, matching the Core runtime
+and Go binary. Unknown types do not establish coverage. Missing/empty package
+evidence fails, even with zero vulnerability matches. Each report is bounded to 64 MiB. The
+inventory's scanner identity and timestamp are checked against the JSON report;
+its container version identifies the manifest digest, whose verified bytes and
+config descriptor bind it to the already checked image config. The public
+receipt adds only supported package count and inventory hash. Available fixes
+fail this audit. Unfixed/unknown matches remain counted; successful collection does not
 mean CVE clearance or authorize publication. CI emits only an identity/report-
 hash/database/severity-count receipt while raw metadata and transport logs stay
 private and temporary inputs are removed. On failure, the [bounded diagnostic
 helper](../../scripts/ci/harbor-core-audit-status.sh) prints only a fixed scan
 stage or report-validation category from a separate temporary status file.
 Malformed status becomes `unknown`; the private log and report remain withheld.
-Failed Linux validation additionally retains the complete gzip-compressed
-report as ciphertext for one day, using the [fixed enrolled operator
+Failed Linux validation additionally retains both complete reports in a
+compressed tar as ciphertext for one day, using the [fixed enrolled operator
 recipient](../../scripts/ci/harbor-encrypt-diagnostic.py). The helper's 1 MiB
-input bound applies after compression, with no truncation or plaintext fallback.
+input bound applies to the combined archive after compression, with no
+truncation or plaintext fallback. Partial scanner failures retain only the
+report files that were produced.
 Encryption failure keeps the audit failed and retains no report. The [operator
 instructions](../../builds/harbor-core/README.md) describe private decryption;
-publication and scan acceptance checks are unchanged.
+existing remediation and zero-match publication checks remain enforced.
 The category narrows investigation but does not relax the audit or establish
 vulnerability clearance. Identity failures distinguish archive structure,
 archive path/byte hash mismatch, missing inspected root descriptor, invalid

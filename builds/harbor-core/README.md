@@ -68,21 +68,37 @@ report stay private, and an unknown or malformed diagnostic reports `unknown`.
 A stage narrows the failed operation; it does not establish the cause or grant
 vulnerability clearance.
 
-Failed validation retains the complete gzip-compressed report encrypted to
+One Grype invocation writes its normal JSON report and a CycloneDX 1.6 package
+inventory. Both are mandatory, bounded to 64 MiB each, and checked before a
+successful receipt. The inventory must contain at least one named, versioned
+RPM or Go module package, the native matcher families for this Core image.
+OS/file records and unknown package types do not count. Missing inventory,
+unversioned packages or no supported packages fails closed. Its Grype version
+must match the scan and its timestamp must be within five minutes. CycloneDX identifies the manifest digest: the
+checker hashes the reported manifest and binds its config descriptor to the
+already validated image config. This avoids confusing manifest and config IDs.
+A covered scan with zero matches passes; a zero-package scan does not. The
+receipt includes only the supported package count and inventory hash, never
+package metadata.
+
+Failed validation retains both complete reports in a compressed tar encrypted to
 the [enrolled operator subkey](../../scripts/ci/harbor-encrypt-diagnostic.py)
 for one day as `harbor-core-report-<run-id>-<attempt>`. Raw reports and logs are
-removed. The existing 1 MiB encryption-input limit applies after compression;
+removed. If scanning failed before both outputs exist, the bundle contains only
+the files produced before failure. The existing 1 MiB encryption-input limit
+applies to the combined archive after compression;
 oversized reports or encryption failure retain no artifact and never change the
 failed audit result. No finding is truncated. Decrypt the downloaded ciphertext
-only into a private local directory, then decompress it before inspecting JSON:
+only into a private local directory, then extract the report files:
 
 ```bash
 umask 077
-gpg --output report.json.gz --decrypt harbor-core-report.json.gz.gpg
-gzip --decompress report.json.gz
+gpg --output reports.tar.gz --decrypt harbor-core-reports.tar.gz.gpg
+tar -xzf reports.tar.gz ./report.json ./packages.json
 ```
 
-Do not publish the decrypted report. Reverting the retention wiring restores
+An absent member means the scanner did not finish that output. Do not publish
+the decrypted reports. Reverting the retention wiring restores
 cleanup-only behavior; it does not relax the runtime or publication gates.
 
 ## Protected publication

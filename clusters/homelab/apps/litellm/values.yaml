@@ -7,6 +7,12 @@ command:
   - python
   - /etc/litellm-hooks/gateway.py
 numWorkers: 1
+# Reserve measured gateway memory; hold rollout until Acer can fit two Pods.
+resources:
+  requests:
+    memory: 1Gi
+nodeSelector:
+  kubernetes.io/hostname: acer
 serviceAccount:
   create: true
   name: litellm
