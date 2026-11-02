@@ -118,7 +118,7 @@ funnel_enabled if {
 reviewed_funnel_ingress if {
 	input.kind == "Ingress"
 	input.metadata.namespace == "traefik"
-	input.metadata.name in {"n8n-webhook", "policy-bot-hook", "bulldozer-hook"}
+	input.metadata.name in {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer"}
 	input.metadata.annotations["homelab.rst.io/access-plane"] == "tailscale"
 	input.metadata.annotations["homelab.rst.io/public-callback"] == "true"
 	input.metadata.annotations["tailscale.com/tags"] == "tag:homelab-funnel"
@@ -410,6 +410,7 @@ deny contains msg if {
 	allowed := external_secret_allowed_prefixes[namespace]
 	key := external_secret_remote_keys(input)[_]
 	not remote_ref_key_allowed(key, allowed)
+	not codex_signer_secret_key(key)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
 }
@@ -466,4 +467,15 @@ external_secret_remote_keys(secret) := keys if {
 		key != ""
 	]
 	keys := array.concat(array.concat(data_keys, extract_keys), find_keys)
+}
+
+codex_signer_secret_key(key) if {
+	input.metadata.namespace == "automation"
+	input.metadata.name == "codex-cloud-signer"
+	key in {
+		"/homelab/tailscale/codex-cloud-signer/auth-key",
+		"/homelab/tailscale/codex-cloud-signer/oauth-client-id",
+		"/homelab/tailscale/codex-cloud-signer/oauth-client-secret",
+		"/homelab/tailscale/codex-cloud-signer/webhook-secret",
+	}
 }

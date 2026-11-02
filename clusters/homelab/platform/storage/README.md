@@ -42,3 +42,9 @@ in `automation`. It uses `/var/lib/renovate-cache` on `acer`'s Talos
 node loss can lose the rebuildable cache. Renovate's credential-free init
 container sets only the mount root's ownership before the non-root runner
 starts. The old NFS cache and staged dedicated NAS resources remain intact.
+
+The staged Codex signing API has a retained local 1 GiB PV on `acer`, pre-bound
+to `automation/codex-cloud-signer-state`. Its mode-0700 daemon directory holds
+signing authority and TKA state; do not copy it to the shared NFS export.
+Disk loss requires revocation through another signer, then owner enrollment of
+a replacement. See the [signer recovery contract](../../apps/codex-cloud-signer/README.md#state-and-recovery).

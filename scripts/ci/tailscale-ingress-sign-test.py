@@ -121,10 +121,14 @@ class IngressSigning(unittest.TestCase):
             else:
                 changed[2]["Self"]["Tags"] = [value]
             with self.subTest(index=index), self.assertRaises(SIGNER.GUARDS.Failure):
-                SIGNER.validate_target(SIGNER.TARGETS[4], *changed)
-        self.assertFalse(SIGNER.validate_target(SIGNER.TARGETS[4], *data)["signed"])
+                SIGNER.validate_target(SIGNER.DNS_TARGET, *changed)
+        self.assertFalse(SIGNER.validate_target(SIGNER.DNS_TARGET, *data)["signed"])
         data[3]["NodeKeySigned"] = True
-        self.assertTrue(SIGNER.validate_target(SIGNER.TARGETS[4], *data)["signed"])
+        self.assertTrue(SIGNER.validate_target(SIGNER.DNS_TARGET, *data)["signed"])
+
+    def test_codex_funnel_is_a_fixed_target_not_a_trusted_signer(self):
+        self.assertEqual(SIGNER.TARGETS[5],
+                         ("traefik", "ingress", "codex-signer", "codex-signer", "tag:homelab-funnel"))
 
     def test_bulldozer_proxy_is_a_fixed_funnel_target(self):
         self.assertEqual(SIGNER.TARGETS[3],
@@ -243,7 +247,7 @@ class IngressSigning(unittest.TestCase):
                 patch.object(SIGNER, "local_signer", return_value={}), \
                 patch.object(SIGNER, "inspect_target", return_value=signed) as inspect:
             SIGNER.reconcile(True, dns_only=True)
-        self.assertTrue(all(call.args[0] == SIGNER.TARGETS[4] for call in inspect.call_args_list))
+        self.assertTrue(all(call.args[0] == SIGNER.DNS_TARGET for call in inspect.call_args_list))
 
     def test_changed_dns_identity_blocks_signature(self):
         original = self.validate(fixture())

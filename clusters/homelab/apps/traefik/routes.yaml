@@ -163,6 +163,11 @@ http:
       rule: Host(`bulldozer-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
       middlewares: [reject-ambiguous-paths]
       service: bulldozer
+    codex-signer:
+      entryPoints: [funnel]
+      rule: Host(`codex-signer.tail67beb.ts.net`) && Path(`/webhooks/tailscale`) && Method(`POST`)
+      middlewares: [reject-ambiguous-paths, codex-webhook-limit, codex-webhook-body]
+      service: codex-cloud-signer
     harbor-registry:
       entryPoints: [registry]
       rule: Host(`harbor.stinkyboi.com`) && (Path(`/v2`) || PathPrefix(`/v2/`) || Path(`/service/token`))
@@ -170,6 +175,10 @@ http:
       service: harbor
       tls: {}
   middlewares:
+    codex-webhook-limit:
+      rateLimit: {average: 2, burst: 4}
+    codex-webhook-body:
+      buffering: {maxRequestBodyBytes: 65536, memRequestBodyBytes: 65536}
     reject-ambiguous-paths:
       # Matchers preserve encoded reserved characters; backends may decode them.
       encodedCharacters:
@@ -184,6 +193,10 @@ http:
     octelium-console:
       serverName: console.stinkyboi.com
   services:
+    codex-cloud-signer:
+      loadBalancer:
+        servers:
+          - url: http://codex-cloud-signer.automation.svc.cluster.local:8080
     affine:
       loadBalancer:
         servers:

@@ -2,9 +2,14 @@ terraform {
   required_version = ">= 1.10.0"
 
   required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.56.0"
+    }
     tailscale = {
-      source  = "tailscale/tailscale"
-      version = "0.29.2"
+      source                = "tailscale/tailscale"
+      version               = "0.29.2"
+      configuration_aliases = [tailscale.codex_bootstrap]
     }
   }
 

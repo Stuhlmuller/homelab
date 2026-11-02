@@ -83,6 +83,7 @@ source "$1" --offline-verified
             "github-actions-role-policy", "azuread-ci-identities", "entra-stuhlmuller-domain",
             "entra-stuhlmuller-pilot-user", "entra-emergency-global-admin", "entra-owner-mail",
             "entra-google-workspace-federation", "etcd-backup-storage", "kubernetes-node-labels",
+            "tailscale-access",
         })
         self.assertGreaterEqual(sum(call["args"] == ["render"] for call in calls), 3)
 

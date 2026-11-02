@@ -130,7 +130,8 @@ if tool == "git":
     else:
         unexpected()
 elif tool == "kubectl":
-    if args == ["-n", "argocd", "get", "appproject", "homelab", "-o", "json"]:
+    if args == ["-n", "argocd", "get", "appproject",
+                "homelab-workloads" if config["target"] == "codex-cloud-signer" else "homelab", "-o", "json"]:
         event("preflight.project")
         print(json.dumps(config["project"]))
     elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
@@ -151,6 +152,12 @@ elif tool == "kubectl":
         print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
+    elif args == ["get", "namespace", "automation", "-o", "name"]:
+        event("preflight.namespace")
+    elif args == ["get", "storageclass", "codex-cloud-signer-local", "-o", "name"]:
+        event("preflight.local_storage")
+    elif args == ["get", "pv", "codex-cloud-signer-local", "-o", "name"]:
+        event("preflight.local_volume")
     elif args == ["apply", "-f", "clusters/homelab/apps/external-secrets/namespace.yaml"]:
         event("namespace.apply")
     elif args == ["-n", "external-secrets", "get", "secret", "aws-ssm-auth"]:
@@ -175,7 +182,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer"):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -258,6 +265,12 @@ class TerragruntApplyTest(unittest.TestCase):
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
                 ]
+        elif target == "codex-cloud-signer":
+            project["spec"]["destinations"][0]["namespace"] = "automation"
+            project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+            project["spec"]["clusterResourceWhitelist"] = []
+            app_names = ["external-secrets", "tailscale", "traefik", "platform-storage"]
+            crds = CRDS[:2]
         elif target == "traefik":
             project = json.loads(json.dumps(TRAEFIK_PROJECT))
             app_names = TRAEFIK_APPS
@@ -265,7 +278,7 @@ class TerragruntApplyTest(unittest.TestCase):
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
                   "app_names": app_names, "crds": crds,
-                  "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
+                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -535,6 +548,29 @@ else:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
 
+    def test_codex_signer_uses_automation_project_store_and_local_volume(self):
+        result, events = self.run_apply(target="codex-cloud-signer", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.namespace", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertIn("preflight.local_storage", events)
+        self.assertIn("preflight.local_volume", events)
+        self.assertNotIn("preflight.storage", events)
+        self.assertLess(events.index("ssm.apply"), events.index("apps.apply"))
+        self.assertNotIn("s3.apply", events)
+
+    def test_codex_signer_denies_wrong_namespace_or_missing_local_state_before_writes(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["codex-cloud-signer"]}]}}},
+                    {"fail": "preflight.namespace"},
+                    {"fail": "preflight.local_storage"}, {"fail": "preflight.local_volume"}]
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="codex-cloud-signer", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
+
     def test_traefik_checks_only_its_platform_prerequisites_before_saved_plan(self):
         result, events = self.run_apply(target="traefik", without_azuread=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -667,7 +703,7 @@ else:
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
             live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
@@ -676,7 +712,7 @@ else:
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

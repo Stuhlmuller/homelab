@@ -15,6 +15,7 @@ class Timeout(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="static-timeout-") as folder:
             root = Path(folder)
             for name in ("scripts/ci", "IaC/homelab/us-west-2/operator/github-actions-role-policy",
+                         "IaC/homelab/us-west-2/operator/tailscale-access",
                          "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy",
                          "IaC/terragrunt-catalog/units/live/aws-ssm-parameters", "bin"):
                 (root / name).mkdir(parents=True)
@@ -52,6 +53,8 @@ class Timeout(unittest.TestCase):
                          "renovate-acceptance-final-report-test.py",
                          "renovate-acceptance-ledger-cleanup-test.py",
                          "tailnet-dns-test.py",
+                         "codex-cloud-signer-test.py",
+                         "codex-cloud-signer-manifest-test.py",
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-postgres-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",

@@ -30,6 +30,11 @@ inputs = {
     "external-secrets_aws-ssm-auth",
   ]
   additional_parameter_reader_names = [
+    "/homelab/tailscale/codex-cloud-signer/auth-key",
+    "/homelab/tailscale/codex-cloud-signer/oauth-client-id",
+    "/homelab/tailscale/codex-cloud-signer/oauth-client-secret",
+    "/homelab/tailscale/codex-cloud-signer/webhook-secret",
+
     "/homelab/grafana/azuread/client-id",
     "/homelab/grafana/azuread/client-secret",
     "/homelab/grafana/azuread/auth-url",

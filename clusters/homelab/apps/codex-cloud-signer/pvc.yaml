@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: codex-cloud-signer-state
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: codex-cloud-signer-local
+  volumeName: codex-cloud-signer-local
+  resources:
+    requests:
+      storage: 1Gi

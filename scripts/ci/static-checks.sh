@@ -61,6 +61,8 @@ node --test scripts/ci/renovate-acceptance-source-review-test.js
 python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
 python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
+python3 -I scripts/ci/codex-cloud-signer-test.py
+python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
@@ -83,6 +85,12 @@ python3 -I scripts/ci/envoy-gateway-registration-test.py
 python3 -I scripts/ci/network-policy-registration-test.py
 
 echo "::group::Operator OpenTofu validation"
+(
+  cd IaC/homelab/us-west-2/operator/tailscale-access
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:TokenIssueTime"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:ViaAWSService"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf

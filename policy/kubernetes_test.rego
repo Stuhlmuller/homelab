@@ -85,11 +85,7 @@ test_allows_explicit_discovery_ingress if {
 
 test_rejects_hooked_cordium_bootstrap_application if {
 	resource := cordium_bootstrap_app("1", ["resources-finalizer.argocd.argoproj.io"], "clusters/homelab/apps/cordium-bootstrap", 0)
-	resource_with_hook := object.union(resource, {
-		"metadata": object.union(resource.metadata, {
-			"annotations": object.union(resource.metadata.annotations, {"argocd.argoproj.io/hook": "PostSync"}),
-		}),
-	})
+	resource_with_hook := object.union(resource, {"metadata": object.union(resource.metadata, {"annotations": object.union(resource.metadata.annotations, {"argocd.argoproj.io/hook": "PostSync"})})})
 	violations := deny with input as resource_with_hook
 	some msg in violations
 	contains(msg, "must be a normal resource")
@@ -294,14 +290,10 @@ cordium_cleanup_job(hook, delete_policy, wave, automount) := {
 			"argocd.argoproj.io/sync-wave": wave,
 		},
 	},
-	"spec": {
-		"template": {
-			"spec": {
-				"automountServiceAccountToken": automount,
-				"serviceAccountName": "cordium-genesis-cleanup",
-			},
-		},
-	},
+	"spec": {"template": {"spec": {
+		"automountServiceAccountToken": automount,
+		"serviceAccountName": "cordium-genesis-cleanup",
+	}}},
 }
 
 cordium_genesis_job(spec) := {
@@ -397,9 +389,7 @@ test_allows_bulldozer_funnel_callback if {
 }
 
 test_rejects_funnel_to_private_entrypoint if {
-	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {
-		"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}},
-	})})
+	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}}})})
 	violations := deny with input as resource
 	some msg in violations
 	contains(msg, "Funnel is restricted")
@@ -491,4 +481,27 @@ test_openclaw_enterprise_secret_names_are_exact_and_split_by_namespace if {
 	unknown_denials := deny with input as oce_secret("openclaw-agents", "/homelab/openclaw-enterprise/other-key")
 	some unknown_denial in unknown_denials
 	contains(unknown_denial, "outside its allowed application prefixes")
+}
+
+test_allows_codex_funnel_callback if {
+	resource := object.union(reviewed_callback, {"metadata": object.union(reviewed_callback.metadata, {"name": "codex-signer"}), "spec": object.union(reviewed_callback.spec, {"tls": [{"hosts": ["codex-signer"]}]})})
+	violations := deny with input as resource
+	count(violations) == 0
+}
+
+codex_signer_secret(key) := object.union(renovate_secret(key), {"metadata": {"name": "codex-cloud-signer", "namespace": "automation"}})
+
+test_codex_signer_reads_only_four_exact_runtime_credentials if {
+	every suffix in {"auth-key", "oauth-client-id", "oauth-client-secret", "webhook-secret"} {
+		violations := deny with input as codex_signer_secret(concat("", ["/homelab/tailscale/codex-cloud-signer/", suffix]))
+		count(violations) == 0
+	}
+	every suffix in {"cloud-auth-key", "auth-key-extra", "oauth-client-secret/other"} {
+		violations := deny with input as codex_signer_secret(concat("", ["/homelab/tailscale/codex-cloud-signer/", suffix]))
+		some msg in violations
+		contains(msg, "outside its allowed application prefixes")
+	}
+	violations := deny with input as renovate_secret("/homelab/tailscale/codex-cloud-signer/webhook-secret")
+	some msg in violations
+	contains(msg, "outside its allowed application prefixes")
 }

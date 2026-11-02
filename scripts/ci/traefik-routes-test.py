@@ -55,7 +55,7 @@ class RouteTests(unittest.TestCase):
                     "octelium-api", "octelium-console", "oce-console",
                     "oce-native-admin", "mastodon"}
         self.assertEqual(set(ROUTERS), set(APPS) | controls |
-                         {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "harbor-registry"})
+                         {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer", "harbor-registry"})
         for app, backend in APPS.items():
             with self.subTest(app=app):
                 router = ROUTERS[app]
@@ -103,7 +103,13 @@ class RouteTests(unittest.TestCase):
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()
                   if "funnel" in route["entryPoints"]}
-        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook", "bulldozer-hook"})
+        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer"})
+        self.assertEqual(public.pop("codex-signer"), {
+            "entryPoints": ["funnel"],
+            "rule": "Host(`codex-signer.tail67beb.ts.net`) && Path(`/webhooks/tailscale`) && Method(`POST`)",
+            "middlewares": ["reject-ambiguous-paths", "codex-webhook-limit", "codex-webhook-body"],
+            "service": "codex-cloud-signer",
+        })
         expected = {
             "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`) && "
                             "!PathRegexp(`(?i)^/webhook/+7d4342d3-103b-437a-a941-811a75dacb2f/*$`)"),

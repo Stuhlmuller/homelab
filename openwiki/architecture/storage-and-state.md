@@ -867,3 +867,13 @@ writer fence; they do not automate capture. Other workload gaps remain explicit.
 Operator-managed independent backups are unverified. Real-data drills require
 HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
 No operational RPO/RTO or application recovery is proven by synthetic tests.
+
+## Codex signing authority
+
+The [Codex signer](../../clusters/homelab/apps/codex-cloud-signer/README.md)
+persists its complete daemon and TKA state in a retained local 1 GiB volume on
+`acer`, rather than on the guest-squashed shared NFS export. The API cannot
+mount the private-key directory. No automatic off-node backup is introduced:
+disk loss requires revoking the old signer through another trusted node and
+owner-authorizing its replacement. PVC retention preserves restart identity;
+a Git revert does not revoke signing authority.
