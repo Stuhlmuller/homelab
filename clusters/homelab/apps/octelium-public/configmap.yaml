@@ -32,9 +32,7 @@ data:
           originServerName: mastodon.stinkyboi.com
           httpHostHeader: mastodon.stinkyboi.com
       - hostname: mastodon.stinkyboi.com
-        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
-        originRequest:
-          httpHostHeader: mastodon.stinkyboi.com
+        service: http_status:404
       - hostname: stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:

@@ -33,7 +33,7 @@ def services():
 
 
 def answer(server, hostname, kind, tcp=False):
-    if server == "1.1.1.1" or kind in ("MX", "TXT") or hostname == "mastodon.stinkyboi.com":
+    if server == "1.1.1.1" or kind in ("MX", "TXT") or hostname == "unrelated.stinkyboi.com":
         if kind == "A":
             return "NXDOMAIN", {"qr", "ra"}, set()
         return "NOERROR", {"qr", "ra"}, {(kind, "public-record")}
@@ -78,6 +78,15 @@ class DirectDnsCheck(unittest.TestCase):
                             for call in CHECK.dns_answer.call_args_list))
         with self.assertRaisesRegex(RuntimeError, "reviewed private hostname"):
             CHECK.verify(SERVER, initial=True)
+
+    def test_mastodon_is_private_after_migration(self):
+        self.services["traefik-private"]["metadata"]["annotations"]["coredns.io/hostname"] += ",mastodon.stinkyboi.com"
+        CHECK.verify(SERVER)
+        for kind in ("A", "AAAA"):
+            for tcp in (False, True):
+                CHECK.dns_answer.assert_any_call(SERVER, "mastodon.stinkyboi.com", kind, tcp)
+        self.assertFalse(any(call.args[:2] == ("1.1.1.1", "mastodon.stinkyboi.com")
+                             for call in CHECK.dns_answer.call_args_list))
 
     def test_wrong_service_or_peer_identity_fails_before_dns(self):
         CHECK.selected_services.return_value.add(("another", "service"))
@@ -142,7 +151,7 @@ class DirectDnsCheck(unittest.TestCase):
     def test_cached_public_records_may_have_authoritative_flag(self):
         def cached(server, hostname, kind, tcp=False):
             status, flags, records = answer(server, hostname, kind, tcp)
-            if server == SERVER and (kind in ("MX", "TXT") or hostname == "mastodon.stinkyboi.com"):
+            if server == SERVER and (kind in ("MX", "TXT") or hostname == "unrelated.stinkyboi.com"):
                 return status, flags | {"aa"}, records
             return status, flags, records
         CHECK.dns_answer.side_effect = cached

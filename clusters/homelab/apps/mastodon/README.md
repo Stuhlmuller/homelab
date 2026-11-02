@@ -413,50 +413,59 @@ the Application retains claims for recovery. Preserve SSM keys and backups too.
 
 ## Private client access
 
-The catalog declares a non-anonymous `mastodon.default` Octelium WEB Service.
-It requires `homelab-human-web-access`, preserves Mastodon's bearer token,
-and forwards the original HTTPS host to Istio. `isPublic: true` enables the
-clientless HTTPS listener; it does not grant anonymous access.
+Connect to the homelab tailnet, then open
+`https://mastodon.stinkyboi.com/auth/sign_in` with the Mastodon account email
+and password. Browser and native clients use the same private hostname.
+The tailnet resolver answers its A record with `traefik-private`'s Tailscale
+IPv4 and authoritative NODATA for AAAA. Public DNS remains the federation
+connector; it does not provide browser access.
 
-Establish this Service before restricting the tunnel paths. From reviewed
-`main`, using an authenticated Octelium operator session:
+Traefik's private `websecure` route forwards HTTPS to the existing Istio
+gateway, verifies `mastodon.stinkyboi.com` as the upstream TLS name, and
+preserves the Host and Authorization headers. Istio retains the web/streaming
+split and authenticated gateway identity. No Octelium login is involved.
+The original DNS-retirement inventory stays fixed; Mastodon's public CNAME
+must remain for federation.
+
+After Argo reconciles Traefik, tailnet-dns and the public connector, verify
+normal client DNS and the login form over the tailnet, plus public denial
+and federation access below. Then remove only the obsolete native catalog
+Service, if present, using the repository's declared retirement command:
 
 ```sh
-yq ea 'select(.kind == "Service" and .metadata.name == "mastodon") | .metadata.name = "mastodon.default"' \
-  docs/examples/octelium/homelab-services.yaml > /tmp/mastodon-service.yaml
-octeliumctl apply --domain stinkyboi.com --include Service /tmp/mastodon-service.yaml
 octeliumctl get service mastodon.default --domain stinkyboi.com -o json
+# Only after the private route and public denial checks pass:
+octeliumctl delete service mastodon.default --domain stinkyboi.com
 ```
 
-Verify anonymous access is disabled and the human policy is attached; repeat
-apply must report no changes. Do not apply/prune the complete shared catalog
-for this single-Service change. The tunnel bypasses human access only for the federation allowlist below.
+A native `NotFound` means retirement is complete; authentication/transport
+errors do not. Do not prune the shared catalog or change other Services.
 
 ### Public federation boundary
 
-The tunnel matches an anchored allowlist before its authenticated Octelium
+The tunnel matches an anchored federation allowlist before a fixed HTTP 404
 fallback. Only WebFinger/host-meta, instance actor/inboxes, canonical `/ap/`
 ActivityPub resources, legacy `/users/` resources, contexts, collections,
 emojis and local attachment/thumbnail/avatar/header/emoji files remain anonymous.
 The path grammar excludes dot segments, encoded escapes and arbitrary media
 suffixes; tests exercise cloudflared's actual matcher, including encoded bypasses.
 
-All other paths require Octelium human access: root/web UI, login/recovery,
+All other paths require tailnet access: root/web UI, login/recovery,
 settings, admin/Sidekiq/PgHero, OAuth, all REST APIs, streaming, NodeInfo,
 static application assets, media proxy and backup downloads. Mastodon's own
-login/permissions remain required after Octelium. Native clients need private
-Octelium access; anonymous Internet API/OAuth access is intentionally removed.
-Browser profile/post links (`/@...`) also require human access; remote servers
+login/permissions remain required. Native clients need the tailnet; public
+Internet API/OAuth access is denied.
+Browser profile/post links (`/@...`) also require tailnet access; remote servers
 can still discover accounts with WebFinger and fetch canonical ActivityPub IDs.
 
 Acceptance: anonymous `/admin`, `/auth/sign_in`, `/api/v1/streaming` and `/`
-must reach Octelium authentication, never Mastodon; actor/WebFinger and a real
+must return HTTP 404 outside the tailnet; actor/WebFinger and a real
 media URL must remain accessible. Verify a signed federation fetch, owner login,
-REST posting and streaming through the authenticated/private path. No public
+REST posting and streaming through the tailnet path. No public
 allowlist expansion without checking Mastodon route ownership again.
 
-Rollback through a reviewed PR reverting the tunnel config and its Deployment
-revision; preserve the authenticated Service and all retained data.
+Rollback through a reviewed PR restoring the prior private routing and DNS
+configuration; keep public non-federation denial and all retained data.
 
 The allowlist follows [Mastodon 4.7.3 route ownership](https://github.com/mastodon/mastodon/blob/v4.7.3/config/routes.rb)
 and [attachment serialization](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/note_serializer.rb).

@@ -53,7 +53,8 @@ for name, service in services.items():
     original = service['loadBalancer']['servers'][0]['url']
     scheme = original.split(':', 1)[0]
     service['loadBalancer']['servers'] = [{'url': f'{scheme}://127.0.0.1:{backend_ports[name]}'}]
-routes['http']['serversTransports']['octelium-console']['rootCAs'] = [str(HERE/'backend.crt')]
+for name in ('octelium-console', 'mastodon'):
+    routes['http']['serversTransports'][name]['rootCAs'] = [str(HERE/'backend.crt')]
 
 tls = yaml(ROOT / 'clusters/homelab/apps/traefik/tls.yaml')
 for cert in tls['tls']['certificates']:
@@ -90,7 +91,7 @@ for (const [name, port] of Object.entries(PORTS)) {
       servername: req.socket.servername}));
   };
   const server = name === 'octelium-api' ? http2.createServer() :
-    name === 'octelium-console' ? https.createServer({cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY)}) :
+    ['octelium-console', 'mastodon'].includes(name) ? https.createServer({cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY)}) :
     http.createServer();
   server.on('request', handle);
   server.on('upgrade', (req, socket) => {
@@ -176,8 +177,9 @@ try:
             assert data['version'] == '2.0', data
         if name == 'octelium-alias':
             assert data['headers']['host'] == 'stinkyboi.com', data
-        if name == 'octelium-console':
-            assert data['servername'] == 'console.stinkyboi.com', data
+        if name in ('octelium-console', 'mastodon'):
+            expected_host = 'console.stinkyboi.com' if name == 'octelium-console' else 'mastodon.stinkyboi.com'
+            assert data['servername'] == expected_host, data
         checks += 1
     for host in ('workspace.cordium.stinkyboi.com', 'portal.stinkyboi.com'):
         status,body = request(host)
@@ -255,6 +257,12 @@ try:
     for host in ('fleet.stinkyboi.com', 'grafana.stinkyboi.com', 'octelium-api.stinkyboi.com'):
         assert request(host, '/v2/', entry='registry')[0] == 404
         checks += 1
+    status, body = request('mastodon.stinkyboi.com', '/auth/sign_in')
+    assert status == 200 and json.loads(body)['url'] == '/auth/sign_in', (status, body)
+    assert json.loads(body)['headers']['host'] == f"mastodon.stinkyboi.com:{PORTS['websecure']}", body
+    assert request('mastodon.stinkyboi.com', '/api/v1/streaming', websocket=True)[0] == 101
+    assert request('mastodon.stinkyboi.com', '/auth/sign_in', entry='funnel')[0] == 404
+    checks += 3
     for name in ('multica', 'openclaw', 'cordium'):
         assert request(name+'.stinkyboi.com','/ws',websocket=True)[0] == 101
         checks += 1

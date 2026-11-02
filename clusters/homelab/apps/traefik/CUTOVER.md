@@ -8,17 +8,17 @@ pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 ## Current tailnet DNS cutover
 
 The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
-29 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
+30 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
 routing. Confirm its signed proxy, observed Service IP, and direct UDP/TCP
 answers:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 Confirm the owner enabled that IP as the restricted `stinkyboi.com` nameserver
 in tailnet DNS, with **Use with exit node** when needed. An ordinary client's OS
-DNS path must answer all 29 names privately. The
+DNS path must answer all 30 names privately. The
 [current public cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
 then removes only A/AAAA/CNAME records for the 26 approved non-apex app
 subdomains. It preserves the public apex, mail and DNS-01 records, Cloudflare

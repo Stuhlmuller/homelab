@@ -10,7 +10,9 @@ Its [conditional response filter](../octelium-cluster/console-redirect.yaml)
 repairs Octelium's login return URL from `console.octelium.stinkyboi.com` to
 `console.stinkyboi.com`. The upstream TLS transport verifies the console hostname;
 do not remove this exception until the native console URL is corrected and login
-is verified. Application routes use their Services directly.
+is verified. Mastodon also uses the Istio HTTPS gateway, with its own verified
+TLS hostname, to retain the web/streaming split and gateway mTLS identity.
+Other application routes use their Services directly.
 
 [`routes.yaml`](routes.yaml) is the explicit host/backend inventory. The
 file provider does not discover or publish arbitrary Kubernetes Services.

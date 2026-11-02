@@ -16,11 +16,13 @@ and the Tunnel Deployment remain until the final retirement gate.
 
 ## Mastodon declaration
 
-The Mastodon draft intentionally declares a public federation website at
-`mastodon.stinkyboi.com`, separate from the private application inventory.
-Its fixed-host publication workflow uses the retained Cloudflare Tunnel and
-application-owned authentication. The declaration is not live acceptance;
-retiring that connector requires a replacement Mastodon transport first.
+Mastodon browser and native clients use `mastodon.stinkyboi.com` through
+split DNS and private Traefik on the tailnet. Traefik forwards to the existing
+Istio HTTPS gateway for the web/streaming split, with no Octelium hop.
+The retained public Cloudflare Tunnel exposes only the federation/media
+allowlist; login, APIs and all other paths return 404 outside the tailnet.
+Keep its public CNAME for remote-server discovery. Mastodon is excluded from
+the fixed public-DNS retirement inventory.
 See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
 
 ## DNS Model
@@ -39,13 +41,13 @@ After the DNS image is present in Harbor and the resolver is deployed, inspect
 its Service IP and run the direct UDP/TCP handoff check:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
 `stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
 using an exit node. Do not set a global nameserver. The resolver keeps private
-answers for all 29 current approved names, including the apex. The separate
+answers for all 30 current approved names, including the apex. The separate
 [public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
 retires A/AAAA/CNAME records for only the 26 approved non-apex names after
 ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks
@@ -85,7 +87,7 @@ Tailscale limits network access. AFFiNE native login and Harbor OCI credentials
 continue to reach the application unchanged. Prometheus has no ingress.
 
 The shared Istio gateway and old app VirtualServices remain during cutover.
-Traefik uses application Services directly, except for the retained console
+Traefik uses application Services directly, except for Mastodon's existing web/streaming gateway and the retained console
 redirect compatibility route. See the [Traefik route boundaries](../clusters/homelab/apps/traefik/README.md).
 Compass keeps its existing launch hostnames and discovery-only Ingress entries;
 those names resolve to private Traefik after DNS cutover. Changing its catalog
