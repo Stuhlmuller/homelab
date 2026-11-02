@@ -54,15 +54,22 @@ old GHCR artifacts as part of migration.
 ## Image scanning
 
 Trivy is enabled in `values.yaml`, with a retained 5 Gi database/cache PVC.
-The PostSync bootstrap reconciles `homelab` and `mirror` project metadata `auto_scan: "true"`
-so newly pushed images receive vulnerability scans. It verifies the setting
+The PostSync bootstrap reconciles `homelab` and `mirror` project metadata
+`auto_scan: "true"` and `auto_sbom_generation: "true"` so newly pushed images
+receive vulnerability scans and native SBOM generation. It verifies the settings
 on readback and repairs drift on subsequent syncs. Enabling scan-on-push alone
-does not scan existing artifacts. Bootstrap also submits missing scans for
+does not scan existing artifacts. Bootstrap also submits missing vulnerability
+scans and SBOM generations for
 retained image artifacts in the private `homelab` project. Existing reports and
 queued/running scans are left alone; signatures and attestations are excluded.
+The inventory is bounded at 1,000 repositories and 10,000 total artifacts
+before any scan submission. Each candidate is reread to skip a newly started
+job. Failed reports remain visible for diagnosis instead of retrying on every
+sync. Reverting the project settings stops automatic generation for future
+pushes; it does not remove retained reports or cancel already queued work.
 
 After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
-completed vulnerability report in Harbor. Bootstrap success proves the project
+completed vulnerability report and SBOM in Harbor. Bootstrap success proves the project
 setting and scan submission, not successful database downloads or completed scans.
 
 ## Native Chainguard receipt
@@ -76,7 +83,13 @@ make an image eligible for a workload. The protected
 and verifies the source root index, private root index, and a complete
 `robot$homelab+pull` download byte-for-byte against the reviewed catalog. It
 also requires matching `linux/amd64` and `linux/arm64` child descriptors and
-Harbor `Success` scans whose reported finding counts are all zero.
+Harbor `Success` scans whose reported finding counts are all zero. Version 2
+receipts additionally require successful native SPDX SBOM generation for each
+child, an OCI accessory whose subject is that exact child, verified manifest
+and document hashes, and a positive count of reachable versioned libraries.
+Container-root, OS-only, file-only and unsupported package identifiers do not
+prove coverage. The existing pull robot reads these OCI bytes; robot permissions
+remain unchanged. Raw SBOMs and registry diagnostics stay in private scratch.
 
 The workflow reads the distinct `robot$homelab+scan` credential into a private
 temporary file and queries exact child scan summaries through the existing
