@@ -392,6 +392,13 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
 
+For Descheduler values or chart changes, run
+`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
+rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
+exactly one `--descheduling-interval=30m` argument. Update the check alongside
+the pinned chart when upgrading. Live revision, argument and execution-cadence
+acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
+
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
