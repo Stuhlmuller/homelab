@@ -64,7 +64,8 @@ an existing secret.
 ## Identity, lifetime and authority
 
 The existing identity is `apply`, tag `tag:homelab-ci-apply`. Current source grants
-it TCP 443 to `tag:homelab-ingress` and `tag:k8s-operator`. Its Kubernetes binding
+it TCP 443 to `tag:homelab-ingress` and `tag:k8s-operator`, plus TCP/UDP 53
+to the ingress-tagged split DNS resolver. Its Kubernetes binding
 is cluster-admin; publishing this key therefore enables more authority than
 Harbor alone, even though this mirror path never calls Kubernetes. No ACL or
 RBAC expansion is proposed.

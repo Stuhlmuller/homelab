@@ -15,16 +15,17 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AccessCheckTest(unittest.TestCase):
-    def test_existing_ingress_tag_allows_member_dns_without_ci_expansion(self):
+    def test_existing_ingress_tag_limits_mirror_dns_to_production_ci(self):
         policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())
         self.assertEqual(policy["tagOwners"]["tag:homelab-ingress"], ["tag:k8s-operator"])
         self.assertTrue(any("autogroup:member" in grant["src"] and "*" in grant["dst"]
                             and "*" in grant["ip"] for grant in policy["grants"]))
         self.assertFalse(any("tag:homelab-dns" in grant["dst"] for grant in policy["grants"]))
-        self.assertTrue(all("udp:53" not in grant["ip"] and "tcp:53" not in grant["ip"]
-                            for grant in policy["grants"] if "tag:homelab-ingress" in grant["dst"]
-                            and "autogroup:member" not in grant["src"]
-                            and grant["src"] != ["tag:codex-cloud"]))
+        ci_dns = [grant for grant in policy["grants"]
+                  if any(src.startswith("tag:homelab-ci-") for src in grant["src"])
+                  and set(grant["ip"]) & {"udp:53", "tcp:53", "*"}]
+        self.assertEqual(ci_dns, [{"src": ["tag:homelab-ci-apply"],
+                                   "dst": ["tag:homelab-ingress"], "ip": ["tcp:53", "udp:53"]}])
 
     def test_codex_dns_exception_does_not_expand_ci_or_lan_access(self):
         policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())
