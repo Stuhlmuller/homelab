@@ -807,6 +807,13 @@ application behavior, not only a checksum or successful backup Job.
 
 ## Mastodon
 
+The application is declared suspended pending the 4.7.4 security update:
+web, Sidekiq and streaming have zero replicas at sync wave `-1`. Datastores,
+media, claims and backup/recovery configuration are retained. Verify live
+zero-replica and endpoint state after reconciliation; restore replicas and
+wave `3` only with the security-fixed runtime. See the
+[suspension procedure](../../clusters/homelab/apps/mastodon/README.md#emergency-suspension).
+
 The [Mastodon stack](../../IaC/homelab/us-west-2/apps/mastodon/stack.hcl) registers namespace
 `mastodon` from `clusters/homelab/apps/mastodon`, following `main`. Dependencies
 are SSM, External Secrets, cert-manager, Istio, the retained public connector
