@@ -34,7 +34,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: migrate
-          image: harbor.stinkyboi.com/mirror/ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
+          image: harbor.stinkyboi.com/mirror/ghcr.io/mastodon/mastodon:v4.7.4@sha256:8cbc9c9ffa595c4ced3854b63b8f173251be710f9bbf2d369926023c19666311
           command:
             - ruby
             - /run/launcher/launch.rb
