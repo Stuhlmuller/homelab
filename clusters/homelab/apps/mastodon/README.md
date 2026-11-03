@@ -1,5 +1,19 @@
 # Mastodon
 
+## Emergency suspension
+
+Web, Sidekiq and streaming are declared at zero replicas while the 4.7.4
+security update is pending. Their sync wave is temporarily `-1` so Argo CD
+stops application processing before database-role, migration and bootstrap
+hooks. PostgreSQL, Redis, media, PVCs, secrets, routes and backup/recovery
+configuration are retained. Source changes alone do not establish shutdown:
+verify the merged Argo revision, zero active application Pods and no ready
+web/streaming endpoints, then check the canonical URL no longer serves Mastodon.
+
+Resume through GitOps with the verified security-fixed images, restoring these
+three Deployments to one replica and sync wave `3`. Do not restore the vulnerable
+runtime merely to clear an availability alert.
+
 Mastodon server for stinkyboi.com. This directory owns PostgreSQL, Redis,
 retained storage, web, Sidekiq, streaming, and schema migration. The shared
 Terragrunt stack declares its Application at `IaC/live/argocd-apps/mastodon`;
