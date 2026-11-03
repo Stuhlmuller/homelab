@@ -132,6 +132,18 @@
     },
     {
       "src": [
+        "tag:homelab-ci-apply"
+      ],
+      "dst": [
+        "tag:homelab-ingress"
+      ],
+      "ip": [
+        "tcp:53",
+        "udp:53"
+      ]
+    },
+    {
+      "src": [
         "tag:codex-cloud"
       ],
       "dst": [
@@ -163,14 +175,16 @@
       ],
       "deny": [
         "10.1.0.199:6443",
-        "tag:homelab-ingress:443"
+        "tag:homelab-ingress:443",
+        "tag:homelab-ingress:53"
       ]
     },
     {
       "src": "tag:homelab-ci-apply",
       "accept": [
         "tag:k8s-operator:443",
-        "tag:homelab-ingress:443"
+        "tag:homelab-ingress:443",
+        "tag:homelab-ingress:53"
       ]
     },
     {
@@ -180,7 +194,8 @@
       ],
       "deny": [
         "tag:k8s-operator:443",
-        "10.1.0.199:6443"
+        "10.1.0.199:6443",
+        "tag:homelab-ingress:53"
       ]
     },
     {
