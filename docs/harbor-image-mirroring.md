@@ -26,7 +26,7 @@ and re-run the protected publication workflow before asking Argo CD to sync.
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
 public Chainguard source catalog. The protected `harbor-mirror.yml`
-`chainguard` scope copies its thirteen tagged sources and one retained digest to
+`chainguard` scope copies its thirteen tagged sources and seven retained digests to
 `mirror/cgr.dev/chainguard/<image>`. That proves source provenance and Harbor
 custody only; it does not make an artifact deployment-eligible or move a
 consumer to the public `mirror` project.

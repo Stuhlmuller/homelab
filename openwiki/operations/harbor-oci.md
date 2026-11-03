@@ -180,6 +180,11 @@ verified:
 
 # Harbor Private OCI Registry
 
+The [November 2 image CVE audit](image-cve-audit-2026-11-02.md) records fresh
+public-image scans, official release candidates, free hardened alternatives,
+and the remaining inventory, publication, and compatibility gaps. Its findings
+are tied to image digests; they do not establish which images are running.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
