@@ -19,6 +19,7 @@ ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
 python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/mastodon-release-check-test.py
+python3 -I scripts/ci/mastodon-stopped-baseline-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py

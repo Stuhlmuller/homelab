@@ -9,9 +9,11 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import textwrap
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 SPEC = importlib.util.spec_from_file_location("release", Path(__file__).with_name("mastodon-release-check.py"))
 release = importlib.util.module_from_spec(SPEC)
@@ -32,6 +34,104 @@ RESTORE = {"metadata": {"labels": {"app.kubernetes.io/name": "mastodon-restore-v
 
 
 class ReleaseCheckTest(unittest.TestCase):
+    def run_stopped_gate(self, cron=None, jobs=None, error=None, application=None):
+        class FrozenDateTime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return NOW
+
+        class StoppedFailure(ValueError):
+            pass
+
+        stopped = SimpleNamespace(check=Mock(side_effect=error), Failure=StoppedFailure)
+        loader = SimpleNamespace(exec_module=Mock())
+        app = copy.deepcopy(APP) if application is None else copy.deepcopy(application)
+        if application is None:
+            app["status"]["sync"]["status"] = "OutOfSync"
+        changed = subprocess.CompletedProcess([], 0, "scripts/ci/mastodon-stopped-baseline.py\0")
+        output, diagnostic = io.StringIO(), io.StringIO()
+        with (patch("sys.argv", ["check", "--base-ref", "origin/main"]),
+              patch.object(release.subprocess, "run", return_value=changed),
+              patch.object(release, "read_json", side_effect=[app, cron or CRON,
+                           {"items": [BACKUP, RESTORE] if jobs is None else jobs}]),
+              patch.object(release, "datetime", FrozenDateTime),
+              patch.object(release.importlib.util, "spec_from_file_location",
+                           return_value=SimpleNamespace(loader=loader)),
+              patch.object(release.importlib.util, "module_from_spec", return_value=stopped),
+              contextlib.redirect_stdout(output), contextlib.redirect_stderr(diagnostic)):
+            result = release.main()
+        return result, output.getvalue(), diagnostic.getvalue(), stopped.check
+
+    def test_verified_stop_accepts_only_the_baseline_error(self):
+        result, output, errors, check = self.run_stopped_gate()
+        self.assertEqual(result, 0)
+        self.assertEqual(errors, "")
+        self.assertIn("Verified source-bound stopped", output)
+        check.assert_called_once()
+        self.assertEqual(check.call_args.args[1:], ("origin/main", NOW))
+
+        suspended = copy.deepcopy(CRON)
+        suspended["spec"]["suspend"] = True
+        stale = copy.deepcopy(BACKUP)
+        stale["status"]["completionTime"] = "2026-10-30T11:00:12Z"
+        unsafe = copy.deepcopy(RESTORE)
+        unsafe["spec"]["template"]["spec"]["volumes"][0]["persistentVolumeClaim"]["readOnly"] = False
+        for cron, jobs, message in ((suspended, [BACKUP, RESTORE], "backup is suspended"),
+                                    (CRON, [stale, RESTORE], "backup has not succeeded"),
+                                    (CRON, [BACKUP], "no fresh successful isolated"),
+                                    (CRON, [BACKUP, unsafe], "no fresh successful isolated")):
+            with self.subTest(message=message):
+                result, output, errors, check = self.run_stopped_gate(cron=cron, jobs=jobs)
+                self.assertEqual(result, 1)
+                check.assert_called_once()
+                self.assertIn(message, errors)
+                self.assertNotIn("baseline is not Synced/Healthy", errors)
+                self.assertNotIn("restore passed", output)
+
+    def test_healthy_baseline_never_invokes_stopped_alternative(self):
+        result, _, errors, check = self.run_stopped_gate(application=APP)
+        self.assertEqual(result, 0)
+        self.assertEqual(errors, "")
+        check.assert_not_called()
+
+    def test_stopped_evidence_errors_fail_closed_and_remain_private(self):
+        private = "SYNTHETIC_PRIVATE_DIAGNOSTIC"
+        for error in (subprocess.CalledProcessError(1, "kubectl", output=private, stderr=private),
+                      KeyError(private), TypeError(private), ValueError(private),
+                      AttributeError(private), OSError(private)):
+            with self.subTest(error=type(error).__name__):
+                result, output, errors, check = self.run_stopped_gate(error=error)
+                self.assertEqual(result, 1)
+                check.assert_called_once()
+                self.assertIn("evidence unavailable", errors)
+                self.assertNotIn(private, output + errors)
+
+    def test_checker_only_edits_trigger_the_protected_live_gate(self):
+        workflow = Path(__file__).parents[2] / ".github/workflows/terragrunt-plan.yml"
+        scope = textwrap.dedent(workflow.read_text().split("      - name: Detect Live Terragrunt Plan Scope\n", 1)[1]
+                                .split("        run: |\n", 1)[1].split("      - name:", 1)[0])
+        paths = ["scripts/ci/mastodon-release-check.py", "scripts/ci/mastodon-release-check-test.py",
+                 "scripts/ci/mastodon-stopped-baseline.py", "scripts/ci/mastodon-stopped-baseline-test.py"]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            git = root / "git"
+            git.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_CHANGED_PATH"\n')
+            git.chmod(0o700)
+            for path in paths + ["clusters/homelab/apps/mastodon/README.md"]:
+                with self.subTest(path=path):
+                    output = root / "outputs"
+                    output.write_text("")
+                    result = subprocess.run(["bash", "-eu", "-c", scope], capture_output=True,
+                                            text=True, timeout=5, check=False,
+                                            env={**os.environ, "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                                                 "BASE_REF": "main", "GITHUB_OUTPUT": str(output),
+                                                 "TEST_CHANGED_PATH": path})
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    expected = str(path in paths).lower()
+                    self.assertIn("requires-live-plan=" + expected, output.read_text())
+                    self.assertIn("requires-runtime-check=" + expected, output.read_text())
+                    self.assertEqual(release.runtime_changed([path]), path in paths)
+
     def test_gitops_initial_and_scheduled_restore_templates_supply_release_evidence(self):
         root = Path(__file__).parents[2]
         rendered = subprocess.check_output(["kubectl", "kustomize", str(root / "clusters/homelab/apps/mastodon")],

@@ -174,15 +174,41 @@ Job. Version an initial Job name when changing its copied template; completed
 Kubernetes Job templates are immutable. The nightly verifier prevents the
 original one-shot result from becoming the only recovery evidence.
 
-Runtime and application-registration PRs run
+Runtime, application-registration and release-checker PRs run
 [`mastodon-release-check.py`](../../../../scripts/ci/mastodon-release-check.py)
-in the protected live-plan job. `Terragrunt Gate` fails for an unhealthy Argo
-baseline, a suspended backup schedule, a latest scheduled backup without a
+in the protected live-plan job. `Terragrunt Gate` requires a verified Argo
+baseline and fails for a suspended backup schedule, a latest scheduled backup without a
 successful completion in the last 24 hours, or an isolated restore that did not
 succeed after that backup. Old one-shot restore success cannot satisfy this
 check. Forked runtime PRs fail the gate without receiving credentials; the
 protected check runs from a trusted repository branch. Documentation-only
 changes skip the database check.
+
+The ordinary baseline remains `Synced/Healthy`. An intentionally stopped
+application can instead satisfy the narrow read-only
+[`mastodon-stopped-baseline.py`](../../../../scripts/ci/mastodon-stopped-baseline.py)
+check. It renders the resolved `origin/main` commit, never the proposed PR tree.
+Argo must have compared that exact revision within five minutes, remain Healthy,
+have automatic sync explicitly disabled and no active operation, and report
+only the three application Deployments OutOfSync. Their complete live specs
+must match the reviewed source except for zero replicas and enumerated API
+defaults; unexpected metadata changes also fail. Deployment and ReplicaSet
+controllers must have observed their current generations and report zero
+replicas. Complete namespace inventories must contain no extra Deployment or
+StatefulSet, unfinished Job, or nonterminal Pod except a running Pod owned by
+the retained PostgreSQL or Redis StatefulSet. Both datastore controllers must
+have observed their current generations, retain
+one current/updated/ready replica, and have a Ready Pod at the current revision.
+Repeated inventories must agree. Concurrent changes, missing reads, stale comparisons or unrelated drift fail
+closed. A running backup or verifier temporarily prevents this proof until its
+Job finishes.
+
+This alternative removes only the baseline error. The same unsuspended backup,
+fresh successful scheduled backup and subsequent isolated restore remain
+mandatory; a stop receipt or operator flag cannot replace them. The checker
+does not stop, resume or repair workloads. Its offline fixtures validate the
+decision logic, not live recovery. Reverting this checker change restores the
+original Synced/Healthy-only baseline rule.
 
 The verifier checks tables, accounts and media references. It initializes
 the extensions and limited application role from
@@ -212,10 +238,11 @@ merging this consuming change. An upstream manifest digest alone does not prove
 Harbor publication, a clean vulnerability scan, or complete pullability.
 The emergency stop leaves all three application Deployments at zero replicas and
 Argo automatic sync disabled. Preserve that hold until this patched desired state
-has passed the protected release pipeline. The current release preflight requires
-a Synced/Healthy baseline and rejects the intentionally OutOfSync stopped state;
-resolve that condition through reviewed pipeline code before deployment, without
-restarting a vulnerable version or skipping the check.
+has passed the protected release pipeline. The release preflight accepts either
+a Synced/Healthy baseline or the strictly verified stopped baseline described
+above, while retaining all scheduled-backup and isolated-restore requirements.
+Run that check against trusted current main after restacking this dependent
+change; do not restart a vulnerable version or skip the check.
 
 After the protected deployment, verify all three workloads use the intended
 4.7.5 digests, are ready without increasing restarts, and the instance version is
