@@ -2824,6 +2824,25 @@ schedule, read-only backup access, disabled API-token mounting, and absence of
 production database or credential mounts. The verifier checks the dump checksum,
 restored schema, owner and media catalog; failures cannot report success.
 
+The protected [Mastodon release check](../../scripts/ci/mastodon-release-check.py)
+also runs when its own checker or test files change. Alongside the ordinary
+Synced/Healthy baseline, its [stopped baseline proof](../../scripts/ci/mastodon-stopped-baseline.py)
+accepts only a freshly compared exact `origin/main` revision with automatic sync
+paused and all three application Deployments stopped. Full Deployment specs
+must match that trusted source except for zero replicas and enumerated API
+defaults. Unexpected resource drift, metadata changes, active writers,
+incomplete reads, or changing namespace inventories fail closed. No PR-desired
+state, fixed historical receipt or manual override supplies this proof.
+PostgreSQL and Redis must each have a current, ready controller and a Ready Pod
+at its current revision; cached Argo health alone cannot satisfy this condition.
+It does not mutate live state and never waives the fresh scheduled backup or
+subsequent isolated restore. An unfinished backup or verifier Job must finish
+before the stopped-state proof can pass. The
+[snapshot fixtures](../../scripts/ci/mastodon-stopped-baseline-test.py) and
+[release integration fixtures](../../scripts/ci/mastodon-release-check-test.py)
+exercise rejection paths locally; they do not establish deployment or live
+recovery acceptance. See the [runbook details](../../clusters/homelab/apps/mastodon/README.md#backup-and-restore).
+
 These declarations and fixtures are not live recovery receipts. Job outcomes
 record individual database rehearsals; they do not prove media-file or stable-key
 recovery. Protected CI and GitOps own delivery conditions. Login, SMTP, public

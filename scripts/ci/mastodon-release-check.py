@@ -2,13 +2,17 @@
 """Read-only release preflight; failures belong to the protected PR pipeline."""
 import argparse
 from datetime import datetime, timedelta, timezone
+import importlib.util
 import json
+from pathlib import Path
 import subprocess
 import sys
 
 
 def runtime_changed(paths):
-    return any((path.startswith("clusters/homelab/apps/mastodon/")
+    checks = {"scripts/ci/mastodon-release-check.py", "scripts/ci/mastodon-release-check-test.py",
+              "scripts/ci/mastodon-stopped-baseline.py", "scripts/ci/mastodon-stopped-baseline-test.py"}
+    return any(path in checks or (path.startswith("clusters/homelab/apps/mastodon/")
                 or path.startswith("IaC/") and "/mastodon/" in path)
                and not path.endswith(".md") for path in paths)
 
@@ -94,13 +98,26 @@ def main():
         application = read_json("-n", "argocd", "get", "application", "mastodon")
         cronjob = read_json("-n", "mastodon", "get", "cronjob", "mastodon-backup")
         jobs = read_json("-n", "mastodon", "get", "jobs")["items"]
-        errors = failures(application, cronjob, jobs, datetime.now(timezone.utc))
+        now = datetime.now(timezone.utc)
+        errors = failures(application, cronjob, jobs, now)
+        if errors and errors[0] == "Argo CD baseline is not Synced/Healthy":
+            spec = importlib.util.spec_from_file_location(
+                "mastodon_stopped", Path(__file__).with_name("mastodon-stopped-baseline.py"))
+            stopped = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(stopped)
+            try:
+                stopped.check(application, args.base_ref, now)
+            except stopped.Failure as error:
+                errors[0] += "; " + str(error)
+            else:
+                errors.pop(0)
+                print("Verified source-bound stopped Mastodon baseline; recovery checks remain required.")
         for error in errors:
             print(f"::error::Mastodon release check: {error}.", file=sys.stderr)
         if not errors:
             print("Mastodon baseline, scheduled backup and fresh isolated database restore passed.")
         return int(bool(errors))
-    except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
+    except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError, AttributeError):
         print("::error::Mastodon release evidence unavailable; private diagnostics withheld.", file=sys.stderr)
         return 1
 

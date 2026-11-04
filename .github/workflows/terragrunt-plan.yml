@@ -48,7 +48,7 @@ jobs:
           while IFS= read -r changed_path; do
             case "${changed_path}" in
               clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md|clusters/homelab/apps/litellm/*.md|IaC/*/litellm/*.md) ;;
-              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|clusters/homelab/apps/litellm/*|IaC/*/litellm/*|scripts/ci/litellm-release-check.py|scripts/ci/litellm-release-check-test.py|scripts/ci/litellm-runtime-hardening-check.py|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
+              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|scripts/ci/mastodon-release-check.py|scripts/ci/mastodon-release-check-test.py|scripts/ci/mastodon-stopped-baseline.py|scripts/ci/mastodon-stopped-baseline-test.py|clusters/homelab/apps/litellm/*|IaC/*/litellm/*|scripts/ci/litellm-release-check.py|scripts/ci/litellm-release-check-test.py|scripts/ci/litellm-runtime-hardening-check.py|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
                 requires_live_plan=true
                 requires_runtime_check=true
                 ;;
