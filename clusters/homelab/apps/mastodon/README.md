@@ -193,6 +193,38 @@ comments are omitted rather than granting the application administrator rights. 
 repository-owned desired state before a production restore. Never overwrite an
 active writer's database. Preserve local claims until recovery is verified.
 
+## Mastodon 4.7.5 security release
+
+Web, Sidekiq, migration and owner bootstrap use the official 4.7.5 web index
+`sha256:1cf98fb199f8cc1dcf4bb174095656bd5e19e99f29e935c2a838132083e1f609`.
+Streaming uses
+`sha256:3859d071e61a0ed2610a00e8048d89310235afb86e6923c0243bb4f9f4a31093`.
+Both are immutable multi-platform indexes with amd64 and arm64 manifests.
+The [4.7.5 release](https://github.com/mastodon/mastodon/releases/tag/v4.7.5)
+fixes the inactive-account password bypass affecting 4.7.4
+([advisory](https://github.com/mastodon/mastodon/security/advisories/GHSA-3xjw-gv43-3w62)).
+The 4.7.4 and 4.7.5 Docker upgrade instructions require process restarts and
+list no additional migration step. Existing ordered migration/bootstrap hooks
+remain in place; PostgreSQL, Redis, storage, routes and credentials are unchanged.
+
+Publish and verify these indexes through the fixed Harbor Mastodon scope before
+merging this consuming change. An upstream manifest digest alone does not prove
+Harbor publication, a clean vulnerability scan, or complete pullability.
+The emergency stop leaves all three application Deployments at zero replicas and
+Argo automatic sync disabled. Preserve that hold until this patched desired state
+has passed the protected release pipeline. The current release preflight requires
+a Synced/Healthy baseline and rejects the intentionally OutOfSync stopped state;
+resolve that condition through reviewed pipeline code before deployment, without
+restarting a vulnerable version or skipping the check.
+
+After the protected deployment, verify all three workloads use the intended
+4.7.5 digests, are ready without increasing restarts, and the instance version is
+4.7.5. Exercise client login and federation through their existing routes and
+verify forwarded scheme/client-address handling. If this security release fails,
+stop the application processes again while retaining PostgreSQL, Redis, media,
+backups and keys. The retained 4.7.3/4.7.4 image pins are historical artifacts;
+restarting those affected versions is not the security rollback.
+
 ## Application registration
 
 `IaC/homelab/us-west-2/apps/mastodon/stack.hcl` uses the shared Application template, source

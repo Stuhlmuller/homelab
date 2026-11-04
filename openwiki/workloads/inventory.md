@@ -846,6 +846,13 @@ dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
 backups share a failure domain; they are not independent disaster recovery.
 Preserve the database, media and stable encryption/signing keys during rollback.
 
+The staged [4.7.5 security release](../../clusters/homelab/apps/mastodon/README.md#mastodon-475-security-release)
+pins both official multi-platform indexes through Harbor. Publish and verify the
+fixed Mastodon image scope before consuming the pins. Keep the emergency zero
+replicas and paused Argo sync until the protected release gate accepts the
+patched state; a failed security rollout returns to a stop, preserving the data.
+This source declaration is not evidence that 4.7.5 is already running.
+
 The [isolated verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)
 is declared at 03:35 America/Los_Angeles after the nightly backup window.
 Kustomize copies its template into `mastodon-restore-verification-v2` for
