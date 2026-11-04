@@ -280,9 +280,11 @@ def verify(item, revision, documents, now, read):
     require(ready_stores == DATASTORES, "missing ready datastore pod")
     # Bracket complete inventories, including their identities, specs and status.
     # A new writer or a concurrent controller update requires a fresh attempt.
+    def by_name(values):
+        return sorted(values, key=lambda value: value["metadata"]["name"])
+
     for (plural, kind), original in snapshots.items():
         current = inventory(read, plural, kind)
-        by_name = lambda values: sorted(values, key=lambda value: value["metadata"]["name"])
         require(by_name(current) == by_name(original), "changed " + plural)
     after = read("/apis/argoproj.io/v1alpha1/namespaces/argocd/applications/mastodon")
     application(after, revision, documents, now)

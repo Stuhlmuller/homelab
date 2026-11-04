@@ -5,8 +5,12 @@ from datetime import datetime, timezone
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import tarfile
+import tempfile
 import unittest
 from unittest.mock import patch
 import uuid
@@ -152,11 +156,42 @@ class StoppedBaselineTest(unittest.TestCase):
         snapshot.verify()
         self.assertEqual(snapshot.reads, {**{path: 2 for path in PATHS.values()}, APP_PATH: 1})
 
-    def test_real_default_branch_manifests_can_supply_stopped_baseline(self):
-        # Rendering is entirely local; no Kubernetes API or credential is used.
-        revision, documents = stopped.trusted_source("origin/main")
-        self.assertRegex(revision, r"^[0-9a-f]{40}$")
-        Snapshot(documents).verify()
+    def test_real_manifests_from_isolated_git_fixture(self):
+        # Nix source archives contain no .git directory. Build the trusted ref
+        # entirely inside a disposable fixture, without any remote or credential.
+        source = Path(__file__).resolve().parents[2] / stopped.APP_PATH
+        with tempfile.TemporaryDirectory(prefix="mastodon-test-git-") as temporary:
+            root = Path(temporary)
+            shutil.copytree(source, root / stopped.APP_PATH)
+            fixture_env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull,
+                           "GIT_CONFIG_SYSTEM": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+            for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+                fixture_env.pop(key, None)
+
+            def git(*args):
+                return subprocess.check_output([
+                    "git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                    "-c", "commit.gpgsign=false", "-c", "core.hooksPath=" + os.devnull, *args,
+                ], cwd=root, env=fixture_env, text=True, stderr=subprocess.PIPE)
+
+            git("init", "--quiet", "--template=")
+            git("add", stopped.APP_PATH)
+            git("commit", "--quiet", "-m", "Reviewed fixture")
+            expected_revision = git("rev-parse", "HEAD").strip()
+            git("update-ref", "refs/remotes/origin/main", expected_revision)
+            # Uncommitted proposed content must not become the trusted baseline.
+            candidate = root / stopped.APP_PATH / "kustomization.yaml"
+            candidate.chmod(0o600)  # The source may be a read-only Nix store path.
+            candidate.write_text("invalid: [\n")
+            real_run = stopped.run
+
+            def run_in_fixture(*args, **kwargs):
+                return real_run(*args, cwd=root, env=fixture_env, **kwargs)
+
+            with patch.object(stopped, "run", side_effect=run_in_fixture):
+                revision, documents = stopped.trusted_source("origin/main")
+            self.assertEqual(revision, expected_revision)
+            Snapshot(documents).verify()
 
     def test_explicit_api_defaults_and_terminal_pods_pass(self):
         snapshot = Snapshot()
