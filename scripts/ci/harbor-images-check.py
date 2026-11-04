@@ -150,24 +150,20 @@ def declared_bazarr_images():
     return declared_images(documents + yaml_documents([app / "values.yaml"]))[0]
 
 
-def declared_mastodon_images():
-    app = ROOT / "clusters/homelab/apps/mastodon"
-    if app.exists():
-        manifests = subprocess.check_output(["kubectl", "kustomize", str(app)], text=True)
-        documents = json.loads(subprocess.check_output(
-            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
-        return declared_images(documents)[0]
-    # Publication precedes its consuming workload; compare the fixed four tags
-    # to the full reviewed catalog until the runtime overlay lands.
+def mastodon_publication_images():
+    # Publication precedes the consumer update, including upgrades of an existing
+    # app. Runtime images remain independently covered by the full catalog gate.
+    # Keep this fixed candidate independent of the scope file being validated.
     prefixes = (
-        "ghcr.io/mastodon/mastodon:v4.7.3@",
-        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "ghcr.io/mastodon/mastodon:v4.7.5@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.5@",
         "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )
     sources = {item["source"] for item in json.loads(CATALOG.read_text())["images"]
                if item["source"].startswith(prefixes)}
-    if len(sources) != 4:
+    if len(sources) != 4 or any(sum(source.startswith(prefix) for source in sources) != 1
+                                for prefix in prefixes):
         raise RuntimeError("Mastodon publication prerequisite lacks its four reviewed runtime images")
     return sources
 
@@ -419,7 +415,7 @@ def check():
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
-        ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
+        ("Mastodon", MASTODON_CATALOG, mastodon_publication_images()),
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
         ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),

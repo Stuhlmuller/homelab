@@ -1308,6 +1308,13 @@ remain unverified. Catalog coverage is desired-state evidence only.
 
 ## Mastodon publication boundary
 
+The security publication candidate is Mastodon 4.7.5. Its fixed scope is checked
+independently of the older consuming overlay so the existing targeted publisher
+can publish before deployment. General runtime catalog coverage remains
+enforced. Both upstream platform manifests were verified; destination pulls,
+scans and deployment remain separate live evidence. See the
+[4.7.5 publication procedure](../../docs/harbor-image-mirroring.md#mastodon-475-security-prerequisite).
+
 The fixed [Mastodon scope](../../scripts/config/harbor-mastodon-images.json)
 selects PostgreSQL, Redis, web and streaming digests from the full catalog.
 Publication verifies all-platform copies, aliases and complete authenticated

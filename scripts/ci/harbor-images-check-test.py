@@ -122,22 +122,42 @@ documents = [{"initContainers": [{"image": "busybox:1.38@" + digest}],
 images, digests = check.declared_images(documents)
 assert images == {"busybox:1.38@" + digest, "quay.io/example/operator:v1@" + digest}
 assert digests == {digest}
-# Before its consumer lands, the Mastodon scope still requires all four tags.
+# Publication must precede both onboarding and upgrades of an existing app.
 with tempfile.TemporaryDirectory() as directory:
     root, catalog_path = check.ROOT, check.CATALOG
     check.ROOT = Path(directory)
     check.CATALOG = check.ROOT / "mastodon-full.json"
     sources = [prefix + digest for prefix in (
-        "ghcr.io/mastodon/mastodon:v4.7.3@",
-        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "ghcr.io/mastodon/mastodon:v4.7.5@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.5@",
         "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )]
     check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources]}))
-    assert check.declared_mastodon_images() == set(sources)
+    assert check.mastodon_publication_images() == set(sources)
+    # An existing old consumer must not force publication back to the old tags.
+    app = check.ROOT / "clusters/homelab/apps/mastodon"
+    app.mkdir(parents=True)
+    (app / "workloads.yaml").write_text("image: ghcr.io/mastodon/mastodon:v4.7.3@" + digest)
+    assert check.mastodon_publication_images() == set(sources)
+    # A different version cannot satisfy the fixed candidate contract.
+    check.CATALOG.write_text(json.dumps({"images": [
+        {"source": source.replace(":v4.7.5@", ":v4.7.4@")} for source in sources]}))
+    try:
+        check.mastodon_publication_images()
+        raise AssertionError("Wrong Mastodon candidate version passed")
+    except RuntimeError:
+        pass
+    ambiguous = [sources[0], sources[0].replace(digest, "sha256:" + "b" * 64), *sources[2:]]
+    check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in ambiguous]}))
+    try:
+        check.mastodon_publication_images()
+        raise AssertionError("Ambiguous Mastodon candidate and missing streaming image passed")
+    except RuntimeError:
+        pass
     check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources[:-1]]}))
     try:
-        check.declared_mastodon_images()
+        check.mastodon_publication_images()
         raise AssertionError("Incomplete Mastodon prerequisite passed")
     except RuntimeError:
         pass
@@ -173,7 +193,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
     check.LITELLM_CATALOG.write_text(json.dumps({"images": [{"source": litellm_source}]}))
     check.PROMETHEUS_CATALOG.write_text(json.dumps({"images": [{"source": prometheus_source}]}))
-    check.declared_mastodon_images = lambda: images
+    check.mastodon_publication_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
     check.CHARTS.write_text("[]")

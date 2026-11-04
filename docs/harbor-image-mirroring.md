@@ -719,23 +719,28 @@ other catalog aliases while retaining all-platform digest copies, source-tag
 aliases, and complete anonymous destination pulls. No caller-supplied repository,
 digest, manifest, or destination is accepted.
 
-The inventory gate compares the scope with the rendered Mastodon overlay once
-that consumer exists. Before onboarding, it compares all four fixed version tags
-against the full reviewed catalog. Runtime version changes must update the
-publication scope in the prerequisite change before the consumer reaches main.
+The inventory gate compares the scope with four fixed publication candidate tags
+in the full reviewed catalog, independently of the running consumer version.
+The ordinary runtime inventory gate still requires every declared runtime image
+in the full catalog. Runtime version changes update the publication candidate
+and scope in the prerequisite change before the consumer reaches main.
 Existing shared platform dependencies keep their own publication ownership.
 
-### Mastodon 4.7.4 security prerequisite
+### Mastodon 4.7.5 security prerequisite
 
-The full catalog additionally retains official 4.7.4 web and streaming index
-pins before any runtime change. The owner authorized a one-time seven-day
-image-age exception for this security release on October 29, 2026.
-The fixed Mastodon scope remains bound to the running 4.7.3 overlay, so publish
-these staged pins through the existing `image_scope=all` lane at exact reviewed
-`main`. Require complete destination pulls and fresh child scan review before
-merging the consuming patch. Catalog entries alone do not prove availability
-or authorize deployment; require fresh database backup and recovery evidence.
-Other image-age policy, routes and persistent data remain unchanged.
+The full catalog retains the earlier image pins and adds official 4.7.5 web and
+streaming indexes. The fixed `image_scope=mastodon` lane selects 4.7.5 and the
+unchanged PostgreSQL/Redis images. Both indexes and their amd64/arm64 child
+manifests were verified against their SHA-256 digests on November 3, 2026.
+This proves manifest identity, not Harbor availability or complete image pulls.
+
+Publish at exact reviewed `main`, verify complete destination pulls and inspect
+fresh child scans before merging the consuming patch. Keep the application
+stopped and its automatic sync paused until patched desired state is verified.
+The 4.7.5 release supersedes 4.7.4, which is affected by
+[GHSA-3xjw-gv43-3w62](https://github.com/mastodon/mastodon/security/advisories/GHSA-3xjw-gv43-3w62).
+The executable release preflight remains authoritative; this change does not
+alter its baseline or backup/restore checks, credentials, routes or stored data.
 
 ## Publication queue boundaries
 
