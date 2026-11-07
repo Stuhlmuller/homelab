@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "native-trivy-package-and-vulnerability-scan",
+  "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73",
+  "checked_at": "2026-11-02T05:52:47.716395+00:00",
+  "scanner": {
+    "name": "Trivy",
+    "version": "0.72.0",
+    "release_archive": "trivy_0.72.0_macOS-ARM64.tar.gz",
+    "archive_sha256": "88f208680dc05da2b459e19b4f5aa2b4dc7c2117892ba4aab2ae63baba330016"
+  },
+  "database": {
+    "source": "ghcr.io/aquasecurity/trivy-db:2",
+    "manifest_digest": "sha256:0323600b33c951c44c344fd87ebc4810ac6e435ba857b06a2b5b6b26aac03829",
+    "layer_digest": "sha256:8c3ad6c09a940696f45582281d0c7c0400917b3304e3d186a1af851d3f690602",
+    "updated_at": "2026-11-02T01:14:05.640637121Z",
+    "fetched_at": "2026-11-02T05:50:43.781952+00:00",
+    "next_update": "2026-11-03T01:14:05.64063672Z"
+  },
+  "method": {
+    "archive": "Anonymous pull by immutable child digest; raw manifest, image config and all uncompressed layer diffIDs verified.",
+    "inventory": "trivy image --format spdx-json --offline-scan --skip-db-update --skip-java-db-update --input <archive>",
+    "vulnerabilities": "trivy image --format json --scanners vuln --list-all-pkgs --ignorefile /dev/null --offline-scan --skip-db-update --skip-java-db-update --input <archive>",
+    "database_cache": "Fresh official public OCI database; layer digest and size checked before cache extraction."
+  },
+  "platforms": {
+    "linux/amd64": {
+      "child_digest": "sha256:73f2cab0f11208427595d4bdd784046bc4116ef7cc52f0c1b48b6b7f820288d5",
+      "config_digest": "sha256:75eed28386219af708b18b95400b27e480bf7121b56973ec2f6dc96bacbefcf1",
+      "verified_layer_diffids": 11,
+      "default_user": "0",
+      "vulnerability_targets": 1,
+      "packages": 19,
+      "busybox_version": "1.38.0-r3",
+      "reported_findings": 0,
+      "fixable_findings": 0,
+      "spdx_digest": "sha256:6ea14953777bf9cff303c7a832e150e3af2398cb2410be11c0d3dfacf9780a26",
+      "vulnerability_report_digest": "sha256:a5afa9fd25330ac6bf00739de6c07d0c95378fc25a1a4245fd899923c2c1233d",
+      "command_paths": [
+        "/bin/sh",
+        "/bin/mkdir",
+        "/bin/rm"
+      ],
+      "resolved_executable": "/usr/bin/busybox",
+      "executable_sha256": "58a7e3382ff371cd69bf5184759399b1a7a673205073ae123298a47173b6101e",
+      "elf_interpreter": "/lib64/ld-linux-x86-64.so.2",
+      "resolved_interpreter": "/usr/lib/ld-linux-x86-64.so.2"
+    },
+    "linux/arm64": {
+      "child_digest": "sha256:742cb89fddcad855188f892183ded0b4dcb48d83fdb41ed4463bbab2fe3f7801",
+      "config_digest": "sha256:5e7c1c61077f143b36322868ad4e678551d607411606bbc1b5add9912a99ad25",
+      "verified_layer_diffids": 11,
+      "default_user": "0",
+      "vulnerability_targets": 1,
+      "packages": 19,
+      "busybox_version": "1.38.0-r3",
+      "reported_findings": 0,
+      "fixable_findings": 0,
+      "spdx_digest": "sha256:05c92e8f59d01040a6324664193f650e7188df0b2b55b4135076739cf02be43f",
+      "vulnerability_report_digest": "sha256:e7a0e392f8097eadff16dd72cbb914ae7d1ab99eeb83c88ef91fefc1d9ea980a",
+      "command_paths": [
+        "/bin/sh",
+        "/bin/mkdir",
+        "/bin/rm"
+      ],
+      "resolved_executable": "/usr/bin/busybox",
+      "executable_sha256": "33ba5da5fe3c4316e4f35a4ca60ece93f40ddd955a37c340355b1ac375fcaa46",
+      "elf_interpreter": "/lib/ld-linux-aarch64.so.1",
+      "resolved_interpreter": "/usr/lib/ld-linux-aarch64.so.1"
+    }
+  },
+  "limitations": [
+    "Results apply only to these immutable images, scanner version and database revision.",
+    "Filesystem verification checks executable paths and ELF loaders; no local Linux container runtime was available.",
+    "Protected mirror publication, authenticated pulls and live PVC acceptance are separate."
+  ]
+}

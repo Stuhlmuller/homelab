@@ -20,6 +20,35 @@ namespaces:
 `cordium-local` is node-local scratch storage with a `Delete` reclaim policy.
 It is not replicated or backed up and must not be used for durable app data.
 
+The local-path helper uses the cataloged Wolfi base with packaged BusyBox
+instead of the standalone BusyBox image. Wolfi retains an APK package
+database. On 2026-11-02, native Trivy 0.72.0 found 19 packages, including
+BusyBox `1.38.0-r3`, in each pinned Linux child. The scanner reported zero
+findings on amd64 and arm64 using the public database updated at 01:14 UTC
+that day. The old standalone helper exposed only a container-root SBOM entry.
+The [scan receipt](../../../../docs/evidence/cordium-helper-package-coverage-2026-11-02.json)
+binds both reports to the immutable children and database revision.
+
+Wolfi base preserves the helper's UID 0 default and `/bin/sh`, `mkdir`, and
+`rm` applets. The chart runs `mkdir -m 0777 -p "$VOL_DIR"` during setup and
+`rm -rf "$VOL_DIR"` during teardown. The controller's non-root security context
+does not apply to these helper Pods. Chainguard's BusyBox-only image defaults
+to UID 65532, so it would change host-path permissions behavior. Chart source,
+controller image, helper resources, node placement, and reclaim policy remain
+unchanged.
+
+The result covers these two children at the recorded database revision.
+Merge the catalog prerequisite and require successful protected `chainguard`
+publication and authenticated pulls of this index before rollout. Recheck
+both child reports against a current database. On Harbor, require a fresh
+successful vulnerability scan with zero reported findings and a native,
+package-bearing SBOM whose OCI subject matches each exact mirror child. Then verify Argo
+reconciliation and the local PVC create, write, delete, and recreate behavior.
+Local verification rendered the pinned chart and inspected both native image
+filesystems; no Linux container runtime was available to execute the scripts.
+Rollback restores the prior helper pin through GitOps without moving or
+recreating existing volumes. Retain its catalog entry until rollout acceptance.
+
 The NAS-side setup is documented in `docs/storage-nfs.md`. Do not depend on
 stateful workloads until the provisioner is healthy and the PVC write, delete,
 and recreate validation in that runbook has passed.
