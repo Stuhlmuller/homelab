@@ -403,7 +403,19 @@ For Descheduler values or chart changes, run
 `bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
 rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
 exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. Live revision, argument and execution-cadence
+the pinned chart when upgrading. The same render feeds
+`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
+enabled strategy, valid LowNodeUtilization thresholds and the existing
+DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
+cycle. The protected live-plan job runs
+[`descheduler-release-check.py`](../../scripts/ci/descheduler-release-check.py)
+for runtime/gate changes: healthy fresh nodes, complete settled inventories,
+explicit bounded memory demand, one-eviction headroom and recurring Job reserves.
+It uses read-only UID-bound kubelet measurements and fails on unknown evidence
+without printing private inventory. NodeFit remains a subset of scheduler
+checks; this activation gate does not establish N-1 capacity or later cycles. Missing
+strategy configuration prevents profile construction even while the Pod remains Ready.
+Live revision, argument and execution-cadence
 acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:
