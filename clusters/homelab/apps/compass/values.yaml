@@ -35,7 +35,7 @@ config: |
 
 image:
   repository: harbor.stinkyboi.com/mirror/docker.io/adinhodovic/compass
-  tag: "0.9.0@sha256:f8f99955b60d3b5d0f2747d5a911d1b03c8ca1aff8f6aa592d1cc7fa2d8020c0"
+  tag: "0.13.0@sha256:f1f4a6bc529eb8a424b6125c39e839d108b06e975cf314181f8398bbc55fd498"
 
 resources:
   requests:

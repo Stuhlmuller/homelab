@@ -39,9 +39,9 @@
     },
     {
       "chart": "compass",
-      "version": "0.6.0",
+      "version": "0.11.0",
       "repository": "ghcr.io/adinhodovic/charts",
-      "sha256": "884bb89d548736f516f0f428fc204c5db873b6fd7cd8f7e34bb21ba02f0f466f"
+      "sha256": "960f856c29dfbc9695fc0f10a128367a9b83e651d67c8b1f5c02ffc11183a125"
     },
     {
       "chart": "crossplane",
