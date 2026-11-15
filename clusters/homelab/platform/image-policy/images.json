@@ -46,6 +46,9 @@
       "source": "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
     },
     {
+      "source": "docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c"
+    },
+    {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
     },
     {
