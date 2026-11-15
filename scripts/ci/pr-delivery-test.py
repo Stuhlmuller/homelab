@@ -26,14 +26,32 @@ def pull(number, **changes):
     return value
 
 
-def snapshot(*prs):
-    return {"required_checks": [{"context": "gate", "integration_id": 1}],
+def snapshot(*prs, integration=None):
+    return {"required_checks": [{"context": "gate", "integration_id": integration}],
             "pull_requests": list(prs)}
+
+
+def check_run(number, integration, outcome):
+    return {"id": number, "name": "gate", "app": {"id": integration},
+            "conclusion": outcome if outcome in DELIVERY.PASSED | DELIVERY.FAILED else None,
+            "status": "completed" if outcome in DELIVERY.PASSED | DELIVERY.FAILED else outcome}
 
 
 class DeliveryTests(unittest.TestCase):
     def actions(self, data, roots=None, records=None):
         return DELIVERY.make_plan(data, roots, records)["actions"]
+
+    def inspect_checks(self, runs, integration=None, statuses=None):
+        pr = pull(1)
+        responses = [[pr], pr, statuses or [],
+                     [{"type": "required_status_checks", "parameters": {
+                         "required_status_checks": [{"context": "gate", "integration_id": integration}]}}]]
+        # Split the response across pages so older and newer App runs are not
+        # assumed to arrive together or in ID order.
+        pages = [{"check_runs": runs[:1]}, {"check_runs": runs[1:]}]
+        with patch.object(DELIVERY, "api", side_effect=responses), \
+                patch.object(DELIVERY, "command", return_value=json.dumps(pages)):
+            return DELIVERY.live_snapshot([1])
 
     def test_conflicting_draft_ancestor_is_repaired_before_child(self):
         parent = pull(1, draft=True, mergeable=False)
@@ -125,17 +143,84 @@ class DeliveryTests(unittest.TestCase):
             ("pending", "success", "wait-checks"),
             ("success", "success", "verify-and-merge"),
         ]:
-            pr = pull(1)
-            run = {"id": 2, "name": "gate", "conclusion": None if check == "in_progress" else check,
-                   "status": check}
-            older = {"id": 1, "name": "gate", "conclusion": "failure", "status": "completed"}
-            responses = [[pr], pr, [{"context": "gate", "state": status}],
-                         [{"type": "required_status_checks", "parameters": {
-                             "required_status_checks": [{"context": "gate"}]}}]]
-            with self.subTest(status=status, check=check), \
-                    patch.object(DELIVERY, "api", side_effect=responses), \
-                    patch.object(DELIVERY, "command", return_value=json.dumps([{"check_runs": [older, run]}])):
-                self.assertEqual(self.actions(DELIVERY.live_snapshot([1]))[0]["action"], expected)
+            for integration in (None, 1):
+                with self.subTest(status=status, check=check, integration=integration):
+                    data = self.inspect_checks([check_run(1, 1, "failure"), check_run(2, 1, check)],
+                                               integration, [{"context": "gate", "state": status}])
+                    self.assertEqual(self.actions(data)[0]["action"], expected)
+
+    def test_required_app_outcome_is_not_replaced_by_another_app(self):
+        for required, unrelated, expected in [
+            ("failure", "success", "repair-checks"),
+            ("in_progress", "success", "wait-checks"),
+            ("success", "failure", "verify-and-merge"),
+            ("success", "in_progress", "verify-and-merge"),
+        ]:
+            with self.subTest(required=required, unrelated=unrelated):
+                data = self.inspect_checks([check_run(10, 1, required), check_run(20, 2, unrelated)], 1)
+                row = self.actions(data)[0]
+                self.assertEqual(row["action"], expected)
+                self.assertEqual(row["unverified_checks"], [])
+                self.assertEqual(len(data["pull_requests"][0]["checks"]["gate"]), 2)
+                # An offline replay retains the same issuer-bound decision.
+                self.assertEqual(self.actions(json.loads(json.dumps(data)))[0]["action"], expected)
+
+    def test_latest_rerun_is_selected_independently_for_each_app(self):
+        for latest, expected in [("success", "verify-and-merge"),
+                                 ("in_progress", "wait-checks")]:
+            with self.subTest(latest=latest):
+                data = self.inspect_checks([check_run(30, 2, "failure"),
+                                            check_run(10, 1, "failure"), check_run(20, 1, latest)], 1)
+                self.assertEqual(self.actions(data)[0]["action"], expected)
+
+    def test_unbound_rule_retains_failures_and_pending_from_each_app(self):
+        for outcome, expected in [("failure", "repair-checks"), ("queued", "wait-checks"),
+                                  ("success", "verify-and-merge")]:
+            with self.subTest(outcome=outcome):
+                data = self.inspect_checks([check_run(10, 1, outcome), check_run(20, 2, "success")])
+                self.assertEqual(self.actions(data)[0]["action"], expected)
+
+    def test_missing_or_unknown_required_issuer_is_not_ready(self):
+        for runs in [[check_run(1, 2, "success")], [check_run(1, None, "success")],
+                     [check_run(1, 1, "success"), check_run(2, None, "success")],
+                     [check_run(1, True, "success")]]:
+            with self.subTest(runs=runs):
+                row = self.actions(self.inspect_checks(runs, 1))[0]
+                self.assertEqual(row["action"], "inspect-check-issuers")
+                self.assertEqual(row["unverified_checks"], ["gate"])
+
+    def test_unknown_issuer_does_not_hide_a_known_failure(self):
+        for known, unknown in [("failure", "success"), ("success", "failure")]:
+            with self.subTest(known=known, unknown=unknown):
+                row = self.actions(self.inspect_checks([check_run(1, 1, known),
+                                                       check_run(2, None, unknown)], 1))[0]
+                self.assertEqual(row["action"], "repair-checks")
+                self.assertEqual(row["failed_checks"], ["gate"])
+                self.assertEqual(row["unverified_checks"], ["gate"])
+
+    def test_status_creator_and_legacy_snapshot_do_not_prove_app_identity(self):
+        status = {"context": "gate", "state": "success", "creator": {"id": 1}}
+        data = self.inspect_checks([], 1, [status])
+        for candidate in [data, snapshot(pull(1), integration=1)]:
+            with self.subTest(candidate=candidate):
+                row = self.actions(candidate)[0]
+                self.assertEqual(row["action"], "inspect-check-issuers")
+                self.assertEqual(row["unverified_checks"], ["gate"])
+
+    def test_multiple_required_apps_with_one_context_are_each_evaluated(self):
+        data = self.inspect_checks([check_run(1, 1, "success"), check_run(2, 2, "failure")], 1)
+        data["required_checks"].append({"context": "gate", "integration_id": 2})
+        row = self.actions(data)[0]
+        self.assertEqual(row["action"], "repair-checks")
+        self.assertEqual(row["failed_checks"], ["gate"])
+        data["required_checks"].append({"context": "gate", "integration_id": 3})
+        self.assertEqual(self.actions(data)[0]["unverified_checks"], ["gate"])
+
+    def test_latest_status_overrides_only_the_older_status(self):
+        data = self.inspect_checks([check_run(1, 1, "success")], 1,
+                                   [{"context": "gate", "state": "pending"},
+                                    {"context": "gate", "state": "success"}])
+        self.assertEqual(self.actions(data)[0]["action"], "wait-checks")
 
     def test_fetches_pages_and_rejects_head_changed_during_inspection(self):
         with patch.object(DELIVERY, "command", return_value='[[1,2],[3]]') as command:

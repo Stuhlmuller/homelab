@@ -99,6 +99,20 @@ with `--pr` while resolving the reported graph problem.
 
 The JSON actions are ordered ancestors first. `repair-conflicts` can precede
 readiness review for a draft ancestor; it does not mark that PR ready.
+Check runs retain their GitHub App IDs, with the latest run selected separately
+for each name and App. A rule with `integration_id` requires evidence from that
+App: a newer same-name result from another App cannot replace its result.
+Rules without an App restriction conservatively require all retained same-name
+App results to pass. A same-name commit status must also pass.
+
+`inspect-check-issuers` and `unverified_checks` identify contexts whose required
+App cannot be proven. The REST commit-status response does not identify its
+issuing App; its creator is not an App identity. A status alone, an unattributed
+check run, or a legacy string-only offline snapshot cannot satisfy an App-bound
+rule. Inspect GitHub's required-check evidence before proceeding; do not change
+the rule or treat missing attribution as success. A known failing result still
+produces `repair-checks` even when issuer evidence is incomplete.
+
 `verify-and-merge` is a candidate for the protected-PR procedure, not a merge
 receipt. The agent still verifies all signatures, reviews, actual required App
 identities, current metadata, and operational gates. Status names alone cannot
