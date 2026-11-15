@@ -54,7 +54,7 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
   exact 27-name equality a permanent merge gate.
 - [X] T019 [P] [US1] Add a read-only direct resolver health command in `scripts/tailnet-dns-check.py` that compares the observed resolver Service/online signed peer IP with the supplied
   server, queries the currently approved Service-annotation names over UDP/TCP, checks apex MX/TXT and unrelated public names, and fails if answers are public fallthrough or differ from the
-  live Traefik Service IPv4. An explicit `--initial-handoff` mode also requires exact 27-name equality.
+  live Traefik Service IPv4.
 - [X] T020 [US1] Cover successful direct answers, mismatched peer/Service IP, public-address leakage, missing wildcard answer, UDP/TCP failure, preserved public records, and a later approved add/remove in `scripts/ci/tailnet-dns-check-test.py`.
 
 **Checkpoint**: The resolver can be rendered and directly verified without changing the tailnet DNS setting or public records.
@@ -68,9 +68,9 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
 **Independent test**: Fixture changes that add, change, and remove a route/annotation pair pass only when both declarations agree. Unapproved Service, discovery-only Ingress, public-only route, duplicate, retired, and out-of-zone names fail. The rendered resolver watches only the selected Service; observe convergence on the first later reviewed live name change.
 
 - [X] T021 [US2] Implement route/annotation parity in `scripts/ci/tailnet-dns-test.py`, including fixture mutations for approved add/change/remove, mismatch, duplicate, retired, public-only,
-  Compass-only, and second selected Service. An explicit `--initial-migration` mode also checks exact 27-name equality for the first rollout; the default check must accept later reviewed
-  name changes without editing the migration JSON.
-- [X] T022 [US2] Wire the continuing route/annotation parity and rendered resolver checks into `scripts/ci/static-checks.sh`, and the offline declaration and handoff-check tests into `scripts/ci/offline-checks.sh`; keep the initial-migration assertion outside these permanent gates.
+  Compass-only, and second selected Service. The continuing check accepts reviewed
+  name changes without editing the historical inventory.
+- [X] T022 [US2] Wire the continuing route/annotation parity and rendered resolver checks into `scripts/ci/static-checks.sh`, and the offline declaration and handoff-check tests into `scripts/ci/offline-checks.sh`.
 
 **Checkpoint**: A paired GitOps exposure change is the continuing approval action; DNS answer synchronization is controller-managed.
 
@@ -94,11 +94,11 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
 
 - [X] T026 [P] Explain architecture, DNS query behavior, on-demand tailnet-path health check, signed proxy recovery, restricted nameserver setting, exit-node option, record-retirement gates, cache wait, and fail-closed rollback in `clusters/homelab/platform/tailnet-dns/README.md`, `docs/networking-tailnet-ingress.md`, and `clusters/homelab/apps/traefik/CUTOVER.md`.
 - [X] T027 Refresh the affected platform inventory/topology and validation notes through the repository's native OpenWiki update path for `openwiki/workloads/inventory.md`, `openwiki/architecture/cluster-topology.md`, and `openwiki/operations/validation-gates.md`; keep generated page provenance intact.
-- [X] T028 Run `python3 -I scripts/ci/tailnet-dns-test.py`, its one-time `--initial-migration` mode, `python3 -I scripts/ci/tailnet-dns-check-test.py`,
+- [X] T028 Run `python3 -I scripts/ci/tailnet-dns-test.py`, `python3 -I scripts/ci/tailnet-dns-check-test.py`,
   `python3 -I scripts/ci/tailscale-private-dns-test.py`, Helm render, Kustomize build, the Nix flake/offline/static gates, affected Terragrunt formatting/saved plan, and live pre-apply validation from
   `specs/004-tailnet-service-dns/quickstart.md`; record any unavailable gate before live changes.
 - [X] T029 After the T007 Harbor receipt and T028 gates, merge the reviewed Application/Traefik/tooling PR into `main`, then apply `IaC/stacks/tailnet-dns/stack.hcl` through the declared Terragrunt/Argo path and inspect Application, Deployment, Pod, and Service status read-only.
-- [X] T030 From the trusted signer, preview and sign only the fixed DNS proxy with `scripts/tailscale-ingress-sign.py`; then run `scripts/tailnet-dns-check.py --initial-handoff` and the
+- [X] T030 From the trusted signer, preview and sign only the fixed DNS proxy with `scripts/tailscale-ingress-sign.py`; then run `scripts/tailnet-dns-check.py` and the
   UDP/TCP, 27-name, apex mail, unrelated-public, and HTTPS checks in `specs/004-tailnet-service-dns/quickstart.md` against the actual online Service/peer IPv4. Record the verified address
   and peer identity in private rollout evidence, not as invented static values. The initial 27-name registration and offline mutation checks establish handoff evidence; observe later live
   change convergence on the first actual reviewed name change.

@@ -47,7 +47,6 @@ python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
-python3 -I scripts/ci/n8n-github-trigger-migration-check.py
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-runner-test.py
 python3 -I scripts/ci/cordium-runner-controller-test.py
@@ -140,7 +139,7 @@ python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
 python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
-python3 -I scripts/ci/n8n-ai-migration-check.py
+python3 -I scripts/ci/n8n-runtime-check.py
 python3 -I scripts/ci/clickhouse-log-quarantine-test.py
 python3 scripts/ci/gluetun-cpu-profile-check.py
 python3 scripts/ci/deluge-daemon-status-test.py

@@ -10,8 +10,7 @@ The reviewed source of private names is the Traefik Service's
 `coredns.io/hostname` annotation, paired with hosts in
 [`routes.yaml`](../../apps/traefik/routes.yaml). The Service has the only
 `homelab.rst.io/private-dns=approved` label. The permanent static check rejects
-route/annotation drift; the one-time `--initial-migration` check compares the
-first rollout with the reviewed migration inventory. Later approved names require
+route/annotation drift. Approved names require
 a route, the Service annotation, and the resolver's private view allowlist in
 the same PR. The static check rejects drift among them. The Service watch then
 updates the approved address without a DNS record edit. Approved A/AAAA queries
@@ -75,8 +74,6 @@ and HTTPS acceptance follow the owner change, before public record retirement.
 
 ## Recovery and later public retirement
 
-The `--initial-handoff` option is only for the fixed migration inventory;
-later approved hosts use the routine command above.
 For an outage, run the same checker, inspect Argo,
 Pods, Service status and the proxy's Tailnet Lock signature. Restore the failed
 declaration through reviewed Argo/Terragrunt desired state; if only its key

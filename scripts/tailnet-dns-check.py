@@ -14,7 +14,6 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 SIGNER_SPEC = importlib.util.spec_from_file_location("signer", ROOT / "scripts/tailscale-ingress-sign.py")
 SIGNER = importlib.util.module_from_spec(SIGNER_SPEC)
 SIGNER_SPEC.loader.exec_module(SIGNER)
@@ -49,7 +48,7 @@ def published_ip(value):
     return address
 
 
-def declared_names(value, initial):
+def declared_names(value):
     if value.get("metadata", {}).get("labels", {}).get("homelab.rst.io/private-dns") != "approved":
         raise RuntimeError("Traefik Service lacks private DNS approval")
     raw = value.get("metadata", {}).get("annotations", {}).get("coredns.io/hostname", "")
@@ -60,8 +59,6 @@ def declared_names(value, initial):
         for item in names
     ):
         raise RuntimeError("Approved hostname annotation is missing, duplicate, or outside the zone")
-    if initial and set(names) != set(json.loads(INVENTORY.read_text())["hostnames"]):
-        raise RuntimeError("Initial handoff requires the reviewed private hostname inventory")
     return names
 
 
@@ -85,7 +82,7 @@ def dns_answer(server, hostname, kind, tcp=False):
     return header.group(1), set(flags.group(1).split()), records
 
 
-def verify(server, initial=False):
+def verify(server):
     if selected_services() != {("traefik", "traefik-private")}:
         raise RuntimeError("Only traefik/traefik-private may publish approved DNS names")
     dns = service("tailnet-dns", "tailnet-dns")
@@ -105,7 +102,7 @@ def verify(server, initial=False):
 
     traefik = service("traefik", "traefik-private")
     target = published_ip(traefik)
-    names = declared_names(traefik, initial)
+    names = declared_names(traefik)
     for name in names:
         query = name.replace("*.", "dns-preflight.", 1)
         for tcp in (False, True):
@@ -131,10 +128,9 @@ def verify(server, initial=False):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", required=True, help="Observed tailnet IPv4 of the DNS Service")
-    parser.add_argument("--initial-handoff", action="store_true", help="Require the reviewed private hostname inventory")
     args = parser.parse_args(argv)
     try:
-        verify(args.server, args.initial_handoff)
+        verify(args.server)
     except (ValueError, KeyError, RuntimeError, OSError, subprocess.SubprocessError,
             SIGNER.GUARDS.Failure) as error:
         print(str(error), file=sys.stderr)

@@ -337,33 +337,10 @@ echo "::endgroup::"
 
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
-n8n_migration_values="clusters/homelab/apps/n8n/migration-v1.values.yaml"
-if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values" "$n8n_migration_values"; then
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
   echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
   exit 1
 fi
-rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_migration_values"
-yq -e '
-  (
-    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
-  ) and (
-    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
-  )
-' "$n8n_migration_values" >/dev/null
-# The literal shell assignment is intentionally matched inside a yq expression.
-# shellcheck disable=SC2016
-yq -e '
-  .controllers."migrate-ai-workflow-v1".containers.migrate.command |
-  join("\n") |
-  (
-    contains("if [ ! -s /home/node/.n8n/config ]; then") and
-    contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"") and
-    contains("[{\"id\":\"litellm-managed\",\"name\":\"LiteLLM Gateway\",\"type\":\"openAiApi\",\"data\":{}}]") and
-    contains("const workflows = JSON.parse") and
-    contains("Array.isArray(workflows)") and
-    contains("JSON.stringify(workflows)")
-  )
-' "$n8n_migration_values" >/dev/null
 echo "::endgroup::"
 
 echo "::group::Kiali server digest and Prometheus readiness"

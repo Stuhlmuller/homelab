@@ -62,13 +62,6 @@
       "reason": "Synthetic password returned by mocked private.read_password and asserted in a mocked request."
     },
     {
-      "path": "scripts/ci/n8n-ai-migration-check.py",
-      "check_id": "CKV_SECRET_6",
-      "fingerprint": "7a300ee1940230060f23f691b9f78d5f03cac6c1",
-      "max_occurrences": 1,
-      "reason": "Synthetic credential marker in the offline migration regression fixture."
-    },
-    {
       "path": "scripts/ci/n8n-github-webhooks-test.py",
       "check_id": "CKV_SECRET_6",
       "fingerprint": "3efc34c44c497449b75e34912071666ba1b49d67",
