@@ -5,11 +5,11 @@ description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attributi
 tags: ["homelab", "navigation"]
 sources:
   - id: openwiki-source-869eecdfa0764960d85fe017
-    resource: repo://clusters/homelab/apps/n8n/migration-v1.values.yaml
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-cce2f8f33e3b3639655d2b33
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
-    resource: repo://scripts/ci/n8n-ai-migration-check.py
+    resource: repo://scripts/ci/n8n-runtime-check.py
 generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
@@ -132,7 +132,7 @@ defaults match the External Secrets API to prevent persistent Argo drift.
 | OpenClaw | `/homelab/openclaw/litellm-app-token` | Routed to `openrouter/free`; Codex subscription runtime removed. |
 | Multica | `/homelab/multica/litellm-token` | OpenCode uses the internal gateway; Codex runtime removed. |
 | NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
-| n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. A staged, one-time CLI Job retains the exact inventoried model-node guards and n8n's required one-element export arrays. The gateway key never enters workflow JSON. |
+| n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. One-time workflow conversion overlays have been removed. The gateway key never enters workflow JSON. |
 
 AFFiNE has no active AI workload. Cordium
 may host user workloads and remains outside this cluster-owned routing contract.
@@ -286,32 +286,12 @@ database inventory of all ten workflows confirmed the active model node uses
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
 A newer read-only PostgreSQL inventory on 2026-10-24 found all three exact
 target nodes using `openrouter/free` and `litellm-managed`; the same one active
-and two inactive flags remain. The active values remove the old startup
-migration so workflow edits cannot block app startup. The guarded, versioned Job is
-staged in [migration-v1.values.yaml](../../clusters/homelab/apps/n8n/migration-v1.values.yaml)
-but is absent from the active Helm valueFiles: steady state generates no migration
-Job and makes no workflow DB edits. A separate activation PR is needed only for
-a restored or stale database. It must first establish a verified paired off-NAS
-PostgreSQL dump and n8n PVC backup/restore path; the current database notes
-only show `pg_dump` to stdout, and
-[application-backup.py](../../scripts/application-backup.py) has no n8n recovery
-set. Add paired capture, off-NAS publication, and a restore test before
-activating the Job.
-
-On activation, the Job runs after n8n becomes healthy, with same-node affinity
-for the existing `ReadWriteOnce` config PVC. Its failure stays visible without
-blocking app startup. The persisted config owns the encryption key on existing
-PVCs. The Job skips only missing or edited exact workflow/node targets. It
-inspects the LiteLLM credential only when a workflow needs migration, preserves
-a matching existing credential only if its stored data is blank, and imports a
-blank one only if absent. The decrypted inspection uses container memory and
-does not log values; failed inspection, unexpected metadata or nonblank data
-stops before workflow import. Failed ID listing, export, parse, import or
-unexpected node shape also fails the Job. It republishes only previously active
-workflows. If an active workflow changes,
-a separate reviewed GitOps Deployment restart is needed before the published
-version is live. The synthetic migration check covers fresh and edited DB
-states, malformed exports, failures and the exact node transformation.
+and two inactive flags remain. The Deployment has no workflow rewrite init
+container. The excluded one-time AI and GitHub Trigger conversion overlays
+have been removed, so GitOps syncs do not edit workflow data. The
+[runtime check](../../scripts/ci/n8n-runtime-check.py) preserves startup and
+LiteLLM authorization coverage. Future conversions must use a fresh workflow
+inventory and the [paired recovery procedure](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence).
 The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.

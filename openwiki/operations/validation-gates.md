@@ -193,7 +193,7 @@ sources:
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
-    resource: repo://scripts/ci/n8n-ai-migration-check.py
+    resource: repo://scripts/ci/n8n-runtime-check.py
   - id: openwiki-source-e2baf610aa52fccbe2535d65
     resource: repo://scripts/ci/network-policy-canary-node-test.py
   - id: openwiki-source-6fc8139a15619bb0b0107205
@@ -797,10 +797,9 @@ until replacement acceptance.
 
 `static-checks.sh` runs the full pinned Helm render and route/annotation parity
 gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
-read-only handoff fixtures. For the first migration, also run
-`python3 -I scripts/ci/tailnet-dns-test.py --initial-migration` to require the
-27 reviewed names. Later route additions, renames and removals retain parity
-without freezing that initial inventory. The fixed `image_scope=dns` Harbor
+read-only handoff fixtures. Route additions, renames and removals must retain
+parity with the resolver allowlist. The one-time initial-inventory mode has
+been removed after the completed cutover. The fixed `image_scope=dns` Harbor
 publisher selects only the pinned k8s_gateway image; catalog and publisher
 fixtures reject missing, extra, or changed scope entries before credentials.
 Protected DNS mirror run `39161113974` passed at `main` `5558f8c1` with
@@ -809,7 +808,7 @@ does not prove live resolver health.
 
 After Argo reports the `tailnet-dns` Application Synced/Healthy, sign the fixed
 DNS proxy under Tailnet Lock and run
-`python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff`
+`python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>`
 from the trusted signer Mac with read-only cluster access. The checker binds
 the observed IP to the online signed peer, rejects other selected Services,
 and probes all 29 current approved A/AAAA names over UDP and TCP, including a Cordium
@@ -1079,25 +1078,11 @@ live replacement; fixture success alone is not production recovery.
 
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
-`scripts/ci/n8n-ai-migration-check.py` runs the staged n8n migration Job shell
-with synthetic exports and checks that the active Deployment has no migration
-init container or Job. It checks the three exact target nodes, unchanged
-inactive state, idempotence, no credential write for absent or already migrated
-workflows, preservation of a blank existing credential, and refusal on credential
-inspection errors, mismatched metadata or nonblank stored data. Failed ID
-listing, workflow export, malformed JSON or node shape, duplicate target node,
-or write error fails the Job without blocking app startup.
-It does not prove deployment or live workflow execution.
-`scripts/ci/n8n-github-trigger-migration-check.py` exercises the excluded
-Emergency GitHub Trigger Job against synthetic old and migrated workflows. It
-checks the six-node graph and parameter guards, GitHub App credential
-reference preservation, expression rewrite, stale-state refusal, and retry
-idempotence. A zero-exit import that skips the workflow must fail the Job's
-readback before publishing the old graph. The fixture also verifies the Job
-remains outside the live n8n values and Kustomize inputs. A passing fixture
-does not establish the required paired
-database/PVC backup, GitHub App `Webhooks: write` permission, hook registration,
-or live signature verification.
+`scripts/ci/n8n-runtime-check.py` checks that startup has only the PostgreSQL
+readiness init container, no workflow Job, and an authorized n8n-to-LiteLLM
+route. The old one-time workflow conversion overlays and their synthetic
+migration fixtures have been removed. Runtime checks do not prove live workflow
+execution or signed callback acceptance.
 On 2026-10-31, read-only GitHub API inspection found `repository_hooks`
 absent from both the n8n App registration and its organization installation.
 GitHub requires repository `Webhooks: write` to create a hook, and an installed

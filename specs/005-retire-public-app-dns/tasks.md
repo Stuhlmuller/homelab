@@ -106,7 +106,7 @@
 
 **Purpose**: Validate and merge the reviewed code, then execute and verify the guarded cutover from `main`.
 
-- [X] T016 Run `bash -n scripts/tailscale-private-dns.sh`, `python3 -I scripts/ci/tailscale-private-dns-test.py`, `python3 -I scripts/ci/tailnet-dns-check-test.py`, `python3 -I scripts/ci/tailnet-dns-test.py --initial-migration`, and `nix develop --command bash scripts/ci/static-checks.sh --offline-verified`; record any unavailable gate in `specs/005-retire-public-app-dns/tasks.md` or the PR.
+- [X] T016 Run `bash -n scripts/tailscale-private-dns.sh`, `python3 -I scripts/ci/tailscale-private-dns-test.py`, `python3 -I scripts/ci/tailnet-dns-check-test.py`, `python3 -I scripts/ci/tailnet-dns-test.py`, and `nix develop --command bash scripts/ci/static-checks.sh --offline-verified`; record any unavailable gate in `specs/005-retire-public-app-dns/tasks.md` or the PR.
 
 **T016 validation (2026-10-18):** Bash syntax, 23 focused Cloudflare/preflight
 tests, 9 direct DNS checker tests, the Nix private DNS declaration test,

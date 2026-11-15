@@ -11,8 +11,7 @@ metadata, user records, and execution history. It still persists
 encryption-key settings, and file-backed runtime data.
 
 The Terragrunt-generated encryption key comes from AWS SSM Parameter Store
-through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. Both the app and
-the staged one-time workflow-migration Job export it as `N8N_ENCRYPTION_KEY` only
+through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. The app exports it as `N8N_ENCRYPTION_KEY` only
 when `/home/node/.n8n/config` does not exist yet, so a restored or
 already-initialized PVC keeps using the key in its persisted settings file
 instead of crashlooping on an accidental mismatch.
@@ -40,48 +39,18 @@ instance key; do not rotate the SSM value without following an n8n-supported
   credential resolves to `http://litellm.ai.svc.cluster.local:4000/v1` without
   serializing the key in a workflow.
 
-The n8n Deployment no longer runs the AI migration as an init container.
-`migration-v1.values.yaml` contains the guarded, versioned Job but is
-**not** listed in `IaC/homelab/us-west-2/apps/n8n/stack.hcl` Helm valueFiles.
-The current GitOps render contains no migration Job and this availability fix
-makes no workflow database edits. A read-only PostgreSQL query on 2026-10-24
-found all three inventoried model nodes already set to `openrouter/free` and
-`litellm-managed`; one workflow is active and two are inactive.
+The Deployment runs only the PostgreSQL readiness init container. The old
+one-time AI workflow rewrite and GitHub Trigger conversion overlays have been
+removed; normal syncs and restarts do not edit workflow data. A read-only
+PostgreSQL inventory on 2026-10-24 found all three inventoried model nodes
+already using `openrouter/free` and `litellm-managed`.
 
-A separate activation PR may add the staged file to Helm valueFiles if a
-restored or stale database needs migration. Before that PR merges, verify a
-paired off-NAS PostgreSQL logical dump and n8n PVC backup plus a restore path.
-The [database notes](../n8n-postgres/README.md#backup-and-restore) show a
-`pg_dump` command but do not yet establish this paired backup receipt. The
-staged Job uses exact workflow/node IDs and previous settings as guards; it
-skips missing or edited workflows, fails on list/export/parse/import errors,
-and republishes only previously active workflows. It inspects the LiteLLM
-credential only when a workflow needs migration. A matching existing credential
-with blank stored data is preserved; an absent one is created with blank data.
-The decrypted inspection uses container memory (`/dev/shm`) and removes its
-temporary file without logging credential values. Inspection failures,
-unexpected metadata or nonblank stored data stop the Job before workflow
-import. This avoids n8n's same-ID credential import overwrite on retries or
-restored DBs; type-wide credential overwrites fill only blank fields.
-Credentials and workflow exports retain n8n's required one-element JSON arrays.
-The key never enters workflow JSON. Run `nix develop --command python3 -I
-scripts/ci/n8n-ai-migration-check.py` to exercise these cases.
+Run `python3 -I scripts/ci/n8n-runtime-check.py` to check startup and the
+LiteLLM authorization boundary. Recovery uses the paired database/PVC backup
+below. Any future workflow conversion needs a new change based on a fresh
+workflow inventory and a verified restore path.
 
-When activated, Argo CD applies the Job at sync wave 1 after n8n is healthy and
-its PostgreSQL schema exists. Required affinity places the Job on n8n's node
-for the existing `ReadWriteOnce` NFS PVC. The Job uses the n8n service account,
-file-backed PostgreSQL client secret, and persisted config key; the bootstrap
-key applies only when `/home/node/.n8n/config` is absent. Its stable versioned
-name means ordinary n8n restarts and Argo resyncs do not rerun a completed Job.
-Failures remain visible in Job status and logs while the Deployment serves.
-`N8N_AI_MIGRATION_APPLIED` logs only workflow ID, prior active state, and
-`restart_required`. If an active workflow changes, a separately reviewed
-GitOps Deployment revision must restart n8n before the published change is
-live. Verify a real workflow/Langfuse generation before retiring the AWS key.
-Rollback needs the paired database dump and n8n PVC restore; editing the Job
-cannot undo database changes.
-
-## Staged signed Emergency callback
+## Pending signed Emergency callback
 
 The GitHub Emergency workflow (`AARG1VWHRxowXlSU`) currently starts with an
 unauthenticated generic Webhook node. Its existing GitHub hook `636944763`
@@ -92,54 +61,21 @@ HTTP success did not authenticate the callback.
 now rejects such an unsigned delivery. Header presence proves GitHub signed a
 delivery, while the receiver's HMAC check comes from the n8n trigger.
 
-`migration-github-trigger-v1.values.yaml` stages a one-time Job. It is absent
-from the n8n Helm valueFiles and Kustomize resources, so this source change
-does not edit the workflow or register a hook. The Job requires the exact
-active six-node graph, original parameter fingerprints and seven inventoried
-expression locations. It replaces only the old Webhook node with n8n 2.43.7's
-native GitHub Trigger, copies the existing `githubAppApi` credential reference,
-and changes those expressions from `$json.body.payload` to `$json.body` for
-the trigger's JSON event body. Drift aborts before import; an already migrated
-graph is a no-op. The new node ID path is
-`/webhook/f3e12cbd-1d01-4ef0-b24e-d68741ea898b/webhook`, distinct from the
-old path. The pinned trigger creates a random signing secret, configures the
-new GitHub hook with JSON content, and rejects invalid signatures before the
-workflow runs. It cannot adopt or delete the existing generic hook.
-
-Before a separate activation PR includes this values file, verify a paired
-off-NAS PostgreSQL logical dump and n8n PVC backup with a restore path, and
-confirm that the existing GitHub App installation credential has repository
-`Webhooks: write` permission. Run
-`nix develop --command python3 -I scripts/ci/n8n-github-trigger-migration-check.py`
-and render the proposed Helm values. Activation imports and republishes the
-workflow. In n8n 2.43.7, CLI import first deactivates it; the Job compares the
-full imported node graph before publishing and checks active readback after.
-A failed import or publish can leave the workflow unavailable, so the paired
-restore is required. A separate reviewed GitOps Deployment revision restarts
-n8n to load the published version. Verify the new signed hook and a fresh
-delivery before retiring the old unsigned hook through a reviewed
-repository-owned helper change. Keep Traefik's old-path exclusion in place
-through that verification and retirement; the new path is not excluded. The
-callback helper has a separate read-only `--verify-signed-trigger` mode for this
-post-activation check. Record a UTC timestamp immediately before activation,
-then run it with `--activated-after ACTIVATION_UTC` after the n8n restart and a
-real pull request event. It discovers exactly one new active JSON/TLS GitHub
-hook at the pinned native path, reads back its masked signing secret, and
-requires its latest pull request delivery to be newer than both that timestamp
-and the hook's `updated_at`, successful and signed. It checks that the old hook
-still points at its denied path. Safe OPTIONS probes require Traefik's
-plain-text 404 on the old path and 204 on the new POST-only path. The helper
-sends no webhook, does not calculate the HMAC, and does not prove workflow
-execution; check that separately before retiring the old hook. Rollback
-requires the paired database and PVC restore; removing the Job does not undo
-the workflow edit.
+No workflow-conversion Job is shipped. Replacing the unsigned callback remains
+unfinished work: prepare a current workflow conversion, verify paired off-NAS
+database/PVC recovery, and establish the GitHub App's repository `Webhooks:
+write` permission before activation. Keep Traefik's old-path exclusion in place.
+The read-only `scripts/n8n-github-webhooks.py --verify-signed-trigger` helper
+can verify hook registration and fresh signed delivery after a future conversion;
+workflow execution still needs separate verification. Removing the old overlay
+does not establish callback acceptance or change the live workflow.
 
 ## Inactive Paired-Backup Maintenance Fence
 
 `maintenance-fence.values.yaml` sets the n8n Deployment to zero replicas. The
 active stack still lists only `values.yaml`, so this file changes no live
 workload. A separately reviewed fence revision may append it after `values.yaml`
-in the Helm `valueFiles`; keep both migration overlays excluded. This pauses
+in the Helm `valueFiles`. This pauses
 the editor, webhooks, scheduled workflows, and other in-process writers while
 `n8n-postgres` remains available for a logical dump. Plan the outage and
 preserve the existing n8n and PostgreSQL PVCs.
@@ -393,14 +329,6 @@ kubectl -n automation exec deploy/n8n -c app -- \
 curl -I https://n8n.stinkyboi.com/
 curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 grep -i webhook /tmp/n8n-webhook-body.txt
-```
-
-After a separately approved migration activation, inspect the Job without
-changing it:
-
-```sh
-kubectl -n automation get job/n8n-migrate-ai-workflow-v1
-kubectl -n automation logs job/n8n-migrate-ai-workflow-v1 -c migrate
 ```
 
 Expected route behavior: the editor is reachable on the mesh, and the Funnel

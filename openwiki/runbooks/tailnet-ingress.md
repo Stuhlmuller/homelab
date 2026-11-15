@@ -346,7 +346,7 @@ tailnet IP from the trusted signer Mac:
 ```sh
 python3 -I scripts/tailscale-ingress-sign.py --dns-only
 python3 -I scripts/tailscale-ingress-sign.py --dns-only --execute
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 The owner then sets that IP as a restricted `stinkyboi.com` nameserver in
@@ -454,17 +454,13 @@ generic Webhook node, so HTTP success did not establish a trusted event.
 unsigned delivery under `--require-delivery`. Header presence establishes that
 GitHub signed the request, while n8n must verify its HMAC before execution.
 
-The excluded [GitHub Trigger migration Job](../../clusters/homelab/apps/n8n/migration-github-trigger-v1.values.yaml)
-guards the exact workflow graph and parameter fingerprints, preserves its
-GitHub App credential reference, and prepares a separate signed JSON callback
-path. It changes no live workflow until a separate activation PR includes the
-values file. Activation needs a verified paired off-NAS n8n PostgreSQL dump
-and PVC backup with restore path, plus the GitHub App's repository
-`Webhooks: write` permission. After activation, verify a fresh signed delivery
-on the new hook, then retire the old unsigned hook through a reviewed
-repository-owned helper update. Keep the old-path Traefik exclusion until the
-old hook is confirmed absent. The new path remains routed by the existing
-callback rule. The current helper still targets the old ID.
+The excluded one-time GitHub Trigger conversion overlay has been removed.
+The unsigned callback remains contained by Traefik's old-path exclusion.
+A future conversion must be prepared from a fresh workflow inventory and needs
+a verified paired off-NAS PostgreSQL/PVC recovery path plus the GitHub App's
+repository `Webhooks: write` permission. Verify a fresh signed delivery and
+workflow execution on the new hook before retiring the old unsigned hook.
+Removing the overlay changes no live workflow or callback acceptance status.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,

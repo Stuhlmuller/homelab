@@ -13,7 +13,6 @@ Use the reviewed checkout, Helm, Kustomize, Python 3, `dig`, `kubectl`, Terragru
 
 ```sh
 python3 -I scripts/ci/tailnet-dns-test.py
-python3 -I scripts/ci/tailnet-dns-test.py --initial-migration
 helm template tailnet-dns oci://codeberg.org/k8s-gateway/charts/k8s-gateway \
   --version 4.0.0 --namespace tailnet-dns \
   -f clusters/homelab/platform/tailnet-dns/values.yaml >/tmp/tailnet-dns-render.yaml
@@ -48,7 +47,7 @@ dig @<DNS_TAILNET_IP> stinkyboi.com A +noall +comments +answer
 dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +noall +comments +answer
 dig @<DNS_TAILNET_IP> stinkyboi.com MX +noall +answer
 dig @<DNS_TAILNET_IP> mastodon.stinkyboi.com A +noall +answer
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 Expected: UDP and TCP A answers for the apex match the private Traefik Service IPv4; all 26 exact names and a real Cordium wildcard child pass the full check; approved AAAA queries have no public

@@ -40,7 +40,7 @@ def load_yaml(path):
         ["yq", "ea", "-o=json", "-I=0", "select(document_index == 0)", str(path)], text=True))
 
 
-def approved_names(values, routes, inventory, *, initial=False):
+def approved_names(values, routes, inventory):
     services = values["service"]
     selected = [name for name, service in services.items()
                 if service.get("labels", {}).get("homelab.rst.io/private-dns") == "approved"]
@@ -69,9 +69,6 @@ def approved_names(values, routes, inventory, *, initial=False):
         routed.extend(WILDCARD_RULES[value] for value in regexps)
     require(len(routed) == len(set(routed)), "duplicate private HTTPS route name")
     require(set(names) == set(routed), "private Service DNS names differ from HTTPS route names")
-    if initial:
-        require(set(names) == set(inventory["hostnames"]) and len(names) == len(inventory["hostnames"]),
-                "initial handoff must match the reviewed private hostname inventory")
     return set(names)
 
 
@@ -121,13 +118,6 @@ def mutation_checks(values, routes, inventory, dns_values):
         pass
     else:
         raise AssertionError("new private name passed without a DNS view update")
-    try:
-        approved_names(added_values, added_routes, inventory, initial=True)
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("future addition passed the one-time migration check")
-
     renamed_values, renamed_routes = copy.deepcopy(values), copy.deepcopy(routes)
     renamed_values["service"]["private"]["annotations"]["coredns.io/hostname"] = (
         renamed_values["service"]["private"]["annotations"]["coredns.io/hostname"]
@@ -254,8 +244,8 @@ def rendered_contract():
 
 def main():
     args = set(sys.argv[1:])
-    require(args <= {"--declarations", "--initial-migration"},
-            "usage: tailnet-dns-test.py [--declarations] [--initial-migration]")
+    require(args <= {"--declarations"},
+            "usage: tailnet-dns-test.py [--declarations]")
     values = load_yaml(VALUES)
     routes = load_yaml(ROUTES)
     inventory = json.loads(INVENTORY.read_text())
@@ -264,7 +254,7 @@ def main():
                      if path.suffix in {".yaml", ".yml"}
                      and "homelab.rst.io/private-dns:" in path.read_text()}
     require(label_sources == {VALUES}, "another cluster source declares the private DNS selector")
-    names = approved_names(values, routes, inventory, initial="--initial-migration" in args)
+    names = approved_names(values, routes, inventory)
     private_view_contract(names, dns_values)
     mutation_checks(values, routes, inventory, dns_values)
     if "--declarations" not in args:

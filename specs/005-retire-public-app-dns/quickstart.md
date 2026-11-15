@@ -16,7 +16,7 @@ From the repository root:
 bash -n scripts/tailscale-private-dns.sh
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
-python3 -I scripts/ci/tailnet-dns-test.py --initial-migration
+python3 -I scripts/ci/tailnet-dns-test.py
 nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 ```
 
