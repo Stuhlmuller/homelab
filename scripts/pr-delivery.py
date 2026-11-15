@@ -47,6 +47,45 @@ def dependencies(pr, prs):
     return sorted(parents)
 
 
+def check_results(checks, required):
+    result = {state: [] for state in ("missing", "failed", "pending", "unverified")}
+    for rule in required:
+        context = rule["context"]
+        evidence = checks.get(context)
+        if evidence is None or evidence == []:
+            result["missing"].append(context)
+            continue
+        # Older offline snapshots contain only outcomes, never issuer proof.
+        if isinstance(evidence, str):
+            evidence = [{"kind": "legacy", "integration_id": None, "outcome": evidence}]
+        if not isinstance(evidence, list) or not all(
+                isinstance(item, dict) and item.get("kind") in ("check_run", "status", "legacy")
+                and isinstance(item.get("outcome"), str) for item in evidence):
+            raise ValueError(f"Invalid check evidence for {context}")
+        integration = rule.get("integration_id")
+        if integration not in (None, -1):
+            if type(integration) is not int or integration <= 0:
+                raise ValueError(f"Invalid required integration for {context}")
+            matching = [item for item in evidence if item["kind"] == "check_run"
+                        and type(item.get("integration_id")) is int
+                        and item["integration_id"] == integration]
+            unknown = [item for item in evidence if item["kind"] == "legacy"
+                       or (item["kind"] == "check_run"
+                           and (type(item.get("integration_id")) is not int
+                                or item["integration_id"] <= 0))]
+            if not matching or unknown:
+                result["unverified"].append(context)
+            # REST commit statuses lack App identity. They cannot prove the
+            # issuer, but a same-name status must still pass alongside a check.
+            evidence = matching + unknown + [item for item in evidence if item["kind"] == "status"]
+        outcomes = [item["outcome"] for item in evidence]
+        if any(outcome in FAILED for outcome in outcomes):
+            result["failed"].append(context)
+        elif any(outcome not in PASSED for outcome in outcomes):
+            result["pending"].append(context)
+    return {state: list(dict.fromkeys(contexts)) for state, contexts in result.items()}
+
+
 def make_plan(snapshot, roots=None, records=None):
     prs = {p["number"]: p for p in snapshot["pull_requests"]}
     required = snapshot["required_checks"]
@@ -77,14 +116,9 @@ def make_plan(snapshot, roots=None, records=None):
             visit(parent)
         visiting.remove(number)
         visited.add(number)
-        checks = pr.get("checks", {})
-        missing = [c["context"] for c in required if c["context"] not in checks]
-        failed = [c["context"] for c in required
-                  if checks.get(c["context"]) in FAILED]
-        pending = [c["context"] for c in required
-                   if c["context"] in checks
-                   and checks[c["context"]] not in PASSED
-                   and c["context"] not in failed]
+        outcomes = check_results(pr.get("checks", {}), required)
+        missing, failed, pending, unverified = (outcomes[state] for state in
+                                                ("missing", "failed", "pending", "unverified"))
         waiting = [n for n in parents if not prs[n].get("merged_at")]
         labels = [label["name"] for label in pr.get("labels", [])]
         if (pr["head"].get("repo") or {}).get("full_name") != REPO:
@@ -101,6 +135,8 @@ def make_plan(snapshot, roots=None, records=None):
             action = "repair-checks"
         elif missing:
             action = "inspect-missing-checks"
+        elif unverified:
+            action = "inspect-check-issuers"
         elif pending:
             action = "wait-checks"
         elif pr.get("draft"):
@@ -114,7 +150,8 @@ def make_plan(snapshot, roots=None, records=None):
                        "base": pr["base"]["sha"], "parents": parents,
                        "action": action, "draft": bool(pr.get("draft")),
                        "missing_checks": missing, "failed_checks": failed,
-                       "pending_checks": pending, "checkpoint": record,
+                       "pending_checks": pending, "unverified_checks": unverified,
+                       "checkpoint": record,
                        "checkpoint_stale": bool(record and (record["head"] != pr["head"]["sha"] or record.get("base") != pr["base"]["sha"]))})
 
     for number in sorted(roots):
@@ -156,19 +193,24 @@ def live_snapshot(roots=None):
         checks = {}
         if pr["state"] == "open":
             sha = pr["head"]["sha"]
-            # REST lists newest first; retain latest result per context.
+            # REST lists newest first; retain latest status per context. The
+            # creator is a user identity, not proof of the issuing GitHub App.
             for status in api(f"commits/{sha}/statuses?per_page=100", True):
-                checks.setdefault(status["context"], status["state"])
+                checks.setdefault(status["context"], [{"kind": "status", "integration_id": None,
+                                                       "outcome": status["state"]}])
             pages = json.loads(command("gh", "api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
                                        "--paginate", "--slurp"))
             runs = [run for page in pages for run in page["check_runs"]]
             latest_runs = {}
             for run in sorted(runs, key=lambda r: r["id"], reverse=True):
-                latest_runs.setdefault(run["name"], run["conclusion"] or run["status"])
-            for name, outcome in latest_runs.items():
-                # GitHub requires both a status and a same-name check to pass.
-                if outcome in FAILED or checks.get(name, "success") in PASSED:
-                    checks[name] = outcome
+                integration = (run.get("app") or {}).get("id")
+                if type(integration) is not int or integration <= 0:
+                    integration = None
+                latest_runs.setdefault((run["name"], integration),
+                                       run["conclusion"] or run["status"])
+            for (name, integration), outcome in latest_runs.items():
+                checks.setdefault(name, []).append({"kind": "check_run", "integration_id": integration,
+                                                    "outcome": outcome})
         pr["checks"] = checks
         return number, pr
 

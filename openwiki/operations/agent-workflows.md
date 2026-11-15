@@ -41,9 +41,13 @@ change; instructions alone do not schedule another agent session.
 The [planner](../../scripts/pr-delivery.py) orders live PR dependencies and
 records checkout-local branch ownership and continuation. Its output is
 advisory: protected merge still verifies signatures, reviews, integration
-identities, and activation gates. The
+identities, and activation gates. Check results preserve the issuing App, so a
+newer same-name result from another App cannot hide a required App's failure.
+Missing App attribution produces `inspect-check-issuers`; REST commit statuses
+alone cannot prove an App-bound requirement. Same-name status and check results
+must both pass. The
 [regression suite](../../scripts/ci/pr-delivery-test.py) exercises conflicting
-parents, restacking, missing checks, and interrupted ownership; it runs in the
+parents, restacking, missing checks, App attribution, and interrupted ownership; it runs in the
 repository offline gate and focused PR Delivery workflow. A Codex heartbeat
 provides recurring delivery using the authenticated agent runtime.
 
