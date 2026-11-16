@@ -635,6 +635,11 @@ bcrypt registry password hash.
 
 ## Updates and coverage
 
+AdGuard Home v0.107.80 is staged in the full catalog by its upstream multi-platform
+index digest. Publish it through `image_scope=all` at exact current `main` and
+retain the complete authenticated pull receipt before merging its workload.
+The inventory entry alone does not deploy AdGuard or change tailnet DNS.
+
 Add new image digests to the catalog in a prerequisite PR, publish/verify them,
 then merge the consuming image or chart upgrade. Never combine first publication
 and a new consuming reference in one rollout: Argo follows `main` immediately.

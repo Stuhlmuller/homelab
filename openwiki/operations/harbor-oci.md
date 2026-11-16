@@ -1317,3 +1317,13 @@ not change Harbor's existing database image. The
 [workload runbook](../../clusters/homelab/apps/mastodon/README.md#scan-acceptance-evidence)
 retains scan findings and source-based applicability evidence. Publication and
 scans do not prove runtime compatibility or live acceptance.
+
+## AdGuard image prerequisite
+
+The [full catalog](../../scripts/config/harbor-images.json) stages AdGuard Home
+v0.107.80 by its upstream multi-platform index digest. Its matching admission
+catalog adds the same reviewed mapping; no AdGuard workload is registered yet.
+Publish through the existing `all` scope at exact current `main` and retain
+complete authenticated pull evidence before merging the consuming workload.
+This prerequisite does not change tailnet DNS. See the
+[publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
