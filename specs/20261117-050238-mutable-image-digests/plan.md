@@ -295,6 +295,74 @@ Since no workload selector was supplied, keep actual enrollment empty and report
 runtime A-to-B acceptance as pending explicit target selection rather than
 inventing a canary or silently enrolling historical migration candidates.
 
+## Registration apply guard correction
+
+The real registration runner currently rejects every `kubernetes_manifest`
+delete action before saved-plan apply. This blocks both supported handoffs,
+because removing enrollment deletes `kubernetes_manifest.image_updater` while
+retaining `kubernetes_manifest.this`. The provider fixture alone did not exercise
+this delivery guard. Correct the owning guard in
+`scripts/ci/terragrunt-apply.sh`, using a small read-only JSON validator
+`scripts/ci/argocd-registration-plan-check.py` in place of its blanket delete
+predicate and its adjacent existing-only create predicate. Keep Conftest,
+no-new-Application protection, exact saved-plan application, current-main
+verification and all other stage ordering unchanged.
+
+Validate each unit's plan independently; another file must never supply the
+retained Application. Reject every Kubernetes manifest deletion/replacement
+except a pure `["delete"]` at the exact managed resource address
+`kubernetes_manifest.image_updater`. Its `before.manifest` AND refreshed
+`before.object` must identify the native
+`argocd-image-updater.argoproj.io/v1alpha1` `ImageUpdater`, with the same nonempty
+name and namespace `argocd`, and both must have
+`spec.commonUpdateSettings.ignoreTags == ["*"]`. Missing/unknown observed state,
+unpaused refreshed state, replacement actions and ambiguous identities fail
+closed. Require the native one-Application mapping (exact same-name
+`applicationRefs` selector, no wildcard or pause-setting override) rather than
+accepting an unrelated CR merely because its kind matches.
+
+In that same plan require exactly one retained managed resource at
+`kubernetes_manifest.this`, actions `["no-op"]` or `["update"]`, with concrete
+before/after Application identities (`argoproj.io/v1alpha1`, `Application`, same
+name as the updater, namespace `argocd`). A missing, renamed, unknown, created,
+deleted or replaced Application cannot justify the exception. All other manifest
+deletes remain rejected. No flag disables the guard and no new live mutation or
+protection bypass is introduced. This permits only the already-paused CR removal
+needed by temporary omitted-field handoff and permanent explicit-clear removal.
+
+The same validator accepts an explicit existing-only mode. In that mode retain
+the rejection of manifest creates except pure `["create"]` at exact managed
+`kubernetes_manifest.image_updater`, with a concrete native identity and exact
+same-name Application mapping in `after.manifest`, accompanied by the same
+retained Application proof above. A newly created CR has no observed object, so
+its identity comes from the planned manifest; unknown identity/mapping fails
+closed. The native digest/Argo CD write-back contract must match the emitted
+module CR; active or paused enrollment is allowed. No Application create, CR
+replacement, arbitrary resource create, mismatched target or cross-unit proof is
+allowed in existing-only mode. Outside that mode ordinary create behavior is
+unchanged. This preserves the mode's no-new-Application intent while allowing
+enrollment/reenrollment of a retained Application.
+
+Add realistic plan fixtures and integration assertions in
+`scripts/ci/terragrunt-apply-test.py`: accept paused deletion with retained
+no-op/update Application for both transitions; reject stale manifest-only pause,
+missing object, unknown/mismatched identity, wrong kind/API/address, CR
+replacement, arbitrary manifest deletion, absent/renamed/replaced Application,
+and an otherwise matching Application in another unit plan. Assert every rejected
+case stops before apply. Use the real guard from the mocked-tool runner, not a
+copied test predicate. Run the existing replacement and staged-policy failure
+cases unchanged, plus Conftest's Terraform regression suite. Add existing-only
+positive native CR enrollment/reenrollment with retained Application, and
+negative arbitrary creates, Application creates, replacement, unknown identity,
+wrong native mapping/address and cross-unit matching cases.
+
+Inspection of `policy/terraform.rego` found no blanket manifest-deletion deny:
+sensitive-resource deletion rules concern KMS, SSM and Secret resource types;
+Application source policy examines planned after manifests. No Rego exception is
+needed. Tests must retain those denials; this correction only narrows the
+registration runner's blanket guards without relaxing their Application safety
+contract.
+
 ## Complexity Tracking
 
 No constitutional violations. One opt-in sibling module is justified by static

@@ -125,7 +125,7 @@ T019 follows T002/T003 and runs before T020; write T021 failing fixtures before
 T019/T020 implementation and re-run them after both. T019–T021 complete the
 FR-009 ownership correction. These appended IDs are scheduled here by dependency,
 not numerical order. T016 follows all story changes including T019–T021; T017 follows wiring/documentation; T018 follows
-successful checks and separate convergence. A blocked external acceptance is
+successful checks and separate convergence, including T023 registration guard correction. A blocked external acceptance is
 recorded as pending, not a checked runtime test.
 
 Parallel opportunities: T005 can proceed alongside T004 in different files;
@@ -139,11 +139,11 @@ unit integration sequential; independent source-backed review can run in paralle
 | Requirements | Tasks |
 | --- | --- |
 | FR-001–003, FR-013 | T002–T007, T010 |
-| FR-004–006, SC-007 | T003, T008–T011, T015, T019–T021 |
+| FR-004–006, SC-007 | T003, T008–T011, T015, T019–T021, T023 |
 | FR-007 | T012–T014, T018 |
 | FR-008 | T005, T007–T008, T015, T017 |
 | FR-009 | T003, T009, T012, T014, T016, T019–T021 |
-| FR-010 | T004, T008, T015, T021 |
+| FR-010 | T004, T008, T015, T021, T023 |
 | FR-011 | T001, T006–T008, T011, T017–T018 |
 | FR-012 | T002, T005–T006, T013, T017–T021 |
 
@@ -166,3 +166,31 @@ requirements. Keep custom checklist markers reviewer-owned.
   plus extglob regression cases in `scripts/ci/argocd-image-updater-policy-test.py`, preserving unrelated
   datasource/package/file acceptance per FR-009 and plan: exact single-owner Renovate exclusions (partial,
   HIGH).
+
+- [x] T023 Correct registration handoff guards in `scripts/ci/terragrunt-apply.sh` using
+  `scripts/ci/argocd-registration-plan-check.py`, following plan: Registration apply guard correction.
+  First add realistic saved-plan fixtures to `scripts/ci/terragrunt-apply-test.py` that execute the real
+  guard through the existing apply-script harness. Permit only exact managed native ImageUpdater
+  pure deletion whose configured AND refreshed observed state are paused, with a same-unit retained
+  same-identity Application; cover temporary omitted-field and permanent explicit-clear transitions.
+  In existing-only mode permit only exact native CR pure creation beside that retained Application,
+  with concrete planned native identity/mapping; continue blocking all new Applications and unrelated
+  creates. Reject observed-unpaused or missing/unknown state, wrong API/kind/address/mapping,
+  replacement, absent/renamed/deleted/replaced Application, and cross-plan identity borrowing; assert
+  rejection precedes apply. Keep Conftest and saved-plan/current-main checks in their existing order.
+  Run the real guard on both handoff and existing-only reenrollment plans in
+  `scripts/ci/argocd-image-updater-provider-test.py` to cover actual provider state shapes.
+  Run the complete `terragrunt-apply-test.py`, relevant Conftest Terraform regressions, Python/shell
+  lint and Spec Kit checks, then update operator validation notes/checkpoint with source-only evidence.
+  Depends on completed T008–T011/T015 and accepted guard plan correction; run after separate read-only
+  analysis and before final convergence/T018. Existing completed task evidence remains unchanged.
+
+## Phase 8: Convergence
+
+- [x] T024 Extend both pull-request and main-push path filters in
+  `.github/workflows/argocd-image-updater.yml` to include
+  `scripts/ci/argocd-registration-plan-check.py` and `scripts/ci/terragrunt-apply.sh`,
+  so changes to the real registration guard or its integration run the actual-provider
+  saved-plan compatibility regression. Add a focused workflow-filter assertion and
+  validate workflow syntax per T023 and plan: Registration apply guard correction
+  (partial, MEDIUM).

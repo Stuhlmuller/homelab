@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from threading import Thread
 from urllib.parse import parse_qs, urlsplit
@@ -219,6 +220,14 @@ def main():
                     assert (result.returncode == 0) is succeeds, result.stdout + result.stderr
                     return result.stdout + result.stderr
 
+                def check_registration(plan, existing_only=False):
+                    path = case / 'registration-plan.json'
+                    path.write_text(json.dumps(plan))
+                    result = subprocess.run([sys.executable, '-I', str(args.module_root /
+                        'scripts/ci/argocd-registration-plan-check.py'), '--existing-only',
+                        str(existing_only).lower(), str(path)], check=False, capture_output=True, text=True)
+                    assert result.returncode == 0, result.stderr + json.dumps(plan["resource_changes"])
+
                 init = ['init', '-input=false']
                 if args.plugin_dir:
                     init.append('-plugin-dir=' + str(args.plugin_dir.resolve()))
@@ -309,6 +318,7 @@ def main():
                 source_plan = json.loads(subprocess.check_output(['tofu', 'show', '-json', 'source-edit.plan'], cwd=case, env=env, text=True))
                 source_changes = {change['address']: change['change']['actions'] for change in source_plan['resource_changes']}
                 assert source_changes['kubernetes_manifest.this'] == ['update'], source_changes
+                check_registration(source_plan)
                 run('apply', '-input=false', 'source-edit.plan')
                 assert effective_image(api.objects[app_path]) == digest_c, api.requests[-1]
                 assert updater_path not in api.objects
@@ -316,7 +326,10 @@ def main():
                 install_module(case, opted)
                 config['image_update'] = enrollment
                 save()
-                run('apply', '-auto-approve', '-input=false')
+                run('plan', '-input=false', '-out=reenroll.plan')
+                reenroll = json.loads(subprocess.check_output(['tofu', 'show', '-json', 'reenroll.plan'], cwd=case, env=env, text=True))
+                check_registration(reenroll, existing_only=True)
+                run('apply', '-input=false', 'reenroll.plan')
                 assert effective_image(api.objects[app_path]) == digest_c
                 assert updater_path in api.objects
                 install_module(case, default)
@@ -330,6 +343,7 @@ def main():
                 changes = {change['address']: change['change']['actions'] for change in planned['resource_changes']}
                 assert changes['kubernetes_manifest.this'] == ['update'], changes
                 assert changes['kubernetes_manifest.image_updater'] == ['delete'], changes
+                check_registration(planned)
                 run('apply', '-input=false', 'handoff.plan')
                 assert images(api.objects[app_path]) == [] and updater_path not in api.objects
                 assert render_source(api.objects[app_path])['targetRevision'] == 'release'

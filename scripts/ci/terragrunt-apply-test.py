@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual apply shell offline; no cloud CLI is on the fixture PATH."""
+import copy
 import json
 import os
 import shutil
@@ -34,8 +35,8 @@ TRAEFIK_PROJECT = {"spec": {
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
 
-# Every external operation is enumerated. Real jq evaluates the production
-# predicates; these stubs only provide inputs and verify saved-plan sequencing.
+# Every external operation is enumerated. Real Python and jq evaluate production
+# guards; these stubs only provide inputs and verify saved-plan sequencing.
 STUB = r'''
 import hashlib
 import json
@@ -80,6 +81,13 @@ def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     actions = (["no-op"] if config.get("existing_only_noop") else
                ["delete", "create"] if config.get("replacement") else ["create"])
+    if unit == "apps" and "registration_changes" in config:
+        path.write_text(json.dumps({"unit": unit, "resource_changes": config["registration_changes"]}))
+        if "other_registration_changes" in config:
+            other = path.parent.parent / "other" / "tfplan.json"
+            other.parent.mkdir(parents=True, exist_ok=True)
+            other.write_text(json.dumps({"unit": unit, "resource_changes": config["other_registration_changes"]}))
+        return
     path.write_text(json.dumps({"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}))
@@ -283,6 +291,7 @@ class TerragruntApplyTest(unittest.TestCase):
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
+                  "live_apps": ["langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer"],
                   "app_names": app_names, "crds": crds,
                   "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
@@ -293,7 +302,7 @@ class TerragruntApplyTest(unittest.TestCase):
             binaries = root / "bin"
             binaries.mkdir()
             for name in ("bash", "dirname", "find", "rm", "grep", "sort", "sed",
-                         "awk", "comm", "cat", "mktemp", "jq"):
+                         "awk", "comm", "cat", "mktemp", "jq", "python3"):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name + " is required for this offline test")
                 (binaries / name).symlink_to(executable)
@@ -304,7 +313,7 @@ class TerragruntApplyTest(unittest.TestCase):
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
-                         "terragrunt-current-main.sh"):
+                         "terragrunt-current-main.sh", "argocd-registration-plan-check.py"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
@@ -548,6 +557,93 @@ else:
                     self.assertNotEqual(result.returncode, 0)
                     self.assertEqual(events[-1], stage + "." + operation)
                     self.assertNotIn(stage + ".apply", events)
+
+    @staticmethod
+    def registration_transition(action="delete", app_action="update", clear=False):
+        app = {"apiVersion": "argoproj.io/v1alpha1", "kind": "Application",
+               "metadata": {"name": "fixture", "namespace": "argocd"},
+               "spec": {"source": {"helm": {}}}}
+        after = copy.deepcopy(app)
+        if clear:
+            after["spec"]["source"]["helm"]["parameters"] = []
+        updater = {"apiVersion": "argocd-image-updater.argoproj.io/v1alpha1",
+                   "kind": "ImageUpdater", "metadata": app["metadata"], "spec": {
+                       "writeBackConfig": {"method": "argocd"},
+                       "commonUpdateSettings": {"updateStrategy": "digest", "ignoreTags": ["*"]},
+                       "applicationRefs": [{"namePattern": "fixture", "useAnnotations": False,
+                                            "commonUpdateSettings": None,
+                                            "images": [{"alias": "app", "imageName": "example/app:mutable",
+                                                        "manifestTargets": {"helm": {"spec": "image", "name": None, "tag": None},
+                                                                            "kustomize": {"name": None}}}]}]}}
+        return [{"address": "kubernetes_manifest.this", "type": "kubernetes_manifest", "mode": "managed",
+                 "change": {"actions": [app_action], "before": {"manifest": app},
+                            "after": {"manifest": after}}},
+                {"address": "kubernetes_manifest.image_updater", "type": "kubernetes_manifest", "mode": "managed",
+                 "change": {"actions": [action],
+                            "before": {"manifest": copy.deepcopy(updater), "object": copy.deepcopy(updater)},
+                            "after": {"manifest": copy.deepcopy(updater)} if action == "create" else None}}]
+
+    def test_native_registration_handoffs_and_existing_enrollment(self):
+        for clear in (False, True):
+            for app_action in ("no-op", "update"):
+                with self.subTest(clear=clear, app_action=app_action):
+                    result, events = self.run_apply(target="nofx", registration_changes=
+                                                    self.registration_transition(app_action=app_action, clear=clear))
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("apps.apply", events)
+        for paused in (False, True):
+            changes = self.registration_transition("create")
+            changes[1]["change"]["before"] = None
+            changes[1]["change"]["after"]["manifest"]["spec"]["commonUpdateSettings"]["ignoreTags"] = ["*"] if paused else []
+            result, events = self.run_apply(target="", existing_argocd_only="true", registration_changes=changes)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("apps.apply", events)
+
+    def test_native_registration_invalid_transitions_stop_before_apply(self):
+        mutations = {
+            "unpaused_object": lambda c: c[1]["change"]["before"]["object"]["spec"]["commonUpdateSettings"].update(ignoreTags=[]),
+            "missing_object": lambda c: c[1]["change"]["before"].pop("object"),
+            "unknown_object": lambda c: c[1]["change"]["before"].update(object=None),
+            "wrong_kind": lambda c: c[1]["change"]["before"]["object"].update(kind="Secret"),
+            "wrong_api": lambda c: c[1]["change"]["before"]["manifest"].update(apiVersion="wrong/v1"),
+            "wrong_address": lambda c: c[1].update(address="kubernetes_manifest.other"),
+            "mapping": lambda c: c[1]["change"]["before"]["object"]["spec"]["applicationRefs"][0].update(namePattern="*"),
+            "pause_override": lambda c: c[1]["change"]["before"]["object"]["spec"]["applicationRefs"][0].update(commonUpdateSettings={"ignoreTags": []}),
+            "cr_replace": lambda c: c[1]["change"].update(actions=["delete", "create"]),
+            "app_replace": lambda c: c[0]["change"].update(actions=["delete", "create"]),
+            "app_delete": lambda c: c[0]["change"].update(actions=["delete"]),
+            "app_create": lambda c: c[0]["change"].update(actions=["create"]),
+            "app_rename": lambda c: c[0]["change"]["after"]["manifest"]["metadata"].update(name="other"),
+            "app_unknown": lambda c: c[0]["change"].update(after=None),
+            "app_absent": lambda c: c.pop(0),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                changes = self.registration_transition()
+                mutate(changes)
+                result, events = self.run_apply(target="nofx", registration_changes=changes)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("apps.apply", events)
+        for action in ("delete", "create"):
+            changes = self.registration_transition(action)
+            result, events = self.run_apply(target="", existing_argocd_only="true",
+                                            registration_changes=[changes[1]], other_registration_changes=[changes[0]])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("apps.apply", events)
+        for bad in ("address", "kind", "identity", "mapping"):
+            changes = self.registration_transition("create")
+            manifest = changes[1]["change"]["after"]["manifest"]
+            if bad == "address":
+                changes[1]["address"] = "kubernetes_manifest.other"
+            elif bad == "kind":
+                manifest["kind"] = "Secret"
+            elif bad == "identity":
+                manifest["metadata"]["name"] = None
+            else:
+                manifest["spec"]["applicationRefs"][0]["namePattern"] = "other"
+            result, events = self.run_apply(target="", existing_argocd_only="true", registration_changes=changes)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("apps.apply", events)
 
     def test_application_replacement_is_rejected(self):
         result, events = self.run_apply(replacement=True)

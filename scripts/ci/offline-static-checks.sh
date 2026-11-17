@@ -1068,6 +1068,16 @@ for workflow in .github/workflows/*.yml; do
   }
 done
 
+yq -o=json '.' .github/workflows/argocd-image-updater.yml | jq -e '
+  [.on.pull_request.paths, .on.push.paths] | all(
+    index("scripts/ci/argocd-registration-plan-check.py") != null and
+    index("scripts/ci/terragrunt-apply.sh") != null
+  )
+' >/dev/null || {
+  echo "Native provider regression must run for registration guard changes." >&2
+  exit 1
+}
+
 for promotion_job in image-update-gate promote-pr; do
   yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
     .github/workflows/image-automation.yml >/dev/null || {

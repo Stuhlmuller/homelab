@@ -82,6 +82,14 @@ the following declared handoff, never by forcing an apply or patching the cluste
 3. Restore `image_update`, remove `image_update_handoff`, and reconcile before
    resuming. Reenrollment preserves the current digest. No hash is copied to code.
 
+The saved-plan registration guard permits updater deletion only when both the
+configured and refreshed observed CR are paused and the same plan retains the
+same Application. Existing-only registration may create the native updater CR
+beside a retained Application, but cannot create a new Application. Unknown state,
+identity mismatches, replacements and proof borrowed from another unit fail before
+apply. The actual-provider regression exercises this guard on both removal plans
+and the reenrollment plan; it does not prove live controller reconciliation.
+
 The two inputs are mutually exclusive. The handoff is only supported after the
 runtime collections were absent throughout enrolled desired configuration.
 

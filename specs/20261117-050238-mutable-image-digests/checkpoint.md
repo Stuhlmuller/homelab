@@ -432,3 +432,116 @@ complete. T018 delivery/deployment remains tracked in issue #1846; source readin
 merge or live controller/workload acceptance. No workload has been selected or enrolled. Detailed Notion
 replication was not performed after automatic review rejected that disclosure; repository/issue records remain
 authoritative.
+
+## Registration guard plan correction checkpoint
+
+Read-only delivery-path inspection found the real registration apply runner's
+blanket manifest delete rejection blocks ImageUpdater removal for both documented
+handoffs. Added a bounded plan correction only: exact paused native CR pure
+deletion, verified in configured and refreshed state, must accompany the retained
+same-identity Application in the same unit's saved plan. Every Application
+replacement/deletion and every other manifest deletion stays rejected. Conftest
+inspection found no additional blanket deletion blocker. Adjacent existing-only
+create protection also needs a narrow native CR creation exception with the same
+retained-Application proof; all new Application and unrelated manifest creations
+remain prohibited. Native CR create validation uses concrete planned manifest,
+not nonexistent observed state. This permits ordinary enrollment/reenrollment
+without weakening the no-new-Application intent.
+
+No tasks, source code, policies or tests changed in this stage. Next stage:
+append dependency-ordered guard/negative-fixture tasks, then read-only analysis
+before implementing the owning guard. The current delivery findings do not
+invalidate provider preservation evidence; they show that delivery acceptance
+must also exercise the actual saved-plan apply guard.
+
+## Registration guard task correction checkpoint
+
+Coordinator reviewed and accepted the bounded plan correction. Appended T023
+without reopening or renumbering completed work: exact per-unit registration
+plan guard, real apply-script fixture integration, paused observed-state deletion
+for both handoffs, existing-only native CR creation, and fail-closed identity,
+replacement and cross-plan negatives. The task preserves Conftest, saved-plan
+and current-main sequencing and precedes final convergence/protected delivery.
+
+No implementation or tests changed in this stage. Next: separate read-only
+analysis of the corrected plan and task before T023 implementation. Draft PR
+PR #1849 remains parent-owned; this stage performs no remote writes or merge.
+
+## T023 implementation checkpoint
+
+Implemented the narrow saved-plan registration validator and replaced both old
+blanket create/delete predicates after Conftest and before current-main/saved-plan
+apply. Only exact native updater pure deletion with configured and observed pause,
+or existing-only native CR creation, can use a same-unit retained Application.
+All other protected manifest deletions, replacements and existing-only creations
+remain rejected. No remote mutation, protection bypass or Conftest relaxation.
+
+The real apply-script harness now executes the actual Python guard. Positives
+cover temporary/permanent handoff and active/paused existing-only enrollment.
+Negatives cover observed-unpaused/missing state, wrong identities/mappings,
+replacement, missing/changed Application and cross-unit proof. The actual provider
+suite additionally passes source-edit, permanent-removal and existing-only
+reenrollment saved-plan JSON through the real CLI for all four source forms.
+Its first run exposed typed provider null-only nested renderer objects; the guard
+now normalizes null dictionary fields/empty optional subtrees while retaining
+meaningful overrides and invalid null list entries as failures. Fixtures reflect
+that actual output shape.
+
+Validation: complete apply suite passed (34 tests, including parameterized
+transition cases); provider suite passed all four forms, 54 captured requests and
+six expected conflicts; Ruff and shellcheck with source following passed;
+Conftest policy verification passed 147 tests; Spec Kit passed both backends;
+repository-configured Markdown lint passed canonical artifacts; full offline
+static checks passed exit 0. Logs: `/tmp/image-registration-acceptance.log` and
+`/tmp/image-registration-guard-validation.log`. Initial harness missing-live-app
+fixture and optional-object normalization failures were corrected and rerun.
+
+T023 complete. Operator docs describe saved-plan enforcement and source-only
+acceptance limits. Next: separate convergence review and parent-owned publication
+through draft PR 1849; runtime acceptance remains pending operator enrollment.
+
+## T023 convergence review
+
+Separate read-only review found the registration transition boundary consistent
+with T023: exact native pure deletion requires configured and refreshed observed
+pause; existing-only creation requires concrete native mapping; both require a
+same-unit retained same-identity Application. Replacement, unrelated manifests
+and cross-plan identity borrowing remain rejected before saved-plan apply.
+Conftest and current-main sequencing remain intact. Actual-provider tests pass
+source-edit, permanent-removal and reenrollment plans through the real guard.
+Reviewed recorded evidence: 34 apply tests, four provider cases with 54 requests
+and six expected conflicts, and 147 Conftest tests. No redundant suite rerun.
+
+One MEDIUM partial validation-wiring gap remains: helper-only or apply-runner-only
+changes do not match the ownership workflow paths. Appended T024 under Phase 8
+to trigger actual-provider compatibility checks for both files on PRs and main.
+No application source, spec, plan or existing task markers changed in review.
+Complete T024 and run a separate convergence recheck before publication.
+
+Delivery remains blocked independently: current base 15bfe279 Harbor runtime
+audit fails validation:remediation, matching the PR failure. Main evidence:
+<https://github.com/Stuhlmuller/homelab/actions/runs/44025092775/job/133843387412>.
+Private package details remain withheld. No merge or deploy occurred, and T018
+remains pending owner remediation and exact-head checks. Live acceptance remains
+pending explicit workload enrollment; local fixture evidence is not live proof.
+
+## T024 trigger coverage checkpoint
+
+Added the registration plan helper and actual apply script to both PR and
+main-push path filters for the actual-provider workflow. The existing static
+suite now asserts both exact paths in both event filters; no separate test
+framework or duplicated provider suite was added. Actionlint and the full
+static suite passed exit 0 (`/tmp/image-registration-trigger.log`).
+
+T024 complete; separate final convergence and remote publication remain
+parent-owned. No remote writes in this increment. Runtime evidence and the
+independent Harbor compatibility CI remediation blocker remain unchanged.
+
+## Final T024 convergence
+
+Independent read-only convergence confirmed both workflow event filters include
+registration guard and apply runner changes and the static assertion enforces
+that coverage. No remaining source findings. Full static checks, actionlint,
+Markdown and whitespace checks passed after T024. T018 remains pending the
+recorded Harbor remediation blocker, fresh exact-head checks, protected merge
+and declared targeted deployment. No runtime acceptance or merge is claimed.
