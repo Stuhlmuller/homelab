@@ -159,6 +159,12 @@ elif tool == "kubectl":
         print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
+    elif args == ["-n", "traefik", "get", "deployment", "traefik", "-o", "json"]:
+        event("preflight.traefik_deployment")
+        print(json.dumps(config["traefik_deployment"]))
+    elif args == ["-n", "traefik", "get", "certificate", "traefik", "-o", "json"]:
+        event("preflight.traefik_certificate")
+        print(json.dumps(config["traefik_certificate"]))
     elif args == ["get", "node", "acer", "-o", "json"]:
         event("preflight.node")
         print(json.dumps(config["node"]))
@@ -297,6 +303,12 @@ class TerragruntApplyTest(unittest.TestCase):
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
+                  "traefik_deployment": {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}},
+                  "traefik_certificate": {"metadata": {"generation": 2},
+                      "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                      "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}},
                   "app_names": app_names, "crds": crds,
                   "node": {"status": {"conditions": [{"type": "Ready", "status": "True"}]}},
                   "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else "monitoring" if target == "uptime-kuma" else target]}]}},
@@ -726,7 +738,7 @@ else:
             variants.append({"project": altered})
         project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
         variants.append({"project": project})
-        for unhealthy in ("prometheus", "traefik"):
+        for unhealthy in ("prometheus", "external-secrets"):
             variants.append({"apps": [{"metadata": {"name": name}, "status": {
                 "sync": {"status": "Synced"},
                 "health": {"status": "Degraded" if name == unhealthy else "Healthy"},
@@ -737,6 +749,61 @@ else:
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(all(e == "generate" or e.startswith("preflight.")
                                     for e in events), events)
+
+    def test_uptime_kuma_uses_routing_readiness_despite_unrelated_ingress_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "prometheus", "traefik"]]
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(events.index("preflight.traefik_certificate"), events.index("ssm.plan"))
+        apps[-1]["status"]["sync"]["status"] = "OutOfSync"
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("ssm.plan", events)
+
+    def test_uptime_kuma_routing_dependency_failures_precede_all_mutations(self):
+        deployment = {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}}
+        certificate = {"metadata": {"generation": 2},
+                       "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                       "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}}
+        variants = [{"fail": "preflight.traefik_deployment"},
+                    {"fail": "preflight.traefik_certificate"},
+                    {"traefik_deployment": {}}, {"traefik_certificate": {}}]
+        for key, value in (("observedGeneration", 3), ("updatedReplicas", 0),
+                           ("readyReplicas", 0), ("availableReplicas", 0)):
+            item = json.loads(json.dumps(deployment))
+            item["status"][key] = value
+            variants.append({"traefik_deployment": item})
+        item = json.loads(json.dumps(deployment))
+        item["spec"]["replicas"] = 0
+        variants.append({"traefik_deployment": item})
+        for key, value in (("status", "False"), ("observedGeneration", 1)):
+            item = json.loads(json.dumps(certificate))
+            item["status"]["conditions"][0][key] = value
+            variants.append({"traefik_certificate": item})
+        for key, value in (("secretName", "unrelated"), ("dnsNames", ["unrelated.invalid"])):
+            item = json.loads(json.dumps(certificate))
+            item["spec"][key] = value
+            variants.append({"traefik_certificate": item})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.") for e in events), events)
+
+    def test_other_targets_still_require_aggregate_traefik_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "traefik"]]
+        result, events = self.run_apply(target="fleet", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("preflight.traefik_deployment", events)
+        self.assertNotIn("ssm.plan", events)
 
     def test_uptime_kuma_failed_secret_plan_cannot_register_application(self):
         for failure in ("ssm.plan", "ssm.policy", "ssm.apply"):
