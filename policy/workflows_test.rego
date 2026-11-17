@@ -991,9 +991,16 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
+test_rejects_classified_apply_success_exit if {
+	run := replace(classified_apply_run, "exit 1", "exit 0")
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
 test_rejects_modified_apply_stage_guard if {
 	every replacement in [
-		replace(apply_stage_guard, "a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(apply_stage_guard, "f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(apply_stage_guard, "sha256sum --check --status", "true"),
 		replace(apply_stage_guard, "sha256sum", "shasum"),
 		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
@@ -1013,6 +1020,9 @@ test_rejects_modified_apply_stage_guard if {
 
 test_rejects_modified_apply_stage_classifier if {
 	every replacement in [
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || cat "$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || exit 0`,
 		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
 		`bash scripts/ci/other.sh <"$private_log"`,
 		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
@@ -1196,9 +1206,9 @@ echo "success details withheld"`
 
 classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
 
-apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
+apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
 
-apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
+apply_stage_guard := `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
 
 classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
 

@@ -169,6 +169,97 @@ terragrunt_deleted_unit_paths
         self.assertNotIn("IaC/live/argocd-apps/new-app",
                          self.shell("terragrunt_stack_unit_paths_at_ref HEAD").splitlines())
 
+    def modern_stack(self):
+        for app, identity in (("kept", "argocd"), ("retired", "argocd"),
+                              ("identity", "azuread")):
+            path = self.root / "IaC/homelab/us-west-2/apps" / app / "terragrunt.stack.hcl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f'unit "{app}" {{\n  path = "{identity}"\n}}\n')
+        self.stack.unlink()
+        self.base = self.commit()
+
+    def test_nested_inventory_and_azuread_comparisons_match_root(self):
+        self.modern_stack()
+        nested = "cd IaC/homelab/us-west-2/apps; "
+        commands = ("terragrunt_stack_unit_paths_at_ref HEAD",
+                    "terragrunt_azuread_changed_filter true", "terragrunt_azuread_pilot_filter",
+                    "terragrunt_deleted_unit_paths")
+        for command in commands:
+            self.assertEqual(self.shell(command), self.shell(nested + command))
+        (self.root / "IaC/homelab/us-west-2/apps/retired/terragrunt.stack.hcl").unlink()
+        head = self.commit()
+        self.assertEqual(self.shell(nested + "terragrunt_deleted_unit_paths", head),
+                         "IaC/live/argocd-apps/retired")
+        for path in ("IaC/homelab/account.hcl", "flake.nix"):
+            with self.subTest(path=path):
+                (self.root / path).write_text("changed fixture\n")
+                head = self.commit()
+                self.assertEqual(self.shell("terragrunt_azuread_changed_filter true", head), "*/azuread")
+                self.assertEqual(self.shell(nested + "terragrunt_azuread_changed_filter true", head),
+                                 "*/azuread")
+                self.base = head
+
+    def test_invalid_inventory_never_means_unchanged_or_no_deletions(self):
+        self.modern_stack()
+        for path in (self.root / "IaC/homelab/us-west-2").rglob("terragrunt.stack.hcl"):
+            path.unlink()
+        empty = self.commit()
+        for base, head in ((self.base, empty), (empty, self.base),
+                           (self.base, "missing-ref"), ("missing-ref", self.base)):
+            with self.subTest(base=base, head=head):
+                setup = (f'TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF={base}; '
+                         f'TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF={head}; '
+                         f'APPLY_BASE_SHA={base}; APPLY_HEAD_SHA={head}; ')
+                # Conditions deliberately suppress errexit inside the functions.
+                self.shell(setup + "if terragrunt_azuread_stack_changed; then :; else exit 90; fi")
+                self.assertEqual(self.shell(setup + 'if output=$(terragrunt_deleted_unit_paths); '
+                                            'then exit 91; fi; printf "%s" "$output"'), "")
+
+    def test_failed_git_reads_cannot_emit_partial_deletions(self):
+        self.modern_stack()
+        (self.root / "IaC/homelab/us-west-2/apps/retired/terragrunt.stack.hcl").unlink()
+        head = self.commit()
+        for pattern in ("*ls-tree*", "*show*identity/terragrunt.stack.hcl*", "*diff*--name-only*"):
+            with self.subTest(pattern=pattern):
+                inject = ('git() { case "$*" in ' + pattern + ') return 23;; esac; '
+                          'command git "$@"; }; ')
+                self.assertEqual(self.shell(inject + 'if output=$(terragrunt_deleted_unit_paths); '
+                                            'then exit 92; fi; printf "%s" "$output"', head), "")
+                if "diff" not in pattern:
+                    self.shell(inject + "if terragrunt_azuread_stack_changed; then :; else exit 93; fi", head)
+
+    def test_valid_empty_azuread_subset_stays_unchanged(self):
+        self.stack.write_text(self.locals + self.apps)
+        self.base = self.commit()
+        self.shell("! terragrunt_azuread_stack_changed")
+        self.assertEqual(self.shell("terragrunt_azuread_changed_filter true"),
+                         "*/azuread | [main...HEAD]")
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths"), "")
+
+    def test_valid_empty_stack_inventory_is_not_a_read_failure(self):
+        self.stack.write_text(self.locals)
+        self.base = self.commit()
+        self.assertEqual(self.shell("terragrunt_stack_unit_paths_at_ref HEAD"), "")
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths"), "")
+        self.modern_stack()
+        for path in (self.root / "IaC/homelab/us-west-2").rglob("terragrunt.stack.hcl"):
+            path.write_text("# valid empty stack\n")
+        self.base = self.commit()
+        self.assertEqual(self.shell("terragrunt_stack_unit_paths_at_ref HEAD"), "")
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths"), "")
+        self.shell("! terragrunt_azuread_stack_changed")
+
+    def test_stack_and_file_retirement_are_deduplicated(self):
+        path = self.root / "IaC/live/argocd-apps/retired/terragrunt.hcl"
+        path.parent.mkdir(parents=True)
+        path.write_text("# fixture\n")
+        self.base = self.commit()
+        path.unlink()
+        self.stack.write_text(self.locals + unit("kept") + self.azure + self.operator)
+        head = self.commit()
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
+                         "IaC/live/argocd-apps/retired")
+
     def test_shared_argocd_defaults_select_apps_without_azure_or_retirement(self):
         self.stack.write_text(self.stack.read_text().replace('project = "homelab"',
                                                             'project = "homelab-workloads"'))

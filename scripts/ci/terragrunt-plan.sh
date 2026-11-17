@@ -181,9 +181,13 @@ while IFS= read -r unit_file; do
 done < <(find IaC/homelab/us-west-2/apps -mindepth 3 -maxdepth 3 -name terragrunt.hcl -path '*/argocd/terragrunt.hcl' -print | sort)
 
 deleted_plan_units=()
+if ! deleted_plan_paths="$(terragrunt_deleted_unit_paths)"; then
+  echo "Unable to determine deleted Terragrunt units; refusing to continue planning." >&2
+  exit 1
+fi
 while IFS= read -r deleted_unit_dir; do
-  deleted_plan_units+=("$deleted_unit_dir")
-done < <(terragrunt_deleted_unit_paths)
+  [[ -n "$deleted_unit_dir" ]] && deleted_plan_units+=("$deleted_unit_dir")
+done <<<"$deleted_plan_paths"
 
 plan_deleted_terragrunt_units "${deleted_plan_units[@]}"
 

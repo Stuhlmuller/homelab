@@ -209,8 +209,8 @@ jobs:
           bash scripts/ci/terragrunt-apply.sh
           EOF
           then
-            if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then
-              bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"
+            if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then
+              bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true
             fi
             echo "::error::Production apply failed; detailed output was withheld because this is a public repository. Reproduce it from an approved local operator session."
             exit 1

@@ -97,9 +97,16 @@ echo "::group::Terragrunt Azure credential gate"
   root_change=false
   root_helper_failure=false
   stack_change=false
+  fixture_repo_root="$PWD"
 
   git() {
+    # Model root-relative Git calls and a readable, empty legacy stack.
+    if [[ "$1" == -C ]]; then
+      [[ "$2" == "$fixture_repo_root" ]] || return 1
+      shift 2
+    fi
     case "$1" in
+      rev-parse) [[ "$2" == --show-toplevel ]] && printf '%s\n' "$fixture_repo_root" ;;
       cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
       diff)
         local path
@@ -115,6 +122,7 @@ echo "::group::Terragrunt Azure credential gate"
           return 1
         fi
         case "$2" in
+          base:IaC/terragrunt.stack.hcl|head:IaC/terragrunt.stack.hcl) return 0 ;;
           base:IaC/root.hcl) printf '%s\n' "$base_root" ;;
           head:IaC/root.hcl)
             if [[ "$root_change" == true ]]; then
@@ -189,9 +197,17 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt deleted-unit ownership"
 (
+  fixture_repo_root="$PWD"
   git() {
+    if [[ "$1" == -C ]]; then
+      [[ "$2" == "$fixture_repo_root" ]] || return 1
+      shift 2
+    fi
     case "$1" in
-      rev-parse) return 0 ;;
+      rev-parse)
+        if [[ "$2" == --show-toplevel ]]; then printf '%s\n' "$fixture_repo_root"; fi
+        return 0
+        ;;
       diff) printf '%s\n' IaC/terragrunt-catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
       *) return 1 ;;
     esac
@@ -1096,7 +1112,7 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 53a47c682721dc27c9b8f88632750110e79bd9be5e6edcc80bf70c9945508b5c
+.github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
 .github/workflows/terragrunt-plan.yml 955f02170dbd3ff8a8e692281a759ead321a99fa296bc795481d5383217b254e
 .github/workflows/validate.yml 1e4fabe31ae2780dbc1a7738d952f82e8cbf95e26ee77c7b2389a8f863faf17e
 EOF
