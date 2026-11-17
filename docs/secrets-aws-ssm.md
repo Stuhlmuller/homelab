@@ -372,6 +372,7 @@ cluster CA is intentionally rotated.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |
+| Uptime Kuma | `monitoring/uptime-kuma-admin` | `uptime-kuma-admin` / `admin-password` | `/homelab/uptime-kuma/admin-password` (generated) |
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | argocd | `harbor-helm-repository` | `harbor-helm-repository` | `/homelab/harbor/mirror-robot-pull-password` |
 | argocd-image-updater | retired; no ExternalSecret consumer | none | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` state tombstones |
@@ -892,3 +893,24 @@ operator-only for Codex Cloud's managed VPN. The OAuth client is limited to
 `devices:core:read`; no signing private key is stored in SSM. The retained local
 volume holds signing authority. See the [signer runbook](../clusters/homelab/apps/codex-cloud-signer/README.md)
 for owner trust, 90-day enrollment-key renewal and disk-loss revocation.
+
+## Uptime Kuma owner credential
+
+`/homelab/uptime-kuma/admin-password` is generated once by the
+[shared SSM catalog](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+with 48 random alphanumeric characters. It is not an external placeholder.
+The existing exact-parameter reader policy supplies External Secrets;
+[the projection](../clusters/homelab/apps/uptime-kuma/externalsecret.yaml) creates
+`monitoring/uptime-kuma-admin`, key `admin-password`, with OnChange refresh and
+retained deletion behavior. Policy permits this exact key in `monitoring`, not
+an unrestricted application prefix. The nonsecret native username is `admin`.
+
+Only bootstrap, reconciliation and the isolated restore verifier mount the
+password file. The main server has no credential mount or Kubernetes API token.
+Bootstrap creates an owner only when none exists; existing-account login failure
+stops initialization without resetting the database. Changing SSM alone is not
+a native password rotation procedure. The verifier uses a separate
+`uptime-kuma-restore` identity without production backend grants, and only logs
+in after fencing a disposable copy; it cannot bootstrap or reconcile that copy.
+Never log or archive the mounted password. Backup archives still contain native
+account hashes and private monitoring data and must remain private.

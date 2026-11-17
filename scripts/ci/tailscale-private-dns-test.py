@@ -27,7 +27,7 @@ class Readiness(unittest.TestCase):
         self.assertEqual(set(value['hostnames']), {f'{app}.stinkyboi.com' for app in apps} | {
             'stinkyboi.com', 'cordium.stinkyboi.com', '*.cordium.stinkyboi.com', 'console.stinkyboi.com',
             'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com',
-            'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com'})
+            'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com', 'uptime-kuma.stinkyboi.com'})
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
         self.assertEqual(check.retirement_names(value), value['hostnames'][1:27])
@@ -39,6 +39,22 @@ class Readiness(unittest.TestCase):
             changed.write_text(json.dumps({**value, 'hostnames': value['hostnames'][:-1]}))
             with patch.object(check, 'INVENTORY', changed), self.assertRaisesRegex(RuntimeError, 'fixed 27-name'):
                 check.inventory()
+
+    def test_private_kuma_addition_never_expands_public_retirement(self):
+        value = check.inventory()
+        self.assertEqual(value['hostnames'][27:], check.PRIVATE_ONLY_NAMES)
+        self.assertEqual(len(value['hostnames'][:27]), 27)
+        self.assertEqual(len(check.retirement_names(value)), 26)
+        self.assertNotIn('uptime-kuma.stinkyboi.com', check.retirement_names(value))
+        self.assertNotIn('uptime-kuma.stinkyboi.com', value['retired_hostnames'])
+        with tempfile.TemporaryDirectory() as directory:
+            changed = Path(directory) / 'inventory.json'
+            for suffix in [check.PRIVATE_ONLY_NAMES + ['unreviewed.stinkyboi.com'],
+                           check.OCE_NAMES + ['unreviewed.stinkyboi.com'],
+                           list(reversed(check.PRIVATE_ONLY_NAMES))]:
+                changed.write_text(json.dumps({**value, 'hostnames': value['hostnames'][:27] + suffix}))
+                with patch.object(check, 'INVENTORY', changed), self.assertRaisesRegex(RuntimeError, 'fixed 27-name'):
+                    check.inventory()
 
     def exercise(self, failure=None, dualstack_peer=False):
         service = {'metadata': {'annotations': {'tailscale.com/hostname': 'homelab-ingress'}},
@@ -102,7 +118,7 @@ class Readiness(unittest.TestCase):
         commands = self.exercise()
         self.assertEqual(commands[0], ('kubectl', '-n', 'traefik', 'get', 'service', 'traefik-private', '-o', 'json'))
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 30)
+        self.assertEqual(len(probes), 31)
         self.assertTrue(all('--connect-to' in command and '--disable' in command and '--insecure' not in command
                             for command in probes))
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
@@ -112,7 +128,7 @@ class Readiness(unittest.TestCase):
     def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
         commands = self.exercise(dualstack_peer=True)
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 30)
+        self.assertEqual(len(probes), 31)
         self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
                             for command in probes))
 
@@ -272,7 +288,7 @@ class Readiness(unittest.TestCase):
 
     def test_retirement_route_check_excludes_staged_oce_backends(self):
         value = check.inventory()
-        for args, expected in ((['--check'], 29), (['--retire-private', '--check'], 27)):
+        for args, expected in ((['--check'], 30), (['--retire-private', '--check'], 27)):
             with self.subTest(args=args), patch.object(sys, 'argv', ['check', *args]), \
                     patch.object(check, 'mesh_addresses', return_value={'A':['100.100.100.1'], 'AAAA':[]}), \
                     patch.object(check, 'declared_routes'), patch.object(check, 'routes') as routes:
@@ -283,7 +299,7 @@ class Readiness(unittest.TestCase):
                 return_value=[(None,None,None,None,('100.100.100.1',443))]) as dns, \
                 patch.object(check, 'routes') as routes, contextlib.redirect_stderr(io.StringIO()):
             check.verify_private_dns(value, {'A':['100.100.100.1'], 'AAAA':[]}, '100.100.100.2')
-            self.assertEqual(dns.call_count, 29)
+            self.assertEqual(dns.call_count, 30)
             self.assertEqual(routes.call_args.args[0]['hostnames'], value['hostnames'][:27])
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):

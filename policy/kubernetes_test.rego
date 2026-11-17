@@ -505,3 +505,41 @@ test_codex_signer_reads_only_four_exact_runtime_credentials if {
 	some msg in violations
 	contains(msg, "outside its allowed application prefixes")
 }
+
+test_uptime_kuma_secret_is_exact_and_monitoring_only if {
+	allowed := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/admin-password")
+	count(allowed) == 0
+	wrong_key := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/other-password")
+	some key_msg in wrong_key
+	contains(key_msg, "outside its allowed application prefixes")
+	wrong_namespace := deny with input as oce_secret("ai", "/homelab/uptime-kuma/admin-password")
+	some namespace_msg in wrong_namespace
+	contains(namespace_msg, "outside its allowed application prefixes")
+}
+
+kuma_identity_fixture := {
+	"kind": "Job", "metadata": {"name": "uptime-kuma-first-backup-v1", "namespace": "monitoring"},
+	"spec": {"template": {"spec": {
+		"securityContext": {"runAsUser": 10001, "runAsGroup": 10001, "fsGroup": 10001},
+		"containers": [{"name": "backup", "securityContext": {}}],
+	}}},
+}
+
+test_kuma_high_identity_and_mismatch_denial if {
+	allowed := deny with input as kuma_identity_fixture
+	count(allowed) == 0
+	every key in {"runAsUser", "runAsGroup", "fsGroup"} {
+		bad := json.patch(kuma_identity_fixture, [{"op": "replace", "path": sprintf("/spec/template/spec/securityContext/%s", [key]), "value": 1000}])
+		violations := deny with input as bad
+		"Kuma runtime identity must remain UID/GID/fsGroup 10001" in violations
+	}
+	bad_container := json.patch(kuma_identity_fixture, [{"op": "add", "path": "/spec/template/spec/containers/0/securityContext/runAsUser", "value": 0}])
+	denied := deny with input as bad_container
+	"Kuma containers must inherit or preserve high runtime identity" in denied
+}
+
+test_kuma_recursive_ownership_denied if {
+	bad := json.patch(kuma_identity_fixture, [{"op": "add", "path": "/spec/template/spec/initContainers", "value": [{"name": "01-ownership", "command": ["sh", "-ec", "chown -R 10001:10001 /app/data"]}]}])
+	denied := deny with input as bad
+	"Kuma ownership init must only own the initial data mount root" in denied
+}

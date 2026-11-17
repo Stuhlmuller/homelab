@@ -1,0 +1,200 @@
+serviceAccount:
+  uptime-kuma: {}
+controllers:
+  uptime-kuma:
+    serviceAccount:
+      identifier: uptime-kuma
+    strategy: Recreate
+    pod:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+    initContainers:
+      01-ownership:
+        image:
+          repository: harbor.stinkyboi.com/mirror/docker.io/louislam/uptime-kuma
+          tag: 2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9
+        command:
+        - sh
+        - -ec
+        - chown 10001:10001 /app/data; chmod 0700 /app/data
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - CHOWN
+            - FOWNER
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      02-bootstrap:
+        image:
+          repository: harbor.stinkyboi.com/mirror/docker.io/louislam/uptime-kuma
+          tag: 2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9
+        command:
+        - node
+        - /config/reconcile.js
+        - bootstrap
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+    containers:
+      app:
+        image:
+          repository: harbor.stinkyboi.com/mirror/docker.io/louislam/uptime-kuma
+          tag: 2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9
+        command:
+        - node
+        - server/server.js
+        - --host=0.0.0.0
+        - --port=3001
+        - --data-dir=/app/data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 3001
+              periodSeconds: 5
+              failureThreshold: 60
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 3001
+              periodSeconds: 10
+              failureThreshold: 3
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 3001
+              periodSeconds: 30
+              failureThreshold: 3
+              timeoutSeconds: 5
+      reconciler:
+        image:
+          repository: harbor.stinkyboi.com/mirror/docker.io/louislam/uptime-kuma
+          tag: 2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9
+        command:
+        - node
+        - /config/reconcile.js
+        - watch
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                - node
+                - /config/reconcile.js
+                - health
+              periodSeconds: 10
+              timeoutSeconds: 5
+service:
+  app:
+    controller: uptime-kuma
+    ports:
+      http:
+        port: 3001
+persistence:
+  data:
+    enabled: true
+    existingClaim: uptime-kuma-local
+    advancedMounts:
+      uptime-kuma:
+        01-ownership:
+        - path: /app/data
+        02-bootstrap:
+        - path: /app/data
+        app:
+        - path: /app/data
+  config:
+    enabled: true
+    type: configMap
+    name: uptime-kuma-config
+    advancedMounts:
+      uptime-kuma:
+        02-bootstrap:
+        - path: /config
+          readOnly: true
+        reconciler:
+        - path: /config
+          readOnly: true
+  secret:
+    enabled: true
+    type: secret
+    name: uptime-kuma-admin
+    defaultMode: 288
+    advancedMounts:
+      uptime-kuma:
+        02-bootstrap:
+        - path: /secret
+          readOnly: true
+        reconciler:
+        - path: /secret
+          readOnly: true
+  status:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      uptime-kuma:
+        reconciler:
+        - path: /status

@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 APPS = {
+    "uptime-kuma": "uptime-kuma.monitoring:3001",
     "affine": "affine.affine:3010",
     "argocd": "argocd-server.argocd:80",
     "bazarr": "bazarr.media:6767",

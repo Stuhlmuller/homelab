@@ -391,7 +391,7 @@ external_secret_allowed_prefixes := {
 	"harbor": {"/homelab/harbor/"},
 	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
-	"monitoring": {"/homelab/grafana/"},
+	"monitoring": {"/homelab/grafana/", "/homelab/uptime-kuma/admin-password"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
 	"openclaw-agents": {"/homelab/openclaw-enterprise/model-api-key"},
@@ -478,4 +478,40 @@ codex_signer_secret_key(key) if {
 		"/homelab/tailscale/codex-cloud-signer/oauth-client-secret",
 		"/homelab/tailscale/codex-cloud-signer/webhook-secret",
 	}
+}
+
+# Kuma state writers and readers share one high UID; only the bounded initial
+# mount ownership command may be root. This also validates rendered Helm Pods.
+kuma_pod_spec := input.spec.template.spec if {
+	input.metadata.namespace == "monitoring"
+	input.metadata.name in {"uptime-kuma", "uptime-kuma-first-backup-v1", "uptime-kuma-restore-verification-v1"}
+	input.kind in {"Deployment", "Job"}
+}
+
+kuma_pod_spec := input.spec.jobTemplate.spec.template.spec if {
+	input.metadata.namespace == "monitoring"
+	input.metadata.name == "uptime-kuma-backup"
+	input.kind == "CronJob"
+}
+
+deny contains "Kuma runtime identity must remain UID/GID/fsGroup 10001" if {
+	spec := kuma_pod_spec
+	some key in {"runAsUser", "runAsGroup", "fsGroup"}
+	object.get(object.get(spec, "securityContext", {}), key, null) != 10001
+}
+
+deny contains "Kuma containers must inherit or preserve high runtime identity" if {
+	spec := kuma_pod_spec
+	non_ownership_init := [c | c := object.get(spec, "initContainers", [])[_]; c.name != "01-ownership"]
+	containers := array.concat(object.get(spec, "containers", []), non_ownership_init)
+	some container in containers
+	some key in {"runAsUser", "runAsGroup"}
+	object.get(object.get(container, "securityContext", {}), key, 10001) != 10001
+}
+
+deny contains "Kuma ownership init must only own the initial data mount root" if {
+	spec := kuma_pod_spec
+	some container in object.get(spec, "initContainers", [])
+	container.name == "01-ownership"
+	container.command != ["sh", "-ec", "chown 10001:10001 /app/data; chmod 0700 /app/data"]
 }
