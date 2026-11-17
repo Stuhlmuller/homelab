@@ -1323,8 +1323,11 @@ scans do not prove runtime compatibility or live acceptance.
 The [full catalog](../../scripts/config/harbor-images.json) stages AdGuard Home
 v0.107.80 by its upstream multi-platform index digest. Its matching admission
 catalog adds the same reviewed mapping; no AdGuard workload is registered yet.
-Publish through the existing `all` scope at exact current `main` and retain
+Publish through the fixed `adguard` scope at exact current `main` and retain
 complete authenticated pull evidence before merging the consuming workload.
+The [AdGuard inventory](../../scripts/config/harbor-adguard-images.json) also
+includes its pinned Python init image. Both use the existing complete pull
+verification; caller-supplied images, paths and destinations remain rejected.
 This prerequisite does not change tailnet DNS. See the
 [publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
 

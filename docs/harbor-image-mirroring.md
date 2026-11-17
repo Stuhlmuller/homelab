@@ -242,8 +242,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    its reviewed multi-platform digest. Require complete authenticated pulls
    before merging any consuming deployment; this prerequisite adds no workload.
 
+   For AdGuard onboarding, use `image_scope=adguard`. The fixed
+   `scripts/config/harbor-adguard-images.json` selects the reviewed AdGuard
+   v0.107.80 and Python 3.14.7 Alpine init images. Both retain normal digest,
+   platform and complete authenticated pull verification. A successful scoped
+   run proves this bundle only; the earlier full-catalog failure remains separate.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
