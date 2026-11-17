@@ -220,8 +220,22 @@ checks remain fresh.
   adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
   reconciliation output remains withheld from public Actions logs. Workflow
   policy permits only the reviewed PR plan command to stream live CLI output.
-  On a protected apply failure, a reviewed classifier may print one fixed
-  phase label after verifying its SHA-256; raw output remains withheld.
+  On a protected apply failure, a reviewed classifier prints fixed phase and
+  failure-hint labels after verifying its SHA-256; raw output remains withheld.
+  Hints classify recognizable authentication, network, provider/module download,
+  state-lock, Helm-operation, current-source-guard or policy errors; `unknown`
+  means no recognized fragment occurred in the last phase. Each phase resets
+  the hint, including the offsite backup-storage stage before bootstrap. A hint
+  narrows investigation but does not establish a root cause. The workflow still
+  fails if classification is unavailable or itself fails. Do not publish raw
+  logs to diagnose an unknown result.
+  Validate classifier changes with `scripts/ci/terragrunt-apply-stage-test.py`
+  and the workflow policy tests; update the exact helper SHA, allowed invocation
+  and normalized workflow digest together after review. Verify recovery with
+  an executed live PR plan and a successful full apply for the recorded current
+  main SHA; skips and targeted applies do not establish full recovery. Revert
+  the classifier and its matching exact security constants together through a
+  protected PR if the diagnostic change needs rollback.
   Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The

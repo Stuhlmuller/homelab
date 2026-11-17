@@ -73,6 +73,15 @@ revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
 
+Protected apply keeps command output private. On failure, the checksum-verified
+classifier reports only fixed phase and failure-hint labels; unknown text stays
+private. Hints reset at each recognized phase and are investigation leads,
+not confirmed causes. Diagnostic failure cannot change the failed apply result.
+Keep helper, workflow and exact policy/hash contracts synchronized; the
+[CI/CD runbook](../../docs/ci-cd.md#security-model) describes validation and rollback.
+A green skipped PR plan or targeted apply does not prove the full pipeline works;
+retain actual live-plan and full-apply run evidence for the tested revisions.
+
 The protected production apply checks the current `main` commit before each
 state write. The root Terragrunt `before_hook` repeats the check for every unit
 in a multi-unit apply; the bootstrap `after_hook` checks before each Argo CD
