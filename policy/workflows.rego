@@ -1039,11 +1039,14 @@ case "$IMAGE_SCOPE" in
   prometheus)
     bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
     ;;
+  uptime-kuma)
+    bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'fb1a1c95e1ba5f5d2ec38784af7ae5b02d3542360aff2f491a7c55855dc511c0  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1160,7 +1163,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "b9c7f703b4d89f4558f2cbbd17764cc258fb21184571709f21999ea35f57e799"
+	crypto.sha256(json.marshal(canonical)) == "e50867a50a24991ada401d83dd0b63c72ff8688c2f1c7af6c23aa862ed209d57"
 }
 
 tailnet_workflow_requested if {

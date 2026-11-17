@@ -1327,3 +1327,13 @@ Publish through the existing `all` scope at exact current `main` and retain
 complete authenticated pull evidence before merging the consuming workload.
 This prerequisite does not change tailnet DNS. See the
 [publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
+
+## Uptime Kuma image prerequisite
+
+The [fixed Kuma inventory](../../scripts/config/harbor-uptime-kuma-images.json)
+stages upstream Uptime Kuma 2.5.11 at its immutable multi-platform digest.
+The protected mirror workflow accepts only the named `uptime-kuma` scope,
+validates its exact catalog entry before credentials and preserves normal
+digest/full authenticated pull verification. This adds no running workload.
+Publication evidence is required before the app consumer reaches main; see the
+[publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
