@@ -2716,21 +2716,23 @@
     "ownerAppIds": [
       "prowlarr"
     ],
-    "kind": "http",
+    "kind": "json-query",
     "target": {
-      "url": "http://prowlarr.media.svc:9696/initialize.json"
+      "url": "http://prowlarr.media.svc:9696/ping"
     },
     "expected": {
       "statusCodes": [
         200
-      ]
+      ],
+      "jsonPath": "status",
+      "value": "OK"
     },
     "intervalSeconds": 60,
     "timeoutSeconds": 10,
     "retries": 1,
     "enabled": true,
-    "meaning": "Application initialization endpoint.",
-    "limitations": "Backend health only; no redirect or authentication response accepted. Does not prove ingress, user login, or external dependencies beyond endpoint semantics."
+    "meaning": "Prowlarr anonymous ping checks HTTP serving and configuration database reads.",
+    "limitations": "Pinned 2.5.2.5491 caches its configuration read for 5 seconds; not indexer or download success."
   },
   {
     "key": "langfuse-http",

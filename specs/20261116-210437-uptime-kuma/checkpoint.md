@@ -477,3 +477,84 @@ bundle, use normal protected expected-head merge, verify signed reachable main,
 then dispatch the declared targeted Terragrunt Apply at exact current main.
 Verify GitOps revision/readiness before separate functional, persistence,
 backup/restore and runtime-convergence acceptance. No deployment is claimed.
+
+
+## Protected delivery and deployment readiness
+
+PR1850 merged normally on 2026-11-17 at 08:32:47 UTC, signed merge
+1dfeb92a3654bae7a927c8adf4ed454347820dd7, sole parent b6063d41, reachable main.
+All four introduced commits were verified signed; all seven required contexts
+passed, with no reviews/threads required or unresolved. Optional Harbor audit
+still reports its existing remediation finding and was not treated as a gate.
+Kuma image publication matched the consuming merge bundle exactly.
+
+First targeted apply44047731567 passed static checks but stopped at the
+precredential current-main guard after unrelated AdGuard PR1851 advanced main.
+No checkout, credentials or live apply occurred in that failed job. Inspected
+new signed main ec53ed3d3b9b2397bf41abfd8935561e8e5d5b67: Kuma manifests,
+IaC, apply workflow/script and scoped image inventory were byte unchanged.
+The normal exact-main retry44050500579 completed successfully, both static and
+Terragrunt Apply. No guard was bypassed and no ad hoc cluster mutation occurred.
+
+At 09:12 UTC, Argo uptime-kuma was Synced/Healthy with successful operation,
+chart4.4.0 and both Git source revisions ec53ed3d. Deployment had one ready Pod;
+app and reconciler were Ready, both init containers exited0, and both runtime
+containers reported the pinned Harbor digest7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9.
+Both5Gi PVCs were Bound, owner ExternalSecret Ready, reconciler health command
+exited0. First-backup and restore-verification Jobs each completed successfully;
+their native evidence is still to be inspected in the separate acceptance stage.
+
+T025 is complete. T026–T028 remain pending: private UI authentication, exhaustive
+coverage/observations and failure/recovery, retained IDs/history across the
+code-owned replacement, backup/restore evidence, and runtime convergence.
+Nightly scheduled execution has not yet been observed. Working branch for
+acceptance evidence/follow-up changes is codex/uptime-kuma-acceptance based on
+current main; original implementation PR remains merged.
+
+
+## Live acceptance checkpoint before Prowlarr correction
+
+At deployed ec53ed3d, source/live union validates61classified apps and54monitors.
+Native verify reports all54definitions correct and three recent observations
+for every monitor;52healthy. Octelium Enterprise workload signal remains an
+existing target health failure. Prowlarr HTTP is a confirmed probe mismatch:
+initialize.json redirects302to login, while deployed2.5.2.5491-ls160 exposes
+anonymous /ping returning200with statusOK. Pinned upstream PingController
+checks configuration repository data (cache5seconds), returning500on failure.
+Do not accept the redirect; correct to an exact JSON status predicate through
+source review. No runtime catalog change was made in this acceptance turn.
+
+Controlled acceptance passed3healthy samples, failure120023ms, recovery59922ms.
+Disposable monitor55is paused; other definitions unchanged. Two declared once
+runs each reported managed54and zero creates/changes/pauses/resumes/settings;
+health command exited0. Before-replacement IDs/counts/first/last heartbeat
+references are preserved in acceptance-before-replacement.json; original full
+read-only SQLite snapshot is /tmp/kuma-history-before.json.
+
+Real private browser URL <https://uptime-kuma.stinkyboi.com/dashboard> showed the
+native login, rejected invalid credentials and opened the authenticated
+Dashboard with the actual owner credential. Final check used TLS verification
+with the existing provider CA imported into Chromium trust, not disabled TLS.
+Curl independently reported certificate verification success. Credentials were
+read in memory from their authorized mount and never printed or captured.
+
+First backup and isolated restore both logged ok,54monitors/54heartbeats and
+identical archive SHA256179f82012d7c2c92ba7bed68e9aed74c09925c3664846de87690166f1dfd9f13.
+Both Jobs completed successfully. Nightly CronJob remains unsuspended with
+`20 4 * * *`, America/Los_Angeles, Forbid; no nightly execution yet observed.
+T026/T027 remain open for the corrected probe and declared replacement/history
+proof. Separate targeted convergence and implementation are next; no source
+annotation or live restart has been performed.
+
+## T037 implementation checkpoint
+
+Prepared the Prowlarr JSON `/ping` correction with stable ownership key, exact
+HTTP200/statusOK and pinned five-second configuration-cache limitation. Added
+source-controlled acceptance rollout annotation; no live mutation or push.
+The baseline file preserves all55IDs and concrete first/last heartbeat times
+from546historical observations for post-replacement row-presence checks.
+Current deployed acceptance remains52healthy of54, with Prowlarr's known probe
+mismatch and the existing Octelium Enterprise target-health failure. Private
+TLS-verified UI login/denial and controlled120023ms down/59922ms recovery passed.
+The correction and replacement must complete through protected PR/GitOps before
+T026/T027 can close. Separate targeted source convergence follows local tests.

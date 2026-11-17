@@ -152,3 +152,12 @@ configured monitor intervals without either action. Actual pinned update/tunnel
 guards run with observable call counters and no public-service requests. This
 is a version-bound application execution fence, not a general network sandbox;
 image/schema changes require renewed guard and network-enabled acceptance.
+
+## Prowlarr probe semantics
+
+The stable `prowlarr-http` monitor uses anonymous `/ping`, requiring HTTP200
+and JSON `status` equal to `OK`. In pinned Prowlarr2.5.2.5491, this endpoint
+reads configuration through the repository with a five-second cache and returns
+HTTP500/`Error` on failure. It proves HTTP and configuration-database access,
+not indexer or download success. `/initialize.json` redirects to native login
+and is not a valid unauthenticated health probe. Redirects remain failures.

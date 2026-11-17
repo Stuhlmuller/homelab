@@ -45,6 +45,24 @@ class CatalogTests(unittest.TestCase):
         m = next(m for m in self.catalog["monitors"] if m["key"] == "nofx-http")
         self.assertEqual(m["target"]["url"], "http://nofx.nofx.svc:8080/api/health")
 
+    def test_prowlarr_native_ping_contract(self):
+        for change in [
+            {"kind": "http"},
+            {"target": {"url": "http://prowlarr.media.svc:9696/initialize.json"}},
+            {"expected": {"statusCodes": [302], "jsonPath": "status", "value": "OK"}},
+            {"expected": {"statusCodes": [200], "jsonPath": "status", "value": "Error"}},
+            {"expected": {"statusCodes": [200]}},
+        ]:
+            with self.subTest(change=change):
+                catalog = copy.deepcopy(self.catalog)
+                next(m for m in catalog["monitors"] if m["key"] == "prowlarr-http").update(change)
+                with self.assertRaises(ValueError):
+                    CHECK.validate(catalog)
+        other = next(m for m in self.catalog["monitors"] if m.get("sourceSignals"))
+        other["expected"] = {"statusCodes": [200], "jsonPath": "status", "value": "OK"}
+        with self.assertRaisesRegex(ValueError, "unsafe JSON"):
+            CHECK.validate(self.catalog)
+
     def test_unjustified_retirement(self):
         def change(c):
             a = next(a for a in c["apps"] if a["id"] == "n8n")

@@ -6,6 +6,8 @@ controllers:
       identifier: uptime-kuma
     strategy: Recreate
     pod:
+      annotations:
+        homelab.rst.io/acceptance-rollout: "20261117-prowlarr-ping-history"
       automountServiceAccountToken: false
       nodeSelector:
         kubernetes.io/hostname: acer

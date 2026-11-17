@@ -89,3 +89,36 @@ Traefik Synced with successful operation and ready/current generation4
 Deployment, but aggregate Progressing and an empty codex-signer Ingress
 loadBalancer status. A separate source-convergence review owns the scoped
 prerequisite correction; no unrelated ingress mutation or deployment occurred.
+
+
+## Protected delivery and deployment readiness
+
+PR1850 merged normally on 2026-11-17 at 08:32:47 UTC, signed merge
+1dfeb92a3654bae7a927c8adf4ed454347820dd7, sole parent b6063d41, reachable main.
+All four introduced commits were verified signed; all seven required contexts
+passed, with no reviews/threads required or unresolved. Optional Harbor audit
+still reports its existing remediation finding and was not treated as a gate.
+Kuma image publication matched the consuming merge bundle exactly.
+
+First targeted apply44047731567 passed static checks but stopped at the
+precredential current-main guard after unrelated AdGuard PR1851 advanced main.
+No checkout, credentials or live apply occurred in that failed job. Inspected
+new signed main ec53ed3d3b9b2397bf41abfd8935561e8e5d5b67: Kuma manifests,
+IaC, apply workflow/script and scoped image inventory were byte unchanged.
+The normal exact-main retry44050500579 completed successfully, both static and
+Terragrunt Apply. No guard was bypassed and no ad hoc cluster mutation occurred.
+
+At 09:12 UTC, Argo uptime-kuma was Synced/Healthy with successful operation,
+chart4.4.0 and both Git source revisions ec53ed3d. Deployment had one ready Pod;
+app and reconciler were Ready, both init containers exited0, and both runtime
+containers reported the pinned Harbor digest7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9.
+Both5Gi PVCs were Bound, owner ExternalSecret Ready, reconciler health command
+exited0. First-backup and restore-verification Jobs each completed successfully;
+their native evidence is still to be inspected in the separate acceptance stage.
+
+T025 is complete. T026–T028 remain pending: private UI authentication, exhaustive
+coverage/observations and failure/recovery, retained IDs/history across the
+code-owned replacement, backup/restore evidence, and runtime convergence.
+Nightly scheduled execution has not yet been observed. Working branch for
+acceptance evidence/follow-up changes is codex/uptime-kuma-acceptance based on
+current main; original implementation PR remains merged.

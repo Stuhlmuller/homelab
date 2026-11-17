@@ -55,3 +55,13 @@ keeping 54 app/service-boundary monitors rather than one monitor per component.
 The fixed Prometheus URL avoids HTTP GET URI limits. Catalog size is 609KB;
 the rendered combined catalog/adapter ConfigMap has623630 data bytes and
 650293 encoded object bytes, safely below the1MiB limit.
+
+## Prowlarr live probe correction
+
+Deployed Linuxserver image reports Prowlarr2.5.2.5491-ls160. From the Kuma Pod,
+`/initialize.json` returned302to login; `/ping` returned200with `{"status":"OK"}`.
+The [pinned PingController](https://github.com/Prowlarr/Prowlarr/blob/v2.5.2.5491/src/Prowlarr.Http/Ping/PingController.cs)
+allows anonymous GET/HEAD, reads configuration repository data with a five-second
+cache, returns500with `Error` on exceptions and200with `OK` otherwise.
+The catalog preserves `prowlarr-http` ownership and switches to exact native
+JSON status matching; all Prometheus signal freshness contracts remain unchanged.
