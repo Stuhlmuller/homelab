@@ -416,10 +416,19 @@ Integrated protected main `15bfe27955e755a24617d9dd00bfbd7803da30d6` (PR #1845) 
 
 Post-integration Terragrunt apply-stage, plan-stage, apply and stack regressions plus the full offline-static suite passed. Secret/artifact scans passed. The broader offline suite remains owned by the existing worker while its unchanged independent tests finish.
 
-Convergence appended T022 for Renovate minimatch behavior. A regression first reproduced a brace-pattern bypass. The matcher now conservatively treats regex, negation, braces, extglobs, character classes and escaped patterns as possible matches, folds simple glob case, and applies the same rules to datasource matching. Unrelated explicit package/datasource rules remain allowed. The expanded policy suite passes 27 rejection cases plus positive/handoff/removal/Harbor path-binding checks. Python lint passed; no policy or branch protection was weakened. T022 implementation complete; separate convergence recheck follows.
+Convergence appended T022 for Renovate minimatch behavior. A regression first reproduced a brace-pattern
+bypass. The matcher now conservatively treats regex, negation, braces, extglobs, character classes and escaped
+patterns as possible matches, folds simple glob case, and applies the same rules to datasource matching.
+Unrelated explicit package/datasource rules remain allowed. The expanded policy suite passes 27 rejection
+cases plus positive/handoff/removal/Harbor path-binding checks. Python lint passed; no policy or branch
+protection was weakened. T022 implementation complete; separate convergence recheck follows.
 
 ## Final source verification
 
 The full offline-checks suite completed with exit 0. After integrating main15bfe279, changed Terragrunt regression families and the full offline-static suite were rerun and passed. The final matcher changes passed focused policy regressions; actual provider, chart/native schema, HCL/unit rendering, workflow lint, Python lint, wiki, formatting and secret/artifact checks passed.
 
-Separate convergence recheck found no remaining buildable source gaps and left tasks unchanged. T017 is complete. T018 delivery/deployment remains tracked in issue #1846; source readiness does not claim a protected merge or live controller/workload acceptance. No workload has been selected or enrolled. Detailed Notion replication was not performed after automatic review rejected that disclosure; repository/issue records remain authoritative.
+Separate convergence recheck found no remaining buildable source gaps and left tasks unchanged. T017 is
+complete. T018 delivery/deployment remains tracked in issue #1846; source readiness does not claim a protected
+merge or live controller/workload acceptance. No workload has been selected or enrolled. Detailed Notion
+replication was not performed after automatic review rejected that disclosure; repository/issue records remain
+authoritative.
