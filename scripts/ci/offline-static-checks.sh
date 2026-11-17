@@ -979,6 +979,7 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/argocd-image-updater.yml:provider-ownership' \
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
@@ -1001,10 +1002,9 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
-    '.github/workflows/image-automation.yml:fallback-pr' \
     '.github/workflows/image-automation.yml:image-update-gate' \
     '.github/workflows/image-automation.yml:observe' \
-    '.github/workflows/image-automation.yml:promote' \
+    '.github/workflows/image-automation.yml:promote-pr' \
     '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
@@ -1068,7 +1068,7 @@ for workflow in .github/workflows/*.yml; do
   }
 done
 
-for promotion_job in image-update-gate promote fallback-pr; do
+for promotion_job in image-update-gate promote-pr; do
   yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
     .github/workflows/image-automation.yml >/dev/null || {
     echo "Image automation promotion job $promotion_job lost its activation gate." >&2

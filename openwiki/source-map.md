@@ -242,3 +242,9 @@ owns the shared Sonarr/Radarr download limits. The preview-first
 from clean current `main`, retaining a private before-state snapshot and checking
 live convergence. See [the runbook](../docs/arr-playback-policy.md) for the QNAP
 diagnosis, size and codec limits, and playback acceptance.
+
+## Runtime image ownership
+
+The opt-in module `IaC/terragrunt-catalog/modules/argocd-application-image-updater`,
+`scripts/ci/argocd-image-updater-*.py` and the matching CI workflow implement
+[runtime digest ownership and validation](../docs/argocd-image-updater.md).
