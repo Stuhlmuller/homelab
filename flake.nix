@@ -187,6 +187,7 @@
             argocd
             awscli2
             bash
+            bind.dnsutils
             cloudflared
             conftest
             coreutils

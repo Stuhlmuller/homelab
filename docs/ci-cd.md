@@ -117,6 +117,10 @@ contract for Grafana.
 
 ## Security Model
 
+The development shell supplies `dig` from the locked `bind.dnsutils` package for
+UDP/TCP DNS acceptance checks. Deliver this toolchain prerequisite before the
+final AdGuard image publication so its receipt and consumer use the same flake.
+
 The pinned development shell includes Ruby for Mastodon launch and owner-bootstrap
 validation. Enroll shared toolchain dependencies before the final Harbor
 publication receipt; receipt reuse requires byte-identical publication inputs,
