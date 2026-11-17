@@ -1328,6 +1328,8 @@ complete authenticated pull evidence before merging the consuming workload.
 The [AdGuard inventory](../../scripts/config/harbor-adguard-images.json) also
 includes its pinned Python init image. Both use the existing complete pull
 verification; caller-supplied images, paths and destinations remain rejected.
+The development shell supplies the locked DNS query tool before final publication;
+[toolchain ordering](../../docs/ci-cd.md#security-model) preserves the receipt bundle.
 This prerequisite does not change tailnet DNS. See the
 [publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
 
