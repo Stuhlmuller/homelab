@@ -3,23 +3,22 @@
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
-chmod 777 "$scratch"
-mkdir "$scratch/data"
-chmod 777 "$scratch/data"
+fixture_uid="$(id -u)"
+fixture_gid="$(id -g)"
+mkdir -p "$scratch/data" "$scratch/projected/config" "$scratch/projected/backup-code" "$scratch/projected/secret"
+cp "$repo_root/clusters/homelab/apps/uptime-kuma/reconcile.js" "$scratch/projected/config/reconcile.js"
+cp "$repo_root/clusters/homelab/apps/uptime-kuma/backup.py" "$scratch/projected/backup-code/backup.py"
+printf '%s' 'disposable-backup-integration-only' > "$scratch/projected/secret/admin-password"
+printf '%s' '{"schemaVersion":1,"apps":[],"monitors":[]}' > "$scratch/projected/config/monitors.json"
 image='docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9'
 mounts=(--mount "type=bind,src=$scratch,dst=/test"
   --mount "type=bind,src=$scratch/data,dst=/source,readonly"
-  --mount "type=bind,src=$repo_root/clusters/homelab/apps/uptime-kuma/reconcile.js,dst=/config/reconcile.js,readonly"
-  --mount "type=bind,src=$repo_root/clusters/homelab/apps/uptime-kuma/backup.py,dst=/backup-code/backup.py,readonly")
-# Unconfigured bootstrap's updater cannot contact a public service in this phase.
-timeout 150 docker run --rm --network none --user 1000:1000 --cap-drop ALL \
-  --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
-  "${mounts[@]}" --entrypoint node "$image" -e \
-  'require("/config/reconcile.js").bootstrap({url:"http://127.0.0.1:3001",dataDir:"/test/data"},"disposable-backup-integration-only").catch(()=>process.exitCode=1)'
+  --mount "type=bind,src=$scratch/projected/config,dst=/config,readonly"
+  --mount "type=bind,src=$scratch/projected/backup-code,dst=/backup-code,readonly"
+  --mount "type=bind,src=$scratch/projected/secret,dst=/secret,readonly")
 cat > "$scratch/verify.js" <<'JS'
 const fs=require('fs'),assert=require('assert/strict'),http=require('http'),os=require('os'),vm=require('vm'),{spawn,execFileSync}=require('child_process');
-const a=require('/config/reconcile.js'),password='disposable-backup-integration-only';
+const a=require('/config/reconcile.js'),password=fs.readFileSync('/secret/admin-password','utf8');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const run=(command,args,options={})=>new Promise((resolve,reject)=>{const p=spawn(command,args,{stdio:['ignore','pipe','pipe'],...options});let out='';p.stdout.on('data',x=>out+=x);p.stderr.resume();p.on('error',reject);p.on('exit',code=>code===0?resolve(out):reject(Error('child failed '+code)));});
 async function stop(server){const exit=new Promise(r=>server.once('exit',r));server.kill('SIGTERM');let timer;try{await Promise.race([exit,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('stop timeout')),30000)})]);}finally{clearTimeout(timer);if(server.exitCode===null)server.kill('SIGKILL');}}
@@ -51,14 +50,21 @@ async function guardTests(){
  console.log('PASS: actual pinned updater/tunnel guards positive call counters and fenced zero counters; no public calls');
 }
 (async()=>{
- assert.equal(process.getuid(),1000);await guardTests();
+ assert.equal(process.getuid(),10001);assert.equal(process.getgid(),10001);
+ for(const name of ['/config/reconcile.js','/config/monitors.json','/backup-code/backup.py','/secret/admin-password']){
+  const stat=fs.statSync(name);assert.equal(stat.uid,0);assert.equal(stat.gid,10001);assert.equal(stat.mode&0o777,0o440);assert.ok(fs.readFileSync(name).length);
+ }
+ assert.throws(()=>fs.writeFileSync('/secret/admin-password','cannot-write'),{code:'EROFS'});
+ assert.equal(fs.statSync('/test/data').uid,10001);assert.equal(fs.statSync('/test/data/kuma.db').uid,10001);
+ fs.mkdirSync('/test/scratch',{mode:0o700});assert.equal(fs.statSync('/test/scratch').uid,10001);assert.equal(fs.statSync('/test/scratch').mode&0o777,0o700);
+ console.log('PASS: UID/GID10001, owned data/scratch, root:10001 group-readable0440 projected code/config/credential');
+ await guardTests();
  // Fixture-only settings suppress public updater/service/tunnel activity before positive startup.
  execFileSync('python3',['-c',`import sqlite3,json
 c=sqlite3.connect('/test/data/kuma.db')
 for k,v in {'checkUpdate':False,'nscd':False,'cloudflaredTunnelToken':''}.items():
  c.execute('delete from setting where key=?',(k,));c.execute('insert into setting(key,value,type) values(?,?,?)',(k,json.dumps(v),'general'))
 c.commit();c.close()`]);
- fs.writeFileSync('/test/password',password,{mode:0o600});
  const ip=Object.values(os.networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal)?.address;
  assert.ok(ip,'fixture needs enabled network');let probes=0,notifications=0,healthy=true;
  const sink=http.createServer((req,res)=>{if(req.url==='/probe'){probes++;res.statusCode=healthy?200:503}else if(req.url==='/notify'){notifications++;res.statusCode=200}else res.statusCode=200;req.resume();res.end('fixture');});
@@ -81,7 +87,7 @@ c.commit();c.close()`]);
   for(let i=0;i<90&&!(probes>1&&notifications>0);i++)await sleep(1000);
   assert.ok(probes>1&&notifications>0,`unfenced positive control needs probes+notification; counts ${probes}/${notifications}`);
   assert.ok(fs.existsSync('/source/kuma.db-wal'));assert.throws(()=>fs.writeFileSync('/source/not-writable','x'),{code:'EROFS'});
-  const output=await run('python3',['/backup-code/backup.py','snapshot','--source','/source','--destination','/test/backups','--catalog','/test/catalog']);assert.ok(JSON.parse(output).heartbeats>0);
+  const output=await run('python3',['/backup-code/backup.py','snapshot','--source','/source','--destination','/test/backups','--catalog','/test/catalog','--scratch','/test/scratch']);assert.ok(JSON.parse(output).heartbeats>0);
   console.log('PASS: network-enabled unfenced native monitor+notification reach sinks; live WAL read-only snapshot');
  }finally{client?.close();await stop(server);}
  probes=0;notifications=0;
@@ -89,7 +95,7 @@ c.commit();c.close()`]);
  const environment={...process.env,NODE_OPTIONS:'--require=/does-not-exist',HTTP_PROXY:'http://invalid.invalid',HTTPS_PROXY:'http://invalid.invalid',UPTIME_KUMA_PORT:'9999',UPTIME_KUMA_CLOUDFLARED_TOKEN:'hostile-token',CLOUDFLARED_TOKEN:'hostile-token'};
  const code=`import importlib.util,json
 s=importlib.util.spec_from_file_location('backup','/backup-code/backup.py');b=importlib.util.module_from_spec(s);s.loader.exec_module(b)
-print(json.dumps(b.verify('/test/backups','/test/restored','/test/password',observe_seconds=42)))`;
+print(json.dumps(b.verify('/test/backups','/test/restored','/secret/admin-password',observe_seconds=42)))`;
  const before=execFileSync('python3',['-c',"import hashlib,pathlib;print(hashlib.sha256(b''.join(p.read_bytes() for p in sorted(pathlib.Path('/test/backups').rglob('*')) if p.is_file())).hexdigest())"],{encoding:'utf8'});
  const output=await run('python3',['-c',code],{env:environment});assert.ok(JSON.parse(output).heartbeats>0);
  assert.equal(probes,0);assert.equal(notifications,0);
@@ -98,6 +104,26 @@ print(json.dumps(b.verify('/test/backups','/test/restored','/test/password',obse
  console.log('PASS: fenced clone zero probe/notification traffic for42s >=2x20s intervals, native login/details/history, archive unchanged, hostile env excluded');
 })().catch(e=>{console.error('FAIL:',e.message);process.exitCode=1;setTimeout(()=>process.exit(1),100);});
 JS
-timeout 300 docker run --rm --network bridge --user 1000:1000 --cap-drop ALL \
+cleanup() {
+  # Restore host ownership of only this disposable fixture for reliable removal.
+  docker run --rm --network none --user 0:0 --cap-drop ALL --cap-add CHOWN --cap-add FOWNER --cap-add DAC_OVERRIDE \
+    --mount "type=bind,src=$scratch,dst=/test" --entrypoint sh "$image" -ec \
+    'chown -R "$1:$2" /test; chmod -R u+rwX /test' sh "$fixture_uid" "$fixture_gid" >/dev/null 2>&1 || true
+  rm -rf "$scratch"
+}
+trap cleanup EXIT
+# Local fixture preparation needs DAC_OVERRIDE to traverse the host-owned
+# mktemp directory; it is never granted to bootstrap or verification.
+# Model Kubernetes projected volumes (root:fsGroup0440), and the bounded data
+# ownership init. No runtime container retains these preparation capabilities.
+timeout 90 docker run --rm --network none --user 0:0 --cap-drop ALL --cap-add CHOWN --cap-add FOWNER --cap-add DAC_OVERRIDE \
+  --mount "type=bind,src=$scratch,dst=/test" --entrypoint sh "$image" -ec \
+  'chown 10001:10001 /test /test/data /test/verify.js; chmod 0700 /test /test/data; chmod 0400 /test/verify.js; chown -R 0:10001 /test/projected; find /test/projected -type d -exec chmod 0750 {} +; find /test/projected -type f -exec chmod 0440 {} +'
+# Unconfigured bootstrap's updater cannot contact a public service in this phase.
+timeout 150 docker run --rm --network none --user 10001:10001 --cap-drop ALL \
+  --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+  "${mounts[@]}" --entrypoint node "$image" -e \
+  'require("/config/reconcile.js").bootstrap({url:"http://127.0.0.1:3001",dataDir:"/test/data"},"disposable-backup-integration-only").catch(()=>process.exitCode=1)'
+timeout 300 docker run --rm --network bridge --user 10001:10001 --cap-drop ALL \
   --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
   "${mounts[@]}" --entrypoint node "$image" /test/verify.js

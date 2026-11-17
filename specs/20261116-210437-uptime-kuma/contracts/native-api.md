@@ -75,3 +75,14 @@ activity in a network-enabled fixture, while authenticating and reading restored
 identities/history successfully. Tests must fail if any fenced setting/activation
 is missing or changed, if a process can start before the fence, or if an
 inherited tunnel/configuration override reaches the child.
+
+
+## Runtime identity compatibility
+
+Run native bootstrap/main/reconciliation and backup/restore processes as OS
+UID/GID 10001 with fsGroup 10001; native user/account IDs remain unchanged.
+Tests against the exact pinned image must prove its executables/modules readable,
+owned data writable, and projected config/credential readable without making the
+container root or source backup mount writable. The restore child inherits the
+parent's 10001 identity and the existing fixed environment/fencing contract.
+Only the initial data mount ownership init may be root, assigning 10001:10001.

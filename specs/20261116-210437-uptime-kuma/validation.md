@@ -120,3 +120,67 @@ private DNS resolver/declaration checks pass. Full static gate restarted once
 both owning failures fixed: session64879, /tmp/kuma-convergence-static.log.
 Ruff/Markdown/diff pass; T022 remains pending full result, T024 pending separate
 repeat convergence.
+
+
+## T034 precise routing prerequisite
+
+Kuma alone retains Traefik Application Synced and verifies the named routing
+Deployment current generation, positive desired replicas and matching
+updated/ready/available counts. The named Certificate must be Ready at its
+current generation, with the declared traefik-tls secret and wildcard DNS name.
+All other targets and prerequisites retain their previous checks. No live
+mutation or unrelated ingress repair occurred.
+
+Actual apply-script regression suite passed 38 tests in 90 seconds, including
+unrelated aggregate Progressing success, unsynced and missing dependencies,
+stale generation, zero/partial replicas, wrong certificate identity, false or
+stale certificate readiness and preserved other-target aggregate health.
+ShellCheck, changed Markdown lint and diff whitespace checks passed. Broad
+static retry94546 predates this behavior fix and remains pending; it is not
+claimed as final-source evidence. Separate targeted re-convergence is next;
+this behavior change has not been pushed.
+
+## Completed static remainder: policy finding
+
+Broad offline, manifest-policy and OpenWiki derivations completed before T034.
+The explicit built-snapshot signature proof passed (signed accepted, unknown
+key and unsigned rejected). Current manifest policy and the supported static
+remainder completed through OpenTofu validation/boundary tests, Octelium native
+policy checks, n8n recovery and Gitleaks without findings. Final session40003
+exited 1 at Kubernetes Checkov: 12,154 passed, 3 failed, 346 skipped, zero parse
+errors. All three failures are CKV_K8S_40 (high UID): Kuma first-backup Job,
+backup CronJob and restore-verification Job use UID1000. No suppression added.
+The owning plan/runtime identity requires a scoped correction and native image
+permission proof before final validation can be complete.
+
+
+## Final local gate repairs: T035 and T036
+
+All non-root processes now use UID/GID/fsGroup10001 consistently. Initial root
+ownership remains mount-root-only chown10001:10001/chmod0700. Actual pinned
+adapter integration exited0 with projected root:10001 mode0440 credentials and
+config, persistent data ownership, bootstrap/login/reconciliation, once/watch,
+JSON negatives, denied authentication and three-observation verification.
+Actual pinned backup integration exited0 with owned data/scratch, projected
+reads and write denial, separate read-only live-WAL EROFS proof, positive
+probes/webhook, and42seconds fenced zero-probe/zero-notification native restore
+with unchanged archive, IDs/history/authentication and environment guards.
+Exact harness hashes and complete evidence are in the adapter/backup reports.
+
+Kubernetes Checkov now passes12,157 checks, zero failures,346 unchanged skips,
+zero parse errors. Policy unit tests150/150 and rendered assertions1216/1216
+pass. The three public/test secret literals use independently reviewed exact
+path/check/fingerprint records with maximum occurrence1. Boundary suite14tests
+passes (3 optional native-mode tests skipped); the actual full scanner covers
+1679tracked files,28reviewed findings and zero unreviewed findings. Changed
+values, paths, checks, extra findings and repeated occurrences remain denied.
+No UID policy suppression or scanner bypass was added. Ruff, ShellCheck,
+Markdown and YAML lint pass (existing YAML style warnings only).
+
+T022 local evidence is composed explicitly: pre-T034 broad offline/manifest/
+OpenWiki derivations, final38apply regressions, current manifest and full static
+remainder through final scans, followed by the exact UID/literal repairs and
+affected native/render/policy/scanner checks above. No claim of one uninterrupted
+final-tree full replay is made. Final-head remote CI remains required after
+signed publication. No GitHub CLI auth retry, merge or deployment occurred;
+credential renewal and separate final source convergence remain next steps.

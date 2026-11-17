@@ -67,3 +67,25 @@ Publication pending, T005 unchecked. Bundle SHA256 a8e7996bcadcb0bf5d7743aa5dbc4
 
 Publication run: <https://github.com/Stuhlmuller/homelab/actions/runs/44030881358>
 Title and head bind uptime-kuma scope to exactb6063d41 main; currently in progress.
+
+## Publication receipt and consumer delivery
+
+Fixed-scope publication run44030881358 succeeded on exact main
+b6063d41c993ec575c667134fa97818d5a5591b9. Copy job133868791047 emitted the
+public receipt at 2026-11-17T07:09:45.6179215Z: selected inventory copied with
+matching digests and complete authenticated Harbor pulls; upstream retained.
+This closes image publication proof, subject to unchanged bundle comparison
+at consuming merge.
+
+Consumer PR: <https://github.com/Stuhlmuller/homelab/pull/1850>. Introduced
+commits cbe92f72623e141e47cc8795fc075c0925da94be,
+771b7bac5dd8e0cb90fd93ce61b118cd343bb729 and
+9cb322dfb872dd8b1ee751ccef211b9133c7a9ca have verified valid signatures.
+The latter two change review-note layout only; focused Markdown lint passed.
+
+Local static session64879 failed fetching an OpenWiki npm dependency with
+HTTP503; bounded retry94546 is pending. Live read-only preflight identified
+Traefik Synced with successful operation and ready/current generation4
+Deployment, but aggregate Progressing and an empty codex-signer Ingress
+loadBalancer status. A separate source-convergence review owns the scoped
+prerequisite correction; no unrelated ingress mutation or deployment occurred.

@@ -96,8 +96,17 @@ Source owners:
 
 Use one app Pod with main Kuma and a reconciler sidecar; disable service-account
 API-token automount. Only bootstrap/reconciler receive the admin secret mount.
-Run as UID/GID 1000 with dropped capabilities, no privilege escalation and
-RuntimeDefault seccomp. Reuse narrowly scoped initial volume ownership setup.
+Run bootstrap, main Kuma, reconciler, first/nightly backup and restore verification
+as UID/GID 10001 with fsGroup 10001, dropped capabilities, no privilege escalation
+and RuntimeDefault seccomp. The narrowly scoped root ownership init remains the
+only exception: chown only the initial data mount root to 10001:10001 and chmod
+0700, with only CHOWN/FOWNER capabilities; do not recursively migrate retained
+state. This is a new undeployed workload, so no existing UID migration is implied.
+Keep projected credential/config mounts readable by this group and scratch/clone
+storage writable by this identity without broad permissions or policy suppression.
+Require actual pinned-image integration at 10001:10001 for bootstrap, native API
+and reconciliation, read-only live-WAL backup and fenced native restore; former
+UID 1000 results do not establish this identity's runtime compatibility.
 Initial requests: app 100m/256Mi, limits 1000m/1Gi; adapter 10m/64Mi, limits
 200m/256Mi. Verify node resource headroom before registration.
 

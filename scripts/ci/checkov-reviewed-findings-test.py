@@ -99,6 +99,31 @@ class Boundaries(unittest.TestCase):
         self.entry["max_occurrences"] = 2
         self.assertEqual(self.assess(), (2, []))
 
+    def test_kuma_reviewed_literals_remain_exact_and_single_occurrence(self):
+        actual = json.loads(review.REVIEWS.read_text())
+        entries = [e for e in actual["findings"] if "uptime-kuma" in e["path"]]
+        self.assertEqual(len(entries), 3)
+        for entry in entries:
+            with self.subTest(path=entry["path"]):
+                self.assertEqual(entry["max_occurrences"], 1)
+                self.allow = dict(actual, findings=[entry])
+                self.path = entry["path"]
+                target = self.root / self.path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("fixture only")
+                self.finding.update(resource=entry["fingerprint"], file_path="/" + self.path,
+                                    file_abs_path=str(target))
+                self.report["results"]["failed_checks"] = [copy.deepcopy(self.finding)]
+                self.report["summary"]["failed"] = 1
+                self.assertEqual(self.assess(), (1, []))
+                self.test_changed_value_new_check_and_same_value_new_path_fail()
+                self.test_new_secret_same_file_and_nonsecret_failure_preserved()
+                doubled = copy.deepcopy(self.report)
+                doubled["results"]["failed_checks"] *= 2
+                doubled["summary"]["failed"] = 2
+                with self.assertRaises(review.ReviewError):
+                    self.assess(doubled)
+
     def test_output_errors_fail_closed(self):
         mutations = [
             lambda d: d["summary"].update(parsing_errors=1),

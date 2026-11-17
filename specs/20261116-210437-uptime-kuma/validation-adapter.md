@@ -86,3 +86,31 @@ Final harness SHA256:
 `7a0a2e1d37fd7b3ea6ef3c7673f92af6df4b1d67b55d9754034f2f2db6fa825f`.
 Adapter remains the exact timed-run hash above. Unit suite **16/16 pass**;
 Node syntax, bash syntax, ShellCheck and diff whitespace checks pass.
+
+## T035: UID/GID 10001 pinned runtime proof
+
+`bash scripts/ci/uptime-kuma-integration.sh verify-only` **exited 0** with
+runtime UID/GID **10001:10001**, dropped capabilities, read-only root filesystem
+and no network. A disposable volume is prepared separately with data/work owned
+by 10001:10001 (0750) and projected password/catalog files owned by root:10001
+(0440). Runtime assertions verify those owners/modes and actually read the
+projected credential and configuration. The generated SQLite database is owned
+by UID10001 and survives repeated bootstrap/server restarts in the fixture.
+
+At this UID, native setup/login, existing-owner preservation, wrong-password
+rejection, add/edit/resume/pause/no-op, retained IDs/settings, once alongside
+watch, real JSON-query healthy/negative/401/302 behavior, unauthorized admin
+denial and both three-observation verification interfaces all passed. The
+prior timed failure/recovery proof is reused: the adapter is unchanged and
+this correction affects process identity and fixture filesystem ownership only.
+
+The host checkout uses restrictive file modes, so the harness copies exact
+source bytes into disposable read-only code mounts; it does not change source
+file permissions. Test volumes are removed on exit. The reviewed disposable
+password literal remains unchanged; no secret-scanner bypass was introduced.
+
+Tested harness SHA256:
+`865e9b731ece6127d3822c03fe2ffcb0e021d20e1954395259e036470254fe92`.
+Unchanged adapter SHA256:
+`8f371518adf600918ad0cb197e07e8db7841f7b187142761e6e9d23c778ddd90`.
+Bash syntax, ShellCheck and whitespace checks passed.

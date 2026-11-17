@@ -377,3 +377,103 @@ Repeated independent source convergence PASS: no new gaps; T032/T033 proven.
 T024 marks source review only, T028 live convergence remains pending.
 Consuming PR body prepared locally; creation waits full local static result,
 merge additionally waits exact-scope publication receipt. No source push yet.
+
+
+## T034 precise routing prerequisite
+
+Kuma alone retains Traefik Application Synced and verifies the named routing
+Deployment current generation, positive desired replicas and matching
+updated/ready/available counts. The named Certificate must be Ready at its
+current generation, with the declared traefik-tls secret and wildcard DNS name.
+All other targets and prerequisites retain their previous checks. No live
+mutation or unrelated ingress repair occurred.
+
+Actual apply-script regression suite passed 38 tests in 90 seconds, including
+unrelated aggregate Progressing success, unsynced and missing dependencies,
+stale generation, zero/partial replicas, wrong certificate identity, false or
+stale certificate readiness and preserved other-target aggregate health.
+ShellCheck, changed Markdown lint and diff whitespace checks passed. Broad
+static retry94546 predates this behavior fix and remains pending; it is not
+claimed as final-source evidence. Separate targeted re-convergence is next;
+this behavior change has not been pushed.
+
+## Delivery continuation access checkpoint
+
+Separate T034 source convergence passed with no gaps. Reviewed preflight fix
+and receipts remain local, ready for signed publication to PR1850. The next
+GitHub GraphQL request returned HTTP401 Bad credentials; no push, merge or
+apply was attempted after that failure. Resume after supported environment
+credential refresh, preserving expected remote head
+9cb322dfb872dd8b1ee751ccef211b9133c7a9ca. Image publication proof is complete;
+current-head required CI and protected merge still precede targeted apply.
+
+GitHub connector contents write produced unsigned d785b02237b70deccade703d8c81d9e58491964e.
+It was retained at codex/uptime-kuma-unsigned-backup and removed from the PR
+using an exact expected-head lease. Connector verified the restored signed
+head 9cb322dfb872dd8b1ee751ccef211b9133c7a9ca. No local edits were lost.
+The connector cannot replace the signed GraphQL commit and workflow-dispatch
+path; supported managed GitHub credential renewal remains necessary.
+
+Static remainder40003 finished with the three UID policy findings documented
+in validation.md. Final source remains undeployed; no check was waived.
+
+## Narrow task reconciliation: runtime UID
+
+Read all five repaired design artifacts and appended T035 only. Existing task
+IDs/completion history remain intact. The task requires complete identity
+consistency, actual high-UID pinned-image native/backup/fenced-restore proof,
+negative permission/identity coverage and clearance of all three Checkov
+findings without suppression. No runtime source changed in this turn. Next:
+separate read-only analysis, then bounded implementation and convergence.
+
+
+## Final local gate repairs: T035 and T036
+
+All non-root processes now use UID/GID/fsGroup10001 consistently. Initial root
+ownership remains mount-root-only chown10001:10001/chmod0700. Actual pinned
+adapter integration exited0 with projected root:10001 mode0440 credentials and
+config, persistent data ownership, bootstrap/login/reconciliation, once/watch,
+JSON negatives, denied authentication and three-observation verification.
+Actual pinned backup integration exited0 with owned data/scratch, projected
+reads and write denial, separate read-only live-WAL EROFS proof, positive
+probes/webhook, and42seconds fenced zero-probe/zero-notification native restore
+with unchanged archive, IDs/history/authentication and environment guards.
+Exact harness hashes and complete evidence are in the adapter/backup reports.
+
+Kubernetes Checkov now passes12,157 checks, zero failures,346 unchanged skips,
+zero parse errors. Policy unit tests150/150 and rendered assertions1216/1216
+pass. The three public/test secret literals use independently reviewed exact
+path/check/fingerprint records with maximum occurrence1. Boundary suite14tests
+passes (3 optional native-mode tests skipped); the actual full scanner covers
+1679tracked files,28reviewed findings and zero unreviewed findings. Changed
+values, paths, checks, extra findings and repeated occurrences remain denied.
+No UID policy suppression or scanner bypass was added. Ruff, ShellCheck,
+Markdown and YAML lint pass (existing YAML style warnings only).
+
+T022 local evidence is composed explicitly: pre-T034 broad offline/manifest/
+OpenWiki derivations, final38apply regressions, current manifest and full static
+remainder through final scans, followed by the exact UID/literal repairs and
+affected native/render/policy/scanner checks above. No claim of one uninterrupted
+final-tree full replay is made. Final-head remote CI remains required after
+signed publication. No GitHub CLI auth retry, merge or deployment occurred;
+credential renewal and separate final source convergence remain next steps.
+
+## Final source convergence and credential-blocked handoff
+
+Separate final source convergence passed T035/T036 with no gaps or new tasks;
+review verified the current fixture hashes. All local validation is complete
+within the compositional scope recorded above. No test runners remain active.
+
+PR1850 remains draft at verified signed head
+9cb322dfb872dd8b1ee751ccef211b9133c7a9ca. The reviewed final corrections and
+evidence remain in24modified tracked files in this worktree. The unsigned
+connector experiment is isolated on codex/uptime-kuma-unsigned-backup and is
+not an ancestor of the PR head. No additional authentication retries occurred.
+
+T025–T028 remain pending. Resume after supported managed GitHub CLI credential
+renewal: publish the exact reviewed changes as verified signed commits, obtain
+complete required checks/reviews on the final head, compare the image receipt
+bundle, use normal protected expected-head merge, verify signed reachable main,
+then dispatch the declared targeted Terragrunt Apply at exact current main.
+Verify GitOps revision/readiness before separate functional, persistence,
+backup/restore and runtime-convergence acceptance. No deployment is claimed.

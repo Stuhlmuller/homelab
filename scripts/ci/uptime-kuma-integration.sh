@@ -6,8 +6,9 @@ case "$mode" in full|verify-only) ;; *) echo "usage: $0 [full|verify-only]" >&2;
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 image='docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9'
 scratch="$(mktemp -d)"
-trap 'rm -rf "$scratch"' EXIT
-chmod 777 "$scratch"
+volume=""
+trap 'if [[ -n "$volume" ]]; then docker volume rm "$volume" >/dev/null; fi; rm -rf "$scratch"' EXIT
+chmod 755 "$scratch"
 cat > "$scratch/integration.js" <<'JS'
 "use strict";
 const assert = require("node:assert/strict");
@@ -38,25 +39,23 @@ async function completed(child, timeout = 30000) {
     } finally { clearTimeout(timer); if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
 }
 async function onceWithWatch() {
-    fs.writeFileSync("/test/catalog.json", JSON.stringify(catalog));
-    fs.writeFileSync("/test/password", password, { mode: 0o600 });
-    const args = ["--catalog", "/test/catalog.json", "--password-file", "/test/password", "--status-file", "/test/status.json"];
+    const args = ["--catalog", "/test/projected/catalog.json", "--password-file", "/test/projected/password", "--status-file", "/test/work/status.json"];
     const watcher = spawn(process.execPath, ["/config/reconcile.js", "watch", ...args], { stdio: "ignore" });
     try {
         const deadline = Date.now() + 30000;
-        while (!fs.existsSync("/test/status.json")) {
+        while (!fs.existsSync("/test/work/status.json")) {
             assert.equal(watcher.exitCode, null, "watch must remain running");
             if (Date.now() > deadline) throw Error("watch initial reconciliation timeout");
             await new Promise(resolve => setTimeout(resolve, 50));
         }
-        const initial = JSON.parse(fs.readFileSync("/test/status.json", "utf8"));
+        const initial = JSON.parse(fs.readFileSync("/test/work/status.json", "utf8"));
         assert.equal(initial.ok, true);
         await new Promise(resolve => setTimeout(resolve, 10));
         const once = spawn(process.execPath, ["/config/reconcile.js", "once", ...args], { stdio: "ignore" });
         await completed(once);
         assert.equal(watcher.exitCode, null, "once must not stop watch");
         assert.equal(watcher.signalCode, null);
-        const after = JSON.parse(fs.readFileSync("/test/status.json", "utf8"));
+        const after = JSON.parse(fs.readFileSync("/test/work/status.json", "utf8"));
         assert.equal(after.ok, true);
         assert.ok(Date.parse(after.lastSuccess) > Date.parse(initial.lastSuccess));
         assert.equal(after.catalogHash, initial.catalogHash);
@@ -91,7 +90,7 @@ async function jsonHealth(client) {
     }
 }
 async function acceptanceCLI() {
-    const child = spawn(process.execPath, ["/config/reconcile.js", "acceptance", "--password-file", "/test/password"], { stdio: ["ignore", "pipe", "ignore"] });
+    const child = spawn(process.execPath, ["/config/reconcile.js", "acceptance", "--password-file", "/test/projected/password"], { stdio: ["ignore", "pipe", "ignore"] });
     let output = "";
     child.stdout.on("data", chunk => { output += chunk; });
     await completed(child, 570000);
@@ -101,12 +100,37 @@ async function acceptanceCLI() {
     console.log(`PASS: actual acceptance CLI three observations, down ${result.downMs}ms, recovered ${result.recoveryMs}ms`);
     return result;
 }
+if (process.argv[2] === "prepare") {
+    assert.equal(process.getuid(), 0);
+    for (const name of ["data", "work"]) {
+        fs.mkdirSync(`/test/${name}`, { mode: 0o750 });
+        fs.chownSync(`/test/${name}`, 10001, 10001);
+    }
+    fs.mkdirSync("/test/projected", { mode: 0o750 });
+    for (const [name, content] of [["password", password], ["catalog.json", JSON.stringify(catalog)], ["active-catalog.json", JSON.stringify({ ...catalog, monitors: [{ ...m, enabled: true }] })]]) {
+        fs.writeFileSync(`/test/projected/${name}`, content, { mode: 0o440 });
+        fs.chownSync(`/test/projected/${name}`, 0, 10001);
+    }
+    fs.chownSync("/test/projected", 0, 10001);
+    process.exit(0);
+}
 (async () => {
-    assert.equal(process.getuid(), 1000);
+    assert.equal(process.getuid(), 10001);
+    assert.equal(process.getgid(), 10001);
+    for (const name of ["password", "catalog.json", "active-catalog.json"]) {
+        const metadata = fs.statSync(`/test/projected/${name}`);
+        assert.equal(metadata.uid, 0); assert.equal(metadata.gid, 10001);
+        assert.equal(metadata.mode & 0o777, 0o440);
+    }
+    assert.equal(fs.readFileSync("/test/projected/password", "utf8"), password);
+    assert.deepEqual(JSON.parse(fs.readFileSync("/test/projected/catalog.json", "utf8")), catalog);
+    assert.equal(fs.statSync(opts.dataDir).uid, 10001);
+    assert.equal(fs.statSync(opts.dataDir).gid, 10001);
     assert.ok(require("/app/node_modules/socket.io-client"));
     assert.ok(require("/app/node_modules/@louislam/sqlite3"));
     await adapter.bootstrap(opts, password);
     assert.ok(fs.existsSync("/test/data/kuma.db"));
+    assert.equal(fs.statSync("/test/data/kuma.db").uid, 10001);
     // A second bootstrap must preserve account and data, and stop before main.
     await adapter.bootstrap(opts, password);
     await assert.rejects(adapter.bootstrap(opts, "incorrect-integration-password"), /rejected-login/);
@@ -153,8 +177,7 @@ async function acceptanceCLI() {
         const verification = await adapter.verify(client, activeCatalog);
         assert.equal(verification.ok, true); assert.equal(verification.healthy, true);
         assert.equal(verification.monitors[0].observations.length, 3);
-        fs.writeFileSync("/test/catalog.json", JSON.stringify(activeCatalog));
-        const verifier = spawn(process.execPath, ["/config/reconcile.js", "verify", "--catalog", "/test/catalog.json", "--password-file", "/test/password"], { stdio: "ignore" });
+        const verifier = spawn(process.execPath, ["/config/reconcile.js", "verify", "--catalog", "/test/projected/active-catalog.json", "--password-file", "/test/projected/password"], { stdio: "ignore" });
         await completed(verifier);
         await adapter.reconcile(client, catalog, password);
         console.log("PASS: unauthorized admin denied; verify CLI reads three real observations");
@@ -162,9 +185,20 @@ async function acceptanceCLI() {
     } finally { client?.close(); await stop(server); }
 })().catch(error => { console.error("FAIL:", error.message); process.exitCode = 1; });
 JS
-docker run --rm --network none --user 1000:1000 \
+cp "$repo_root/clusters/homelab/apps/uptime-kuma/reconcile.js" "$scratch/reconcile.js"
+chmod 444 "$scratch/integration.js" "$scratch/reconcile.js"
+volume="$(docker volume create)"
+# Test-only permission preparation models root-owned projected files and fsGroup.
+docker run --rm --network none --user 0:0 --cap-drop ALL --cap-add CHOWN \
+  --security-opt no-new-privileges --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+  --mount "type=bind,src=$scratch/reconcile.js,dst=/config/reconcile.js,readonly" \
+  --mount "type=bind,src=$scratch/integration.js,dst=/integration.js,readonly" \
+  --mount "type=volume,src=$volume,dst=/test" \
+  --entrypoint node "$image" /integration.js prepare
+docker run --rm --network none --user 10001:10001 \
   --cap-drop ALL --security-opt no-new-privileges --read-only \
   --tmpfs /tmp:rw,nosuid,nodev,size=128m \
-  --mount "type=bind,src=$repo_root/clusters/homelab/apps/uptime-kuma/reconcile.js,dst=/config/reconcile.js,readonly" \
-  --mount "type=bind,src=$scratch,dst=/test" \
-  --entrypoint node "$image" /test/integration.js "$mode"
+  --mount "type=bind,src=$scratch/reconcile.js,dst=/config/reconcile.js,readonly" \
+  --mount "type=bind,src=$scratch/integration.js,dst=/integration.js,readonly" \
+  --mount "type=volume,src=$volume,dst=/test" \
+  --entrypoint node "$image" /integration.js "$mode"

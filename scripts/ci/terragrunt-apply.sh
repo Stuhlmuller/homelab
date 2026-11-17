@@ -332,10 +332,32 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     prerequisite_apps+=(traefik)
   fi
   kubectl -n argocd get applications "${prerequisite_apps[@]}" -o json | jq -e \
-    --argjson expected "${#prerequisite_apps[@]}" '
+    --argjson expected "${#prerequisite_apps[@]}" --arg target "$TERRAGRUNT_ARGOCD_APP" '
     (.items | length == $expected) and
-    all(.items[]; .status.sync.status == "Synced" and .status.health.status == "Healthy")
+    all(.items[]; .status.sync.status == "Synced" and
+      (if $target == "uptime-kuma" and .metadata.name == "traefik"
+       then true else .status.health.status == "Healthy" end))
   ' >/dev/null
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" ]]; then
+    # Aggregate ingress health includes unrelated consumers. Check the actual
+    # private routing workload and its declared wildcard certificate instead.
+    kubectl -n traefik get deployment traefik -o json | jq -e '
+      (.metadata.generation > 0) and
+      (.status.observedGeneration == .metadata.generation) and
+      (.spec.replicas > 0) and
+      (.status.updatedReplicas == .spec.replicas) and
+      (.status.readyReplicas == .spec.replicas) and
+      (.status.availableReplicas == .spec.replicas)
+    ' >/dev/null
+    kubectl -n traefik get certificate traefik -o json | jq -e '
+      . as $certificate |
+      (.metadata.generation > 0) and
+      (.spec.secretName == "traefik-tls") and
+      ((.spec.dnsNames // []) | index("*.stinkyboi.com") != null) and
+      any(.status.conditions[]?; .type == "Ready" and .status == "True" and
+        .observedGeneration == $certificate.metadata.generation)
+    ' >/dev/null
+  fi
   prerequisite_crds=(
     crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io
     crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io

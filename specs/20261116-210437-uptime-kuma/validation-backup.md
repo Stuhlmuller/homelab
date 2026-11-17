@@ -84,3 +84,37 @@ application execution fence. Schema/image changes require renewed validation.
 
 Scheduled execution, NAS capacity, first deployed backup and actual deployed
 fenced restore remain live acceptance work. No production recovery was attempted.
+
+## T035 high-UID correction — 2026-11-17
+
+The complete frozen backup integration harness reran with **UID/GID 10001:10001**
+for seed bootstrap and network-enabled verification and finished **exit 0**.
+
+- Harness SHA256: `4a6e404648d724489a37e35b80791e2ac28131edf9e8ab720327243ee38d1fc2`.
+- Unchanged backup implementation SHA256:
+  `b3e3f585d2ae9062f1bed1e2ce8b1e6a70eef82d7272d274c085f574d0e12c42`.
+- Exact image index remains
+  `sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9`.
+
+Runtime asserted both numeric identities, owned data/database and mode0700
+owned scratch. Projected adapter, catalog, backup code and owner credential
+were **root:10001, mode0440**, mounted read-only, and successfully read using
+group permissions; a credential write failed EROFS. The test fixture's local
+preparation/cleanup alone used root ownership capabilities on its disposable
+directory. Runtime processes retained `--cap-drop ALL`, no-new-privileges and
+read-only root. No production manifests or backup implementation changed in
+this delegated correction.
+
+The network-enabled positive control again emitted at least two probes and one
+notification. Live native WAL backup through the separate read-only source
+mount succeeded, including its direct-write EROFS assertion. The fenced clone
+then produced **zero probes and zero notifications over42seconds**, exceeding
+two configured20-second intervals. Native needSetup=false/login/details/paused
+IDs/history, unchanged original archive digest and hostile-environment exclusion
+all passed. Actual pinned updater/tunnel positive and negative counters passed.
+ShellCheck, shell syntax and whitespace checks passed at the recorded hash.
+
+Two initial fixture-setup attempts exposed host mktemp traversal and the
+host-owned mode0600 test-script permissions before runtime proof. They were
+corrected in disposable preparation; neither was accepted as a passing test.
+The final complete run above is the evidence for UID10001 compatibility.

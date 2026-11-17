@@ -124,3 +124,20 @@ integration script also exercises the following network-enabled fixture, without
 Record this as application execution fencing, not general network isolation.
 If a startup pathway remains unassessed or the fixture cannot prove suppression,
 leave the restore acceptance incomplete and repair the owning design/source.
+
+
+## High-UID runtime acceptance
+
+Run both actual pinned-image integration scripts at UID/GID 10001:10001 and
+assert the effective identity. Prepare disposable writable data/scratch as
+10001:10001, matching the bounded initial mount-root chown and pod fsGroup 10001.
+Prove bundled Node/Python/module readability, projected credential/config
+readability, native setup/login/reconciliation and persistent database writes.
+The backup test must retain a separate read-only live-WAL source bind mount with
+an EROFS write rejection, then complete the existing network-enabled fenced
+restore, native IDs/history proof and unchanged archive check under UID 10001.
+Render main/bootstrap/reconciler and all Jobs with runAsUser/runAsGroup/fsGroup
+10001; retain the narrowly scoped root ownership-init exception only. Require the
+actual image results and affected Checkov/policy gates to pass before delivery;
+prior UID 1000 proof alone is insufficient. Do not add policy suppressions or
+broaden filesystem permissions to make the check pass.

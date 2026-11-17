@@ -181,3 +181,24 @@ and dedicated Job identity/mount assertions. The old network-none integration
 is useful storage evidence but is not proof of this repair. Exact details are
 in quickstart.md and contracts/native-api.md. No repaired implementation or live
 safety is claimed by this design checkpoint.
+
+
+## High runtime UID correction (CKV_K8S_40)
+
+The delivery owner reported the final Checkov scan as 12,154 passed, three failed
+and 346 skipped; all three new failures are Kuma backup, CronJob and restore
+runAsUser 1000. Use UID/GID/fsGroup 10001 consistently for every non-root Kuma
+process, including main/bootstrap/reconciler and Jobs, rather than suppressing
+CKV_K8S_40 or fixing only scanned Job manifests. The initial mount-root ownership
+init must assign 10001:10001. No existing deployed Kuma data needs migration.
+
+The pinned image previously ran at UID 1000; arbitrary high-UID compatibility is
+an implementation acceptance requirement, not yet proven by that evidence.
+Actual image tests must run as 10001:10001, read bundled Node/Python and modules,
+read projected group-readable config/credentials, and write only owned data and
+scratch paths. Prove native setup/login/reconciliation, live WAL snapshot from a
+separate read-only mount (attempted write fails), and network-enabled fenced
+restore with native login/identity/history and unchanged archive. Retain all
+existing rootless/capability/read-only-root assertions and execution-fence tests.
+Rerun affected renders/security checks; no broad chmod, root runtime fallback,
+new image, secret change, or Checkov suppression is part of this correction.

@@ -26,7 +26,7 @@ exit condition: exact catalog bundle and authenticated complete-pull receipt.
 
 - [x] T003 Add the resolved Kuma index and only required helper pins to `scripts/config/harbor-images.json` and new `scripts/config/harbor-uptime-kuma-images.json`, preserving provenance and supported platforms.
 - [x] T004 Add fixed `uptime-kuma` scope to `.github/workflows/harbor-mirror.yml` and `scripts/ci/harbor-publish.sh`, with invalid-scope, exact-inventory and unchanged-destination tests in `scripts/ci/harbor-publish-test.py` and affected existing publisher tests.
-- [ ] T005 Validate and deliver only the image prerequisite through protected PR merge, dispatch exact-main mirror scope, and record successful publication/full-pull run and bundle hash in `specs/20261116-210437-uptime-kuma/delivery.md`; do not merge consuming references before this receipt.
+- [x] T005 Validate and deliver only the image prerequisite through protected PR merge, dispatch exact-main mirror scope, and record successful publication/full-pull run and bundle hash in `specs/20261116-210437-uptime-kuma/delivery.md`; do not merge consuming references before this receipt.
 
 ## Phase 3: US1 — See homelab availability (P1, MVP)
 
@@ -76,7 +76,7 @@ repeat configuration/replacement without duplicate IDs or lost observations.
 Goal: deliver reviewed source and prove requested behavior. A passing local test,
 PR merge or Argo health alone does not complete the task.
 
-- [ ] T022 Wire Kuma checks into `scripts/ci/static-checks.sh` and applicable existing offline/static entrypoints; run catalog/adapter/backup tests, pinned-image integration, Kustomize/Helm rendering, policy/security checks and generated Terragrunt formatting/render/plans; retain exact commands/results/limits in `specs/20261116-210437-uptime-kuma/validation.md`.
+- [x] T022 Wire Kuma checks into `scripts/ci/static-checks.sh` and applicable existing offline/static entrypoints; run catalog/adapter/backup tests, pinned-image integration, Kustomize/Helm rendering, policy/security checks and generated Terragrunt formatting/render/plans; retain exact commands/results/limits in `specs/20261116-210437-uptime-kuma/validation.md`.
 - [x] T023 Update affected `docs/argocd-app-onboarding.md`, `docs/secrets-aws-ssm.md`, `openwiki/workloads/inventory.md`, `openwiki/architecture/storage-and-state.md`, `openwiki/architecture/secrets-and-identity.md` and `openwiki/operations/validation-gates.md`; describe current private routing without claiming stale Octelium-only requirements or touching generated wiki artifacts.
 - [x] T024 Run separate source-convergence stage after implementation/checks; append any gaps to this `tasks.md` under convergence, implement them in separate turns and rerun analysis when an owning artifact changes; preserve the report in `specs/20261116-210437-uptime-kuma/checkpoint.md` without marking runtime tasks complete.
 - [ ] T025 Deliver consuming source through protected PR review/checks/merge, refresh exact main, run declared targeted apply with valid prerequisites and saved-plan safeguards, and record PR/run/source revisions in `specs/20261116-210437-uptime-kuma/delivery.md`; never bypass a failed check or mutate live resources ad hoc.
@@ -175,3 +175,73 @@ delivery. Existing publication and deployed acceptance tasks remain unchanged.
   regressions in `scripts/ci/tailscale-private-dns-test.py` proving the current inventory passes, unknown suffixes still fail, and Kuma is never included in public retirement;
   rerun affected DNS checks and T022 validation. Trace: FR-001, FR-008, FR-009, plan: private ingress/DNS integration (partial). Evidence: `inventory()` currently requires the
   entire suffix after position 27 to equal only `OCE_NAMES`, rejecting the committed Kuma hostname.
+
+
+## Phase 8: Convergence
+
+Deployment prerequisite inspection found one HIGH partial gap. Complete T034,
+rerun affected T022 checks and targeted source convergence before retrying T025.
+
+- [x] T034 [US1] Scope only the `uptime-kuma` Traefik prerequisite in `scripts/ci/terragrunt-apply.sh` to the
+  dependencies actually required by Kuma: retain Argo Application `Synced`, require `traefik/traefik`
+  Deployment current observed generation with positive desired replicas and matching updated/ready/available
+  replicas, and require the declared `traefik/traefik` Certificate Ready for the route's `traefik-tls`
+  wildcard certificate. Do not let unrelated Ingress load-balancer status alone block Kuma through aggregate
+  Application `Progressing`. Preserve all other target branches and Kuma node, namespace, project permissions,
+  other Synced/Healthy prerequisite apps, CRDs, secret-store scope, storage, saved-plan and exact-source
+  checks; every failed/missing/stale prerequisite must stop before state repair, secret writes or
+  registration. Add `scripts/ci/terragrunt-apply-test.py` positive coverage for Synced/Progressing Traefik
+  with ready current-generation Deployment/Certificate, and negative cases for unsynced/missing Traefik, stale
+  generation, zero/partial replicas, missing/unready Certificate and unhealthy other prerequisites. Record the
+  scoped preflight evidence without repairing unrelated ingress. Trace: FR-001, FR-008, FR-012, plan: targeted
+  prerequisite checks (partial). Evidence: current aggregate Synced/Healthy check blocks before mutation
+  despite observed current-generation ready Traefik Deployment; unrelated existing Ingress status contributes
+  aggregate Progressing.
+
+## Phase 9: high-UID policy correction
+
+The final Kubernetes scan found three CKV_K8S_40 failures. The owning design
+now requires UID/GID/fsGroup 10001. Complete T035 before final validation and
+protected delivery, then repeat separate source convergence. Prior successful
+UID1000 fixtures remain historical evidence, not proof of the new identity.
+
+- [x] T035 [US1/US3] Set UID/GID/fsGroup 10001 consistently in
+  `clusters/homelab/apps/uptime-kuma/values.yaml`, `backup-job.yaml`,
+  `backup-cronjob.yaml` and `restore-verification-job.yaml`; preserve only the
+  bounded root ownership init and change its mount-root chown to 10001:10001,
+  mode 0700, without recursion. Update workload README and both pinned-image
+  integration scripts, including effective-UID assertions. Prove actual pinned
+  image executables/modules and projected group-readable config/credentials
+  readable, owned data/scratch writable, native setup/login/reconciliation and
+  persistent writes at 10001:10001. Repeat separate read-only live-WAL backup
+  with attempted-write EROFS, and network-enabled fenced restore with native
+  authentication/IDs/history and unchanged archive. Retain dropped capabilities,
+  no privilege escalation, read-only source/root and all execution-fence checks.
+  Add meaningful identity-consistency/negative coverage and rerun affected
+  render/policy/Checkov gates so all three CKV_K8S_40 findings clear. Do not add
+  suppressions, broad chmod, root runtime fallback, new images or live migration.
+  Record exact evidence in validation-adapter.md, validation-backup.md and
+  validation.md. Trace: FR-001, FR-007, FR-008, FR-012, SC-001, SC-005; plan:
+  Bootstrap and reconciliation; research: High runtime UID correction;
+  data-model: Runtime filesystem identity; native contract: identity compatibility.
+
+
+## Phase 10: Convergence
+
+Final secret scanning found three MEDIUM partial validation gaps: public schema
+and disposable-test literals need bounded review through the existing mechanism.
+Complete T036 and rerun affected T022 gates before protected delivery; this does
+not change the separate high-UID T035 requirement or allow policy suppressions.
+
+- [x] T036 Add exactly reviewed `CKV_SECRET_6` records to `scripts/config/checkov-reviewed-findings.json` for
+  `clusters/homelab/apps/uptime-kuma/externalsecret.yaml` (`secretKey: admin-password`, a projected key name
+  with SSM reference, not a credential), `scripts/ci/uptime-kuma-integration.sh` (`disposable-integration-
+  only-password`, disposable local fixture only), and `scripts/ci/uptime-kuma-backup-integration.sh`
+  (`hostile-token`, deliberately invalid inherited-environment poisoning fixture). Derive exact fingerprints
+  and minimum occurrence bounds from the pinned scanner's private output; retain per-path/check/fingerprint
+  matching and explicit source-backed reasons. Extend or exercise `scripts/ci/checkov-reviewed-findings-
+  test.py` to prove each approved literal is bounded while changed values, identical values at new paths,
+  excess occurrences and unrelated checks still fail; rerun the exact three-file scanner and final secret
+  gate. Preserve the existing review entries and fail-closed checker semantics; no secret values, raw scanner
+  snippets, broad path/check exclusions or blanket suppressions may enter source or public evidence. Trace:
+  FR-008, FR-010, T022 validation; Constitution II/III (partial).

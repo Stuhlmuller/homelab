@@ -179,6 +179,27 @@
       "fingerprint": "38abc48c1eb5838519ab0372fbf38f1eb0f3f73c",
       "max_occurrences": 1,
       "reason": "Public Kubernetes Secret key name in an ExternalSecret mapping; not a credential value."
+    },
+    {
+      "path": "clusters/homelab/apps/uptime-kuma/externalsecret.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "fc4b79ff2005c1bfacead828184f0c8aad8fd860",
+      "max_occurrences": 1,
+      "reason": "Public ExternalSecret target key name admin-password; actual generated credential remains in SSM."
+    },
+    {
+      "path": "scripts/ci/uptime-kuma-integration.sh",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "7d58b460059205182df44e448b4f06b567a6982b",
+      "max_occurrences": 1,
+      "reason": "Disposable native integration password literal used only in isolated test state, never deployment credentials."
+    },
+    {
+      "path": "scripts/ci/uptime-kuma-backup-integration.sh",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "33ba39854d1d088bcb37eff6eea2a8431ee4d7a4",
+      "max_occurrences": 1,
+      "reason": "Synthetic hostile-token environment poisoning marker verifies restore strips tunnel overrides; not a valid credential."
     }
   ]
 }

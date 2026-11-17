@@ -86,3 +86,14 @@ never rewrites or blesses the archive.
 
 The Job's separate service account and declared deny-all policies are defense
 in depth. They do not claim a functioning network sandbox on this cluster.
+
+
+## Runtime filesystem identity
+
+All non-root Kuma processes use UID/GID 10001 and pod fsGroup 10001. Initial
+production data mount-root ownership is 10001:10001 with mode 0700; immutable
+backup bundles remain private and readable by the same backup/restore identity.
+Projected credentials retain group-read access only for their declared consumers;
+config stays read-only and scratch/restore data is ephemeral writable storage.
+The root ownership init changes only the initial mount root, not retained rows or
+recursive file ownership. Account IDs inside SQLite are unrelated to this OS UID.

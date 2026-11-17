@@ -20,7 +20,7 @@ targeted Terragrunt pipeline. Do not substitute direct apply/patch commands.
 
 ## Reconciliation and retained state
 
-The main process runs as UID 1000 with a retained 5Gi local PVC
+The main process runs as UID/GID 10001 with a retained 5Gi local PVC
 `uptime-kuma-local` on `acer` (`/var/lib/uptime-kuma`). Recreate prevents two
 SQLite writers. A bounded ownership init sets only the mount-root ownership;
 bootstrap starts a loopback server, creates an owner only when none exists,
