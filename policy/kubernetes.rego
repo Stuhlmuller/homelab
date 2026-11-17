@@ -391,7 +391,7 @@ external_secret_allowed_prefixes := {
 	"harbor": {"/homelab/harbor/"},
 	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
-	"monitoring": {"/homelab/grafana/"},
+	"monitoring": {"/homelab/grafana/", "/homelab/uptime-kuma/admin-password"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
 	"openclaw-agents": {"/homelab/openclaw-enterprise/model-api-key"},

@@ -22,6 +22,8 @@ TARGET = "homelab-ingress.tail67beb.ts.net"
 MESH = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
 MIGRATION_NAMES_SHA256 = "4c4ce2ef575a18a2e18e6cc782a12228fc92fb4f3908c1ccc6a80da52f730b59"
 OCE_NAMES = ["console.oce.stinkyboi.com", "*.agents.oce.stinkyboi.com"]
+# Post-migration private additions never enter the fixed public-retirement set.
+PRIVATE_ONLY_NAMES = OCE_NAMES + ["uptime-kuma.stinkyboi.com"]
 CRITICAL_PATHS = {"fleet_setup_denied", "harbor_node_pulls", "native_api", "cordium_reconnect", "public_callbacks"}
 APEX = "stinkyboi.com"
 ADDRESS_TYPES = {"A", "AAAA", "CNAME"}
@@ -51,8 +53,8 @@ def inventory():
         raise RuntimeError("DNS inventory includes duplicate or conflicting names")
     migration = value["hostnames"][:27]
     digest = hashlib.sha256("\n".join(sorted(migration)).encode()).hexdigest()
-    if digest != MIGRATION_NAMES_SHA256 or value["hostnames"][27:] != OCE_NAMES:
-        raise RuntimeError("The public retirement inventory must retain the fixed 27-name migration set and reviewed OCE names")
+    if digest != MIGRATION_NAMES_SHA256 or value["hostnames"][27:] != PRIVATE_ONLY_NAMES:
+        raise RuntimeError("The public retirement inventory must retain the fixed 27-name migration set and reviewed private-only names")
     return value
 
 

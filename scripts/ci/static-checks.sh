@@ -17,6 +17,8 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 export TG_DOWNLOAD_DIR="$static_download_dir"
 
+# Kuma offline contracts are included by nix-checks.sh via offline-checks.sh.
+# Pinned Docker behavior fixtures are documented in the workload runbook.
 case "${1:-}" in
   "") bash scripts/ci/nix-checks.sh ;;
   --offline-verified) [[ $# == 1 ]] ;;

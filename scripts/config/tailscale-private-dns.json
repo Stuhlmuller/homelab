@@ -29,7 +29,8 @@
     "octelium-api.stinkyboi.com",
     "portal.stinkyboi.com",
     "console.oce.stinkyboi.com",
-    "*.agents.oce.stinkyboi.com"
+    "*.agents.oce.stinkyboi.com",
+    "uptime-kuma.stinkyboi.com"
   ],
   "retired_hostnames": [
     "octelium-transport.stinkyboi.com",

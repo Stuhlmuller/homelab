@@ -1,6 +1,11 @@
 # Private application routes and the two reviewed public callback surfaces.
 http:
   routers:
+    uptime-kuma:
+      entryPoints: [websecure]
+      rule: Host(`uptime-kuma.stinkyboi.com`)
+      service: uptime-kuma
+      tls: {}
     affine:
       entryPoints: [websecure]
       rule: Host(`affine.stinkyboi.com`)
@@ -193,6 +198,10 @@ http:
     octelium-console:
       serverName: console.stinkyboi.com
   services:
+    uptime-kuma:
+      loadBalancer:
+        servers:
+          - url: http://uptime-kuma.monitoring.svc.cluster.local:3001
     codex-cloud-signer:
       loadBalancer:
         servers:

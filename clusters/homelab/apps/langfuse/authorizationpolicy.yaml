@@ -42,3 +42,24 @@ spec:
       to:
         - operation:
             ports: ["5432", "6379", "8123", "9000"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: uptime-kuma-3000
+  namespace: langfuse
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/monitoring/sa/uptime-kuma
+    to:
+    - operation:
+        ports:
+        - '3000'

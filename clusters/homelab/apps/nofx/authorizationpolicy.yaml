@@ -33,3 +33,45 @@ spec:
         - source:
             principals:
               - cluster.local/ns/nofx/sa/default
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: uptime-kuma-8080
+  namespace: nofx
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nofx
+      app.kubernetes.io/component: backend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/monitoring/sa/uptime-kuma
+    to:
+    - operation:
+        ports:
+        - '8080'
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: uptime-kuma-80
+  namespace: nofx
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nofx
+      app.kubernetes.io/component: frontend
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/monitoring/sa/uptime-kuma
+    to:
+    - operation:
+        ports:
+        - '80'

@@ -60,7 +60,7 @@ class DirectDnsCheck(unittest.TestCase):
     def test_checks_all_names_and_both_transports(self):
         with redirect_stdout(io.StringIO()) as output:
             CHECK.verify(SERVER)
-        self.assertIn("29 approved names", output.getvalue())
+        self.assertIn("30 approved names", output.getvalue())
         self.assertEqual(CHECK.SIGNER.inspect_target.call_args.args[0],
                          ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"))
         calls = CHECK.dns_answer.call_args_list

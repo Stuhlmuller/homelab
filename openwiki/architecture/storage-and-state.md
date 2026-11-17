@@ -877,3 +877,35 @@ mount the private-key directory. No automatic off-node backup is introduced:
 disk loss requires revoking the old signer through another trusted node and
 owner-authorizing its replacement. PVC retention preserves restart identity;
 a Git revert does not revoke signing authority.
+
+## Uptime Kuma state
+
+[Kuma storage](../../clusters/homelab/apps/uptime-kuma/local-storage.yaml)
+declares retained `uptime-kuma-local`, a 5Gi local SQLite/config PVC on `acer`
+at `/var/lib/uptime-kuma`. Recreate and a single reconciler preserve the writer
+boundary; the hostPath capacity is not an enforced quota. NFS is only the
+5Gi `uptime-kuma-backups` archive destination, never the live SQLite database.
+
+[The backup implementation](../../clusters/homelab/apps/uptime-kuma/backup.py)
+uses SQLite's online backup through a read-only source mount, integrity checks,
+a bounded local scratch volume and atomic checksummed archive/manifest bundles.
+It excludes mounted secrets and rejects unsafe paths/symlinks. The initial Job
+waits for catalog coverage and nonempty history; the CronJob runs at 04:20
+`America/Los_Angeles`, forbids overlap and retains 14 successful bundles.
+
+Restore verification reads an unchanged archive into emptyDir and records
+original identity/history evidence. Before native startup it transactionally
+pauses clone monitors, disables notifications/defaults/maintenance and update/
+tunnel startup, then independently verifies every postcondition. History hashes
+stream in deterministic order. The dedicated restore identity has no API token,
+production grants or production PVC. Native login and read-only identity/history
+checks run on loopback with a restricted child environment; the created clone
+is discarded afterward. Declared deny-all policies are additional defense:
+current Flannel and the staged enforcer do not prove packet isolation.
+
+The [runbook](../../clusters/homelab/apps/uptime-kuma/README.md) distinguishes
+this version-bound execution fence from a network sandbox or production restore.
+Recovery requires a reviewed writer-fenced operation with matching schema/image.
+Local disk and NAS are separate failure domains, not HA or off-site recovery;
+nominal RPO is 24 hours plus scheduling delay. Declared jobs and local proof do
+not establish deployed backup success or a completed production restore drill.

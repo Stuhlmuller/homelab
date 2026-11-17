@@ -63,6 +63,7 @@ units = {
     "IaC/homelab/us-west-2/apps/fleet/argocd": "repair",
     "IaC/homelab/us-west-2/apps/mastodon/argocd": "repair",
     "IaC/homelab/us-west-2/apps/traefik/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/uptime-kuma/argocd": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -158,6 +159,11 @@ elif tool == "kubectl":
         print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
+    elif args == ["get", "node", "acer", "-o", "json"]:
+        event("preflight.node")
+        print(json.dumps(config["node"]))
+    elif args == ["get", "namespace", "monitoring", "-o", "name"]:
+        event("preflight.namespace")
     elif args == ["get", "namespace", "automation", "-o", "name"]:
         event("preflight.namespace")
     elif args == ["get", "storageclass", "codex-cloud-signer-local", "-o", "name"]:
@@ -188,7 +194,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", *(["uptime-kuma"] if config["target"] == "uptime-kuma" else [])):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,6 +277,14 @@ class TerragruntApplyTest(unittest.TestCase):
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
                 ]
+        elif target == "uptime-kuma":
+            project["spec"]["destinations"][0]["namespace"] = "monitoring"
+            project["spec"]["sourceRepos"].append("https://bjw-s-labs.github.io/helm-charts")
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            app_names = [*APPS, "prometheus", "traefik"]
         elif target == "codex-cloud-signer":
             project["spec"]["destinations"][0]["namespace"] = "automation"
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
@@ -284,7 +298,8 @@ class TerragruntApplyTest(unittest.TestCase):
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
                   "app_names": app_names, "crds": crds,
-                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else target]}]}},
+                  "node": {"status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else "monitoring" if target == "uptime-kuma" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -678,6 +693,58 @@ else:
             result, events = self.run_apply(target="mastodon", project=project)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(events, ["generate", "preflight.project"])
+
+    def test_uptime_kuma_checks_monitoring_then_saved_ssm_and_application(self):
+        result, events = self.run_apply(target="uptime-kuma", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.node", events)
+        self.assertIn("preflight.namespace", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertEqual([e for e in events if e.endswith(".apply")],
+                         ["ssm.apply", "apps.apply"])
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+
+    def test_uptime_kuma_preflight_denies_before_any_mutation(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["uptime-kuma"]}]}}},
+                    {"node": {"spec": {"unschedulable": True}, "status": {
+                        "conditions": [{"type": "Ready", "status": "True"}]}}},
+                    {"node": {"status": {"conditions": [{"type": "Ready", "status": "False"}]}}},
+                    {"fail": "preflight.namespace"}, {"fail": "preflight.storage"}]
+        project = json.loads(json.dumps(TRAEFIK_PROJECT))
+        project["spec"]["destinations"][0]["namespace"] = "monitoring"
+        project["spec"]["clusterResourceWhitelist"] += [
+            {"group": "", "kind": "PersistentVolume"},
+            {"group": "storage.k8s.io", "kind": "StorageClass"},
+        ]
+        for missing in ("PersistentVolume", "StorageClass"):
+            altered = json.loads(json.dumps(project))
+            altered["spec"]["clusterResourceWhitelist"] = [
+                item for item in altered["spec"]["clusterResourceWhitelist"]
+                if item["kind"] != missing]
+            variants.append({"project": altered})
+        project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+        variants.append({"project": project})
+        for unhealthy in ("prometheus", "traefik"):
+            variants.append({"apps": [{"metadata": {"name": name}, "status": {
+                "sync": {"status": "Synced"},
+                "health": {"status": "Degraded" if name == unhealthy else "Healthy"},
+            }} for name in [*APPS, "prometheus", "traefik"]]})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.")
+                                    for e in events), events)
+
+    def test_uptime_kuma_failed_secret_plan_cannot_register_application(self):
+        for failure in ("ssm.plan", "ssm.policy", "ssm.apply"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="uptime-kuma", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("apps.plan", events)
+                self.assertNotIn("apps.apply", events)
 
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)

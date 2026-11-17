@@ -1087,3 +1087,21 @@ Codex provider provisioning uses a separate short-lived Owner/Admin API-key
 file. The existing administrator OAuth client cannot create another OAuth
 client and lacks webhook write scope. That owner credential stays local to the
 operator and is not published to SSM, CI, or either service container.
+
+## Uptime Kuma identities
+
+[The SSM contract](../../docs/secrets-aws-ssm.md#uptime-kuma-owner-credential)
+generates `/homelab/uptime-kuma/admin-password` and projects only that key into
+`monitoring/uptime-kuma-admin`. Native owner `admin` is initialized only on an
+unowned database; invalid existing credentials never trigger a reset. The main
+server has no password-file mount. Bootstrap/reconciler consume it as a file,
+with no Kubernetes API token or runtime package installation.
+
+The monitoring identity receives exact backend-port grants for the catalog's
+health checks. Private Traefik is the allowed ingress identity; native login
+stays enabled. The separate `uptime-kuma-restore` ServiceAccount has no backend
+grants, RBAC or token mount. Its password-file access is only for native login
+to a verified, execution-fenced disposable copy, never setup or reconciliation.
+NetworkPolicy declarations alone are not enforced isolation on this cluster.
+See [the source runbook](../../clusters/homelab/apps/uptime-kuma/README.md) for
+clone startup safeguards and the distinction from production recovery.

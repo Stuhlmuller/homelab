@@ -505,3 +505,14 @@ test_codex_signer_reads_only_four_exact_runtime_credentials if {
 	some msg in violations
 	contains(msg, "outside its allowed application prefixes")
 }
+
+test_uptime_kuma_secret_is_exact_and_monitoring_only if {
+ allowed := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/admin-password")
+ count(allowed) == 0
+ wrong_key := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/other-password")
+ some key_msg in wrong_key
+ contains(key_msg, "outside its allowed application prefixes")
+ wrong_namespace := deny with input as oce_secret("ai", "/homelab/uptime-kuma/admin-password")
+ some namespace_msg in wrong_namespace
+ contains(namespace_msg, "outside its allowed application prefixes")
+}

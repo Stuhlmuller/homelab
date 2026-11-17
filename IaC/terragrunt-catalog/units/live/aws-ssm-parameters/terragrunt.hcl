@@ -737,6 +737,13 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/uptime-kuma/admin-password" = {
+      description = "Uptime Kuma native owner password; generated once and retained."
+      generated = {
+        length  = 48
+        special = false
+      }
+    }
     "/homelab/n8n/encryption-key" = {
       description = "n8n instance encryption key for saved credentials and encrypted data."
       generated = {
