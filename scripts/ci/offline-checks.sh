@@ -52,6 +52,10 @@ python3 -I scripts/ci/terragrunt-credential-duration-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
+python3 -I scripts/ci/adguard-test.py
+python3 -I scripts/ci/adguard-check-test.py
+python3 -I scripts/ci/adguard-recovery-test.py
+python3 -I scripts/ci/adguard-dns-cutover-test.py
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py

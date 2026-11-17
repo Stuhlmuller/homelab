@@ -255,6 +255,7 @@ def main():
                      and "homelab.rst.io/private-dns:" in path.read_text()}
     require(label_sources == {VALUES}, "another cluster source declares the private DNS selector")
     names = approved_names(values, routes, inventory)
+    require("adguard.stinkyboi.com" in names, "AdGuard private name is missing")
     private_view_contract(names, dns_values)
     mutation_checks(values, routes, inventory, dns_values)
     if "--declarations" not in args:

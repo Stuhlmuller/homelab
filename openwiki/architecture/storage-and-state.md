@@ -909,3 +909,16 @@ Recovery requires a reviewed writer-fenced operation with matching schema/image.
 Local disk and NAS are separate failure domains, not HA or off-site recovery;
 nominal RPO is 24 hours plus scheduling delay. Declared jobs and local proof do
 not establish deployed backup success or a completed production restore drill.
+
+## AdGuard state reconstruction
+
+[AdGuard](../../clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+keeps one Recreate writer on a retained 1Gi `nfs-default` work claim. The claim
+stores filter cache. Git plus the protected SSM administrator credential own
+settings; each startup reconstructs the writable configuration in memory and
+replaces transient UI edits. A fresh empty-cache instance requires a successful
+filter download. The isolated recovery helper tests replacement and fresh restore
+in local scratch containers, recording source and credential versions privately.
+It never mounts production claims. Preserve independent AWS/encrypted-state
+recovery access; a retained PVC alone is not proof of recoverable credentials.
+Live private routing and normal-client acceptance are separate checks.

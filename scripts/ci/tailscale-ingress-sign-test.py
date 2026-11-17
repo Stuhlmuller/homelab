@@ -94,6 +94,65 @@ def canary_policy():
 
 
 class IngressSigning(unittest.TestCase):
+    def test_adguard_fixed_identity(self):
+        target = ("automation", "svc", "adguard-dns", "homelab-adguard", "tag:homelab-ingress")
+        self.assertEqual(SIGNER.ADGUARD_TARGET, target)
+        self.assertIn(target, SIGNER.TARGETS)
+        data = fixture()
+        data[0]["status"]["loadBalancer"]["ingress"][0]["hostname"] = "homelab-adguard.tail67beb.ts.net"
+        data[1]["metadata"]["labels"].update({"tailscale.com/parent-resource": "adguard-dns",
+                                               "tailscale.com/parent-resource-ns": "automation"})
+        data[2]["Self"]["DNSName"] = "homelab-adguard.tail67beb.ts.net."
+        data[4]["FilteredPeers"][0]["Name"] = data[2]["Self"]["DNSName"]
+        self.assertFalse(SIGNER.validate_target(target, *data)["signed"])
+        mutations = (
+            lambda d: d[1]["metadata"]["labels"].update({"tailscale.com/parent-resource": "other"}),
+            lambda d: d[1]["metadata"]["labels"].update({"tailscale.com/parent-resource-ns": "traefik"}),
+            lambda d: d[2]["Self"].update(DNSName="other.tail67beb.ts.net."),
+            lambda d: d[2]["Self"].update(Tags=["tag:homelab-funnel"]),
+            lambda d: d[2]["Self"].update(Online=False),
+            lambda d: d[3].update(Enabled=False),
+        )
+        for index, mutate in enumerate(mutations):
+            changed = copy.deepcopy(data)
+            mutate(changed)
+            with self.subTest(index=index), self.assertRaises(SIGNER.GUARDS.Failure):
+                SIGNER.validate_target(target, *changed)
+
+    def test_adguard_execute_signs_only_exact_target(self):
+        original = self.validate(fixture())
+        signed = dict(original, signed=True)
+        with patch.object(SIGNER.GUARDS, "verify_main", return_value="revision"), \
+                patch.object(SIGNER.GUARDS, "command", return_value="https://10.1.0.199:6443") as command, \
+                patch.object(SIGNER, "local_signer", return_value={}), \
+                patch.object(SIGNER, "inspect_target", side_effect=[original, original, signed]) as inspect:
+            SIGNER.reconcile(True, adguard_only=True)
+        self.assertEqual([call.args[0] for call in inspect.call_args_list], [SIGNER.ADGUARD_TARGET] * 3)
+        self.assertEqual([call.args[0] for call in command.call_args_list if "sign" in call.args[0]],
+                         [[SIGNER.TAILSCALE, "lock", "sign", original["node_key"], original["rotation_key"]]])
+
+    def test_adguard_changed_main_or_identity_never_signs(self):
+        original = self.validate(fixture())
+        for revisions, snapshots in ((["old", "new"], [original]),
+                                     (["same", "same"], [original, dict(original, pod_uid="replaced")])):
+            with patch.object(SIGNER.GUARDS, "verify_main", side_effect=revisions), \
+                    patch.object(SIGNER.GUARDS, "command", return_value="https://10.1.0.199:6443") as command, \
+                    patch.object(SIGNER, "local_signer", return_value={}), \
+                    patch.object(SIGNER, "inspect_target", side_effect=snapshots):
+                with self.assertRaises(SIGNER.GUARDS.Failure):
+                    SIGNER.reconcile(True, adguard_only=True)
+            self.assertFalse(any("sign" in call.args[0] for call in command.call_args_list))
+
+    def test_adguard_cli_is_preview_and_exclusive(self):
+        with patch.object(SIGNER, "reconcile") as reconcile:
+            self.assertEqual(SIGNER.main(["--adguard-only"]), 0)
+        self.assertEqual(reconcile.call_args.args, (False, False, False, False, True))
+        for option in ("--dns-only", "--canary-only", "--codex-funnel-only"):
+            with self.subTest(option=option), patch.object(SIGNER, "reconcile") as reconcile:
+                with self.assertRaises(SystemExit):
+                    SIGNER.main(["--adguard-only", option])
+                reconcile.assert_not_called()
+
     def validate(self, data):
         return SIGNER.validate_target(SIGNER.TARGETS[0], *data)
 

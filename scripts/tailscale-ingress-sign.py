@@ -25,6 +25,7 @@ TAILSCALE = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 TAILNET = "tail67beb.ts.net"
 OAUTH_DIRECTORY = Path.home() / ".config/homelab/tailscale"
 DNS_TARGET = ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress")
+ADGUARD_TARGET = ("automation", "svc", "adguard-dns", "homelab-adguard", "tag:homelab-ingress")
 TARGETS = (
     ("traefik", "svc", "traefik-private", "homelab-ingress", "tag:homelab-ingress"),
     ("traefik", "ingress", "n8n-webhook", "n8n-webhook", "tag:homelab-funnel"),
@@ -32,6 +33,7 @@ TARGETS = (
     ("traefik", "ingress", "bulldozer-hook", "bulldozer-hook", "tag:homelab-funnel"),
     DNS_TARGET,
     ("traefik", "ingress", "codex-signer", "codex-signer", "tag:homelab-funnel"),
+    ADGUARD_TARGET,
 )
 CANARY = ("traefik", "statefulset", "traefik-sidecar-canary", "homelab-ingress-canary",
           "tag:homelab-ingress-canary")
@@ -271,7 +273,7 @@ def inspect_target(target, signer):
     return validate_target(target, source, pod, status, lock, signer)
 
 
-def reconcile(execute, dns_only=False, canary_only=False, codex_funnel_only=False):
+def reconcile(execute, dns_only=False, canary_only=False, codex_funnel_only=False, adguard_only=False):
     revision = GUARDS.verify_main() if execute else None
     server = GUARDS.command(["kubectl", "config", "view", "--minify", "-o",
                              "jsonpath={.clusters[0].cluster.server}"], "Kubernetes context").strip()
@@ -284,6 +286,8 @@ def reconcile(execute, dns_only=False, canary_only=False, codex_funnel_only=Fals
         selected = (DNS_TARGET,)
     if codex_funnel_only:
         selected = tuple(target for target in TARGETS if target[2] == "codex-signer")
+    if adguard_only:
+        selected = (ADGUARD_TARGET,)
     inspect = inspect_canary if canary_only else inspect_target
     targets = [inspect(target, signer) for target in selected]
     if not execute:
@@ -319,10 +323,11 @@ def main(argv=None):
     target = parser.add_mutually_exclusive_group()
     target.add_argument("--codex-funnel-only", action="store_true", help="Inspect or sign only the fixed Codex Funnel proxy")
     target.add_argument("--dns-only", action="store_true", help="Inspect or sign only the fixed homelab-dns proxy")
+    target.add_argument("--adguard-only", action="store_true", help="Inspect or sign only the fixed homelab-adguard DNS proxy")
     target.add_argument("--canary-only", action="store_true", help="Inspect or sign only the fixed Traefik sidecar canary")
     args = parser.parse_args(argv)
     try:
-        reconcile(args.execute, args.dns_only, args.canary_only, args.codex_funnel_only)
+        reconcile(args.execute, args.dns_only, args.canary_only, args.codex_funnel_only, args.adguard_only)
     except GUARDS.Failure as error:
         print(str(error), file=sys.stderr)
         return 1

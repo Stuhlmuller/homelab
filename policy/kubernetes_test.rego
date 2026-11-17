@@ -491,6 +491,21 @@ test_allows_codex_funnel_callback if {
 
 codex_signer_secret(key) := object.union(renovate_secret(key), {"metadata": {"name": "codex-cloud-signer", "namespace": "automation"}})
 
+adguard_secret(key) := object.union(renovate_secret(key), {"metadata": {"name": "adguard-config", "namespace": "automation"}})
+
+test_adguard_credential_is_exact_and_bound_to_its_secret if {
+	allowed := deny with input as adguard_secret("/homelab/adguard/admin-password")
+	count(allowed) == 0
+	every key in {"/homelab/adguard/", "/homelab/adguard/admin-password-extra", "/homelab/tailscale/codex-cloud-signer/auth-key"} {
+		violations := deny with input as adguard_secret(key)
+		some msg in violations
+		contains(msg, "outside its allowed application prefixes")
+	}
+	wrong_secret := deny with input as renovate_secret("/homelab/adguard/admin-password")
+	some msg in wrong_secret
+	contains(msg, "outside its allowed application prefixes")
+}
+
 test_codex_signer_reads_only_four_exact_runtime_credentials if {
 	every suffix in {"auth-key", "oauth-client-id", "oauth-client-secret", "webhook-secret"} {
 		violations := deny with input as codex_signer_secret(concat("", ["/homelab/tailscale/codex-cloud-signer/", suffix]))

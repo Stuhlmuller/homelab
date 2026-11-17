@@ -6,6 +6,11 @@ http:
       rule: Host(`uptime-kuma.stinkyboi.com`)
       service: uptime-kuma
       tls: {}
+    adguard:
+      entryPoints: [websecure]
+      rule: Host(`adguard.stinkyboi.com`)
+      service: adguard
+      tls: {}
     affine:
       entryPoints: [websecure]
       rule: Host(`affine.stinkyboi.com`)
@@ -202,6 +207,10 @@ http:
       loadBalancer:
         servers:
           - url: http://uptime-kuma.monitoring.svc.cluster.local:3001
+    adguard:
+      loadBalancer:
+        servers:
+          - url: http://adguard-admin.automation.svc.cluster.local:3000
     codex-cloud-signer:
       loadBalancer:
         servers:

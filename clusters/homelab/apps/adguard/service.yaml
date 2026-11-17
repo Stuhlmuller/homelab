@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-dns
+  namespace: automation
+  annotations:
+    tailscale.com/hostname: homelab-adguard
+    tailscale.com/tags: tag:homelab-ingress
+spec:
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: false
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: adguard
+  ports:
+    - {name: dns-udp, port: 53, targetPort: dns-udp, protocol: UDP}
+    - {name: dns-tcp, port: 53, targetPort: dns-tcp, protocol: TCP}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-admin
+  namespace: automation
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: adguard
+  ports:
+    - {name: http, port: 3000, targetPort: http, protocol: TCP}

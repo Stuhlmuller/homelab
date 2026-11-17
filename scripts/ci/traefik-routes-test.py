@@ -11,6 +11,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 APPS = {
     "uptime-kuma": "uptime-kuma.monitoring:3001",
+
+    "adguard": "adguard-admin.automation:3000",
     "affine": "affine.affine:3010",
     "argocd": "argocd-server.argocd:80",
     "bazarr": "bazarr.media:6767",
@@ -51,6 +53,14 @@ ROUTERS = HTTP["routers"]
 
 
 class RouteTests(unittest.TestCase):
+    def test_adguard_is_private_authenticated_backend_with_tls_coverage(self):
+        self.assertEqual(ROUTERS["adguard"], {"entryPoints": ["websecure"],
+                         "rule": "Host(`adguard.stinkyboi.com`)", "service": "adguard", "tls": {}})
+        self.assertEqual([name for name, route in ROUTERS.items()
+                          if route.get("service") == "adguard"], ["adguard"])
+        cert = read_yaml("clusters/homelab/apps/traefik/certificate.yaml")["spec"]["dnsNames"]
+        self.assertIn("*.stinkyboi.com", cert)
+
     def test_complete_private_inventory_and_direct_backends(self):
         controls = {"cordium", "octelium-cluster", "octelium-alias",
                     "octelium-api", "octelium-console", "oce-console",

@@ -2902,3 +2902,22 @@ Follow [the runbook](../../clusters/homelab/apps/uptime-kuma/README.md) and
 for exact-revision private login, catalog observations, controlled recovery,
 repeat reconciliation, replacement continuity and actual backup/restore jobs.
 Record unhealthy targets as findings rather than weakening predicates.
+
+## AdGuard rollout and DNS activation
+
+The [AdGuard runbook](../../clusters/homelab/apps/adguard/README.md) separates
+source validation, rollout, direct acceptance and normal-client acceptance.
+Offline checks cover manifests/init, live-evidence validation, exact saved-plan
+cutover/rollback, protected recovery boundaries, routes, signing and targeted
+Terragrunt apply. The required repository job also runs the pinned AdGuard Docker
+fixture against synthetic DNS/filter servers, including cache failure, privacy,
+replacement and fresh restore. `bind.dnsutils` supplies the same `dig` used by the
+operator checker. Synthetic tests do not prove Harbor publication or live access.
+
+Live acceptance requires the published pinned image, current GitOps resources,
+trusted-Mac signed proxy, both DNS transports, private names, authenticated HTTPS
+administration and protected-source recovery. The DNS cutover helper binds a
+fresh administrator saved plan to observed service/peer/source/configuration and
+live policy. Rollback excludes AdGuard health dependencies. Native client mode
+currently supports macOS and records daemon/exit-node metadata; direct queries
+cannot count as normal-client or exit-node proof. These live gates remain pending.

@@ -298,3 +298,14 @@ version-specific publication code, staged destination/permissions/scheduling,
 paired DB/blob contracts and synthetic restore evidence. This does not change
 the current QNAP-backed jobs or activate independent backups. Actual remote
 retrieval, enforced restore containment and application acceptance remain gates.
+
+## AdGuard work cache
+
+AdGuard declares a retained 1Gi `nfs-default` work claim and one Recreate writer.
+The work directory retains downloaded filters across replacement; initialized
+configuration is rebuilt in memory from Git and the protected SSM administrator
+credential. UI edits are not durable configuration. Loss of the claim requires a
+fresh filter download before filtering readiness can pass. This claim is not a
+configuration backup. See the [isolated recovery procedure](../clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+for replacement and fresh-cache checks and their limits; independently preserve
+AWS administrator access and encrypted state recovery material.
