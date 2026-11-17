@@ -79,7 +79,7 @@ PR merge or Argo health alone does not complete the task.
 - [x] T022 Wire Kuma checks into `scripts/ci/static-checks.sh` and applicable existing offline/static entrypoints; run catalog/adapter/backup tests, pinned-image integration, Kustomize/Helm rendering, policy/security checks and generated Terragrunt formatting/render/plans; retain exact commands/results/limits in `specs/20261116-210437-uptime-kuma/validation.md`.
 - [x] T023 Update affected `docs/argocd-app-onboarding.md`, `docs/secrets-aws-ssm.md`, `openwiki/workloads/inventory.md`, `openwiki/architecture/storage-and-state.md`, `openwiki/architecture/secrets-and-identity.md` and `openwiki/operations/validation-gates.md`; describe current private routing without claiming stale Octelium-only requirements or touching generated wiki artifacts.
 - [x] T024 Run separate source-convergence stage after implementation/checks; append any gaps to this `tasks.md` under convergence, implement them in separate turns and rerun analysis when an owning artifact changes; preserve the report in `specs/20261116-210437-uptime-kuma/checkpoint.md` without marking runtime tasks complete.
-- [ ] T025 Deliver consuming source through protected PR review/checks/merge, refresh exact main, run declared targeted apply with valid prerequisites and saved-plan safeguards, and record PR/run/source revisions in `specs/20261116-210437-uptime-kuma/delivery.md`; never bypass a failed check or mutate live resources ad hoc.
+- [x] T025 Deliver consuming source through protected PR review/checks/merge, refresh exact main, run declared targeted apply with valid prerequisites and saved-plan safeguards, and record PR/run/source revisions in `specs/20261116-210437-uptime-kuma/delivery.md`; never bypass a failed check or mutate live resources ad hoc.
 - [ ] T026 Verify exact deployed revision with `scripts/verify-gitops.py`, private owner login/unauthorized denial, current live/source inventory coverage and three observations per enabled monitor; run repository-owned acceptance fixture and report actual target outages separately in `specs/20261116-210437-uptime-kuma/acceptance.md`.
 - [ ] T027 Verify repeated reconciliation, declared GitOps replacement preserving IDs/history, first checked backup and clone-fenced native-login/history restore with unchanged archive, dedicated identity and verified pre-start postconditions; recheck deployed revision and record backup/scheduled-run evidence and limits in `specs/20261116-210437-uptime-kuma/acceptance.md`.
 - [ ] T028 Run final separate convergence after actual acceptance, close gaps through append-only tasks and implementation loops, update issue #1847 and `specs/20261116-210437-uptime-kuma/checkpoint.md` with final revision, coverage, receipts and truthful remaining limitations; complete only when all requested outcomes pass.
@@ -245,3 +245,30 @@ not change the separate high-UID T035 requirement or allow policy suppressions.
   gate. Preserve the existing review entries and fail-closed checker semantics; no secret values, raw scanner
   snippets, broad path/check exclusions or blanket suppressions may enter source or public evidence. Trace:
   FR-008, FR-010, T022 validation; Constitution II/III (partial).
+
+
+## Phase 11: Runtime convergence
+
+Deployed acceptance identified one HIGH partial health-selection gap. Complete
+T037 through protected source delivery, then repeat affected T026/T027 checks.
+The observed Octelium target failure remains a truthful existing outage; no
+unrelated app repair is authorized.
+
+- [x] T037 [US2] Correct the existing stable `prowlarr-http` record in `clusters/homelab/apps/uptime-
+  kuma/monitors.json` to a native JSON-query GET of `http://prowlarr.media.svc:9696/ping`, requiring HTTP 200
+  and exact JSON `status` equal to `OK`, with redirects still disabled. Preserve monitor key/ID/history and
+  its separate workload-health monitor. Extend `scripts/ci/uptime-kuma-check.py` narrowly for this source-
+  backed native JSON health contract without weakening Prometheus freshness/selector checks or allowing
+  arbitrary JSON targets; add validator and actual native adapter/integration regressions for healthy OK,
+  missing/wrong status, malformed body, 500 and 302/login rejection. Update catalog evidence and workload
+  runbook with pinned deployed Prowlarr 2.5.2.5491-ls160 `PingController` semantics: anonymous configuration-
+  repository check, five-second cache, 200 OK or 500 Error; it does not prove indexer/download workflows.
+  Deliver through protected PR/GitOps and include the existing T027 declared `controllers.uptime-
+  kuma.pod.annotations` replacement revision in `values.yaml`, using the privately captured pre-replacement 55
+  monitor IDs and 546 heartbeat observations as the continuity baseline. After rollout, prove unchanged IDs
+  and retention of captured historical observations (not merely a higher total), owner access, repeated no-op
+  reconciliation, three fresh observations for each enabled monitor and Prowlarr recovery; repeat exact
+  deployed-source verification. Record sanitized outcomes and distinguish the existing Octelium outage. Trace:
+  FR-003, FR-004, FR-007, FR-011, SC-003/004, T026/T027 (partial). Evidence: current initialize.json monitor
+  observes HTTP302 login while the reported deployed /ping probe returns HTTP200 with status OK; source
+  selection causes a false outage.

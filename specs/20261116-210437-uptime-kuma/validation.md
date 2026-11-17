@@ -184,3 +184,22 @@ affected native/render/policy/scanner checks above. No claim of one uninterrupte
 final-tree full replay is made. Final-head remote CI remains required after
 signed publication. No GitHub CLI auth retry, merge or deployment occurred;
 credential renewal and separate final source convergence remain next steps.
+
+
+## T037 native ping validation
+
+Catalog/freshness suite37tests and adapter18tests passed. The exact pinned Kuma
+image at UID/GID10001 ran the bounded probe-only integration mode successfully:
+bootstrap/login/reconcile and once/watch remained valid; native JSON-query
+accepted200/statusOK and rejected500/Error, malformedJSON, missing status,
+wrong status and302redirect. Prior timed failure/recovery evidence is retained;
+no redundant full timed replay was needed for this target predicate change.
+Harness SHA256: `6f895f634d84125dabf1f1c1952da9c6e4900004d44d78e72677666b72158ced`. Adapter implementation unchanged.
+
+Pinned chart plus overlay rendered1216policy assertions with zero failures;
+rollout annotation is declarative only. Checker remains strict for Prometheus
+freshness and limits the native status exception to prowlarr-http and its exact
+owner/URL/expectation. Before replacement, all546historical row identities,
+monitor IDs, timestamps and statuses were read back at original captured cutoffs
+and saved in acceptance-before-replacement.json, spanning55monitor IDs.
+No source push or live mutation occurred. Final targeted convergence is next.

@@ -145,3 +145,14 @@ test("sample waits use real native timestamps, ignore prior observations and hon
     assert.equal(result.samples.length, 1);
     await assert.rejects(adapter.waitForSamples(client, 7, 1, 1, now, 1000, () => true), /acceptance-interrupted/);
 });
+
+
+test("Prowlarr native ping requires JSON status OK without redirect or auth fallback", () => {
+    const catalog = require("../../clusters/homelab/apps/uptime-kuma/monitors.json");
+    const m = catalog.monitors.find(m => m.key === "prowlarr-http");
+    const fields = adapter.projection(m);
+    assert.equal(fields.type, "json-query"); assert.equal(fields.method, "GET");
+    assert.equal(fields.url, "http://prowlarr.media.svc:9696/ping");
+    assert.equal(fields.jsonPath, "status"); assert.equal(fields.expectedValue, "OK");
+    assert.deepEqual(fields.accepted_statuscodes, ["200"]); assert.equal(fields.maxredirects, 0);
+});

@@ -201,7 +201,10 @@ def validate(catalog, root=ROOT, live_names=()):
         )
         require(bool(m["meaning"]) and bool(m["limitations"]), "health meaning and limits required")
         require(
-            set(m["target"]) == ({"url"} if m["kind"] == "http" else {"url", "method", "body", "headers"}),
+            set(m["target"])
+            == (
+                {"url"} if m["kind"] == "http" or m["key"] == "prowlarr-http" else {"url", "method", "body", "headers"}
+            ),
             "unsafe target fields",
         )
         url = urlsplit(m["target"]["url"])
@@ -222,7 +225,17 @@ def validate(catalog, root=ROOT, live_names=()):
             len(m["ownerAppIds"]) == 1 or not active_owners or m["enabled"],
             "shared monitor with active owner must remain enabled",
         )
-        if m["kind"] == "json-query":
+        if m["key"] == "prowlarr-http":
+            require(
+                m["kind"] == "json-query"
+                and m["ownerAppIds"] == ["prowlarr"]
+                and m["target"] == {"url": "http://prowlarr.media.svc:9696/ping"}
+                and m["expected"] == {"statusCodes": [200], "jsonPath": "status", "value": "OK"}
+                and not m.get("sourceSignals")
+                and not m.get("workloads"),
+                "Prowlarr ping must require exact native status OK",
+            )
+        elif m["kind"] == "json-query":
             require(
                 m["expected"] == {"statusCodes": [200], "jsonPath": JSON_PATH, "value": "1"},
                 "unsafe JSON success predicate",

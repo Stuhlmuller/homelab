@@ -2,7 +2,7 @@
 # Disposable pinned-image contract test: never reaches the cluster or host network.
 set -euo pipefail
 mode="${1:-full}"
-case "$mode" in full|verify-only) ;; *) echo "usage: $0 [full|verify-only]" >&2; exit 2 ;; esac
+case "$mode" in full|verify-only|probe-only) ;; *) echo "usage: $0 [full|verify-only|probe-only]" >&2; exit 2 ;; esac
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 image='docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9'
 scratch="$(mktemp -d)"
@@ -69,6 +69,12 @@ async function jsonHealth(client) {
     for (const [payload, expected] of [[response("1"), "1"], [response("0"), "0"], [{}, "0"], [{ status: "success", data: { result: [] } }, "0"], [{ status: "success", data: { result: [response("1").data.result[0], response("1").data.result[0]] } }, "0"], [{ status: "error", data: response("1").data }, "0"]]) assert.equal(await expression.evaluate(payload), expected);
     const http = require("node:http");
     const fixture = http.createServer((request, reply) => {
+        if (request.url.startsWith("/ping-")) {
+            const scenario = request.url.slice(6);
+            if (scenario === "redirect") { reply.writeHead(302, { Location: "/ping-healthy" }).end(); return; }
+            reply.writeHead(scenario === "error500" ? 500 : 200, { "Content-Type": "application/json" });
+            reply.end(scenario === "malformed" ? "not-json" : JSON.stringify(scenario === "missing" ? {} : { status: scenario === "healthy" ? "OK" : "Error" })); return;
+        }
         if (request.url === "/401") { reply.writeHead(401).end(); return; }
         if (request.url === "/302") { reply.writeHead(302, { Location: "/healthy" }).end(); return; }
         const payload = request.url === "/missing" ? {} : request.url === "/multiple" ? { status: "success", data: { result: [response("1").data.result[0], response("1").data.result[0]] } } : response(request.url === "/unhealthy" ? "0" : "1");
@@ -80,6 +86,11 @@ async function jsonHealth(client) {
         for (const scenario of ["healthy", "missing", "multiple", "unhealthy", "401", "302"]) {
             const fields = adapter.projection({ ...m, enabled: true, kind: "json-query", target: { url: `http://127.0.0.1:3903/${scenario}` }, expected: { statusCodes: [200], jsonPath: adapter.JSON_HEALTH, value: "1" } });
             const result = await client.request("add", { ...fields, name: `Integration ${scenario}`, description: `disposable-integration:${scenario}`, interval: 20, retryInterval: 20, maxretries: 0, parent: null, notificationIDList: {}, conditions: [], kafkaProducerBrokers: [], kafkaProducerSaslOptions: {}, rabbitmqNodes: [] });
+            ids.push([result.monitorID, scenario === "healthy" ? 1 : 0]);
+        }
+        for (const scenario of ["healthy", "error500", "malformed", "missing", "wrong", "redirect"]) {
+            const fields = adapter.projection({ ...m, enabled: true, kind: "json-query", target: { url: `http://127.0.0.1:3903/ping-${scenario}` }, expected: { statusCodes: [200], jsonPath: "status", value: "OK" } });
+            const result = await client.request("add", { ...fields, name: `Integration ping ${scenario}`, description: `disposable-integration:ping-${scenario}`, interval: 20, retryInterval: 20, maxretries: 0, parent: null, notificationIDList: {}, conditions: [], kafkaProducerBrokers: [], kafkaProducerSaslOptions: {}, rabbitmqNodes: [] });
             ids.push([result.monitorID, scenario === "healthy" ? 1 : 0]);
         }
         await Promise.all(ids.map(([id, expected]) => adapter.waitForSamples(client, id, expected, 1, 0, 45000)));
@@ -165,6 +176,8 @@ if (process.argv[2] === "prepare") {
         const anonymous = await adapter.connect(opts.url);
         try { await assert.rejects(anonymous.request("getSettings"), /rejected-getSettings/); await assert.rejects(anonymous.request("getMonitor", first.id), /rejected-getMonitor/); } finally { anonymous.close(); }
         await jsonHealth(client);
+        console.log("PASS: native ping JSON200 OK; 500/Error, malformed, missing/wrong status and redirect302 rejected");
+        if (process.argv[2] === "probe-only") return;
         const activeCatalog = { ...catalog, monitors: [{ ...m, enabled: true }] };
         const observationStart = Date.now() - 1000;
         await adapter.reconcile(client, activeCatalog, password);

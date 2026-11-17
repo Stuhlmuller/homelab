@@ -114,3 +114,22 @@ Tested harness SHA256:
 Unchanged adapter SHA256:
 `8f371518adf600918ad0cb197e07e8db7841f7b187142761e6e9d23c778ddd90`.
 Bash syntax, ShellCheck and whitespace checks passed.
+
+
+## T037 native ping validation
+
+Catalog/freshness suite37tests and adapter18tests passed. The exact pinned Kuma
+image at UID/GID10001 ran the bounded probe-only integration mode successfully:
+bootstrap/login/reconcile and once/watch remained valid; native JSON-query
+accepted200/statusOK and rejected500/Error, malformedJSON, missing status,
+wrong status and302redirect. Prior timed failure/recovery evidence is retained;
+no redundant full timed replay was needed for this target predicate change.
+Harness SHA256: `6f895f634d84125dabf1f1c1952da9c6e4900004d44d78e72677666b72158ced`. Adapter implementation unchanged.
+
+Pinned chart plus overlay rendered1216policy assertions with zero failures;
+rollout annotation is declarative only. Checker remains strict for Prometheus
+freshness and limits the native status exception to prowlarr-http and its exact
+owner/URL/expectation. Before replacement, all546historical row identities,
+monitor IDs, timestamps and statuses were read back at original captured cutoffs
+and saved in acceptance-before-replacement.json, spanning55monitor IDs.
+No source push or live mutation occurred. Final targeted convergence is next.
