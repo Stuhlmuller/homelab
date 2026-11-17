@@ -411,6 +411,7 @@ deny contains msg if {
 	key := external_secret_remote_keys(input)[_]
 	not remote_ref_key_allowed(key, allowed)
 	not codex_signer_secret_key(key)
+	not adguard_secret_key(key)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
 }
@@ -514,4 +515,10 @@ deny contains "Kuma ownership init must only own the initial data mount root" if
 	some container in object.get(spec, "initContainers", [])
 	container.name == "01-ownership"
 	container.command != ["sh", "-ec", "chown 10001:10001 /app/data; chmod 0700 /app/data"]
+}
+
+adguard_secret_key(key) if {
+	input.metadata.namespace == "automation"
+	input.metadata.name == "adguard-config"
+	key == "/homelab/adguard/admin-password"
 }

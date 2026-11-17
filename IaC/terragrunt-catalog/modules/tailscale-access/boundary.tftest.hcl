@@ -4,6 +4,21 @@ mock_provider "tailscale" {
 }
 mock_provider "aws" {}
 
+# Synthetic cutover expectations must never activate their fixture address.
+# T037 updates this active-source assertion only after observing the real peer.
+run "dns_baseline_until_verified_adguard_cutover" {
+  command = plan
+  assert {
+    condition = (tailscale_dns_configuration.homelab.magic_dns && !tailscale_dns_configuration.homelab.override_local_dns &&
+      jsonencode(tailscale_dns_configuration.homelab.search_paths) == "[]" &&
+      jsonencode([for resolver in tailscale_dns_configuration.homelab.nameservers : resolver.address]) == jsonencode([
+        for resolver in jsondecode(file("tests/fixtures/adguard-dns-cutover.json")).before.nameservers : resolver.address
+      ]) &&
+    jsonencode(tailscale_dns_configuration.homelab.split_dns) == jsonencode(jsondecode(file("tests/fixtures/adguard-dns-cutover.json")).before.split_dns))
+    error_message = "Active DNS must retain its prior policy until the observed AdGuard endpoint is reviewed."
+  }
+}
+
 variables {
   aws_region        = "us-west-2"
   ci_key_generation = 1

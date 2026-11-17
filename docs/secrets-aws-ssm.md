@@ -914,3 +914,19 @@ a native password rotation procedure. The verifier uses a separate
 in after fencing a disposable copy; it cannot bootstrap or reconcile that copy.
 Never log or archive the mounted password. Backup archives still contain native
 account hashes and private monitoring data and must remain private.
+
+## AdGuard administrator credential
+
+The shared SSM unit generates `/homelab/adguard/admin-password` as a 32-character
+alphanumeric SecureString. Its exact reader ARN is granted to External Secrets;
+there is no new namespace-wide SSM prefix grant. `automation/adguard-config`
+uses OnChange and an explicit revision marker. Its template emits only the
+bcrypt hash into initialized JSON configuration; no plaintext password enters
+Git or the AdGuard configuration. The username is `admin`.
+
+Changes to credential/configuration revisions need a declared rollout marker.
+The [AdGuard recovery helper](../scripts/adguard-recovery.py) reads the exact
+protected parameter privately after checking the homelab AWS account and records
+only ARN/version metadata. Administrator recovery requires independent access to
+SSM and encrypted IaC state. The [app runbook](../clusters/homelab/apps/adguard/README.md)
+describes private password files, isolated recovery and retention limits.

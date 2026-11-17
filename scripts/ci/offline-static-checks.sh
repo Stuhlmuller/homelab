@@ -1114,7 +1114,7 @@ done <<'EOF'
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
 .github/workflows/terragrunt-plan.yml 955f02170dbd3ff8a8e692281a759ead321a99fa296bc795481d5383217b254e
-.github/workflows/validate.yml 1e4fabe31ae2780dbc1a7738d952f82e8cbf95e26ee77c7b2389a8f863faf17e
+.github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
 EOF
 echo "::endgroup::"
 

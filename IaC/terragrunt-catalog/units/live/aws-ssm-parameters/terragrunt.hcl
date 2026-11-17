@@ -45,6 +45,14 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/adguard/admin-password" = {
+      description   = "AdGuard Home administrator password; reconstruct config from Git and this retained credential."
+      reader_access = true
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
     "/homelab/fleet/google-oauth" = {
       description   = "Dedicated Google OAuth Web client JSON for Fleet-managed XCreds Mac login; operator-only."
       initial_value = local.placeholder

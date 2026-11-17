@@ -37,7 +37,7 @@ servers:
         configBlock: >-
           expr type() in ['A', 'AAAA'] && (
           name() in ['stinkyboi.com.', 'affine.stinkyboi.com.',
-          'argocd.stinkyboi.com.', 'bazarr.stinkyboi.com.',
+          'adguard.stinkyboi.com.', 'argocd.stinkyboi.com.', 'bazarr.stinkyboi.com.',
           'compass.stinkyboi.com.', 'deluge.stinkyboi.com.',
           'dispatcharr.stinkyboi.com.', 'fleet.stinkyboi.com.',
           'grafana.stinkyboi.com.', 'harbor.stinkyboi.com.',

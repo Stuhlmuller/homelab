@@ -319,3 +319,16 @@ real AWS checks and Kubernetes render/live checks are unavailable in this runtim
 Run those gates before approving activation. Source checks cannot confirm live
 operator backups or recoverability. Keep HOME-2 in review until the operational
 acceptance record exists; merging a PR does not close the finding.
+
+## AdGuard configuration reconstruction
+
+AdGuard's recovery authority is its Git configuration and the protected AWS SSM
+`/homelab/adguard/admin-password` value, with independent administrator access to
+AWS/encrypted IaC state. Its retained NFS work claim holds rebuildable filter
+cache; neither a PVC nor a backup declaration proves a successful restore.
+The [AdGuard recovery command](../clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+reconstructs those sources in disposable local containers and records exact source
+and credential versions privately. It tests replacement and fresh-cache restore
+without production mounts. Live private routing and client DNS require separate
+acceptance. The same runbook's rollback command can restore the previous tailnet
+DNS policy without requiring the failed AdGuard instance to answer.

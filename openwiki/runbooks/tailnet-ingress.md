@@ -530,3 +530,38 @@ The targeted `terragrunt-apply.yml` Codex path checks the existing `automation`
 namespace, `homelab-workloads` destination, ESO namespace scope and retained
 local PV before reconciling shared SSM reader grants and this Application.
 It leaves bootstrap and unrelated Application registration outside that path.
+
+## AdGuard DNS and private administration
+
+[AdGuard](../../clusters/homelab/apps/adguard/README.md) uses the existing
+`tag:homelab-ingress` policy through a distinct operator-owned DNS-only Service,
+`automation/adguard-dns`, with hostname `homelab-adguard`. Sign it through the
+existing trusted-Mac helper's `--adguard-only` target after deployment. The
+Codex signing webhook does not sign this workload proxy. UDP and TCP 53 are
+exposed; administrator HTTP stays behind the existing private Traefik route at
+`adguard.stinkyboi.com`. No Funnel route or public app DNS record is added.
+
+The direct checker verifies the observed Service address, signed peer, current
+source, filtering and authenticated HTTPS administration. Those checks do not
+prove normal client DNS. The separate native macOS client mode checks accepted
+tailnet DNS and flushes caches; exit-node claims require an actual selected
+supported exit node. The saved-plan cutover and rollback commands preserve
+MagicDNS, private split DNS and search paths. Rollback does not depend on AdGuard
+health. See the app runbook for commands, private receipts and pending live gates.
+
+For client settings, browser/application DNS bypasses, cache effects and the
+limits of domain-based ad blocking, follow [client setup and blocking limits](../../clusters/homelab/apps/adguard/README.md#client-setup-and-blocking-limits).
+A passing direct or system-DNS check does not promise removal of same-domain ads
+or prove that every application uses the filtering resolver.
+
+### Operator enrollment failure observed November 16, 2026
+
+During AdGuard prerequisite checks, Traefik remained Synced/Progressing with a
+ready Deployment, but `traefik/codex-signer` had no load-balancer address or
+operator proxy Pod. The running Tailscale operator repeatedly reported OAuth
+`401 Unauthorized` / `API token invalid` while provisioning that ingress.
+Existing proxies being ready does not prove new enrollment works. Use the
+[existing protected operator rotation path](../../clusters/homelab/apps/tailscale/README.md)
+with administrator credentials, then advance the declared ESO/operator revisions
+and verify new proxy enrollment. No manual Secret update or policy widening is
+part of the AdGuard rollout. This prerequisite remains unresolved.

@@ -319,6 +319,7 @@ and device connection tests.
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `traefik` | ingress foundation | `traefik` | `clusters/homelab/apps/traefik` | `IaC/homelab/us-west-2/apps/traefik/argocd` | cert-manager, istio, tailscale; operator policy before proxy registration |
 | `tailnet-dns` | tailnet application resolver | `tailnet-dns` | `clusters/homelab/platform/tailnet-dns` | `IaC/homelab/us-west-2/apps/tailnet-dns/argocd` | tailscale, traefik, published pinned Harbor DNS image |
+| `adguard` | staged tailnet ad-blocking DNS | `automation` | `clusters/homelab/apps/adguard` | `IaC/homelab/us-west-2/apps/adguard/argocd` | external-secrets, tailscale, traefik, tailnet-dns, platform-storage |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/homelab/us-west-2/apps/platform-dns/argocd`          | Argo CD bootstrap                                           |
 | `platform-multus`       | support                   | `kube-system`           | `clusters/homelab/platform/multus`            | `IaC/homelab/us-west-2/apps/platform-multus/argocd`       | Octelium data-plane prerequisites                           |
 | `platform-storage`      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`           | `IaC/homelab/us-west-2/apps/platform-storage/argocd`      | QNAP NFS export                                             |
@@ -901,7 +902,7 @@ no new public route. These are desired-state declarations, not a live rollout
 receipt.
 
 The [catalog](../../clusters/homelab/apps/uptime-kuma/monitors.json) classifies
-61 source/live app entries and maps them to 54 app/service monitors. Active
+62 source/live app entries and maps them to 55 app/service monitors. Active
 entries require direct health or exact supporting workload signals; suspended,
 staged, retired and configuration-only entries retain explicit evidence and
 ownership. Prometheus predicates require actual readiness and fresh source
@@ -917,3 +918,25 @@ The protected apply lane supplies SSM before registration and checks existing
 External Secrets, cert-manager, Istio, storage, Prometheus and Traefik.
 [Validation](../operations/validation-gates.md#uptime-kuma-validation) separates
 local executable proof from exact-revision live acceptance.
+
+
+## AdGuard tailnet filtering
+
+[AdGuard Home](../../clusters/homelab/apps/adguard/README.md) declares one
+nonroot replica, a DNS-only `homelab-adguard` Tailscale proxy and private
+`adguard.stinkyboi.com` administration through Traefik. Public upstreams are
+Cloudflare malware resolvers; private `stinkyboi.com` queries use the existing
+cluster-local tailnet resolver. MagicDNS and the existing split-DNS policy are
+preserved. No automatic unfiltered fallback is configured. Query history and
+statistics are disabled; the retained 1Gi NFS claim holds replaceable filter cache.
+
+Source registration does not activate global tailnet DNS. After image publication,
+GitOps rollout, trusted-Mac peer signing and live direct/admin/recovery checks,
+a separate reviewed change must use the observed proxy address. The guarded
+saved-plan helper applies only that DNS policy change. Native macOS client checks
+then verify normal resolver use; exit-node acceptance requires a selected,
+supported exit node. Deployment and client acceptance are still pending.
+
+AdGuard also has a Kuma workload-readiness monitor with exact Deployment metrics
+and freshness checks. This does not prove DNS filtering or successful client
+cutover; those remain separate acceptance checks.
