@@ -1,8 +1,8 @@
 # Specify checkpoint
 
 Stage: specify complete, 2026-11-15. Next: clarify in a separate goal turn.
-Owner: current AdGuard homelab goal. Issue: https://github.com/Stuhlmuller/homelab/issues/1842
-Notion: https://app.notion.com/p/419e535fc62881a394d0e752ab2a4264
+Owner: current AdGuard homelab goal. Issue: <https://github.com/Stuhlmuller/homelab/issues/1842>
+Notion: <https://app.notion.com/p/419e535fc62881a394d0e752ab2a4264>
 
 Canonical feature: specs/20261115-185603-adguard-tailnet-dns
 Worktree: /workspace/homelab-adguard; branch feat/adguard-tailnet-dns.

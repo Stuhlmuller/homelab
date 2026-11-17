@@ -3,7 +3,7 @@
 Stage: clarification complete, 2026-11-15. Next separate stage: speckit-plan.
 Canonical feature: specs/20261115-185603-adguard-tailnet-dns.
 Owner/worktree: current AdGuard goal, /workspace/homelab-adguard.
-Issue: https://github.com/Stuhlmuller/homelab/issues/1842
+Issue: <https://github.com/Stuhlmuller/homelab/issues/1842>
 
 Executed installed speckit-clarify instructions. Prerequisite resolver ran once
 with --json --paths-only and selected this feature. Its BRANCH field is derived

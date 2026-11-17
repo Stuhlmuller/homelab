@@ -33,7 +33,8 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(metadata, {'ARN': parameter['ARN'], 'Version': 1})
         for field, invalid in [('ARN', 'wrong'), ('Name', '/wrong'), ('Type', 'String'),
                                ('Version', True), ('Version', 0), ('Value', 'invalid')]:
-            changed = copy.deepcopy(parameter); changed[field] = invalid
+            changed = copy.deepcopy(parameter)
+            changed[field] = invalid
             with self.subTest(field=field), patch.object(RECOVERY.CHECK, 'run',
                     side_effect=[account, json.dumps({'Parameter': changed})]):
                 with self.assertRaises(RECOVERY.CHECK.Failure):
@@ -42,7 +43,8 @@ class RecoveryTests(unittest.TestCase):
     def test_remote_docker_is_rejected(self):
         for endpoint in ('tcp://example.invalid:2376', 'ssh://example.invalid'):
             with patch.object(RECOVERY.CHECK, 'run', return_value=endpoint):
-                with self.assertRaises(RECOVERY.CHECK.Failure): RECOVERY.LocalDocker()
+                with self.assertRaises(RECOVERY.CHECK.Failure):
+                    RECOVERY.LocalDocker()
 
     def test_invalid_query_ports_rejected_before_command(self):
         with patch.object(RECOVERY.CHECK, 'run') as run:

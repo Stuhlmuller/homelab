@@ -1,5 +1,16 @@
 # Scoped publication convergence and delivery
 
-Scoped T003 pipeline convergence CLEAN: reviewed full nine-file diff, exact two-image inventory against app pins, fixed scope mapping and precredential validation, unchanged publication verification/credentials/destinations, policy hash bindings, negative fixtures, teaching docs and five constitution principles. No new corrective tasks or implementation edits. Reused passing108 publication/147 policy/61 workflow/offline-static/wiki validation.
+Scoped T003 pipeline convergence CLEAN: reviewed full nine-file diff, exact two-image inventory against app pins, fixed
+scope mapping and precredential validation, unchanged publication verification/credentials/destinations, policy hash
+bindings, negative fixtures, teaching docs and five constitution principles. No new corrective tasks or implementation
+edits. Reused passing108 publication/147 policy/61 workflow/offline-static/wiki validation.
 
-Signed prerequisite PR1851 https://github.com/Stuhlmuller/homelab/pull/1851 opened; head05c1bd6a4b5f1ffad8065e0029ea0087c756611d signatureVALID, baseb6063d41c993ec575c667134fa97818d5a5591b9. Worktree /workspace/homelab-adguard-pipeline clean at signedhead; original feature untouched. PRdelivery owneradguard-tailnet-dns recorded. One CIwatcher session49913 interval120s, logpr1851-watch.log; initial compact evidencepr1851-checks.json and rulespr1851-rules.json in /workspace/adguard-progress. Currentsevenrequiredcontexts:analyze-actions,Terragrunt Gate,policy-bot:main,repo,Analyze(python),release-dry-run,Lint. GithubActionsissuer15368,policybot3280987. Policybotapproved;otherspending. Do notmergeonpartialchecks. Nextwaitexactheadchecks,resolvefailures,refreshhead/base/rules/reviewthreads thenprotected squashmerge,verifysignedsoleparentanddispatchadguardexactnewmain. No deployedAdGuardorDNS. Goalactive.
+Signed prerequisite PR1851 <https://github.com/Stuhlmuller/homelab/pull/1851> opened;
+head05c1bd6a4b5f1ffad8065e0029ea0087c756611d signatureVALID, baseb6063d41c993ec575c667134fa97818d5a5591b9. Worktree
+/workspace/homelab-adguard-pipeline clean at signedhead; original feature untouched. PRdelivery owneradguard-tailnet-dns
+recorded. One CIwatcher session49913 interval120s, logpr1851-watch.log; initial compact evidencepr1851-checks.json and
+rulespr1851-rules.json in /workspace/adguard-progress. Currentsevenrequiredcontexts:analyze-actions,Terragrunt
+Gate,policy-bot:main,repo,Analyze(python),release-dry-run,Lint. GithubActionsissuer15368,policybot3280987.
+Policybotapproved;otherspending. Do notmergeonpartialchecks.
+Nextwaitexactheadchecks,resolvefailures,refreshhead/base/rules/reviewthreads thenprotected
+squashmerge,verifysignedsoleparentanddispatchadguardexactnewmain. No deployedAdGuardorDNS. Goalactive.

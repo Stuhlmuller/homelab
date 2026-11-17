@@ -43,3 +43,22 @@ merge, targeted Terragrunt dispatch, valid operator OAuth, trusted peer signing,
 live DNS/admin/recovery and actual-client acceptance remain. Existing stored
 operator OAuth returned401; no CI rotation path or administrator authority has
 been established. No app deployment, credential repair or DNS cutover claimed.
+
+
+## Draft CI repair and toolchain prerequisite
+
+[Draft PR1852](https://github.com/Stuhlmuller/homelab/pull/1852) opened at signed
+9476d8873af39bb30a43bedfefb0e461ad9e5aac. Separate T045/T046 convergence was clean.
+[Toolchain PR1853](https://github.com/Stuhlmuller/homelab/pull/1853) stages the
+identical one-line DNS utility addition plus ordering documentation; its lock
+file is unchanged. `dig -v` reports 9.20.22, x86_64-linux flake evaluation without
+build passed, and OpenWiki/whitespace passed. Required CI and merge remain pending.
+
+The app lint job found 33 E701/E702 compound-line violations in four Python
+files, plus Markdown URL/line-length errors in feature records. Expanded only
+the reported Python statements and proved identical parsed syntax trees before
+and after; no executable behavior changed. Ruff passes with the repository's
+CI config. Markdown passes for all 47 feature files with the same CI rules.
+Initial local Markdown invocation used default rules, then an unsupported config
+filename; the final invocation used an external CLI2 wrapper containing the
+unchanged repository rules and passed. No exemptions or rule changes were made.

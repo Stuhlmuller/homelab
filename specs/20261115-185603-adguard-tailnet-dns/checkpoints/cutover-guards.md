@@ -26,7 +26,7 @@ rollbackT025/T026 follows their dependencies. No live changes or Notion.
 Research coverage: read complete pinned provider resource_dns_configuration.go
 v0.29.2; DNS provider schema uses five policy fields plus computedid and
 use_with_exit_node defaultsfalse. Go dependency tailscale clientv2.9.0 resolves to
-https://github.com/tailscale/tailscale-client-go-v2 at4f50555a6c6f6f231f85b4f54767ac49bf590416.
+<https://github.com/tailscale/tailscale-client-go-v2> at4f50555a6c6f6f231f85b4f54767ac49bf590416.
 Read its DNSConfiguration structs and Configuration/SetConfiguration functions:
 GET /tailnet/-/dns/configuration returns nameservers, splitDNS, searchPaths,
 preferences with camelCase booleans. Existing guarded OAuth api_request supports

@@ -30,7 +30,7 @@ empty whitelist_filters; accept only explicit null or empty list, preserving
 missing-field rejection. All5 runtime tests pass. Checkov targeted secret scan
 4 files passes0 findings; git diff --check passes. Logs adguard-check-red.log and
 adguard-acceptance-final.log under /workspace/adguard-progress. Source API evidence:
-https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/v0.107.80/openapi/openapi.yaml
+<https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/v0.107.80/openapi/openapi.yaml>
 (the relevant filter/status/check_host schemas inspected, local upstream/openapi.yaml).
 
 Registered checker tests in offline checks and documented exact CLI in app README.

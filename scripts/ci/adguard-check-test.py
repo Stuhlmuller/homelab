@@ -24,10 +24,13 @@ class DirectCheck(unittest.TestCase):
                             'exit_node_verified': False}}
         CHECK.validate_client_evidence(value)
         for field in ('os_version', 'client_version', 'exit_node_mode'):
-            changed = copy.deepcopy(value); changed['client'].pop(field)
-            with self.assertRaises(CHECK.Failure): CHECK.validate_client_evidence(changed)
+            changed = copy.deepcopy(value)
+            changed['client'].pop(field)
+            with self.assertRaises(CHECK.Failure):
+                CHECK.validate_client_evidence(changed)
         value['client']['exit_node_mode'] = 'selected'
-        with self.assertRaises(CHECK.Failure): CHECK.validate_client_evidence(value)
+        with self.assertRaises(CHECK.Failure):
+            CHECK.validate_client_evidence(value)
 
     def test_client_requires_real_supported_dns_acceptance_and_exit_metadata(self):
         status = {'BackendState': 'Running', 'Version': '1.102.4',

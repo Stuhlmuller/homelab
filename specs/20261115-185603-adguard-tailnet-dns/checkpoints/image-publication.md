@@ -5,7 +5,7 @@ User repeated deployment instruction; no further Notion updates are authorized.
 The previous scoped convergence turn found no correction needed for T001–T002;
 38 remaining tasks stay open. No feature-wide convergence claim.
 
-Prerequisite PR: https://github.com/Stuhlmuller/homelab/pull/1843
+Prerequisite PR: <https://github.com/Stuhlmuller/homelab/pull/1843>
 Remote branch: feat/adguard-image-prerequisite
 Head: 07de14cfdaffdf315ba21ba66d59013225d02e79
 Base: 6a7a2b8d48be8c0e27cfa17f9fc24748dcca9e24
@@ -98,7 +98,7 @@ All four merged files match the reviewed local files byte-for-byte.
 
 Dispatched harbor-mirror.yml at main with expected_sha
 48e8b9e4627f4a37f30d00f2d28b96d64133996e and image_scope=all. Confirmed run:
-https://github.com/Stuhlmuller/homelab/actions/runs/43777917412
+<https://github.com/Stuhlmuller/homelab/actions/runs/43777917412>
 Publication remains pending; T003 stays open until successful authenticated
 complete pulls. No AdGuard workload or tailnet DNS change has been deployed.
 

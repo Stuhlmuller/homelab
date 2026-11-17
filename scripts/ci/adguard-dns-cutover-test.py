@@ -58,7 +58,8 @@ class CutoverContracts(unittest.TestCase):
             lambda p: p['configuration']['provider_config']['tailscale']['expressions'].update(oauth_client_secret={'references': ['var.secret']}),
         )
         for index, mutate in enumerate(mutations):
-            value = plan(); mutate(value)
+            value = plan()
+            mutate(value)
             with self.subTest(index=index), self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_plan(value, *policies())
 
@@ -79,7 +80,8 @@ class CutoverContracts(unittest.TestCase):
                'searchPaths': [], 'preferences': {'magicDNS': True, 'overrideLocalDNS': False}}
         self.assertEqual(CUTOVER.api_policy(api), CUTOVER.policy(before))
         api['unmodeled_setting'] = True
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.api_policy(api)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.api_policy(api)
 
     def test_rejects_unrelated_delete_replace_unknown_and_incomplete(self):
         mutations = (
@@ -96,7 +98,8 @@ class CutoverContracts(unittest.TestCase):
             lambda p: p.update(resource_drift=[{'change': {'actions': ['update']}}]),
         )
         for index, mutate in enumerate(mutations):
-            value = plan(); mutate(value)
+            value = plan()
+            mutate(value)
             with self.subTest(index=index), self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_plan(value, *policies())
 
@@ -106,7 +109,8 @@ class CutoverContracts(unittest.TestCase):
                        lambda p: p.update(split_dns=[]), lambda p: p.update(override_local_dns=False),
                        lambda p: p['nameservers'].append({'address': '1.1.1.2', 'use_with_exit_node': False}),
                        lambda p: p['nameservers'][0].update(use_with_exit_node=False)):
-            changed = copy.deepcopy(after); change(changed)
+            changed = copy.deepcopy(after)
+            change(changed)
             with self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_transition(before, changed, '100.99.0.1')
 
@@ -131,7 +135,8 @@ class CutoverContracts(unittest.TestCase):
             with self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_binding(incomplete, copy.deepcopy(incomplete))
         for field in value:
-            changed = copy.deepcopy(value); changed[field] = 'changed'
+            changed = copy.deepcopy(value)
+            changed[field] = 'changed'
             with self.subTest(field=field), self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_binding(value, changed)
 
@@ -155,7 +160,8 @@ class FakeAdapter:
     def current_source(self): return 'a' * 40, self.after
     def baseline_policy(self): return self.before
     def read_plan(self):
-        value = plan(); value['timestamp'] = CUTOVER.iso_time(self.plan_time)
+        value = plan()
+        value['timestamp'] = CUTOVER.iso_time(self.plan_time)
         return self.plan_digest, value
     def plan_hash(self): return self.plan_digest
     def live_policy(self): return self.live
@@ -170,9 +176,11 @@ class FakeAdapter:
     def save(self, value): self.saved = copy.deepcopy(value)
     def apply(self):
         self.applies += 1
-        if self.fail_before_write: raise CUTOVER.Failure('synthetic apply failure')
+        if self.fail_before_write:
+            raise CUTOVER.Failure('synthetic apply failure')
         self.live = self.after
-        if self.fail_after_write: raise CUTOVER.Failure('synthetic lost response')
+        if self.fail_after_write:
+            raise CUTOVER.Failure('synthetic lost response')
 
 
 class ExecutionContract(unittest.TestCase):
@@ -183,7 +191,8 @@ class ExecutionContract(unittest.TestCase):
             apply()
             adapter.live_policy = lambda: (_ for _ in ()).throw(CUTOVER.Failure('unavailable'))
         adapter.apply = unreadable
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         self.assertEqual(adapter.saved['phase'], 'uncertain')
         self.assertEqual(adapter.applies, 1)
         adapter.live_policy = lambda: adapter.live
@@ -191,13 +200,16 @@ class ExecutionContract(unittest.TestCase):
         self.assertEqual(adapter.applies, 1)
 
     def test_future_plan_or_receipt_cannot_authorize_execution(self):
-        adapter = FakeAdapter(); adapter.plan_time = time.time() + 60
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        adapter = FakeAdapter()
+        adapter.plan_time = time.time() + 60
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         self.assertEqual(adapter.applies, 0)
         adapter.plan_time = time.time()
         CUTOVER.reconcile(adapter, True)
         adapter.saved['completed_at'] = time.time() + 60
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         self.assertEqual(adapter.applies, 1)
 
     def test_private_plan_paths_and_native_apply_keep_guards(self):
@@ -207,10 +219,13 @@ class ExecutionContract(unittest.TestCase):
             path.chmod(0o600)
             self.assertEqual(CUTOVER.private_bytes(path), b'synthetic encrypted plan fixture')
             path.chmod(0o644)
-            with self.assertRaises(CUTOVER.Failure): CUTOVER.private_bytes(path)
+            with self.assertRaises(CUTOVER.Failure):
+                CUTOVER.private_bytes(path)
             path.chmod(0o600)
-            link = Path(temp) / 'link'; link.symlink_to(path)
-            with self.assertRaises(CUTOVER.Failure): CUTOVER.private_bytes(link)
+            link = Path(temp) / 'link'
+            link.symlink_to(path)
+            with self.assertRaises(CUTOVER.Failure):
+                CUTOVER.private_bytes(link)
             adapter = CUTOVER.Adapter.__new__(CUTOVER.Adapter)
             adapter.plan_path = path
             adapter.checked_plan_hash = adapter.plan_hash()
@@ -221,7 +236,8 @@ class ExecutionContract(unittest.TestCase):
             self.assertFalse(any('lock=false' in arg or 'auto-approve' in arg for arg in args))
             path.write_bytes(b'changed')
             with patch.object(CUTOVER, 'command') as command:
-                with self.assertRaises(CUTOVER.Failure): adapter.apply()
+                with self.assertRaises(CUTOVER.Failure):
+                    adapter.apply()
                 command.assert_not_called()
 
     def test_preview_never_writes_and_execute_checks_then_applies_once(self):
@@ -243,22 +259,27 @@ class ExecutionContract(unittest.TestCase):
                      lambda a: setattr(a, 'live', a.after),
                      lambda a: setattr(a, 'current_source', lambda: ('b' * 40, a.after)))
         for index, mutation in enumerate(mutations):
-            adapter = FakeAdapter(); adapter.drift = mutation
+            adapter = FakeAdapter()
+            adapter.drift = mutation
             with self.subTest(index=index), self.assertRaises(CUTOVER.Failure):
                 CUTOVER.reconcile(adapter, True)
             self.assertEqual(adapter.applies, 0)
 
     def test_uncertain_success_is_read_back_not_reapplied(self):
-        adapter = FakeAdapter(); adapter.fail_after_write = True
+        adapter = FakeAdapter()
+        adapter.fail_after_write = True
         self.assertEqual(CUTOVER.reconcile(adapter, True), 'applied')
         self.assertEqual(adapter.applies, 1)
         self.assertEqual(adapter.saved['phase'], 'applied')
 
     def test_failure_before_write_requires_a_new_plan(self):
-        adapter = FakeAdapter(); adapter.fail_before_write = True
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        adapter = FakeAdapter()
+        adapter.fail_before_write = True
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         self.assertEqual(adapter.saved['phase'], 'failed-needs-new-plan')
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         self.assertEqual(adapter.applies, 1)
         adapter.plan_digest = '2' * 64
         adapter.plan_time = time.time()
@@ -307,7 +328,8 @@ class RollbackContract(unittest.TestCase):
         self.assertEqual(adapter.saved['rollback']['phase'], 'applied')
 
     def test_already_restored_is_noop_without_plan_or_health(self):
-        adapter = RollbackAdapter(); adapter.live = adapter.before
+        adapter = RollbackAdapter()
+        adapter.live = adapter.before
         adapter.read_plan = lambda: (_ for _ in ()).throw(AssertionError('No plan needed'))
         self.assertEqual(CUTOVER.rollback(adapter, True), 'already-restored')
         self.assertEqual(adapter.applies, 0)
@@ -317,15 +339,18 @@ class RollbackContract(unittest.TestCase):
                        lambda a: setattr(a, 'recorded_source', lambda r: a.before),
                        lambda a: setattr(a, 'live', dict(a.after, magic_dns=False)),
                        lambda a: setattr(a, 'current_source', lambda: ('b' * 40, a.after))):
-            adapter = RollbackAdapter(); mutate(adapter)
-            with self.assertRaises(CUTOVER.Failure): CUTOVER.rollback(adapter, True)
+            adapter = RollbackAdapter()
+            mutate(adapter)
+            with self.assertRaises(CUTOVER.Failure):
+                CUTOVER.rollback(adapter, True)
             self.assertEqual(adapter.applies, 0)
 
     def test_recorded_activation_cannot_smuggle_private_dns_changes(self):
         adapter = RollbackAdapter()
         adapter.saved['after']['split_dns'] = []
         adapter.recorded_source = lambda revision: adapter.saved['after']
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.rollback(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.rollback(adapter, True)
         self.assertEqual(adapter.applies, 0)
 
     def test_last_moment_live_drift_prevents_rollback_write(self):
@@ -336,7 +361,8 @@ class RollbackContract(unittest.TestCase):
             adapter.live = dict(adapter.after, magic_dns=False)
             return value
         adapter.read_plan = changed
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.rollback(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.rollback(adapter, True)
         self.assertEqual(adapter.applies, 0)
 
     def test_uncertain_rollback_is_inspected_without_repeat_write(self):

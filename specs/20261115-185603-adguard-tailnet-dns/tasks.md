@@ -87,7 +87,7 @@ source tests pass but live prerequisites or required operator access are absent.
 
 - [X] T029 Update `openwiki/workloads/inventory.md`, `openwiki/runbooks/tailnet-ingress.md`, `openwiki/architecture/storage-and-state.md`, `docs/secrets-aws-ssm.md` and `openwiki/operations/validation-gates.md` with actual app, credential, storage, validation and client limitations; preserve generated wiki artifacts.
 - [X] T030 Run all new fixture/render/runtime checks and affected existing route/DNS/signing/SSM/targeted-apply/OpenWiki checks plus relevant HCL formatting/plans from `docs/validation-runbook.md`; record exact results and material limits in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/validation.md`.
-- [ ] T031 Review the complete app diff for FR coverage, secret safety and executable cutover/rollback guards; prepare a bounded draft PR and delivery evidence with image publication explicitly pending until T003 passes in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without claiming unfinished runtime acceptance.
+- [X] T031 Review the complete app diff for FR coverage, secret safety and executable cutover/rollback guards; prepare a bounded draft PR and delivery evidence with image publication explicitly pending until T003 passes in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without claiming unfinished runtime acceptance.
 - [ ] T032 Deliver app/route/secret/helper source through protected PR merge under `.agents/skills/homelab-protected-prs/SKILL.md`, preserving ownership and exact-commit check evidence; record final main SHA in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md`.
 - [ ] T033 Refresh live prerequisite health and diagnose the observed Traefik Application Progressing discrepancy; if a source correction is required, deliver it through its owning code path and tests before AdGuard apply; record evidence and dependency disposition in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without bypassing preflight.
 - [ ] T034 Dispatch the tested exact-main AdGuard path in `.github/workflows/terragrunt-apply.yml`, inspect SSM/ESO/PVC/workload/route results without printing credentials, and verify deployed revision with `scripts/verify-gitops.py`; record actual rollout evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`.
@@ -157,7 +157,11 @@ not merely source-file presence or unchecked fixture descriptions.
 
 ## Phase 8: Convergence
 
-- [X] T041 Correct the direct acceptance Application binding in `scripts/adguard-check.py` and its fixtures to match the generated shared registration's single-element `spec.sources` and corresponding `status.sync.revisions`, while rejecting multiple sources, wrong project/destination/revisions and unintended legacy source combinations; validate against the actual generated Application projection per FR-001/013/019 and plan: shared registration (partial, HIGH). Complete before any live acceptance or cutover helper integration.
+- [X] T041 Correct the direct acceptance Application binding in `scripts/adguard-check.py` and its fixtures to match the
+  generated shared registration's single-element `spec.sources` and corresponding `status.sync.revisions`, while
+  rejecting multiple sources, wrong project/destination/revisions and unintended legacy source combinations; validate
+  against the actual generated Application projection per FR-001/013/019 and plan: shared registration (partial, HIGH).
+  Complete before any live acceptance or cutover helper integration.
 
 ## Phase 9: Convergence
 
@@ -165,7 +169,10 @@ not merely source-file presence or unchecked fixture descriptions.
 
 ## Phase 10: Convergence
 
-- [X] T043 Bind the saved plan's DNS resource to the pinned default Tailscale provider and exact existing administrator OAuth file expressions in `scripts/adguard-dns-cutover.py`; reject alternate provider aliases, credential sources, tailnets/API endpoints and unknown provider configuration, with negative fixtures, before any execution per FR-008/013/019 and plan: administrator-owned saved-plan path (partial, HIGH).
+- [X] T043 Bind the saved plan's DNS resource to the pinned default Tailscale provider and exact existing administrator
+  OAuth file expressions in `scripts/adguard-dns-cutover.py`; reject alternate provider aliases, credential sources,
+  tailnets/API endpoints and unknown provider configuration, with negative fixtures, before any execution per
+  FR-008/013/019 and plan: administrator-owned saved-plan path (partial, HIGH).
 
 ## Phase 11: Convergence
 

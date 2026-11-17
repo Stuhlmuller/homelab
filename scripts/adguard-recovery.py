@@ -198,7 +198,8 @@ def recover(config_factory, password, image, blocked='doubleclick.net'):
     with tempfile.TemporaryDirectory(prefix='adguard-recovery-', dir='/tmp') as temp:
         base = Path(temp).resolve()
         CHECK.require(',' not in str(base) and not base.is_relative_to(ROOT), 'Invalid isolated recovery directory')
-        root = base / 'replacement'; root.mkdir()
+        root = base / 'replacement'
+        root.mkdir()
         runtime = IsolatedRuntime(docker, root, image, config_factory(), password)
         try:
             verify_runtime(runtime, blocked)
@@ -209,7 +210,8 @@ def recover(config_factory, password, image, blocked='doubleclick.net'):
             verify_runtime(runtime, blocked)
         finally:
             runtime.close()
-        root = base / 'fresh-restore'; root.mkdir()
+        root = base / 'fresh-restore'
+        root.mkdir()
         runtime = IsolatedRuntime(docker, root, image, config_factory(), password)
         try:
             verify_runtime(runtime, blocked)

@@ -10,7 +10,7 @@ module providers, different credentials, endpoint/tailnet/API-key overrides,
 unknown expressions, missing config and version drift. No credential values read.
 
 Consulted official OpenTofu JSON-format provider/expression sections at
-https://opentofu.org/docs/internals/json-format/ (local upstream/opentofu-json-format.html).
+<https://opentofu.org/docs/internals/json-format/> (local upstream/opentofu-json-format.html).
 Provider map keys are explicitly opaque: resolve the resource's key and validate
 the referenced provider, rather than requiring a literal key name. Added positive
 opaque-key fixture and alias/module negatives. All15 cutover tests pass;
