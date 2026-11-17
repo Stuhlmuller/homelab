@@ -42,6 +42,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.litellm_mirror_manifest = None
         self.prometheus_mirror_manifest = None
         self.uptime_kuma_mirror_manifest = None
+        self.adguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -125,6 +126,11 @@ class HarborPublicationGates(unittest.TestCase):
             uptime_kuma_path.unlink(missing_ok=True)
         else:
             uptime_kuma_path.write_text(json.dumps(self.uptime_kuma_mirror_manifest))
+        adguard_path = self.root / "scripts/config/harbor-adguard-images.json"
+        if self.adguard_mirror_manifest is None:
+            adguard_path.unlink(missing_ok=True)
+        else:
+            adguard_path.write_text(json.dumps(self.adguard_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode] + (["--tailscale"] if tailnet else []),
             cwd=self.root,
@@ -686,7 +692,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -711,7 +717,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -748,7 +754,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -775,6 +781,47 @@ class HarborPublicationGates(unittest.TestCase):
         self.rejected(mode="mirror-uptime-kuma:quay.io/prometheus/prometheus")
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-uptime-kuma")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_adguard_scope_declares_fixed_reviewed_images(self):
+        source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
+        init = {'source': 'docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d'}
+        selected = json.loads((ROOT / "scripts/config/harbor-adguard-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}, init]})
+        for entry in selected["images"]:
+            self.assertIn(entry, catalog["images"])
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard)", workflow)
+
+    def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
+        source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
+        init = {'source': 'docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d'}
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid, init]}
+        for scope in (None, {"images": []}, {"images": [valid]}, {"images": [init]}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("e2e1b", "e2e1c")}, init]},
+                      {"images": [valid, {"source": init["source"].replace("218761", "218762")}]},
+                      {"images": [{"source": source.replace("adguard/adguardhome", "adguard/other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.adguard_mirror_manifest = scope
+                self.rejected(mode="mirror-adguard")
+        self.adguard_mirror_manifest = {"images": [valid, init]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-adguard")
+        self.mirror_manifest = {"images": [valid, init]}
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-adguard")
+                self.env[key] = previous
+        self.rejected(mode="mirror-adguard:quay.io/prometheus/prometheus")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-adguard")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
