@@ -192,3 +192,27 @@ Next: obtain existing administrator/diagnostic custody access, diagnose the
 publisher failure and repair through its declared pipeline, then resume T031.
 No AdGuard deployment, signing, DNS cutover, credential mutation or Notion write
 occurred. All earlier implementation validation remains applicable.
+
+
+## Final scoped publication succeeded November 17, 2026
+
+This evidence supersedes the earlier pending T003 status. Protected PR1851
+introduced a fixed `adguard` scope in the existing publisher without weakening
+its verification. The first scoped run44049807119 succeeded. Protected PR1853
+then staged the identical DNS utility toolchain required by the consumer.
+Its signed merge is `85fcf6899eb53f63e8c2963e691247a0d25e289f`.
+
+[Final publication run44055871994](https://github.com/Stuhlmuller/homelab/actions/runs/44055871994)
+completed successfully at that exact main revision. Validation job133944984575
+passed; copy job133953603823 reported matching digests and complete authenticated
+Harbor pulls at 2026-11-17T09:49:14Z. The fixed inventory contains AdGuard
+v0.107.80 and Python 3.14.7-alpine3.23 with their existing immutable digests.
+Both images retained the publisher's platform and digest checks.
+
+All seven publication bundle files in the consumer match the published revision:
+flake.nix, flake.lock, harbor-mirror.yml, harbor-publish.sh, install-kubeconfig.sh,
+harbor-images.json and harbor-adguard-images.json. The protected toolchain merge
+was incorporated through verified signed merge a339773baa7cf95299c9d31de19c2adeda938362.
+T003 and T047 are complete. The unrelated all-catalog diagnostic remains retained;
+it is not evidence against this successful scoped publication. No deployment,
+peer enrollment, credential repair or DNS cutover follows from image publication.

@@ -24,7 +24,7 @@ while publication is pending. T003 must pass before marking that PR ready or any
 consuming-source merge at T032. No application registration/apply or DNS change
 is authorized by source-only completion.
 
-- [ ] T003 Deliver the T002 prerequisite through its protected PR and exact-main `.github/workflows/harbor-mirror.yml` dispatch; require digest/platform preservation and authenticated full pulls, recording PR/run/SHA evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/image-publication.md` before any consuming manifest merges.
+- [X] T003 Deliver the T002 prerequisite through its protected PR and exact-main `.github/workflows/harbor-mirror.yml` dispatch; require digest/platform preservation and authenticated full pulls, recording PR/run/SHA evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/image-publication.md` before any consuming manifest merges.
 - [X] T004 Add generated `/homelab/adguard/admin-password` and exact ESO reader grant in `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`; enforce “32 characters, <=72 UTF-8 bytes; exact reader grant; never output values” and cover the declaration with existing SSM module tests.
 - [X] T005 Add shared app registration at `IaC/homelab/us-west-2/apps/adguard/stack.hcl` and `terragrunt.stack.hcl`, using homelab-workloads/automation and the five reviewed dependencies; generate/inspect Application without broadening AppProject or namespace access.
 - [X] T006 Add failing targeted AdGuard prerequisite/SSM-lane cases in `scripts/ci/terragrunt-apply-test.py`, including unavailable upstream health, wrong namespace/store scope, missing NFS and an unrelated app exclusion.
@@ -184,4 +184,4 @@ not merely source-file presence or unchecked fixture descriptions.
 
 - [X] T046 Reconcile AdGuard source with the merged Uptime Kuma ownership/catalog and shared route/apply policies; retain both applications, add exact AdGuard readiness coverage to the exhaustive catalog, and validate affected guards before draft delivery.
 
-- [ ] T047 Deliver the `bind.dnsutils` devShell addition as a prerequisite before the final AdGuard publication receipt, preserving the byte-identical publication bundle across consumer delivery; run the exact-main scoped publisher after that toolchain source is merged.
+- [X] T047 Deliver the `bind.dnsutils` devShell addition as a prerequisite before the final AdGuard publication receipt, preserving the byte-identical publication bundle across consumer delivery; run the exact-main scoped publisher after that toolchain source is merged.

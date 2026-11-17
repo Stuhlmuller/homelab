@@ -62,3 +62,27 @@ CI config. Markdown passes for all 47 feature files with the same CI rules.
 Initial local Markdown invocation used default rules, then an unsupported config
 filename; the final invocation used an external CLI2 wrapper containing the
 unchanged repository rules and passed. No exemptions or rule changes were made.
+
+
+## Publication gate and ready PR
+
+The final scoped publisher succeeded at signed main
+85fcf6899eb53f63e8c2963e691247a0d25e289f; see
+[publication evidence](image-publication.md#final-scoped-publication-succeeded-november-17-2026).
+This supersedes the earlier in-progress publication notes. T003/T047 are complete.
+The app incorporates that main through signed merge a339773b; separate convergence
+verified all seven publication files byte-identical and unchanged workload/helpers.
+
+PR1852 is ready. Its repository, lint, code analysis, image/network policy and
+static checks passed on a339773b. Marking ready triggered the configured replacement
+Terragrunt workflow and superseded the previous live plan. Fresh required checks
+still govern the final documentation commit and protected merge. The optional
+Harbor compatibility audit repeated its recorded validation:remediation failure.
+
+Read-only live checks found Traefik Synced/Progressing and both existing ingress
+and DNS proxies reporting local Tailnet Lock Enabled=false with NodeKeySigned
+absent. This does not establish global tailnet policy or prove signed-peer health.
+No proxy reuse design or relaxed check was implemented. Operator OAuth repair,
+actual AdGuard deployment, signed-peer verification and DNS/client acceptance
+remain pending. Ordinary workload CI has no DNS administrator scope; the separate
+operator unit reads private administrator OAuth files absent in this environment.

@@ -565,3 +565,16 @@ Existing proxies being ready does not prove new enrollment works. Use the
 with administrator credentials, then advance the declared ESO/operator revisions
 and verify new proxy enrollment. No manual Secret update or policy widening is
 part of the AdGuard rollout. This prerequisite remains unresolved.
+
+
+### Proxy trust status observed November 17, 2026
+
+Read-only AdGuard prerequisite checks found both existing `homelab-ingress` and
+`homelab-dns` proxies reporting local `tailscale lock status --json` with
+`Enabled=false` and no `NodeKeySigned` field. The ingress proxy was online and
+forwarded to the expected Service ClusterIP. These node-local results do not
+establish the global tailnet lock policy or satisfy the signed-peer checks.
+Reconcile actual trust state through its owning declared path before claiming
+signed AdGuard acceptance; do not disable or relax verification. The distinct
+AdGuard Service design remains unchanged. See the
+[delivery evidence](../../specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md#publication-gate-and-ready-pr).
