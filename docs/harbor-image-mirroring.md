@@ -237,8 +237,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   For Uptime Kuma onboarding, use `image_scope=uptime-kuma`. The fixed
+   `scripts/config/harbor-uptime-kuma-images.json` contains only Kuma 2.5.11 at
+   its reviewed multi-platform digest. Require complete authenticated pulls
+   before merging any consuming deployment; this prerequisite adds no workload.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
