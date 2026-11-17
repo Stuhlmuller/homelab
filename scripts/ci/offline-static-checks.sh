@@ -97,9 +97,16 @@ echo "::group::Terragrunt Azure credential gate"
   root_change=false
   root_helper_failure=false
   stack_change=false
+  fixture_repo_root="$PWD"
 
   git() {
+    # Model root-relative Git calls and a readable, empty legacy stack.
+    if [[ "$1" == -C ]]; then
+      [[ "$2" == "$fixture_repo_root" ]] || return 1
+      shift 2
+    fi
     case "$1" in
+      rev-parse) [[ "$2" == --show-toplevel ]] && printf '%s\n' "$fixture_repo_root" ;;
       cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
       diff)
         local path
@@ -115,6 +122,7 @@ echo "::group::Terragrunt Azure credential gate"
           return 1
         fi
         case "$2" in
+          base:IaC/terragrunt.stack.hcl|head:IaC/terragrunt.stack.hcl) return 0 ;;
           base:IaC/root.hcl) printf '%s\n' "$base_root" ;;
           head:IaC/root.hcl)
             if [[ "$root_change" == true ]]; then
@@ -189,9 +197,17 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt deleted-unit ownership"
 (
+  fixture_repo_root="$PWD"
   git() {
+    if [[ "$1" == -C ]]; then
+      [[ "$2" == "$fixture_repo_root" ]] || return 1
+      shift 2
+    fi
     case "$1" in
-      rev-parse) return 0 ;;
+      rev-parse)
+        if [[ "$2" == --show-toplevel ]]; then printf '%s\n' "$fixture_repo_root"; fi
+        return 0
+        ;;
       diff) printf '%s\n' IaC/terragrunt-catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
       *) return 1 ;;
     esac

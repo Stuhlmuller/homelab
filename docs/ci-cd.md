@@ -888,6 +888,19 @@ current `main` ref. Set `TERRAGRUNT_FILTER_BASE_SHA` and
 explicit bases are not normalized. Changed-unit and deleted-unit selection
 share this comparison base.
 
+Stack inventory and AzureAD comparisons resolve Git paths from the repository
+root, including when Terragrunt calls them from the apps directory. Both the
+legacy stack and per-app stacks retain their historical unit identities.
+An unreadable AzureAD inventory selects the full AzureAD scope conservatively;
+it cannot masquerade as an unchanged or empty subset. Existing credential
+checks still apply. Deleted-unit selection must read both complete inventories
+and the deletion diff successfully before returning candidates. A failed read
+stops plan or apply at that stage, without consuming a partial list or reporting
+that no units were deleted. A valid empty inventory remains valid.
+Verify changes with the stack-selection and plan/apply fixtures, then an actual
+live PR plan. Recover missing history or invalid stack source through the normal
+checkout or reviewed source repair; do not suppress the inventory failure.
+
 The PR plan script emits only generic progress messages. Inspect detailed plans
 only in the trusted local session; do not paste them into GitHub.
 

@@ -41,14 +41,19 @@ verify_current_main_commit() {
 
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
+  local deleted_unit_paths
   local snapshot_dir
   local unit_dir
   local snapshot_unit_dir
   local state_list_file
 
+  if ! deleted_unit_paths="$(terragrunt_deleted_unit_paths)"; then
+    echo "Unable to determine deleted Terragrunt units; refusing to apply." >&2
+    return 1
+  fi
   while IFS= read -r unit_dir; do
-    deleted_units+=("$unit_dir")
-  done < <(terragrunt_deleted_unit_paths)
+    [[ -n "$unit_dir" ]] && deleted_units+=("$unit_dir")
+  done <<<"$deleted_unit_paths"
 
   if ((${#deleted_units[@]} == 0)); then
     echo "No deleted Terragrunt units require destroy handling."

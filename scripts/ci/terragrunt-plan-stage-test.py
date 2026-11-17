@@ -23,6 +23,22 @@ MARKERS = {
 
 
 class PrivatePlanStageTest(unittest.TestCase):
+    def test_deleted_inventory_failure_stops_plan_consumer(self):
+        section = PLAN_RUNNER.read_text().split("deleted_plan_units=()", 1)[1]
+        section = "deleted_plan_units=()" + section.split(
+            'echo "::group::AzureAD application registration plan"', 1)[0]
+        for output, status in (("", 0), ("", 23), ("IaC/live/argocd-apps/partial", 23)):
+            with self.subTest(output=output, status=status):
+                script = ('set -euo pipefail\n'
+                          f'terragrunt_deleted_unit_paths() {{ printf "%s" "{output}"; return {status}; }}\n'
+                          'plan_deleted_terragrunt_units() { printf "consumed=%s\\n" "$#"; }\n'
+                          'consume() {\n' + section + '\n}\n'
+                          'if consume; then echo continued; else exit 1; fi\n')
+                result = subprocess.run(["bash", "-c", script], text=True,
+                                        capture_output=True, timeout=5, check=False)
+                self.assertEqual(result.returncode, 0 if status == 0 else 1, result.stderr)
+                self.assertEqual(result.stdout, "consumed=0\ncontinued\n" if status == 0 else "")
+
     def assert_stage(self, private_output, stage, reason="unknown", *,
                      azuread_report=None, azuread_unit=None):
         environment = dict(os.environ)

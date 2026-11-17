@@ -82,6 +82,14 @@ Keep helper, workflow and exact policy/hash contracts synchronized; the
 A green skipped PR plan or targeted apply does not prove the full pipeline works;
 retain actual live-plan and full-apply run evidence for the tested revisions.
 
+The shared scope helper reads Git paths from the repository root even when
+called inside an app directory. Unknown AzureAD inventory conservatively selects
+its full scope, retaining credential checks. Deleted-unit reconciliation stops
+if either inventory or the deletion diff cannot be read; neither plan nor apply
+consumes a partial list. Valid empty inventories and historical unit identities
+remain supported. The [scope comparison runbook](../../docs/ci-cd.md)
+describes validation and recovery through source or checkout repair.
+
 The protected production apply checks the current `main` commit before each
 state write. The root Terragrunt `before_hook` repeats the check for every unit
 in a multi-unit apply; the bootstrap `after_hook` checks before each Argo CD

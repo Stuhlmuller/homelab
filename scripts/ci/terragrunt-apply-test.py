@@ -105,6 +105,9 @@ def bulk_apply():
         event(f"{unit}.unit{number}.apply")
 
 if tool == "git":
+    if args[:1] == ["-C"]:
+        assert args[1] == str(root)
+        args = args[2:]
     if args[:2] == ["ls-remote", "--exit-code"]:
         assert args[2:] == ["https://github.com/Stuhlmuller/homelab.git", "refs/heads/main"]
         name = "unit.main.check" if os.environ.get("FIXTURE_BULK_UNIT") else "main.check"
@@ -122,6 +125,9 @@ if tool == "git":
     elif args[:2] == ["cat-file", "-e"]:
         pass
     elif args[:1] == ["show"] and args[1].endswith(":IaC/terragrunt.stack.hcl"):
+        if config.get("inventory_error"):
+            print('unit "partial" {\n  path = "live/argocd-apps/partial"\n}')
+            sys.exit(23)
         pass  # Both fixture revisions have no deleted units.
     elif args[:2] == ["diff", "--name-only"]:
         pass
@@ -348,6 +354,12 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_failed_deleted_inventory_stops_full_apply_before_writes(self):
+        result, events = self.run_apply(target="", inventory_error=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("No deleted Terragrunt units", result.stdout)
+        self.assertFalse(any(event.endswith((".import", ".apply", ".plan")) for event in events), events)
 
     def test_github_apply_checks_current_main_before_each_mutation(self):
         for target in ("langfuse", ""):

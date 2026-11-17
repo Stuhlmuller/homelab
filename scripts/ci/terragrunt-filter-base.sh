@@ -62,12 +62,14 @@ terragrunt_stack_units() {
 terragrunt_stack_units_at_ref() {
   local ref="$1"
   local path_prefix="${2:-}"
+  local source
 
   if ! git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
     return 0
   fi
 
-  git show "${ref}:IaC/terragrunt.stack.hcl" | terragrunt_stack_units "$path_prefix"
+  source="$(git show "${ref}:IaC/terragrunt.stack.hcl")" || return 1
+  terragrunt_stack_units "$path_prefix" <<<"$source"
 }
 
 terragrunt_stack_unit_paths() {
@@ -80,38 +82,51 @@ terragrunt_stack_unit_paths_at_ref() {
   local unit_path
   local app
   local stack_files
+  local source
+  local unit_paths
+  local repo_root
+  local paths=()
 
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
   if git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
-    terragrunt_stack_units_at_ref "$ref" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
+    source="$(terragrunt_stack_units_at_ref "$ref")" || return 1
+    sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p' <<<"$source"
     return
   fi
 
-  if ! stack_files="$(git ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2 | grep '/terragrunt.stack.hcl$')" ||
-    [[ -z "$stack_files" ]]; then
+  stack_files="$(git -C "$repo_root" ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2)" || return 1
+  stack_files="$(sed -n '\#/terragrunt.stack.hcl$#p' <<<"$stack_files")"
+  if [[ -z "$stack_files" ]]; then
     echo "No Terragrunt stacks found at ${ref}; refusing deleted-unit detection." >&2
     return 1
   fi
 
   while IFS= read -r stack_file; do
+    source="$(git show "${ref}:${stack_file}")" || return 1
+    unit_paths="$(sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p' <<<"$source")"
     while IFS= read -r unit_path; do
+      [[ -n "$unit_path" ]] || continue
       case "$stack_file:$unit_path" in
         */apps/*/terragrunt.stack.hcl:argocd)
           app="${stack_file#IaC/homelab/us-west-2/apps/}"
-          printf 'IaC/live/argocd-apps/%s\n' "${app%/terragrunt.stack.hcl}"
+          paths+=("IaC/live/argocd-apps/${app%/terragrunt.stack.hcl}")
           ;;
         */apps/*/terragrunt.stack.hcl:azuread)
           app="${stack_file#IaC/homelab/us-west-2/apps/}"
-          printf 'IaC/live/azuread-applications/%s\n' "${app%/terragrunt.stack.hcl}"
+          paths+=("IaC/live/azuread-applications/${app%/terragrunt.stack.hcl}")
           ;;
-        */apps/fleet/terragrunt.stack.hcl:pilot-user) printf 'IaC/live/azuread-applications/fleet-pilot-user\n' ;;
-        */apps/langfuse/terragrunt.stack.hcl:blob-storage) printf 'IaC/live/langfuse-blob-storage\n' ;;
-        */shared/terragrunt.stack.hcl:*) printf 'IaC/live/%s\n' "$unit_path" ;;
-        */bootstrap/terragrunt.stack.hcl:*) printf 'IaC/bootstrap/%s\n' "$unit_path" ;;
-        */operator/terragrunt.stack.hcl:*) printf 'IaC/operator/%s\n' "$unit_path" ;;
+        */apps/fleet/terragrunt.stack.hcl:pilot-user) paths+=("IaC/live/azuread-applications/fleet-pilot-user") ;;
+        */apps/langfuse/terragrunt.stack.hcl:blob-storage) paths+=("IaC/live/langfuse-blob-storage") ;;
+        */shared/terragrunt.stack.hcl:*) paths+=("IaC/live/$unit_path") ;;
+        */bootstrap/terragrunt.stack.hcl:*) paths+=("IaC/bootstrap/$unit_path") ;;
+        */operator/terragrunt.stack.hcl:*) paths+=("IaC/operator/$unit_path") ;;
         *) echo "Unknown Terragrunt unit in ${stack_file}: ${unit_path}" >&2; return 1 ;;
       esac
-    done < <(git show "${ref}:${stack_file}" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p')
+    done <<<"$unit_paths"
   done <<<"$stack_files"
+  if ((${#paths[@]} > 0)); then
+    printf '%s\n' "${paths[@]}"
+  fi
 }
 
 terragrunt_azuread_stack_changed() {
@@ -121,7 +136,9 @@ terragrunt_azuread_stack_changed() {
   local head_root_source
   local base_stack_units
   local head_stack_units
+  local repo_root
 
+  repo_root="$(git rev-parse --show-toplevel)" || return 0
   if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
     return 0
   fi
@@ -134,7 +151,7 @@ terragrunt_azuread_stack_changed() {
     return 0
   fi
 
-  if ! git diff --quiet "$base_sha" "$head_sha" -- \
+  if ! git -C "$repo_root" diff --quiet "$base_sha" "$head_sha" -- \
     IaC/homelab/account.hcl \
     IaC/homelab/us-west-2/region.hcl \
     IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl \
@@ -151,14 +168,19 @@ terragrunt_azuread_stack_changed() {
 
   if git cat-file -e "${base_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null &&
     git cat-file -e "${head_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
-    [[ "$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" != "$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')" ]] && return 0
+    base_stack_units="$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" || return 0
+    head_stack_units="$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')" || return 0
+    [[ "$base_stack_units" != "$head_stack_units" ]] && return 0
   fi
 
-  if ! base_stack_units="$(terragrunt_stack_unit_paths_at_ref "$base_sha" | grep '^IaC/live/azuread-applications/' || true)" ||
-    ! head_stack_units="$(terragrunt_stack_unit_paths_at_ref "$head_sha" | grep '^IaC/live/azuread-applications/' || true)"; then
+  if ! base_stack_units="$(terragrunt_stack_unit_paths_at_ref "$base_sha")" ||
+    ! head_stack_units="$(terragrunt_stack_unit_paths_at_ref "$head_sha")"; then
     return 0
   fi
 
+  # An empty AzureAD subset is valid only after both complete inventories succeed.
+  base_stack_units="$(sed -n '\#^IaC/live/azuread-applications/#p' <<<"$base_stack_units")"
+  head_stack_units="$(sed -n '\#^IaC/live/azuread-applications/#p' <<<"$head_stack_units")"
   if [[ "$base_stack_units" != "$head_stack_units" ]]; then
     return 0
   fi
@@ -178,13 +200,16 @@ terragrunt_azuread_plan_inputs_changed() {
   local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
   local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
 
+  local repo_root
+
+  repo_root="$(git rev-parse --show-toplevel)" || return 0
   if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]] ||
     ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
     ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
     return 0
   fi
 
-  ! git diff --quiet "$base_sha" "$head_sha" -- \
+  ! git -C "$repo_root" diff --quiet "$base_sha" "$head_sha" -- \
     flake.nix \
     flake.lock \
     policy/terraform.rego \
@@ -391,26 +416,38 @@ terragrunt_deleted_unit_paths() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
   local head_stack_unit_paths
+  local base_stack_unit_paths
+  local deleted_files
+  local candidates
+  local unit_dir
+  local repo_root
+  local deleted_paths=()
 
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
-    return 0
+    echo "Unable to determine deleted-unit base; refusing reconciliation." >&2
+    return 1
   fi
 
   if [[ -z "$head_ref" ]]; then
-    head_ref="$(terragrunt_filter_head_ref)"
+    head_ref="$(terragrunt_filter_head_ref)" || return 1
   fi
 
-  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
-    echo "::warning::Terragrunt deleted-unit base ${base_ref} is unavailable; skipping deleted-unit destroy detection."
-    return 0
+  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null ||
+    ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+    echo "Deleted-unit comparison revision is unavailable; refusing reconciliation." >&2
+    return 1
   fi
 
-  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-    echo "::warning::Terragrunt deleted-unit head ${head_ref} is unavailable; skipping deleted-unit destroy detection."
-    return 0
-  fi
-
-  head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")"
+  # Capture all fallible Git reads before emitting any deletion candidate.
+  head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")" || return 1
+  base_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$base_ref")" || return 1
+  deleted_files="$(git -C "$repo_root" diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl')" || return 1
+  while IFS= read -r unit_dir; do
+    [[ -n "$unit_dir" ]] || continue
+    deleted_paths+=("${unit_dir%/terragrunt.hcl}")
+  done <<<"$deleted_files"
+  candidates="$(printf '%s\n' "$base_stack_unit_paths" "${deleted_paths[@]}" | sort -u)" || return 1
 
   while IFS= read -r unit_dir; do
     # Catalog templates and operator-owned state are outside the CI apply scope.
@@ -422,15 +459,7 @@ terragrunt_deleted_unit_paths() {
       continue
     fi
     printf '%s\n' "$unit_dir"
-  done < <(
-    {
-      git diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl' \
-        | sed 's#/terragrunt\.hcl$##'
-      comm -23 \
-        <(terragrunt_stack_unit_paths_at_ref "$base_ref" | sort) \
-        <(printf '%s\n' "$head_stack_unit_paths" | sed '/^$/d' | sort)
-    } | sort -u
-  )
+  done <<<"$candidates"
 }
 
 terragrunt_create_deleted_unit_destroy_stack() {
