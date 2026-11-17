@@ -30,7 +30,11 @@ narrow plan correction; task generation should consume reconciled artifacts.
 
 | Items | Evidence and assessment |
 | --- | --- |
-| CHK001–005 | Spec FR-001/008 and bootstrap clarification; plan Bootstrap/Network/Delivery; native contract. Init binds loopback, closes setup before main, waits for graceful server exit, preserves existing config/account and fails login without reset. Generated SSM reference, mounted credentials, exact consumer scope within app Pod, no logged tokens, private ingress, image-first publication and exact-revision delivery are explicit. |
+| CHK001–005 | Spec FR-001/008 and bootstrap clarification; plan Bootstrap/Network/Delivery; native
+  contract. Init binds loopback, closes setup before main, waits for graceful server exit, preserves
+  existing config/account and fails login without reset. Generated SSM reference, mounted
+  credentials, exact consumer scope within app Pod, no logged tokens, private ingress, image-first
+  publication and exact-revision delivery are explicit. |
 | CHK006–008 | Spec FR-002/004; plan Monitor catalog; data-model Catalog. Source/live union, lifecycle dispositions, configuration-only ownership and partial suspension are defined. Shared checks require actual health meaning. Missing/stale data, zero desired replicas, 401/redirect and query timestamps cannot alone prove target health. The numeric freshness inconsistency is isolated in CHK009. |
 | CHK010–011 | Spec FR-010/011/012 and edge cases; data-model Catalog; plan Monitor catalog. Missing coverage fails validation; active support components of stopped apps remain covered; existing outages remain visible and unrelated repairs/external monitoring remain out of scope. |
 | CHK012–014 | Data-model Runtime identity; native contract. Stable description markers, duplicates rejected before writes, full-record merge, owned-field projection, unchanged-write suppression, uncertain-add reread, sequential writes, retirement pause and unowned-record preservation are explicit. |
