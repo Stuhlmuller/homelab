@@ -124,8 +124,9 @@ custody path and the two revision markers, never a public issue or command argum
 
 The staged DNS cutover helper uses the existing administrator-owned
 `operator/tailscale-access` unit and its encrypted saved plans. It has no CI
-administrator credential. After the observed AdGuard address is committed in
-reviewed current `main`, create a fresh saved plan using the
+administrator credential. The cutover source selects the observed `100.79.255.15` address; merging it does
+not apply the administrator unit. After it reaches reviewed current `main`,
+create a fresh saved plan using the
 [provider runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 Keep the plan and receipt outside the checkout, in an owned mode-0700 directory,
 with mode-0600 files. Preview from the project shell with its temporary parser:
