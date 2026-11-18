@@ -45,6 +45,13 @@ CANARY_SAFE_DESTINATIONS = {
     "10.1.0.0/24", "autogroup:member", "tag:ci", "tag:homelab-ci-apply",
     "tag:homelab-ci-cordium", "tag:homelab-ci-plan", "tag:homelab-funnel",
     "tag:homelab-ingress", "tag:k8s", "tag:k8s-operator",
+    "homelab-nas", "homelab-nas-lan", "homelab-control-plane",
+    "homelab-worker-0", "homelab-worker-1", "homelab-worker-2",
+}
+SAFE_HOSTS = {
+    "homelab-nas": "100.111.238.93", "homelab-nas-lan": "10.1.0.2",
+    "homelab-control-plane": "10.1.0.199", "homelab-worker-0": "10.1.0.200",
+    "homelab-worker-1": "10.1.0.201", "homelab-worker-2": "10.1.0.202",
 }
 
 
@@ -84,6 +91,7 @@ def read_oauth_credentials():
 
 def validate_canary_policy(source, live):
     require(isinstance(source, dict) and live == source
+            and source.get("hosts", {}) in ({}, SAFE_HOSTS)
             and source.get("tagOwners", {}).get(CANARY[4]) == ["tag:k8s-operator"]
             and source.get("acls") == [] and isinstance(source.get("grants"), list)
             and all(isinstance(grant, dict) and isinstance(grant.get("dst"), list)

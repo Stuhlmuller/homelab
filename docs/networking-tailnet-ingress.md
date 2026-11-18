@@ -95,6 +95,23 @@ is separate from this transport change.
 
 ## Tailnet Exit Node And LAN Route
 
+### Codex service destinations
+
+The `tag:homelab-ci-apply` devices can reach the homelab ingress, operator,
+Funnel hosts, and exit-node connector, plus the named NAS and cluster hosts in
+`scripts/config/tailscale-policy.json`. The NAS remains user-owned and untagged;
+`homelab-nas` names its Tailscale IP, while `homelab-nas-lan` names its LAN IP.
+The cluster host aliases cover the control plane and three workers. These are
+explicit destinations so Codex does not receive access to all tailnet members
+or the full `10.1.0.0/24` route. Service authentication and Kubernetes RBAC
+still apply after network access is allowed.
+
+The grant permits all ports on those named homelab destinations. Review a new
+destination's owner and address before adding it, and update the two Tailscale
+signing/approval guards and the policy tests with the same change. Check the NAS
+alias when replacing the NAS. The `tag:homelab-ci-plan` and
+`tag:homelab-ci-cordium` identities keep their existing narrow grants.
+
 The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
 with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
