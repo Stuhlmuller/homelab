@@ -2,6 +2,7 @@
 """The public chart fetch can retry without loosening its digest gate."""
 
 import importlib.util
+import json
 import subprocess
 import tempfile
 import unittest
@@ -53,6 +54,20 @@ class ChartRetryTest(unittest.TestCase):
         self.assertNotIn("PRIVATE_URL_TOKEN", str(raised.exception))
         self.assertEqual(run.call_count, 4)
 
+    def test_catalog_hash_change_blocks_fallback(self):
+        failure = subprocess.CompletedProcess([], 1, "", "403 PRIVATE_URL_TOKEN")
+        with tempfile.TemporaryDirectory() as tmp:
+            catalog = Path(tmp) / "catalog.json"
+            catalog.write_text(json.dumps({"charts": [{"chart": "k8s-gateway", "version": "4.0.0",
+                                                     "repository": "codeberg.org/k8s-gateway/charts",
+                                                     "sha256": "0" * 64}]}))
+            with patch.object(CONTRACT, "CHART_CATALOG", catalog), \
+                    patch.object(CONTRACT.subprocess, "run", return_value=failure) as run, \
+                    patch.object(CONTRACT.time, "sleep"):
+                with self.assertRaisesRegex(ValueError, "catalog hash changed"):
+                    CONTRACT.render_pinned_chart(self.COMMAND)
+        self.assertEqual(run.call_count, 4)
+
     def test_failed_exact_package_render_withholds_helm_output(self):
         failure = subprocess.CompletedProcess([], 1, "", "403 PRIVATE_URL_TOKEN")
         with patch.object(CONTRACT.subprocess, "run", return_value=failure) as run, \
@@ -61,6 +76,25 @@ class ChartRetryTest(unittest.TestCase):
                 CONTRACT.render_pinned_chart(self.COMMAND)
         self.assertNotIn("PRIVATE_URL_TOKEN", str(raised.exception))
         self.assertEqual(run.call_count, 5)
+
+    def test_values_or_template_error_cannot_use_fallback(self):
+        failure = subprocess.CompletedProcess([], 1, "", "template: private values are invalid")
+        with patch.object(CONTRACT.subprocess, "run", return_value=failure) as run, \
+                patch.object(CONTRACT.time, "sleep") as sleep:
+            with self.assertRaisesRegex(ValueError, "non-fetch") as raised:
+                CONTRACT.render_pinned_chart(self.COMMAND)
+        self.assertNotIn("private values", str(raised.exception))
+        self.assertEqual(run.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_fetch_timeouts_are_bounded_before_exact_fallback(self):
+        timeout = subprocess.TimeoutExpired(self.COMMAND, 20, stderr=b"PRIVATE_TOKEN")
+        local = subprocess.CompletedProcess([], 0, "offline render", "")
+        with patch.object(CONTRACT.subprocess, "run", side_effect=[timeout] * 4 + [local]) as run, \
+                patch.object(CONTRACT.time, "sleep"):
+            self.assertEqual(CONTRACT.render_pinned_chart(self.COMMAND), "offline render")
+        self.assertEqual(run.call_count, 5)
+        self.assertTrue(all(call.kwargs["timeout"] == 20 for call in run.call_args_list))
 
     def test_successful_oci_render_still_requires_pinned_digest(self):
         rendered = subprocess.CompletedProcess([], 0, "rendered", "digest: sha256:wrong")

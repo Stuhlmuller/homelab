@@ -19,6 +19,7 @@ CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
 CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
 CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz"
 CHART_PACKAGE_SHA256 = "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
+CHART_CATALOG = ROOT / "scripts/config/harbor-helm-charts.json"
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
          "sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4")
 CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
@@ -191,11 +192,13 @@ def chart_failure_hint(stderr):
         return "rate-limit"
     if any(fragment in output for fragment in ("no such host", "could not resolve",
                                                "temporary failure in name resolution", "timeout",
-                                               "connection refused", "tls handshake")):
+                                               "connection refused", "tls handshake",
+                                               "failed to fetch", "failed to resolve",
+                                               "failed to download", "failed to pull")):
         return "transport"
     if any(fragment in output for fragment in ("401", "403", "unauthorized", "forbidden")):
         return "access"
-    if any(fragment in output for fragment in ("404", "not found")):
+    if "404" in output or ("manifest" in output and "not found" in output):
         return "unavailable"
     return "unknown"
 
@@ -203,19 +206,36 @@ def chart_failure_hint(stderr):
 def render_pinned_chart(command):
     """Prefer the reviewed OCI digest, then use the identical packaged bytes."""
     for attempt in range(4):
-        chart = subprocess.run(command, text=True, capture_output=True, check=False)
-        if chart.returncode == 0:
-            require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
-            return chart.stdout
+        try:
+            chart = subprocess.run(command, text=True, capture_output=True,
+                                   check=False, timeout=20)
+        except subprocess.TimeoutExpired:
+            hint = "transport"
+        else:
+            if chart.returncode == 0:
+                require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
+                return chart.stdout
+            hint = chart_failure_hint(chart.stderr)
+            require(hint != "unknown", "pinned OCI chart render failed (non-fetch); "
+                    "private Helm output withheld")
         if attempt < 3:
             time.sleep(2 ** (attempt + 1))
-    hint = chart_failure_hint(chart.stderr)
+    catalog = json.loads(CHART_CATALOG.read_text())
+    matches = [row for row in catalog["charts"] if row["chart"] == "k8s-gateway"
+               and row["version"] == "4.0.0"
+               and row["repository"] == "codeberg.org/k8s-gateway/charts"]
+    require(len(matches) == 1 and matches[0]["sha256"] == CHART_PACKAGE_SHA256,
+            "reviewed chart 4.0.0 catalog hash changed")
     require(CHART_PACKAGE.is_file()
             and hashlib.sha256(CHART_PACKAGE.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
             "reviewed chart 4.0.0 fallback package is missing or changed")
     require(command[3:6] == [CHART, "--version", "4.0.0"], "chart render command changed")
     fallback = [*command[:3], str(CHART_PACKAGE), *command[6:]]
-    local = subprocess.run(fallback, text=True, capture_output=True, check=False)
+    try:
+        local = subprocess.run(fallback, text=True, capture_output=True,
+                               check=False, timeout=20)
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("exact-package fallback timed out; private Helm output withheld") from error
     require(local.returncode == 0,
             f"pinned chart render failed after 4 OCI attempts ({hint}) and exact-package fallback; "
             "private Helm output withheld")

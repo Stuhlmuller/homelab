@@ -11,6 +11,7 @@ The corresponding Codeberg OCI chart manifest digest remains pinned as
 `sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7`.
 
 The test prefers the public OCI chart and verifies its manifest digest. If the
-registry fetch fails, it verifies this exact package hash before rendering the
-same values and asserting the same Kubernetes resource contract. A changed or
+registry fetch fails in a recognized way, it verifies this exact package hash
+before rendering the same values and asserting the same Kubernetes resource
+contract. A changed or
 missing package fails closed. The upstream project is licensed under Apache-2.0.
