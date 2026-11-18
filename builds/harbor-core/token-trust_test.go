@@ -1,52 +1,70 @@
 package homelabcompat
 
 import (
-	"encoding/json"
-	registrytoken "github.com/docker/distribution/registry/auth/token"
-	"github.com/docker/libtrust"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"testing"
+	"time"
+
+	registrytoken "github.com/distribution/distribution/v3/registry/auth/token"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 func TestTokenJWKTrustUsesKeyMaterial(t *testing.T) {
-	trusted, err := libtrust.GenerateECP256PrivateKey()
+	trusted, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	attacker, err := libtrust.GenerateECP256PrivateKey()
+	attacker, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
-	options := registrytoken.VerifyOptions{TrustedKeys: map[string]libtrust.PublicKey{trusted.KeyID(): trusted.PublicKey()}}
+	options := registrytoken.VerifyOptions{
+		TrustedIssuers:    []string{"harbor"},
+		AcceptedAudiences: []string{"registry"},
+		TrustedKeys:       map[string]crypto.PublicKey{"trusted": &trusted.PublicKey},
+	}
+	now := time.Now()
+	claims := registrytoken.ClaimSet{
+		Issuer: "harbor", Subject: "test-user",
+		Audience:   registrytoken.AudienceList{"registry"},
+		Expiration: now.Add(time.Minute).Unix(),
+		NotBefore:  now.Add(-time.Minute).Unix(),
+		IssuedAt:   now.Unix(),
+	}
 	for _, tc := range []struct {
 		name    string
-		key     libtrust.PublicKey
+		key     *ecdsa.PrivateKey
 		allowed bool
 	}{
-		{"trusted", trusted.PublicKey(), true}, {"attacker using trusted kid", attacker.PublicKey(), false},
+		{"trusted", trusted, true},
+		{"attacker using trusted kid", attacker, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := tc.key.MarshalJSON()
+			jwk := jose.JSONWebKey{Key: &tc.key.PublicKey, KeyID: "trusted"}
+			signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: tc.key},
+				(&jose.SignerOptions{}).WithHeader("jwk", jwk))
 			if err != nil {
 				t.Fatal(err)
 			}
-			var jwk map[string]any
-			if err := json.Unmarshal(data, &jwk); err != nil {
-				t.Fatal(err)
-			}
-			jwk["kid"] = trusted.KeyID()
-			data, err = json.Marshal(jwk)
+			raw, err := jwt.Signed(signer).Claims(claims).Serialize()
 			if err != nil {
 				t.Fatal(err)
 			}
-			raw := json.RawMessage(data)
-			token := registrytoken.Token{Header: &registrytoken.Header{RawJWK: &raw}}
-			key, err := token.VerifySigningKey(options)
+			token, err := registrytoken.NewToken(raw, []jose.SignatureAlgorithm{jose.ES256})
+			if err != nil {
+				t.Fatal(err)
+			}
+			verified, err := token.Verify(options)
 			if tc.allowed {
-				if err != nil || key.KeyID() != trusted.KeyID() {
-					t.Fatalf("trusted key rejected: %v", err)
+				if err != nil || verified.Subject != claims.Subject {
+					t.Fatalf("trusted token rejected: %v", err)
 				}
 			} else if err == nil {
-				t.Fatal("attacker key accepted under trusted kid")
+				t.Fatal("attacker signature accepted under trusted kid")
 			}
 		})
 	}

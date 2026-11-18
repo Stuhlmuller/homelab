@@ -32,10 +32,11 @@ locals {
     ? "live/${replace(local.unit_path, local.shared_unit_prefix, "")}"
     : local.regional_state_path
   )
+  default_app_state_path = (startswith(local.unit_path, local.app_unit_prefix) && endswith(local.unit_path, "/argocd")) ? "live/argocd-apps/${split("/", local.unit_path)[3]}" : local.unit_path
   state_path = startswith(local.unit_path, local.app_unit_prefix) ? lookup(
     local.legacy_app_state_paths,
     local.unit_path,
-    "live/argocd-apps/${split("/", local.unit_path)[3]}"
+    local.default_app_state_path
   ) : local.non_app_state_path
   state_key = "IaC/${lower(local.project_name)}/${local.state_path}/terraform.tfstate"
 }

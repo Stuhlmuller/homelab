@@ -30,16 +30,16 @@ The dependency patch pins `github.com/go-jose/go-jose/v4` to `v4.1.6` and
 container audit. Their Go checksums remain committed. Compatibility tests do
 not replace the exact rebuilt Linux container audit before publication.
 
-A local Linux binary scan after these changes still reports four Distribution
-v2 findings and one x/crypto finding as unfixed/unknown. Do not suppress these
-or treat the binary-only scan as final container or deployed-digest acceptance.
+The Distribution migration patch moves core to v3.1.2 and
+go-containerregistry v0.22.1. The build rejects any legacy Distribution v2
+package in core's compiled dependency graph. The separately built registryctl
+retains its existing dependency contract.
 
-The affected OpenPGP and Distribution proxy/storage/handler packages are absent
-from core's compiled dependency graph; the build guards against introducing
-them. A native positive/negative JWK test also verifies that the v2 token parser
-uses actual key material and rejects an attacker key with a forged trusted key
-ID. Record these specific advisory assessments alongside unfiltered reports;
-they do not clear other Harbor components or the final container.
+A local Apache-2.0 schema1 reader preserves existing signed manifest payloads,
+canonical digests and layer references. The upstream challenge parser is
+retained locally because v3 makes it internal. Tests cover both parsers,
+context-aware health checks and full JWT verification with trusted and forged
+JWK identities. The complete container audit remains the publication gate.
 
 After the Linux image/registry fixture, CI saves the exact built container and
 runs lock-pinned Grype 0.112.0 with a fresh advisory database. The audit checks
