@@ -207,3 +207,9 @@ requirements. Keep custom checklist markers reviewer-owned.
   retain both validation sections and fixture inputs, and run affected apply,
   offline static, secret and documentation checks. Leave the uncommitted merge
   ready for parent-owned signing and protected delivery.
+
+- [x] T027 Reconcile the enabled updater with the Uptime Kuma catalog: replace
+  the stale suspended entry with active workload coverage using the existing
+  Prometheus deployment-health pattern. Update catalog assertions and operator
+  documentation, preserve exclusion/freshness policy, and run the full offline
+  suite plus scoped lint. Depends on T026 integration.

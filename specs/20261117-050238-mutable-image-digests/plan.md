@@ -378,3 +378,13 @@ The isolated loopback API does not authenticate requests, so omit the unnecessar
 provider token entirely. Preserve the explicit loopback host and environment
 isolation. Validate with the actual provider regression and pinned Checkov secret
 scan; do not suppress the finding or change scanner policy.
+
+## Monitoring catalog integration correction
+
+The newly merged Uptime Kuma catalog still excludes ImageUpdater using its old
+zero-replica declaration. With one declared controller replica, classify the
+Application as active and add the existing workload-health monitor pattern for
+Deployment `argocd-image-updater` in namespace `argocd`. Reuse the existing
+Prometheus source-cadence and query functions; do not weaken exclusion policy.
+The monitor establishes readiness/generation only, not successful image updates.
+Validate catalog identity/coverage and run the full offline suite after the repair.

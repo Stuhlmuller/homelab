@@ -9,6 +9,10 @@ The declared controller has one replica and no enrolled workloads. Source
 configuration and registry manifest availability have been checked; controller
 readiness and a real workload update are still pending deployment evidence.
 
+Uptime Kuma monitors the declared controller Deployment in `argocd` using the
+existing fresh Prometheus workload-health signals. This covers readiness and
+observed generation, not registry access or successful image updates.
+
 ## Enroll a workload
 
 Use the shared `argocd-app` Terragrunt unit and add `image_update` to its stack

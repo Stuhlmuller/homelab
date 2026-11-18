@@ -605,3 +605,37 @@ worktree. T026 complete. The uncommitted merged index is ready for parent-owned
 signed publication and ancestry verification. No local commit, remote write or
 branch-protection change was performed. T018 and runtime acceptance remain
 pending; the unrelated Harbor validation blocker is unchanged.
+
+## T027 monitoring integration plan/task checkpoint
+
+Exact-head c59ae025 offline-tests failed because Kuma's suspended updater entry
+requires zero replicas while the updater now declares one. Planned bounded
+repair: active classification plus an exact Deployment readiness monitor using
+the existing source-cadence/query contract. No exemption or monitoring policy
+change. Read-only analysis confirms the existing workload monitor supports this
+controller and distinguishes readiness from image-update acceptance. T027 added;
+full offline checks will follow implementation, not only static checks.
+
+
+## T027 validation and convergence checkpoint
+
+Reclassified the enabled updater as active and added exact Deployment coverage
+for `argocd/argocd-image-updater` using existing Prometheus workload signals and
+query generation. Catalog remains 62 classified apps and now has 56 monitors.
+Updated count assertions and a regression that requires the exact enabled target
+and rejects the obsolete suspended exclusion. Existing exclusion, freshness,
+uniqueness and readiness policy are unchanged; documentation explicitly limits
+the monitor to readiness/generation rather than image-update acceptance.
+
+Focused catalog validation and all 38 catalog cases passed. Full
+`scripts/ci/offline-checks.sh` completed exit 0, including integrated Terragrunt
+apply tests and the static tail, after approximately ten minutes. This was a full
+suite, not only offline-static checks. Ruff, repository Markdown lint and diff
+checks also passed. Logs: `/tmp/image-updater-kuma-offline.log` and
+`/tmp/image-updater-kuma-lint.log`.
+
+Coordinator's independent T027 review found correct active replica-one
+classification, exact Deployment targeting and preserved health predicates;
+no runtime image-advancement claim. T027 complete. Parent owns publication and
+exact-head CI; no remote writes were made here. T018 remains pending protected
+delivery and the independent Harbor compatibility blocker remains unchanged.
