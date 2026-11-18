@@ -97,7 +97,7 @@ class ChartRetryTest(unittest.TestCase):
                 patch.object(CONTRACT.subprocess, "run", return_value=success) as run:
             self.assertEqual(CONTRACT.render_pinned_chart(), "rendered")
         self.assertEqual(run.call_count, 1)
-        self.assertEqual(run.call_args.args[0][3], str(CONTRACT.CHART_PACKAGE))
+        self.assertEqual(Path(run.call_args.args[0][3]).name, "k8s-gateway-4.0.0.tgz")
         self.assertEqual(run.call_args.kwargs["timeout"], 20)
 
 

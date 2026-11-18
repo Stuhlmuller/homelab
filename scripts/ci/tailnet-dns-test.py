@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate the reviewed private DNS source and its pinned Helm render."""
 
+import base64
 import copy
 import hashlib
 import json
@@ -18,7 +19,7 @@ DNS_VALUES = ROOT / "clusters/homelab/platform/tailnet-dns/values.yaml"
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
 CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
-CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz"
+CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz.base64"
 CHART_PACKAGE_SHA256 = "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
 CHART_CATALOG = ROOT / "scripts/config/harbor-helm-charts.json"
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
@@ -234,6 +235,10 @@ def render_pinned_chart():
             "reviewed chart 4.0.0 catalog hash changed")
     with tempfile.TemporaryDirectory(prefix="tailnet-chart-") as directory:
         package = fetch_pinned_chart(Path(directory))
+        if package == CHART_PACKAGE:
+            decoded = base64.b64decode(package.read_bytes())
+            package = Path(directory) / "k8s-gateway-4.0.0.tgz"
+            package.write_bytes(decoded)
         require(package.is_file()
                 and hashlib.sha256(package.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
                 "reviewed chart 4.0.0 package is missing or changed")
