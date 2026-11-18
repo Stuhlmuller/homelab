@@ -449,8 +449,10 @@ Harbor vulnerability collector. It queries only completed scan summaries for the
 `homelab` and `mirror` projects and emits aggregate counts per project, without
 artifact names, digests, CVE IDs, or credentials in metrics. The Grafana rule
 alerts at critical severity after five minutes for a nonzero count; absent data
-and evaluation errors also alert. Cached metrics expire within six minutes of a
-failed collection, and script revisions roll the collector through its
+and evaluation errors also alert. The collector attempts refreshes every five minutes with one active inventory.
+The 156-repository mirror inventory took 545 seconds under concurrent load;
+a 30-second read timeout accommodates scan-summary assembly. Cached metrics expire eleven minutes
+after the last successful collection, and script revisions roll the collector through its
 versioned pod-template annotation. The raw Grafana query preserves healthy
 zero-valued project series while missing telemetry enters Alerting. A completed
 Harbor scan that omits its zero-valued `Critical` severity bucket contributes

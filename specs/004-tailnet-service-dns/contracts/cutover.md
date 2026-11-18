@@ -26,6 +26,9 @@ Cordium child. The apex remains public and privately answered while healthy.
 
 ## Recovery and rollback
 
-Run the repo-owned read-only DNS check from the authorized Mac with tailnet and read-only Kubernetes access to query the observed resolver IP over UDP and TCP, then inspect Argo health, resolver
-Pods, Service status and the proxy peer to locate a failure. Use Argo/Terragrunt desired state to restore the resolver or its Service declaration. Re-run the check for all 27 answers and verify normal clients after recovery. After public retirement, do not add a public fallback for resolver faults; recovery never
-restores the 26 retired subdomains' public A/AAAA/CNAME. A separate owner decision to reverse the private-DNS policy would need a new reviewed change. Never relax Traefik access restrictions or remove unrelated records.
+Use the bounded direct-query procedure in `docs/networking-tailnet-ingress.md` from an authorized client with tailnet and read-only Kubernetes access to query the observed resolver
+IP over UDP and TCP, then inspect Argo health, resolver
+Pods, Service status and the proxy peer to locate a failure. Use Argo/Terragrunt desired state to restore the resolver or its Service declaration. Re-run the check for all 27
+answers and verify normal clients after recovery. After public retirement, do not add a public fallback for resolver faults; recovery never
+restores the 26 retired subdomains' public A/AAAA/CNAME. A separate owner decision to reverse the private-DNS policy would need a new reviewed change. Never relax Traefik access
+restrictions or remove unrelated records.

@@ -13,14 +13,17 @@ routing. Confirm its proxy, observed Service IP, and direct UDP/TCP
 answers:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 ```
+
+Use the full [direct resolver verification](../../../../docs/networking-tailnet-ingress.md#direct-resolver-verification) procedure for approved-name, identity and answer checks.
 
 Confirm the owner enabled that IP as the restricted `stinkyboi.com` nameserver
 in tailnet DNS, with **Use with exit node** when needed. An ordinary client's OS
 DNS path must answer all 30 names privately. The
 [current public cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
-then removes only A/AAAA/CNAME records for the 26 approved non-apex app
+defines the public absence boundary for A/AAAA/CNAME records for the 26 approved non-apex app
 subdomains. It preserves the public apex, mail and DNS-01 records, Cloudflare
 zone, four legacy public endpoints, and unrelated names. Confirm existing
 HTTPS, Fleet, Harbor node pulls, native clients, and Funnel restrictions first.
@@ -42,28 +45,18 @@ off-tailnet checks:
 mkdir -p -m 700 ~/.local/state/homelab
 scripts/tailscale-private-dns.sh --retire-private --dry-run \
   --baseline-out ~/.local/state/homelab/app-subdomain-retirement.json
-# Complete and review the private JSON evidence before execution.
-scripts/tailscale-private-dns.sh --retire-private --execute \
-  --expected-sha REVIEWED_MAIN_SHA \
-  --evidence ~/.local/state/homelab/app-subdomain-retirement.json
 ```
 
-Set `REVIEWED_MAIN_SHA` to the exact merged `git rev-parse HEAD`. Review the
-preview's 26-name record IDs and largest previous TTL. Before the first DELETE,
-the helper blocks relevant child-zone NS delegation and effective public
-answers from broader wildcards or CNAME chains. It does not traverse child
-zones. It compares the selected Cloudflare API zone's nameservers with the
-parent delegation and rejects failed or non-authoritative TTL replies. A
-final full-field target reread catches changes during inspection. A changed
-target baseline or incomplete evidence blocks execution.
-After the reported TTL from the last deletion, verify no public A/AAAA/CNAME
-answers for all 26 names and a concrete
-Cordium child, while public apex, unrelated names, Cloudflare delegation,
-cert-manager DNS-01 readiness, and both Traefik and Istio Certificates remain
-healthy. See the linked quickstart for exact read-only checks. Investigate a
-partial run before retrying through the same helper and evidence. Resolver
-recovery restores the declared Service or proxy through the reviewed
-path; it never republishes retired public app addresses.
+Review the preview's exact 26-name record IDs, largest previous TTL, public-zone
+delegation and wildcard/CNAME conflicts. Keep all private evidence outside git.
+The current retirement execution path cannot complete its required private-DNS
+validation, so this guide provides read-only preparation only. A successful
+preview or direct query is not permission to bypass that executable validation.
+
+For names already retired, verify public A/AAAA/CNAME absence after the recorded
+TTL, while public apex, mail, unrelated names, delegation, DNS-01 and Certificates
+remain healthy. Restore a failed private resolver through reviewed Argo/Terragrunt
+state; do not republish retired app addresses.
 
 ## Before execution
 

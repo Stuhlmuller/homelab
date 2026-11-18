@@ -63,4 +63,22 @@ request requires both stories and final verification, even though US1 is the sma
 
 - [x] T013 Reconcile current AdGuard guidance in `clusters/homelab/apps/adguard/README.md`, `openwiki/workloads/inventory.md` and
   `specs/20261115-185603-adguard-tailnet-dns/` with the current ordinary device identity and administrator workflow. Preserve supported commands and independently useful
-  acceptance checks; keep only current requirements and delete dedicated historical procedure notes. Resolve authored-document conflicts, repair links and rerun documentation checks.
+  acceptance checks; keep only current requirements and delete dedicated historical procedure notes. Resolve authored-document conflicts, repair links and rerun documentation
+checks.
+
+## Phase 8: Supported DNS Procedures
+
+- [x] T014 Audit DNS command recipes and their transitive validation dependencies across authored runbooks, app guides and specs. Replace unsupported direct probe recipes with
+  bounded UDP/TCP queries; retain only supported read-only retirement preparation and accurate recovery guidance. Preserve receipt-producing AdGuard cutover procedures and
+  remove unsupported write recipes without adding historical feature notes. Validate links, terminology, formatting and documentation-only scope.
+
+## Phase 9: Convergence
+
+- [x] T015 Align the representative resolver queries in `specs/005-retire-public-app-dns/quickstart.md` with the canonical direct-verification procedure: use explicit UDP
+  `+notcp +ignore`, bounded attempts/timeouts and explicit TCP; link the full approved-name, identity and answer checks per FR-006 and SC-001 (partial, MEDIUM).
+
+## Phase 10: Convergence
+
+- [x] T016 Align the remaining representative resolver examples in `openwiki/runbooks/tailnet-ingress.md` and `specs/004-tailnet-service-dns/quickstart.md` with canonical
+  explicit UDP/TCP verification and a link to the full approved-name, identity and answer procedure. Scan every authored resolver query example for implicit fallback or
+  missing full-procedure context per FR-006 and SC-001 (partial, MEDIUM).

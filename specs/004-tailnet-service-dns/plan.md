@@ -90,8 +90,7 @@ IaC/terragrunt.stack.hcl                  # generated unit index
 clusters/homelab/argocd/self-management/appproject.yaml
 scripts/config/tailscale-policy.json      # existing tag ownership/member grant verified by tests
 scripts/config/harbor-images.json         # pinned DNS image source
-scripts/tailnet-dns-check.py              # read-only direct UDP/TCP and approved-answer check
-scripts/tailscale-private-dns.sh          # guarded retirement (not executed before handoff)
+scripts/tailscale-private-dns.sh          # read-only retirement preparation
 scripts/ci/                               # narrow DNS declaration/cutover tests
 docs/networking-tailnet-ingress.md        # tailnet DNS setting, recovery and rollback
 openwiki/                                  # affected topology/inventory/validation note after source change
@@ -107,7 +106,8 @@ openwiki/                                  # affected topology/inventory/validat
    unrelated public names. Prove direct reachability from an ordinary tailnet member and verify HTTPS entry points. The permanent declaration test covers add/change/remove; observe live convergence on
    the first later reviewed name change.
 4. **User handoff/pause**: give the owner the verified IPv4 and the restricted `stinkyboi.com` setting. Wait for the owner's tailnet DNS change and normal OS client acceptance.
-5. Later, after live baseline and explicit off-tailnet apex/Cordium impact acceptance, run the guarded public-record retirement through reviewed desired state; wait old TTL, recheck all contracts, and recover private resolver health through declared state if needed.
+5. Later, after live baseline and explicit off-tailnet apex/Cordium impact acceptance, complete read-only public-record preparation and current-state verification; preserve the
+   record-scope boundary and recover private resolution through declared state. No write procedure is offered.
 
 ## Post-Design Constitution Check
 
