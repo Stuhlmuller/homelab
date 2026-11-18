@@ -18,12 +18,24 @@ inputs = {
         helm = {
           releaseName = "descheduler"
           valueFiles  = ["$values/clusters/homelab/apps/descheduler/values.yaml"]
+          parameters = [
+            {
+              name  = "kind"
+              value = "CronJob"
+            },
+            {
+              name  = "suspend"
+              value = "true"
+            }
+          ]
         }
       },
       {
-        repoURL        = local.shared.repo_url
-        path           = "."
-        targetRevision = local.shared.target_revision
+        repoURL = local.shared.repo_url
+        path    = "."
+        # Stage 1 retains the verified inert profile until the suspended
+        # CronJob revision has merged and zero live Pods are observed.
+        targetRevision = "934770124f6e3b3c1b0857ce8e510e0ea7a1e894"
         ref            = "values"
         directory = {
           include = ".argocd-values-ref-placeholder.yaml"
