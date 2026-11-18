@@ -926,8 +926,11 @@ a separate reviewed change must use the observed proxy address. The guarded
 saved-plan helper applies only that DNS policy change. Native macOS client checks
 then verify normal resolver use; exit-node acceptance requires a selected,
 supported exit node. The [targeted deployment](https://github.com/Stuhlmuller/homelab/actions/runs/44233104891)
-succeeded; functional and client acceptance remain pending, and global DNS has
-not been switched. Explicit ExternalSecret remote-reference defaults prevent
+succeeded. The owner reports passing Mac direct UDP/TCP/admin acceptance at
+`a249d5a9f126349004f524087cc508a30697835d` and isolated replacement/restore
+verification with a private receipt. The reviewed cutover source selects the
+observed `100.79.255.15` proxy; actual saved-plan activation and normal-client
+acceptance remain pending. Global DNS has not been switched. Explicit ExternalSecret remote-reference defaults prevent
 admission defaulting from leaving Argo CD OutOfSync. Isolated recovery accepts
 the direct API or the declared authenticated Tailscale operator proxy with TLS
 verification enabled; it records and rechecks the selected endpoint. This does

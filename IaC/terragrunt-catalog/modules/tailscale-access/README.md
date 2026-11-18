@@ -15,11 +15,17 @@ Terragrunt client needs read access plus write scopes for each managed surface:
 `federated_keys` when those resources need updating. Do not broaden the
 Kubernetes operator credential to administer the tailnet.
 
-The imported DNS configuration preserves MagicDNS, two global resolvers with
-local-DNS override off, and the `stinkyboi.com` split DNS resolver. The split
+The reviewed AdGuard cutover source uses `100.79.255.15` as the sole global
+resolver, with local-DNS override and exit-node use enabled. MagicDNS and the
+`stinkyboi.com` split resolver remain unchanged. Source merge does not activate
+this administrator-owned unit. Use the [guarded AdGuard saved-plan procedure](../../../../clusters/homelab/apps/adguard/README.md)
+for activation; it rejects unrelated changes and reruns direct acceptance before
+applying. Do not use the broad adoption apply below for the DNS cutover.
+The prior policy (global `1.1.1.2`/`1.0.0.2`, override off) remains pinned in the
+cutover helper for rollback. Retain the private cutover receipt. The split
 resolver stays active when a client selects an exit node; otherwise the exit
-node's resolver cannot find private app names. The fixed split DNS IP must match
-the `homelab-dns` Tailscale Service before any update.
+node's resolver cannot find private app names. Its fixed IP must match the
+`homelab-dns` Tailscale Service before any update.
 The imported tailnet settings preserve existing approval, key-duration, HTTPS,
 auto-update, logging, posture, and routing flags. Provider 0.29.2 does not
 expose the live `routeSelection` setting; keep that gap visible when reviewing

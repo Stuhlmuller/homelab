@@ -30,14 +30,12 @@ resource "tailscale_acl" "homelab" {
 
 resource "tailscale_dns_configuration" "homelab" {
   magic_dns          = true
-  override_local_dns = false
+  override_local_dns = true
   search_paths       = []
 
   nameservers {
-    address = "1.1.1.2"
-  }
-  nameservers {
-    address = "1.0.0.2"
+    address            = "100.79.255.15"
+    use_with_exit_node = true
   }
 
   split_dns {
