@@ -162,7 +162,11 @@ addresses. See the
 
 `n8n-webhook.tail67beb.ts.net`, `policy-bot-hook.tail67beb.ts.net`, and the
 staged `bulldozer-hook.tail67beb.ts.net` use Funnel. n8n accepts the three
-declared webhook path families; each GitHub App callback accepts exactly
+declared webhook path families. Its `N8N_WEBHOOK_URL` points both production
+and temporary test callbacks at Funnel; `N8N_EDITOR_BASE_URL` keeps the editor
+private. Legacy `WEBHOOK_URL` alone leaves test callbacks on the private editor
+host in n8n 2.43.7. Refresh the editor and restart the test listener after changing
+the callback base. Each GitHub App callback accepts exactly
 `/api/github/hook`. Application webhook authentication remains
 required. Root/admin paths and spoofed private Host headers fail at the callback
 listener. Encoded reserved path characters are rejected on these sensitive routes.
