@@ -305,8 +305,14 @@ if command -v checkov >/dev/null 2>&1; then
 
     run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
-    # Reuse the pinned hook's text selection and strict reviewed-finding boundary.
-    env -u PYTHONPATH -u PYTHONHOME pre-commit run checkov_secrets --all-files
+    # Reuse hook selection with the installed reviewed scanner, without fetching hook environments.
+    checkov_hook_config="$static_download_dir/checkov-pre-commit.json"
+    yq -o=json '.repos = [{"repo": "local", "hooks": [.repos[].hooks[] |
+      select(.id == "checkov_secrets") |
+      . * {"name": "Checkov Secrets", "language": "system", "args": ["-f"], "require_serial": true}]}]' \
+      .pre-commit-config.yaml >"$checkov_hook_config"
+    env -u PYTHONPATH -u PYTHONHOME PRE_COMMIT_HOME="$static_download_dir/pre-commit" \
+      pre-commit run checkov_secrets --all-files --config "$checkov_hook_config"
   )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2

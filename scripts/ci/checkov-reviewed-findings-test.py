@@ -265,17 +265,26 @@ class Boundaries(unittest.TestCase):
         (self.root / "fixture.tgz").write_bytes(b"\x1f\x8b\x00\xff")
         (self.root / "malformed.json").write_bytes(b"\xff")
         (self.root / self.path).write_text('{"value": "ordinary-text-fixture"}\n')
-        (self.root / ".pre-commit-config.yaml").write_text(
-            "repos:\n- repo: local\n  hooks:\n  - id: selected-text\n"
-            "    name: selected-text\n    language: system\n    types: [text]\n"
-            "    entry: python3 -c 'import sys; print(sys.argv[1:])'\n")
+        source = (review.ROOT / "scripts/ci/static-checks.sh").read_text()
+        expression = re.search(r"yq -o=json '(.*?)'", source, re.DOTALL)[1]
+        config = json.loads(subprocess.check_output(
+            ["yq", "-o=json", expression, str(review.ROOT / ".pre-commit-config.yaml")], text=True))
+        self.assertEqual(len(config["repos"]), 1)
+        self.assertEqual(config["repos"][0]["repo"], "local")
+        hook, = config["repos"][0]["hooks"]
+        self.assertEqual(hook["language"], "system")
+        self.assertEqual(hook["entry"], "python3 scripts/ci/checkov-reviewed-findings.py secrets")
+        self.assertEqual(hook["args"], ["-f"])
+        self.assertTrue(hook["require_serial"])
+        hook["entry"] = "python3 -c 'import sys; print(sys.argv[1:])'"
+        (self.root / ".pre-commit-config.yaml").write_text(json.dumps(config))
         subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
         subprocess.run(["git", "add", "fixture.tgz", "malformed.json", self.path],
                        cwd=self.root, check=True)
         environment = os.environ.copy()
         environment["PRE_COMMIT_HOME"] = str(self.root / "precommit-cache")
         result = subprocess.run(
-            ["pre-commit", "run", "selected-text", "--all-files", "--verbose"],
+            ["pre-commit", "run", "checkov_secrets", "--all-files", "--verbose"],
             cwd=self.root, capture_output=True, text=True, env=environment, check=False)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn(self.path, result.stdout)
