@@ -11,8 +11,7 @@ Narrow the existing guarded Cloudflare retirement helper from the fixed first
 27 migration names to the 26 non-apex names. Keep private DNS for all 29
 current names and HTTPS retirement readiness for the original 27 routes.
 Capture a fresh exact Cloudflare baseline,
-confirm normal tailnet DNS/HTTPS and caller paths, execute only from reviewed
-`main`, then prove public absence after the old TTL while public apex, mail,
+confirm normal tailnet DNS/HTTPS and caller paths, and verify current public absence after the old TTL while public apex, mail,
 certificate validation, and unrelated names continue working.
 
 ## Technical Context
@@ -83,9 +82,8 @@ inside the current 29-name inventory.
    Accept a stopped migration backend only when its
    reviewed workload declaration and live Deployment both specify zero replicas;
    keep serving routes strict.
-2. **Narrow the helper:** Use the 26-name set for Cloudflare deletion-target
-   queries, dry-run output, baseline, old TTL measurement, current-vs-baseline checks,
-   DELETE calls, and readback. Retain complete-page and exact-owner guards,
+2. **Narrow the helper:** Use the 26-name set for read-only Cloudflare target
+   queries, dry-run output, baseline, old TTL measurement and current-state checks. Retain complete-page and exact-owner guards,
    idempotent partial retry, and no-publication behavior. Apex and legacy
    names must not be queried as deletion targets. Records at other owners and
    non-address types at selected owners are preserved. The API zone's
@@ -114,7 +112,7 @@ inside the current 29-name inventory.
    incomplete page, missing evidence, and partial retry. After the old TTL,
    check authoritative and recursive public answers and normal tailnet access.
 5. **Recover privately:** During a resolver fault, use the existing read-only
-   checker and declared Argo/Terragrunt path. Keep retired
+   bounded direct queries and declared Argo/Terragrunt path. Keep retired
    public records absent. A policy reversal is a separate reviewed change.
 
 ## Project Structure
@@ -136,9 +134,8 @@ specs/005-retire-public-app-dns/
 
 ```text
 scripts/config/tailscale-private-dns.json   # fixed first 27 plus two staged names
-scripts/tailscale-private-dns.sh             # exact 26-name Cloudflare preview/delete
+scripts/tailscale-private-dns.sh             # 26-name Cloudflare preparation and scope
 scripts/tailscale-private-dns-check.py       # narrowed evidence and TTL preflight
-scripts/tailnet-dns-check.py                 # read-only current-name health check
 scripts/ci/tailscale-private-dns-test.py     # mock cutover and no-write safety cases
 docs/networking-tailnet-ingress.md           # current DNS model and cutover boundary
 clusters/homelab/apps/traefik/CUTOVER.md     # operator procedure
@@ -160,12 +157,11 @@ Tailscale policy, or Kubernetes manifests for this scope.
    public records, and critical caller paths. Preview the 26-name deletion
    into a new private evidence file; do not execute if a broader public
    answer would remain.
-3. Complete/review all evidence, then execute the helper. A failed preflight
-   leaves public records intact; a partial deletion is re-read and retried
-   through the same reviewed path.
-4. Wait the old TTL, prove 26-name public absence and preserved public zone
-   behavior, then recheck private DNS, HTTPS, and callers. Record any unmet
-   live acceptance separately; do not claim cutover complete from source tests.
+3. Keep preparation read-only: the current execution path cannot complete its
+   required private-DNS validation. No write procedure or bypass is offered.
+4. For already retired names, verify public absence after the recorded TTL and
+   preserved public zone behavior, then recheck private DNS, HTTPS and callers.
+   Report unmet live conditions separately from source tests.
 
 ## Post-Design Constitution Check
 

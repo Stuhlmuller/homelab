@@ -61,8 +61,11 @@ kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
 kubectl -n istio-system get virtualservice octelium-cluster
 scripts/octelium-gateway-dns.sh --dry-run
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 curl -I https://octelium.stinkyboi.com
 curl -I https://portal.stinkyboi.com
 curl -I https://octelium-api.stinkyboi.com
 ```
+
+Use the full [direct resolver verification](../../../../docs/networking-tailnet-ingress.md#direct-resolver-verification) procedure for approved-name, identity and answer checks.

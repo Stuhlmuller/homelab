@@ -41,13 +41,16 @@ kubectl -n traefik get service traefik-private -o json
 Expected: Argo is Synced/Healthy at reviewed `main`, resolver Pods are Ready, `tailnet-dns` has one published Tailscale IPv4, `traefik-private` has its current published IPv4. Use the exact resolver IP observed above as `<DNS_TAILNET_IP>`:
 
 ```sh
-dig @<DNS_TAILNET_IP> stinkyboi.com A +noall +comments +answer
-dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +noall +comments +answer
-dig @<DNS_TAILNET_IP> stinkyboi.com MX +noall +answer
-dig @<DNS_TAILNET_IP> mastodon.stinkyboi.com A +noall +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +noall +comments +answer +time=3 +tries=1 +notcp +ignore
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +noall +comments +answer +time=3 +tries=1
+dig @"<DNS_TAILNET_IP>" stinkyboi.com MX +noall +answer +time=3 +tries=1 +notcp +ignore
+dig @"<DNS_TAILNET_IP>" mastodon.stinkyboi.com A +noall +answer +time=3 +tries=1 +notcp +ignore
 ```
 
-Expected: UDP and TCP A answers for the apex match the private Traefik Service IPv4; all 26 exact names and a real Cordium wildcard child pass the full check; approved AAAA queries have no public
+Follow the complete [direct resolver verification](../../docs/networking-tailnet-ingress.md#direct-resolver-verification)
+for the current approved-name inventory, exact peer/Service identity, private A/AAAA expectations and public forwarding checks.
+
+Expected: UDP and TCP A answers for the apex match the private Traefik Service IPv4; all exact approved names and a concrete Cordium wildcard child match direct queries; approved AAAA queries have no public
 address; apex MX/TXT and unrelated public hosts match their public baselines. Direct A responses must be local/private, not public fallthrough. Check representative HTTPS URLs and unchanged Traefik
 restrictions. The initial 27 answers prove the Service watch publishes approved names; the offline declaration test covers future paired add/change/remove. Record the verified resolver IP and peer
 identity in private rollout evidence. Check live convergence on the first later reviewed name change.

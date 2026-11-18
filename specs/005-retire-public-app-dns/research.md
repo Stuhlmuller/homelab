@@ -90,7 +90,7 @@ off-tailnet reachability but reverses the requested security boundary.
 - The private resolver watches the approved Traefik Service and forwards
   unrelated names and non-address types to public resolvers.
   [Resolver values](../../clusters/homelab/platform/tailnet-dns/values.yaml),
-  [health checker](../../scripts/tailnet-dns-check.py).
+  [direct resolver verification](../../docs/networking-tailnet-ingress.md#direct-resolver-verification).
 - Traefik's wildcard certificate uses the Cloudflare DNS-01 issuer. The public
   zone and validation capability must remain.
   [Certificate](../../clusters/homelab/apps/traefik/certificate.yaml),
