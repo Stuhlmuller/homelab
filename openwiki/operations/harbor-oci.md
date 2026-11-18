@@ -435,7 +435,8 @@ over 1,000 artifacts, bounded at 1,000 repositories and 10,000 total artifacts
 before submitting scans; duplicate IDs and inconsistent pagination fail closed.
 Scan-summary requests use ten-artifact pages: a 100-artifact page exceeded the
 ten-second request timeout during the Distribution v3 rollout. The PostSync
-hook allows 15 minutes for the full inventory without relaxing its count or
+hook allows ten minutes for the full inventory, leaving room for backup within
+Argo CD's 15-minute operation timeout, without relaxing its count or
 duplicate checks. The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 

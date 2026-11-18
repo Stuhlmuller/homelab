@@ -64,8 +64,9 @@ retained image artifacts in the private `homelab` project. Existing reports and
 queued/running scans are left alone; signatures and attestations are excluded.
 The inventory is bounded at 1,000 repositories and 10,000 total artifacts
 before any scan submission. Scan-summary pages contain ten artifacts to stay
-within the request timeout on the CPU-limited core. The hook has a 15-minute
-deadline for complete pagination and credential reconciliation. Each candidate is reread to skip a newly started
+within the request timeout on the CPU-limited core. The hook has a ten-minute
+deadline for complete pagination and credential reconciliation, leaving time
+for the backup hook within Argo CD's 15-minute operation timeout. Each candidate is reread to skip a newly started
 job. Failed reports remain visible for diagnosis instead of retrying on every
 sync. Reverting the project settings stops automatic generation for future
 pushes; it does not remove retained reports or cancel already queued work.
