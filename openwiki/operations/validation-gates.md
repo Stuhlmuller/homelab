@@ -2906,3 +2906,21 @@ fresh administrator saved plan to observed service/peer/source/configuration and
 live policy. Rollback excludes AdGuard health dependencies. Native client mode
 currently supports macOS and records daemon/exit-node metadata; direct queries
 cannot count as normal-client or exit-node proof. These live gates remain pending.
+
+### Source-only Application stack refactors
+
+The Mastodon release preflight treats an edit confined to its `stack.hcl` as
+source-only only when real Terragrunt generation/rendering at the merge base and
+PR head proves identical module files, declared inputs, backend/provider config,
+and normalized dependency edges. Changed workload files, missing evidence, or
+any runtime-contract difference retain the existing Synced/Healthy, backup and
+restore requirements. The comparison also evaluates shared roots and templates,
+so changing them cannot conceal a changed Application manifest. Negative tests
+cover manifest, dependency, backend, provider and module changes.
+
+On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main
+`6f8112890`; three Deployments were out of sync and the live web replica count
+was zero. Image pins matched source. No workload was changed by this layout
+refactor. Follow-up: inspect the existing workload pause/drift ownership and
+reconcile through reviewed GitOps before a runtime change; the live release
+gate continues rejecting that baseline for material changes.

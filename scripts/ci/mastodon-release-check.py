@@ -3,9 +3,13 @@
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+from pathlib import Path
+import runpy
 import subprocess
 import sys
 
+
+EQUIVALENCE = runpy.run_path(str(Path(__file__).with_name("terragrunt-app-equivalence.py")))
 
 def runtime_changed(paths):
     return any((path.startswith("clusters/homelab/apps/mastodon/")
@@ -88,7 +92,7 @@ def main():
     try:
         paths = subprocess.run(["git", "diff", "--name-only", "-z", f"{args.base_ref}...HEAD"],
                                capture_output=True, text=True, timeout=15, check=True).stdout.split("\0")
-        if not runtime_changed(paths):
+        if not runtime_changed(paths) or EQUIVALENCE["equivalent"]("mastodon", paths, args.base_ref):
             print("Mastodon runtime unchanged; database release check not applicable.")
             return 0
         application = read_json("-n", "argocd", "get", "application", "mastodon")
