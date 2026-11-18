@@ -465,6 +465,9 @@ progress. A cold inventory plus an early liveness restart previously exceeded
 the default ten-minute progress deadline, consuming Argo's operation budget in
 a retry before bootstrap could finish. Readiness still requires fresh metrics;
 the startup probe checks only the local HTTP server.
+Probe responses allow five seconds, matching the other Harbor workloads. The
+default one-second liveness timeout restarted the exporter twice under load and
+discarded its metrics cache; readiness still requires a fresh complete inventory.
 The raw Grafana query preserves healthy zero-valued project series while missing telemetry enters Alerting. A completed
 Harbor scan that omits its zero-valued `Critical` severity bucket contributes
 zero. Triage in
