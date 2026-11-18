@@ -2,6 +2,7 @@
 """Validate the reviewed private DNS source and its pinned Helm render."""
 
 import copy
+import hashlib
 import json
 import re
 import subprocess
@@ -16,6 +17,8 @@ DNS_VALUES = ROOT / "clusters/homelab/platform/tailnet-dns/values.yaml"
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
 CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
+CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz"
+CHART_PACKAGE_SHA256 = "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
          "sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4")
 CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
@@ -198,15 +201,25 @@ def chart_failure_hint(stderr):
 
 
 def render_pinned_chart(command):
-    """Retry a bounded public chart fetch without accepting a different chart."""
+    """Prefer the reviewed OCI digest, then use the identical packaged bytes."""
     for attempt in range(4):
         chart = subprocess.run(command, text=True, capture_output=True, check=False)
         if chart.returncode == 0:
-            return chart
+            require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
+            return chart.stdout
         if attempt < 3:
             time.sleep(2 ** (attempt + 1))
-    raise ValueError(f"pinned chart render failed after 4 attempts ({chart_failure_hint(chart.stderr)}); "
-                     "private Helm output withheld")
+    hint = chart_failure_hint(chart.stderr)
+    require(CHART_PACKAGE.is_file()
+            and hashlib.sha256(CHART_PACKAGE.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
+            "reviewed chart 4.0.0 fallback package is missing or changed")
+    require(command[3:6] == [CHART, "--version", "4.0.0"], "chart render command changed")
+    fallback = [*command[:3], str(CHART_PACKAGE), *command[6:]]
+    local = subprocess.run(fallback, text=True, capture_output=True, check=False)
+    require(local.returncode == 0,
+            f"pinned chart render failed after 4 OCI attempts ({hint}) and exact-package fallback; "
+            "private Helm output withheld")
+    return local.stdout
 
 
 def rendered_contract():
@@ -216,9 +229,7 @@ def rendered_contract():
             "both resolver views must expose DNS port 53")
     command = ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
                "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-    chart = render_pinned_chart(command)
-    require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
-    rendered = chart.stdout
+    rendered = render_pinned_chart(command)
     documents = json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
     resources = {(doc["kind"], doc["metadata"]["name"]): doc for doc in documents}
