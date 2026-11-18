@@ -57,6 +57,22 @@ def cron_fixture():
 
 
 class Activation(unittest.TestCase):
+    def test_stage_one_requires_zero_replicas_and_inert_commit(self):
+        source = (Path(__file__).parents[2] / "IaC/homelab/us-west-2/apps/descheduler/stack.hcl").read_text()
+        release.stage_one_safe({"kind": "CronJob", "suspend": True}, source)
+        with self.assertRaises(ValueError):
+            release.stage_one_safe({"kind": "Deployment", "suspend": True}, source)
+        with self.assertRaises(ValueError):
+            release.stage_one_safe({"kind": "CronJob", "suspend": True}, source.replace(release.INERT_VALUES_REVISION, "main"))
+        with self.assertRaises(ValueError):
+            release.stage_one_safe({"kind": "CronJob", "suspend": True}, source.replace('value = "true"', 'value = "false"'))
+        with self.assertRaises(ValueError):
+            release.stage_one_safe({"kind": "CronJob", "suspend": False}, source)
+
+    def test_stale_capacity_snapshot_rejected(self):
+        with self.assertRaises(ValueError):
+            release.fresh((NOW - timedelta(seconds=361)).isoformat(), NOW, 360)
+
     def check(self, data):
         release.check(*data, NOW)
 

@@ -396,20 +396,24 @@ and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
 
 For Descheduler values or chart changes, run
-`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
-rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
-exactly one `--descheduling-interval=30m` argument. Update the check alongside
+`bash scripts/ci/descheduler-cadence-check.sh`. During staging it verifies
+chart `0.33.0` renders one suspended CronJob and no Deployment from both the
+current values and the pinned old values with chart overrides. Update the check alongside
 the pinned chart when upgrading. The same render feeds
 `scripts/ci/descheduler-policy-check.py`, which requires configuration for each
 enabled strategy, valid LowNodeUtilization thresholds and the existing
 DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
 cycle. The protected live-plan job runs
 [`descheduler-release-check.py`](../../scripts/ci/descheduler-release-check.py)
-for runtime/gate changes: healthy fresh nodes, complete settled inventories,
-explicit bounded memory demand, one-eviction headroom and recurring Job reserves.
-It uses read-only UID-bound kubelet measurements and fails on unknown evidence
-without printing private inventory. NodeFit remains a subset of scheduler
-checks; this activation gate does not establish N-1 capacity or later cycles. Missing
+for runtime/gate changes and requires suspension plus an exact pin
+to the pre-repair inert values commit. After a protected stage-one merge, verify
+zero live Pods and pin that suspended merge commit in a separate PR. A later
+activation revision needs a separate repo-owned, protected manual gate that
+binds the exact revision and checks fresh node, Pod, lease, Job and kubelet
+evidence immediately before moving the Argo source pin. The prepared capacity
+helper fails on stale timestamps, changed inventory, or unknown demand; an
+earlier PR check cannot authorize later eviction. NodeFit remains a subset of
+scheduler checks; this helper does not establish N-1 capacity or later cycles. Missing
 strategy configuration prevents profile construction even while the Pod remains Ready.
 Live revision, argument and execution-cadence
 acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).

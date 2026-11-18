@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Read-only activation evidence for one bounded Descheduler eviction."""
+"""Fail-closed Descheduler staging and future live-capacity evidence."""
 
 import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import re
 import runpy
 import subprocess
 import sys
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CAPACITY = runpy.run_path(str(ROOT / "scripts/network-policy-candidate-report.py"))
 POLICY = runpy.run_path(str(Path(__file__).with_name("descheduler-policy-check.py")))
 NODES = {"acer", "zimaboard-0", "zimaboard-1", "zimaboard-2"}
+INERT_VALUES_REVISION = "934770124f6e3b3c1b0857ce8e510e0ea7a1e894"
 
 
 def require(value, category):
@@ -30,6 +32,18 @@ def runtime_changed(paths):
             "scripts/ci/descheduler-policy-check.py", "scripts/ci/descheduler-cadence-check.sh",
             "scripts/network-policy-candidate-report.py", ".github/workflows/terragrunt-plan.yml",
         }) for path in paths)
+
+
+def stage_one_safe(values, stack_source):
+    """The prepared policy cannot become an active Argo-synced workload."""
+    require(values.get("kind") == "CronJob" and values.get("suspend") is True,
+            "activation_requires_separate_protected_delivery")
+    revisions = re.findall(r'^\s*targetRevision\s*=\s*"([^"]+)"', stack_source, re.MULTILINE)
+    require(revisions == ["0.33.0", INERT_VALUES_REVISION],
+            "inert_values_revision_unpinned")
+    parameters = re.findall(r'\bname\s*=\s*"([^"]+)"\s+value\s*=\s*"([^"]+)"', stack_source)
+    require(parameters == [("kind", "CronJob"), ("suspend", "true")],
+            "suspended_cronjob_override_missing")
 
 
 def fresh(value, now, seconds):
@@ -225,6 +239,24 @@ def read_json(*args):
     return json.loads(result.stdout)
 
 
+def collect_live_capacity_evidence():
+    started = time.monotonic()
+    nodes = items(read_json("get", "--raw", "/api/v1/nodes?limit=0"), "Node")
+    leases = items(read_json("get", "--raw", "/apis/coordination.k8s.io/v1/namespaces/kube-node-lease/leases?limit=0"), "Lease")
+    check_nodes(nodes, leases, datetime.now(timezone.utc))
+    pods = items(read_json("get", "--raw", "/api/v1/pods?limit=0"), "Pod")
+    crons = items(read_json("get", "--raw", "/apis/batch/v1/cronjobs?limit=0"), "CronJob")
+    jobs = items(read_json("get", "--raw", "/apis/batch/v1/jobs?limit=0"), "Job")
+    summaries = {name: read_json("get", "--raw", f"/api/v1/nodes/{name}/proxy/stats/summary") for name in sorted(NODES)}
+    after = items(read_json("get", "--raw", "/api/v1/nodes?limit=0"), "Node")
+    def identities(rows):
+        return sorted((row["metadata"]["name"], row["metadata"]["uid"],
+                       row["status"]["nodeInfo"]["bootID"]) for row in rows)
+    require(identities(nodes) == identities(after) and time.monotonic() - started <= 60, "inventory_changed")
+    check(after, leases, pods, crons, jobs, summaries, datetime.now(timezone.utc))
+    print("Descheduler one-eviction activation evidence passed; N-1 capacity remains unproven.")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-ref", required=True)
@@ -240,22 +272,9 @@ def main():
                             capture_output=True, text=True, timeout=15, check=True).stdout)
         POLICY["check"]({"apiVersion": "descheduler/v1alpha2", "kind": "DeschedulerPolicy",
                          **values["deschedulerPolicy"]})
-        require(values["kind"] == "Deployment" and values["deschedulingInterval"] == "30m", "policy_changed")
-        started = time.monotonic()
-        nodes = items(read_json("get", "--raw", "/api/v1/nodes?limit=0"), "Node")
-        leases = items(read_json("get", "--raw", "/apis/coordination.k8s.io/v1/namespaces/kube-node-lease/leases?limit=0"), "Lease")
-        check_nodes(nodes, leases, datetime.now(timezone.utc))
-        pods = items(read_json("get", "--raw", "/api/v1/pods?limit=0"), "Pod")
-        crons = items(read_json("get", "--raw", "/apis/batch/v1/cronjobs?limit=0"), "CronJob")
-        jobs = items(read_json("get", "--raw", "/apis/batch/v1/jobs?limit=0"), "Job")
-        summaries = {name: read_json("get", "--raw", f"/api/v1/nodes/{name}/proxy/stats/summary") for name in sorted(NODES)}
-        after = items(read_json("get", "--raw", "/api/v1/nodes?limit=0"), "Node")
-        def identities(rows):
-            return sorted((row["metadata"]["name"], row["metadata"]["uid"],
-                           row["status"]["nodeInfo"]["bootID"]) for row in rows)
-        require(identities(nodes) == identities(after) and time.monotonic() - started <= 60, "inventory_changed")
-        check(after, leases, pods, crons, jobs, summaries, datetime.now(timezone.utc))
-        print("Descheduler one-eviction activation evidence passed; N-1 capacity remains unproven.")
+        require(values["deschedulingInterval"] == "30m", "policy_changed")
+        stage_one_safe(values, (ROOT / "IaC/homelab/us-west-2/apps/descheduler/stack.hcl").read_text())
+        print("Descheduler profile staged as a suspended CronJob with the inert values revision pinned.")
         return 0
     except (AssertionError, OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError,
             AttributeError, IndexError, ArithmeticError):
