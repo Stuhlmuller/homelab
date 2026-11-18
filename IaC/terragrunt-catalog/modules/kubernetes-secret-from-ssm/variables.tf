@@ -29,7 +29,6 @@ variable "data_revision" {
   }
 }
 
-
 variable "labels" {
   description = "Labels to apply to the Kubernetes Secret."
   type        = map(string)

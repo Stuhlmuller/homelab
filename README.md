@@ -45,7 +45,9 @@ documented Terragrunt, Argo CD, Helm, Kustomize, or Talos path.
 
 Use the Nix development shell when possible. It provides the expected local
 operator tools, including `awscli2`, `conftest`, `kubectl`, `opentofu`,
-`ripgrep`, `talosctl`, and `terragrunt`.
+`ripgrep`, `talosctl`, and `terragrunt`. The shell pins Terragrunt v1.2.2;
+shared state encryption requires that version or newer. See
+[state encryption](docs/state-encryption.md) for policy ownership and compatibility.
 
 ```sh
 nix develop
