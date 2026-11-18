@@ -1,28 +1,129 @@
 ---
 name: terragrunt-layout
-description: Choose boundaries and paths for new OpenTofu or Terraform modules, Terragrunt units, and stacks across cloud, Kubernetes, and Argo CD infrastructure.
+description: Organize reusable modules, Terragrunt units, and stacks across infrastructure providers using explicit deployment scopes, shared configuration, and stable state boundaries.
 ---
 
 # Organize Terragrunt infrastructure
 
-Trace one comparable deployment from its live declaration through its unit to its module. Identify the authored files, shared includes, and backend key before choosing paths.
+Trace a neighboring unit from its authored declaration through generated configuration,
+module source, dependencies, and backend key. Follow the repository's existing scopes
+and generation workflow when extending it.
 
-- **Module** — Put reusable resource implementation in the existing module catalog. Reuse a module when only instance inputs differ. Follow the repository's version-pinning convention for external sources.
-- **Unit** — Use a unit for resources that need an independent plan, apply, and state. Keep resources that change and recover together in one unit. Put instance inputs and dependency output wiring in the live declaration or its unit template, following neighboring units.
-- **Stack** — Add the unit to the stack that owns its deployment. In an implicit stack, the unit directory establishes membership. In an explicit stack, edit the owning `terragrunt.stack.hcl` or its source catalog and regenerate using the repository workflow. Introduce a reusable stack when the same composition is instantiated together.
+## Choose boundaries
 
-Choose paths around the target platform and its deployment boundaries. For Kubernetes, identify the cluster and namespace scope. For Argo CD, identify the owning Application stack and reuse its application module and unit template. Keep chart values and manifests in their existing GitOps source, with application references and dependency wiring in the Terragrunt declaration.
+A module owns reusable resource implementation. A unit instantiates a module with
+its own inputs, dependencies, and state. A stack groups units deployed together.
+Choose unit boundaries around lifecycle, ownership, permissions, and recovery.
+Resources that must change together generally belong in one unit.
 
-For a new AWS layout, start with `account/region/environment/category/unit`. Omit the environment layer when the account already identifies it. Use `account/_global` for account-wide units and `account/region/_global` for units shared across environments in one region. In an established tree, preserve its deployment boundaries. Put shared inputs at the narrowest common scope.
+Keep reusable implementation in the module catalog and deployment instances in
+the live tree. Independently versioned catalogs support staged upgrades.
+Preserve an established monorepo catalog when that is the repository convention.
 
-Verify the resolved unit path, module source, dependencies, and unique backend key using the repository's generation and validation commands. If a proposed layout moves existing units with path-derived keys, keep those paths stable or scope a state migration explicitly.
+## Place units
 
-[Gruntwork infrastructure-live layout guidance](https://docs.gruntwork.io/2.0/docs/overview/concepts/infrastructure-live/)
+Use meaningful deployment scopes, from broad to narrow. Include only levels that
+distinguish actual targets. The names below are illustrative placeholders.
 
-Follow platform-native naming and metadata conventions. For Kubernetes and Argo CD, preserve namespace scope, resource names, and existing labels and annotations. Check rendered resources and avoid changing selectors through shared metadata.
+```text
+live/
+  root.hcl
+  shared.hcl
+  scope-a/
+    scope.hcl
+    _global/
+      shared-service/
+        terragrunt.hcl
+    target-a/
+      target.hcl
+      _global/
+        shared-service/
+          terragrunt.hcl
+      environment-a/
+        environment.hcl
+        category-a/
+          service-a/
+            terragrunt.hcl
+```
 
-For AWS resources, derive names from the repository’s organization, environment, application, workload, and region labels where service naming limits allow. Inherit common tags at the provider or shared configuration level and add workload-specific metadata such as owner or cost center at the unit. Check representative planned resources for the effective tags.
+- Scope identifies an administrative or isolation boundary.
+- Target selects where infrastructure runs.
+- Environment distinguishes deployments sharing a target. Omit it when an
+  enclosing scope already identifies the environment.
+- Category groups related units for navigation. Add it when it improves discovery.
+- Unit is the leaf deployment with its own state.
+- `_global` holds units shared by the children of its immediate parent.
+  Provider configuration must still select the appropriate execution target.
+
+Put shared data at the narrowest common ancestor. Load named HCL data files with
+the repository's include or `read_terragrunt_config` pattern. Keep common module
+defaults in shared templates and instance differences beside the live declaration.
+
+These placement principles adapt Gruntwork's hierarchy and per-unit state guidance.
+[Infrastructure live](https://docs.gruntwork.io/2.0/docs/overview/concepts/infrastructure-live/)
+
+## Arrange explicit stacks
+
+When the repository uses explicit stacks, distinguish authored catalog templates,
+live stack instances, and generated units. Follow its actual output-path settings.
+
+```text
+catalog/
+  modules/
+    service/
+      main.tf
+      variables.tf
+      outputs.tf
+  units/
+    service/
+      terragrunt.hcl
+  stacks/
+    service-group/
+      terragrunt.stack.hcl
+live/
+  root.hcl
+  scope-a/
+    target-a/
+      service-group/
+        terragrunt.stack.hcl
+        stack.hcl
+```
+
+The module implements resources. The unit template connects module source, shared
+configuration, and declared values. A reusable stack composes recurring groups.
+The live stack selects templates and instance paths. An adjacent data file such
+as `stack.hcl` is appropriate when that convention already exists.
+
+Add a new instance to its owning stack. Introduce a reusable stack template when
+the composition itself repeats. Edit the authored source and regenerate using
+the repository workflow. For implicit stacks, directory placement defines the
+group of units available to orchestration.
+
+Before creating anything, identify the existing module and template that fit.
+Expose inputs callers need, retain shared constraints in the reusable implementation,
+and use existing catalog scaffolding when available.
+[Developer self-service](https://docs.gruntwork.io/2.0/docs/overview/concepts/developer-self-service/)
+
+## Preserve state and dependency ownership
+
+For each proposed unit, record its authored path, generated path if applicable,
+module source, backend key, and dependencies. A directory move can change a
+path-derived backend key. Preserve existing mappings or explicitly plan a state
+migration before moving an existing unit.
+
+Use dependency outputs when values must flow between units. Use ordering
+dependencies when only execution order matters. Check that the dependency graph
+has no cycle and each managed resource has one owner.
+
+Name resources and attach metadata using the target platform's conventions.
+Keep shared metadata at its common scope and instance metadata near the unit.
+Inspect effective values for naming limits and fields that affect resource identity.
 [Labels and tags](https://docs.gruntwork.io/2.0/docs/overview/concepts/labels-tags/)
 
-For developer self-service, check the infrastructure catalog for a maintained blueprint before creating a module. Keep shared security defaults and constraints in the blueprint. Expose the inputs developers actually choose in the live unit. If the catalog provides a scaffold, use it to create the instance in the owning stack.
-[Developer self-service](https://docs.gruntwork.io/2.0/docs/overview/concepts/developer-self-service/)
+## Verify the layout
+
+Show the proposed tree and explain each new boundary. Identify reusable files,
+instance files, and generated output. Run the repository's formatting, generation,
+and focused validation commands, then inspect the affected plan when available.
+Verify resolved sources, input inheritance, dependency paths, unique state keys,
+and unintended replacement or deletion before delivery.
