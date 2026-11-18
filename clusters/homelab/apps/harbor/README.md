@@ -129,7 +129,9 @@ needs Harbor authentication; the credential is never mounted in the exporter.
 The ServiceMonitor is scraped every minute. Collection attempts start at most every five
 minutes, with only one active inventory. The 156-repository mirror inventory
 took 545 seconds under concurrent load on the CPU-limited core. Each API read allows 30 seconds for scan-summary assembly
-under load; response-size and pagination checks remain enforced. Collection runs in the background;
+under load. Transient connection failures get at most three attempts for the same
+GET with one- and two-second backoff, preserving already-read pages. HTTP errors,
+response-size, JSON and pagination checks still fail immediately. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
 The startup probe allows two minutes for the HTTP server to start before liveness
@@ -273,9 +275,10 @@ changed Application sources, an active operation, failures other than the
 controller timeout, or an unready/wrong-image runtime. It starts one full sync
 at the exact reviewed revision, giving bootstrap and backup a fresh operation
 budget. It does not force, replace, skip hooks, or change desired state.
-Core-mode Argo access uses a temporary local kubeconfig context referencing the
-existing cluster and user with namespace `argocd`. The command leaves the current
-context unchanged and removes its temporary context on exit; it copies no credentials.
+Argo access uses a temporary loopback API process with the existing Kubernetes
+context and explicit `argocd` namespace. The installed CLI's `--core` startup
+ignores its context override, so recovery uses `argocd admin dashboard` instead.
+The command stops that process on exit; it does not edit kubeconfig or copy credentials.
 Success requires both hooks and the controller/deployment verifier to pass;
 repeat the authenticated full image pull separately. If recovery fails, inspect
 the new operation and fix its cause through a PR rather than retrying blindly.
