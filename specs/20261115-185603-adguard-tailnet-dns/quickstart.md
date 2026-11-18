@@ -42,13 +42,16 @@ kubectl --request-timeout=10s -n automation get service adguard-dns
 python3 scripts/verify-gitops.py --application adguard --expected-sha <deployed-sha> --deployment automation/adguard
 ```
 
-Do not print Secret data. On the existing trusted Mac, preview and execute the
-fixed AdGuard signing target using reviewed main. Verify online signed identity
-and Service address, then run direct checks and private UI authentication:
+Do not print Secret data. On the owner Mac, use reviewed main. Only if Tailnet
+Lock is enabled, preview and execute the fixed signing target with an existing
+trusted signer. If Lock is disabled, skip both signing commands. Direct acceptance
+independently verifies live Lock mode, online identity and Service address:
 
 ```sh
+# Enabled Tailnet Lock only:
 python3 -I scripts/tailscale-ingress-sign.py --adguard-only
 python3 -I scripts/tailscale-ingress-sign.py --adguard-only --execute
+# Both locked and unlocked tailnets:
 python3 -I scripts/adguard-check.py --server <observed-adguard-tailnet-ip> --password-file <private-admin-file> --receipt <new-private-direct-receipt>
 ```
 
@@ -81,7 +84,7 @@ blocked/permitted system-resolver checks, private inventory and MagicDNS checks.
 Repeat with an existing authorized exit node (client >=1.88.1) when available;
 otherwise report that coverage as unverified. Recheck deployed revision.
 
-The implemented client adapter uses the existing trusted Mac, native
+The implemented client adapter uses the existing authorized Mac, native
 `socket.getaddrinfo`, `scutil --dns`, live Tailscale status/preferences and daemon
 version. It requires Tailscale DNS acceptance and verifies the active full policy
 against source. It flushes macOS DNS caches before each sample pair and each
