@@ -722,17 +722,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   into pod-local storage before config validation without a floating fallback,
   then configures Discord with an OpenClaw SecretRef to that environment value
   instead of storing the token in config. The bootstrap and proxy containers
-  do not receive the app-only LiteLLM, Grafana-login, or GitHub App credentials,
+  do not receive the app-only LiteLLM or Grafana-login credentials,
   and the proxy does not mount persistent OpenClaw state. The deployed assistant
-  does not configure ChatGPT Pro or Codex OAuth inference. OpenClaw GitHub App credentials use
-  `/homelab/openclaw/github-app/id`,
-  `/homelab/openclaw/github-app/installation-id`, and
-  `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
-  the private key is mounted into the app as a file referenced by
-  `GITHUB_APP_PRIVATE_KEY_PATH`. The managed `assistant/gh` wrapper exchanges
-  that key for a homelab-only installation token on each CLI/Git invocation.
-  Tokens use private temporary CLI config files, never the PVC or child process
-  environment; requests omit administration and secret-management permissions.
+  does not configure ChatGPT Pro or Codex OAuth inference. The OpenClaw GitHub
+  App SSM paths are retained state tombstones; the current Pod and ExternalSecret
+  do not read them. The managed `assistant/gh`
+  wrapper fails closed without the removed App identity. Rotate the old key
+  after the App scope review in #859; sandboxing remains unresolved under #782.
 - Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
   contract. OpenTofu generates five internal values; the model key stays a
   placeholder until the owner supplies a distinct OpenRouter inference key to

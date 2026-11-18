@@ -65,8 +65,9 @@ queued/running scans are left alone; signatures and attestations are excluded.
 The inventory is bounded at 1,000 repositories and 10,000 total artifacts
 before any scan submission. Scan-summary pages contain ten artifacts to stay
 within the request timeout on the CPU-limited core. The hook has a ten-minute
-deadline for complete pagination and credential reconciliation, leaving time
-for the backup hook within Argo CD's 15-minute operation timeout. Each candidate is reread to skip a newly started
+deadline for complete pagination and credential reconciliation. Argo CD's
+15-minute operation timeout includes runtime readiness and both hooks; a cold
+exporter inventory can consume most of that budget. Each candidate is reread to skip a newly started
 job. Failed reports remain visible for diagnosis instead of retrying on every
 sync. Reverting the project settings stops automatic generation for future
 pushes; it does not remove retained reports or cancel already queued work.
@@ -131,6 +132,9 @@ took 545 seconds under concurrent load on the CPU-limited core. Each API read al
 under load; response-size and pagination checks remain enforced. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
+The startup probe allows two minutes for the HTTP server to start before liveness
+checks begin. The Deployment allows twelve minutes for cold-inventory readiness,
+avoiding the default ten-minute progress deadline and an unnecessary Argo retry.
 Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric
 data and evaluation errors are also alerting. Cached scan totals expire no later
@@ -239,12 +243,40 @@ days and stale partial directories are removed. A failed job cannot prune the
 last successful archive. Readiness probes exercise a database query; startup
 allows thirty minutes for crash recovery and shutdown allows two minutes.
 Container recovery can span Argo CD's separate fifteen-minute sync timeout;
-the probe window does not extend one sync operation.
+the probe window does not extend one sync operation. A timeout is not a
+successful rollout even when the runtime becomes Healthy.
 The PostSync `harbor-postgres-backup-initial` Job has a ten-minute deadline,
 within that operation timeout, and uses the same `backup.sh`
 ConfigMap after bootstrap, proving a verified dump during every successful
 rollout without an ad hoc Job creation. Argo CD retains a failed hook for
 inspection and replaces it on the next sync.
+
+### Complete a timed-out cold rollout
+
+The Distribution v3 rollout demonstrated the combined budget limit: exporter
+readiness took about ten minutes, bootstrap succeeded, then the controller
+terminated the initial backup. Keep the shared controller timeout and workload
+deadlines intact. Once the runtime is Healthy/Synced, use the checked full-sync
+recovery command from a clean checkout of current `main`:
+
+```sh
+nix develop --command python3 -I scripts/harbor-full-sync.py \
+  --expected-sha "$(git rev-parse HEAD)"
+nix develop --command python3 -I scripts/harbor-full-sync.py \
+  --expected-sha "$(git rev-parse HEAD)" --execute
+```
+
+The first command only inspects. Execution rejects a stale/dirty checkout,
+changed Application sources, an active operation, failures other than the
+controller timeout, or an unready/wrong-image runtime. It starts one full sync
+at the exact reviewed revision, giving bootstrap and backup a fresh operation
+budget. It does not force, replace, skip hooks, or change desired state.
+Core-mode Argo access uses a temporary local kubeconfig context referencing the
+existing cluster and user with namespace `argocd`. The command leaves the current
+context unchanged and removes its temporary context on exit; it copies no credentials.
+Success requires both hooks and the controller/deployment verifier to pass;
+repeat the authenticated full image pull separately. If recovery fails, inspect
+the new operation and fix its cause through a PR rather than retrying blindly.
 
 The nightly dump is a **metadata backup**, not a complete registry backup or a
 restore drill. The registry blobs and database backup share the QNAP failure
