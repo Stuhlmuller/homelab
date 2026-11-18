@@ -421,6 +421,10 @@ registry blobs and logical database backups use retained QNAP NFS. Backups on
 the same NAS are not independent blob disaster recovery. See the app README
 for backup schedule, restore sequence and limitations.
 
+The rollout also exposed a static-check input mismatch: tracked gzip fixtures
+were passed to the text-only Checkov wrapper. CI now uses the same pinned
+pre-commit text selection; malformed selected text still fails closed.
+
 ## Image Scanning
 
 The chart enables Trivy with a retained 5 Gi cache. The repository-owned
