@@ -134,7 +134,7 @@ helper removed only the unused hook. Its ID and callback path are absent.
 Fresh Emergency Bot and Policy Bot deliveries returned HTTP 200; the inactive
 workflow remains unpublished.
 
-- [X] T018 From clean reviewed `main`, capture read-only Argo, signed resolver,
+- [X] T018 From clean reviewed `main`, capture read-only Argo, resolver,
   all 29 ordinary tailnet DNS answers, the original 27 migration HTTPS routes and declared/live
   zero-replica suspensions, Fleet, Harbor node pulls, native API, Cordium
   reconnect, public callbacks, apex, and unrelated-name observations outside
@@ -149,7 +149,7 @@ workflow remains unpublished.
   `clusters/homelab/apps/traefik/CUTOVER.md`.
 
 **T018 acceptance (2026-10-25):** On clean `main` `e10199f2`, Argo reported
-tailnet DNS, Traefik, and Fleet Synced/Healthy. The signed resolver passed all
+tailnet DNS, Traefik, and Fleet Synced/Healthy. The resolver passed all
 29 approved names over UDP/TCP; normal macOS DNS and the original 27 HTTPS
 routes passed. Fleet setup aliases returned 404 and its enrolled iPhone checked
 in after one guarded APNs ping. All four Talos nodes passed Harbor hostname

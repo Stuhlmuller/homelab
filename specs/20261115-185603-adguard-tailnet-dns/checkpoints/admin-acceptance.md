@@ -30,5 +30,5 @@ receipt now has admin_acceptance=true only after the added checks; it still
 explicitly has client_acceptance=false. T023/T024 complete at source/fixture
 level, no live acceptance. AllUS3 source complete. Next separate convergence on
 this increment, thenUS2/US4 source and integration. T003 publisher43777917412 still
-copying/verifying under sole watcher80837. No AdGuard deployment/signing/DNS
+copying/verifying under sole watcher80837. No AdGuard deployment/DNS
 mutation or Notion updates. Hooks empty.

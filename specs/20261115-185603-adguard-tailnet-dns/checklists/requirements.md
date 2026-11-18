@@ -47,10 +47,6 @@ cross-platform and exit-node behavior, bootstrap trust dependencies, DNS policy
 ownership, state recovery, and the explicit single-resolver assumption before
 planning. It may revise this checklist if it finds a requirement gap.
 
-## Unlocked-tailnet amendment review
-
-Reviewed the owner correction against the same 16 criteria: 16/16 pass.
-FR-020/021 map to the four mode acceptance scenarios and SC-007. Requirements
-explicitly preserve identity and functional checks and distinguish an unlocked
-peer from a signed peer. This is specification evidence only. Plan, tasks,
-contracts and implementation still require reconciliation in subsequent stages.
+Endpoint identity coverage: FR-020/021 and SC-007 require exact observed identity,
+resource ownership, fresh pre-apply binding, functional checks and independent
+rollback. Fixture success remains distinct from owner-run acceptance.

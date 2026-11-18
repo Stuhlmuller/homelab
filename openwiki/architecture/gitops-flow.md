@@ -169,19 +169,16 @@ DNS, tailnet settings, and contacts into encrypted state before applying reviewe
 changes. It also owns three scoped CI auth keys. A separate private OAuth client
 authenticates this unit; the Kubernetes operator client remains limited to its
 runtime scopes, and CI cannot administer its own tailnet grants.
-Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
-fixed publisher; committed generation changes drive 60-day rotation of keys
-with 90-day expiry. The three unused federated identities remain protected until
-the final migration retirement, after signed-key CI acceptance.
+Committed generation changes drive 60-day rotation of the scoped auth keys,
+which expire after 90 days.
 Follow its [private saved-plan runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
 Terragrunt Apply on exact current `main` and check Argo's observed revision.
 Application registration order alone does not establish certificate, proxy,
-Funnel, or application readiness. The fixed ingress signer verifies the three
-operator-owned proxy identities before signing them; ordinary node approval
-does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
+Funnel, or application readiness. Verify the operator-owned proxy identity,
+policy grants and actual traffic. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
@@ -190,7 +187,7 @@ for the 26 approved non-apex names from the original migration set. The
 resolver serves all 29 current private names, including two later staged
 Enterprise names. The cutover preserves the public apex, mail, certificate
 validation, and unrelated public names. It follows the separate
-`tailnet-dns` Application reaching Synced/Healthy, signing its Tailscale DNS
+`tailnet-dns` Application reaching Synced/Healthy, verifying its Tailscale DNS
 proxy, and the owner setting its observed IP as a restricted tailnet nameserver.
 The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
 stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,

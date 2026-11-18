@@ -99,7 +99,7 @@ argocd app get platform-storage
 ```
 
 Private ingress also requires healthy `tailscale` and `traefik` Applications,
-signed mesh peers and valid canonical TLS. Follow the
+online mesh peers and valid canonical TLS. Follow the
 [staged ingress acceptance](../clusters/homelab/apps/traefik/CUTOVER.md); existing
 Octelium routes remain only until replacement acceptance.
 

@@ -35,7 +35,7 @@ Tailscale IPv4; unrelated names and non-address types, including apex mail
 records, forward to public DNS. Traefik still owns TLS and route restrictions.
 The current ingress is IPv4-only. Keep approved AAAA empty until a reviewed
 network change supports it. The resolver has a distinct Tailscale IP and a
-signed `homelab-dns` proxy; never use the ingress IP as the nameserver.
+`homelab-dns` proxy; never use the ingress IP as the nameserver.
 
 After the DNS image is present in Harbor and the resolver is deployed, inspect
 its Service IP and run the direct UDP/TCP handoff check:
@@ -57,7 +57,7 @@ the Cloudflare zone and DNS-01
 validation, four legacy public endpoints (`octelium-transport`,
 `kubernetes-api-ci`, `n8n-webhook`, and `policy-bot-hook`), and unrelated names
 remain. A resolver outage after retirement gives those 26 names no public app fallback;
-recover the declared resolver or signed proxy without republishing addresses.
+recover the declared resolver or proxy without republishing addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients

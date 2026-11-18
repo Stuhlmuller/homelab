@@ -25,10 +25,10 @@ State: **declared** (reviewed annotation + matching route) → **published** (se
 | --- | --- | --- |
 | `service` | Resolver chart LoadBalancer Service | One `tailscale` class Service with UDP and TCP 53. |
 | `tailnet_name` | Service annotation | Fixed `homelab-dns` peer name. |
-| `tailnet_ip` | Live Service status and signed proxy peer | Record actual matching IPv4 after rollout; pass it to owner only after direct queries work. |
-| `trust` | Tailnet policy and Lock status | Existing operator-owned `tag:homelab-ingress` and member wildcard grant; distinct signed proxy identity and public node/rotation keys. |
+| `tailnet_ip` | Live Service status and proxy peer | Record actual matching IPv4 after rollout; pass it to owner only after direct queries work. |
+| `trust` | Tailnet policy and device status | Existing operator-owned `tag:homelab-ingress` and member wildcard grant; distinct proxy identity and public node key. |
 
-State: **declared** → **proxy ready** → **signed and reachable** → **owner handoff**. A Kubernetes Ready Service alone does not advance the state.
+State: **declared** → **proxy ready** → **online and reachable** → **owner handoff**. A Kubernetes Ready Service alone does not advance the state.
 
 ## DNS answer
 
@@ -47,7 +47,7 @@ its public A record. It is outside the retired-subdomain fail-closed guarantee.
 
 The existing Cloudflare utility manages only selected A/AAAA/CNAME records. The live record baseline stores type, name, content, proxy flag and TTL privately during cutover; unrelated names and other record types are never targeted.
 
-The evidence record includes reviewed main SHA, 27-name set, old public TTL maximum, resolver Service/peer identity and IP, Tailnet Lock signature, direct UDP/TCP answers, owner tailnet DNS change,
+The evidence record includes reviewed main SHA, 27-name set, old public TTL maximum, resolver Service/peer identity and IP, direct UDP/TCP answers, owner tailnet DNS change,
 normal OS answers, HTTPS/critical client checks, off-tailnet apex/Cordium decision, retirement readback and post-TTL public results. Keep credentials and raw private outputs outside the public
 repository.
 

@@ -95,31 +95,21 @@ repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
-## Tailscale CI signing contract
+## Tailscale CI credentials
 
-The administrator-only `IaC/homelab/us-west-2/operator/tailscale-access` unit owns three Tailscale
-CI auth keys in encrypted OpenTofu state. These are not SSM parameters and are
-not available to External Secrets or application Pods. The operator OAuth SSM
-parameters in the matrix remain unchanged.
+The administrator-only `IaC/homelab/us-west-2/operator/tailscale-access` unit
+owns three CI auth keys in encrypted OpenTofu state. They are not SSM parameters
+and are unavailable to External Secrets or application Pods. The Kubernetes
+operator OAuth parameters remain separate.
 
-`scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
-then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
-`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. Same-repository
-PR plans use `homelab-plan` without a required reviewer; production remains
-restricted to `main`. Cordium's separate tag has no Kubernetes RBAC. No private
-kubeconfig or Tailscale administrator token is copied
-to GitHub. The three old client-ID variables are retired only after all secret
-writes and metadata checks succeed. Dormant provider OIDC identities remain
-protected pending separate retirement.
-
-Tailnet Lock remains enabled. Wrapped keys include a delegated private
-node-signing key, not the trusted authority's private voting key. Protect the
-publisher's `0600` cache, including its separate public authority identities,
-outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
-expiry), then explicitly retire old cached signing authorities after CI
-acceptance. Expiring an auth key alone does not remove that authority. The
-[module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns preview, publication,
-acceptance, rotation, and recovery commands.
+The `homelab-plan` and `homelab-production` environments each hold their scoped
+`TAILSCALE_AUTH_KEY`; the repository holds `TAILSCALE_CORDIUM_AUTH_KEY`.
+Same-repository PR plans use `homelab-plan`; production is restricted to `main`.
+Cordium's separate tag has no Kubernetes RBAC. No private kubeconfig or Tailscale
+administrator credential belongs in GitHub. Protect auth keys as credentials,
+rotate every 60 days before their 90-day expiry, and verify actual CI enrollment.
+The [module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+owns the provider, scope and rotation contract.
 
 ## Mastodon secret contract
 
@@ -880,19 +870,6 @@ uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
 rotation. Native-image activation still waits for reviewed publication, scans,
 recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
 declared annotation revision after rotation.
-
-## Codex Cloud signer
-
-The administrator-owned `tailscale-access` module directly owns five
-SecureStrings under `/homelab/tailscale/codex-cloud-signer/`: `auth-key`,
-`oauth-client-id`, `oauth-client-secret`, `webhook-secret`, and `cloud-auth-key`.
-The shared SSM module grants External Secrets only the first four exact names;
-`automation/codex-cloud-signer` projects the reader/webhook files into the API
-and only the single-use enrollment key into its daemon. `cloud-auth-key` is
-operator-only for Codex Cloud's managed VPN. The OAuth client is limited to
-`devices:core:read`; no signing private key is stored in SSM. The retained local
-volume holds signing authority. See the [signer runbook](../clusters/homelab/apps/codex-cloud-signer/README.md)
-for owner trust, 90-day enrollment-key renewal and disk-loss revocation.
 
 ## Uptime Kuma owner credential
 

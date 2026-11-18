@@ -381,7 +381,7 @@ Service supplies the approved hostnames and live ingress IPv4; Traefik still
 terminates HTTPS and routes requests. Cluster `kube-dns` remains separate.
 Approved A/AAAA answers are local; unmatched address queries and other record
 types use public resolvers. The owner adds the DNS proxy's observed IP to
-Tailscale only after direct UDP/TCP answers, signature, and client checks pass;
+Tailscale only after direct UDP/TCP answers, device identity and client checks pass;
 public app address records stay until a later guarded retirement.
 
 ## Source Files

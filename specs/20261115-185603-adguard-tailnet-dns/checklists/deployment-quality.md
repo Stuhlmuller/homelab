@@ -18,44 +18,61 @@ may read but must not change these markers.
 ## Requirement completeness
 
 - [x] CHK001 Are DNS filtering, private administration and actual tailnet client adoption each defined as separate required outcomes? [Completeness, Spec §US1–US3, §FR-001–014]
-- [x] CHK002 Are permitted, blocked, nonexistent and private-domain answer requirements defined for both DNS transports and both address-record types? [Completeness, Spec §FR-002–004, §FR-010; Contract §DNS]
-- [x] CHK003 Are authenticated administration, first-run setup closure and absence of public DNS/UI exposure explicitly required? [Completeness, Spec §FR-005–006; Contract §Administration]
-- [x] CHK004 Are durable configuration, credential custody, cache retention and recoverable sources distinguished? [Completeness, Spec §FR-007, §FR-017; Plan §Secret, state and recovery contract]
+- [x] CHK002 Are permitted, blocked, nonexistent and private-domain answer requirements defined for both DNS transports and both address-record types? [Completeness, Spec
+  §FR-002–004, §FR-010; Contract §DNS]
+- [x] CHK003 Are authenticated administration, first-run setup closure and absence of public DNS/UI exposure explicitly required? [Completeness, Spec §FR-005–006; Contract
+  §Administration]
+- [x] CHK004 Are durable configuration, credential custody, cache retention and recoverable sources distinguished? [Completeness, Spec §FR-007, §FR-017; Plan §Secret, state and
+  recovery contract]
 
 ## Requirement clarity and consistency
 
-- [x] CHK005 Is the selected blocking response consistent between the specification, plan and interface contract? [Consistency, Spec §US1, §SC-001; Plan §Architecture and configuration; Contract §DNS]
+- [x] CHK005 Is the selected blocking response consistent between the specification, plan and interface contract? [Consistency, Spec §US1, §SC-001; Plan §Architecture and
+  configuration; Contract §DNS]
 - [x] CHK006 Is the distinction between IPv4 transport, A/AAAA records and MagicDNS responsibility unambiguous? [Clarity, Spec §Clarifications, §FR-002, §FR-010]
-- [x] CHK007 Are repository-owned persistent settings and UI inspection described without promising persistence for undocumented UI edits? [Consistency, Spec §FR-007; Plan §Secret, state and recovery contract]
-- [x] CHK008 Is normal DNS cutover distinguished from deliberate rollback so the no-unfiltered-fallback requirement remains consistent? [Consistency, Spec §FR-011, §FR-015; Plan §Rollback]
+- [x] CHK007 Are repository-owned persistent settings and UI inspection described without promising persistence for undocumented UI edits? [Consistency, Spec §FR-007; Plan §Secret,
+  state and recovery contract]
+- [x] CHK008 Is normal DNS cutover distinguished from deliberate rollback so the no-unfiltered-fallback requirement remains consistent? [Consistency, Spec §FR-011, §FR-015; Plan
+  §Rollback]
 
 ## Acceptance criteria quality
 
 - [x] CHK009 Are direct-query sampling, deadlines, cache treatment and acceptable outcomes measurable? [Measurability, Spec §FR-013, §SC-001–002; Contract §DNS]
 - [x] CHK010 Does client acceptance explicitly require a normal system resolver and distinguish it from direct-server or CI evidence? [Measurability, Spec §FR-014, §SC-002]
-- [x] CHK011 Are exit-node client prerequisites and untested-coverage reporting stated consistently without equating unavailable access with a pass? [Clarity, Spec §FR-012; Plan §Technical Context; Quickstart §DNS cutover and user acceptance]
+- [x] CHK011 Are exit-node client prerequisites and untested-coverage reporting stated consistently without equating unavailable access with a pass? [Clarity, Spec §FR-012; Plan
+  §Technical Context; Quickstart §DNS cutover and user acceptance]
 - [x] CHK012 Does completion require the deployed revision and functional evidence rather than only a merged change or healthy process? [Measurability, Spec §FR-019, §SC-006]
 
 ## Scenario and failure coverage
 
-- [x] CHK013 Are empty-cache startup and failed filter refresh requirements differentiated so initial absence of protection cannot qualify for cutover? [Coverage, Spec §FR-003, §FR-013; Plan §Architecture and configuration; Contract §DNS]
+- [x] CHK013 Are empty-cache startup and failed filter refresh requirements differentiated so initial absence of protection cannot qualify for cutover? [Coverage, Spec §FR-003,
+  §FR-013; Plan §Architecture and configuration; Contract §DNS]
 - [x] CHK014 Is private-upstream failure behavior explicitly specified to avoid public fallback or recursive resolution loops? [Coverage, Spec §FR-004, §FR-010; Contract §DNS]
-- [x] CHK015 Are stale endpoint identity, changed address and expired acceptance evidence addressed before policy application? [Coverage, Spec §FR-008, §FR-013; Plan §Delivery sequence; Data model §DNS endpoint]
-- [x] CHK016 Are interrupted or uncertain policy-apply outcomes addressed without assuming the operation failed or authorizing blind repetition? [Coverage, Spec §FR-015, §FR-019; Contract §Proposed operator helpers]
-- [x] CHK017 Are single-service outage, configuration reconstruction and preservation of storage during rollback explicitly described? [Coverage, Spec §US4, §FR-017–018; Plan §Rollback]
+- [x] CHK015 Are stale endpoint identity, changed address and expired acceptance evidence addressed before policy application? [Coverage, Spec §FR-008, §FR-013; Plan §Delivery
+  sequence; Data model §DNS endpoint]
+- [x] CHK016 Are interrupted or uncertain policy-apply outcomes addressed without assuming the operation failed or authorizing blind repetition? [Coverage, Spec §FR-015, §FR-019;
+  Contract §Proposed operator helpers]
+- [x] CHK017 Are single-service outage, configuration reconstruction and preservation of storage during rollback explicitly described? [Coverage, Spec §US4, §FR-017–018; Plan
+  §Rollback]
 
 ## Security, privacy and dependencies
 
-- [x] CHK018 Are authentication failure, credential validation and rotation effects sufficiently specified to prevent an unprotected or unusable admin configuration? [Completeness, Spec §FR-005–007; Plan §Secret, state and recovery contract]
-- [x] CHK019 Are query history, statistics, diagnostic evidence and secret-output boundaries defined consistently? [Consistency, Spec §FR-016; Plan §Architecture and configuration; Data model §Acceptance receipt]
+- [x] CHK018 Are authentication failure, credential validation and rotation effects sufficiently specified to prevent an unprotected or unusable admin configuration? [Completeness,
+  Spec §FR-005–007; Plan §Secret, state and recovery contract]
+- [x] CHK019 Are query history, statistics, diagnostic evidence and secret-output boundaries defined consistently? [Consistency, Spec §FR-016; Plan §Architecture and configuration;
+  Data model §Acceptance receipt]
 - [x] CHK020 Are actual access-enforcement boundaries distinguished from merely declared network policies? [Clarity, Spec §FR-002, §FR-006; Plan §Architecture and configuration]
-- [x] CHK021 Are signing and administrator DNS permissions assigned to existing authorized owners without implying new trust or broader CI credentials? [Completeness, Spec §FR-008, §Assumptions; Plan §Delivery sequence]
-- [x] CHK022 Are upstream readiness, image publication and secret/storage prerequisites explicitly distinguished from successful design checks? [Dependency, Spec §FR-001, §FR-013, §FR-019; Plan §Constitution Check, §Delivery sequence]
+- [x] CHK021 Are device enrollment and administrator DNS permissions assigned to existing authorized owners without implying broader access or broader CI credentials?
+  [Completeness, Spec §FR-008, §Assumptions; Plan §Delivery sequence]
+- [x] CHK022 Are upstream readiness, image publication and secret/storage prerequisites explicitly distinguished from successful design checks? [Dependency, Spec §FR-001, §FR-013,
+  §FR-019; Plan §Constitution Check, §Delivery sequence]
 
 ## Ambiguities and scope boundaries
 
-- [x] CHK023 Are DNS-bypassing applications, off-tailnet clients, first-party ads and additional filtering features clearly outside the promised result? [Clarity, Spec §Edge Cases, §Assumptions]
-- [x] CHK024 Are source/fixture validation, protected delivery, live deployment and recovery evidence separated so no one is substituted for another? [Consistency, Spec §SC-005–006; Quickstart; Plan §Delivery sequence]
+- [x] CHK023 Are DNS-bypassing applications, off-tailnet clients, first-party ads and additional filtering features clearly outside the promised result? [Clarity, Spec §Edge Cases,
+  §Assumptions]
+- [x] CHK024 Are source/fixture validation, protected delivery, live deployment and recovery evidence separated so no one is substituted for another? [Consistency, Spec
+  §SC-005–006; Quickstart; Plan §Delivery sequence]
 
 ## Notes
 
