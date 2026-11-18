@@ -6,7 +6,7 @@ Policy for an existing GitHub Actions apply role and the External Secrets permis
 
 See [variables.tf](variables.tf) for input types, defaults and validation.
 
-See [outputs.tf](outputs.tf) for `policy_arn`, `external_secrets_boundary_policy_arn`.
+The module exports no values. Its managed resource addresses remain unchanged.
 
 ## Usage
 

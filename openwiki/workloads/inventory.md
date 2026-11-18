@@ -931,7 +931,8 @@ preserved. No automatic unfiltered fallback is configured. Query history and
 statistics are disabled; the retained 1Gi NFS claim holds replaceable filter cache.
 
 Source registration does not activate global tailnet DNS. After image publication,
-GitOps rollout, trusted-Mac peer signing and live direct/admin/recovery checks,
+GitOps rollout, verified peer identity (trusted-Mac signing only with enabled
+Tailnet Lock) and live direct/admin/recovery checks,
 a separate reviewed change must use the observed proxy address. The guarded
 saved-plan helper applies only that DNS policy change. Native macOS client checks
 then verify normal resolver use; exit-node acceptance requires a selected,
@@ -941,7 +942,13 @@ not been switched. Explicit ExternalSecret remote-reference defaults prevent
 admission defaulting from leaving Argo CD OutOfSync. Isolated recovery accepts
 the direct API or the declared authenticated Tailscale operator proxy with TLS
 verification enabled; it records and rechecks the selected endpoint. This does
-not replace the trusted Mac required for peer signing and client acceptance.
+not replace the owner Mac required for actual client acceptance. With Lock
+disabled, [AdGuard acceptance](../../scripts/adguard-check.py) independently
+matches the Mac peer to the Service-owned proxy and records explicit unsigned,
+unlocked evidence. Missing or inconsistent mode and observed identity drift
+fail closed. The shared signer retains its strict legacy enabled-Lock schema;
+Tailscale v1.102.3 enabled peer output requires a separate compatibility fix,
+not a bypass. See the [mode research](../../specs/20261115-185603-adguard-tailnet-dns/research.md).
 
 AdGuard also has a Kuma workload-readiness monitor with exact Deployment metrics
 and freshness checks. This does not prove DNS filtering or successful client

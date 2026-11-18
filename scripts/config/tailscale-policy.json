@@ -165,6 +165,36 @@
       "ip": [
         "tcp:443"
       ]
+    },
+    {
+      "src": [
+        "tag:homelab-ci-apply"
+      ],
+      "dst": [
+        "tag:k8s",
+        "tag:homelab-funnel",
+        "homelab-nas",
+        "homelab-nas-lan",
+        "homelab-control-plane",
+        "homelab-worker-0",
+        "homelab-worker-1",
+        "homelab-worker-2"
+      ],
+      "ip": [
+        "*"
+      ]
+    },
+    {
+      "src": [
+        "tag:homelab-ci-apply"
+      ],
+      "dst": [
+        "tag:homelab-ingress",
+        "tag:k8s-operator"
+      ],
+      "ip": [
+        "*"
+      ]
     }
   ],
   "tests": [
@@ -184,7 +214,19 @@
       "accept": [
         "tag:k8s-operator:443",
         "tag:homelab-ingress:443",
-        "tag:homelab-ingress:53"
+        "tag:homelab-ingress:53",
+        "homelab-nas:443",
+        "homelab-nas-lan:2049",
+        "homelab-control-plane:6443",
+        "homelab-worker-0:50000",
+        "homelab-worker-1:50000",
+        "homelab-worker-2:50000",
+        "tag:k8s:443",
+        "tag:homelab-funnel:443",
+        "tag:homelab-ingress:80"
+      ],
+      "deny": [
+        "100.64.0.1:443"
       ]
     },
     {
@@ -209,5 +251,13 @@
         "tag:homelab-ingress:80"
       ]
     }
-  ]
+  ],
+  "hosts": {
+    "homelab-nas": "100.111.238.93",
+    "homelab-nas-lan": "10.1.0.2",
+    "homelab-control-plane": "10.1.0.199",
+    "homelab-worker-0": "10.1.0.200",
+    "homelab-worker-1": "10.1.0.201",
+    "homelab-worker-2": "10.1.0.202"
+  }
 }

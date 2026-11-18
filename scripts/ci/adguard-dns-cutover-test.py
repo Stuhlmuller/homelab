@@ -5,7 +5,7 @@ import importlib.util
 from pathlib import Path
 import unittest
 import time
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import tempfile
 import json
 
@@ -184,6 +184,46 @@ class FakeAdapter:
 
 
 class ExecutionContract(unittest.TestCase):
+    def test_unlocked_peer_is_bound_and_drift_never_applies(self):
+        peer = {'dns': 'homelab-adguard.tail67beb.ts.net', 'node_key': 'nodekey:' + 'b' * 64,
+                'pod_uid': 'pod', 'device_id': 'device', 'node_id': 7, 'tags': ['tag:homelab-ingress'],
+                'addresses': ['100.99.0.1'], 'lock_enabled': False, 'signed': False}
+        adapter = FakeAdapter()
+        adapter.snapshot_value['peer'] = copy.deepcopy(peer)
+        self.assertEqual(CUTOVER.reconcile(adapter, True), 'applied')
+        self.assertEqual(adapter.saved['binding']['peer'], peer)
+        self.assertEqual(adapter.checks, 1)
+        mutations = [lambda p: p.update(lock_enabled=True, signed=True),
+                     lambda p: p.pop('lock_enabled'), lambda p: p.update(lock_enabled='false'),
+                     lambda p: p.update(signed=True), lambda p: p.update(node_key='nodekey:' + 'c' * 64),
+                     lambda p: p.update(device_id='replacement'), lambda p: p.update(node_id=8),
+                     lambda p: p.update(pod_uid='replacement'), lambda p: p.update(tags=['tag:other']),
+                     lambda p: p.update(addresses=['100.99.0.2'])]
+        for mutation in mutations:
+            adapter = FakeAdapter()
+            adapter.snapshot_value['peer'] = copy.deepcopy(peer)
+            adapter.drift = lambda a: mutation(a.snapshot_value['peer'])
+            with self.assertRaises(CUTOVER.Failure):
+                CUTOVER.reconcile(adapter, True)
+            self.assertEqual(adapter.applies, 0)
+            self.assertIsNone(adapter.saved)
+            self.assertEqual(adapter.checks, 1)
+
+    def test_historical_receipt_cannot_replace_fresh_direct_acceptance(self):
+        adapter = FakeAdapter()
+        CUTOVER.reconcile(adapter, True)
+        adapter.live = adapter.before
+        adapter.saved['phase'] = 'failed-needs-new-plan'
+        adapter.saved['inspected_at'] = time.time() - 1
+        adapter.plan_digest = '2' * 64
+        adapter.plan_time = time.time()
+        adapter.applies = 0
+        adapter.direct_check = Mock(side_effect=CUTOVER.Failure('fresh acceptance unavailable'))
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
+        adapter.direct_check.assert_called_once_with()
+        self.assertEqual(adapter.applies, 0)
+
     def test_unreadable_apply_outcome_stays_uncertain_until_inspected(self):
         adapter = FakeAdapter()
         apply = adapter.apply
@@ -320,6 +360,8 @@ class RollbackAdapter(FakeAdapter):
 class RollbackContract(unittest.TestCase):
     def test_exact_restoration_succeeds_with_adguard_unavailable(self):
         adapter = RollbackAdapter()
+        self.assertNotIn('lock_enabled', adapter.saved['direct_evidence']['peer'])
+        self.assertNotIn('lock_enabled', adapter.saved['binding']['peer'])
         self.assertEqual(CUTOVER.rollback(adapter, False), 'rollback-preview')
         self.assertEqual(adapter.applies, 0)
         self.assertEqual(CUTOVER.rollback(adapter, True), 'restored')

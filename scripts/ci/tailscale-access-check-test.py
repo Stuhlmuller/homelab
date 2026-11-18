@@ -24,8 +24,24 @@ class AccessCheckTest(unittest.TestCase):
         ci_dns = [grant for grant in policy["grants"]
                   if any(src.startswith("tag:homelab-ci-") for src in grant["src"])
                   and set(grant["ip"]) & {"udp:53", "tcp:53", "*"}]
-        self.assertEqual(ci_dns, [{"src": ["tag:homelab-ci-apply"],
-                                   "dst": ["tag:homelab-ingress"], "ip": ["tcp:53", "udp:53"]}])
+        self.assertEqual({tuple(grant["src"]) for grant in ci_dns}, {("tag:homelab-ci-apply",)})
+        self.assertEqual(policy["hosts"]["homelab-nas"], "100.111.238.93")
+        self.assertEqual(policy["hosts"]["homelab-nas-lan"], "10.1.0.2")
+        expected_apply_destinations = {
+            "tag:homelab-ingress", "tag:k8s-operator", "tag:k8s", "tag:homelab-funnel",
+            "homelab-nas", "homelab-nas-lan", "homelab-control-plane",
+            "homelab-worker-0", "homelab-worker-1", "homelab-worker-2",
+        }
+        apply_destinations = {dst for grant in policy["grants"]
+                              if "tag:homelab-ci-apply" in grant["src"] for dst in grant["dst"]}
+        self.assertEqual(apply_destinations, expected_apply_destinations)
+        for grant in ci_dns:
+            self.assertNotIn("*", grant["dst"])
+            self.assertNotIn("autogroup:member", grant["dst"])
+        apply_tests = next(test for test in policy["tests"] if test["src"] == "tag:homelab-ci-apply")
+        self.assertIn("homelab-nas:443", apply_tests["accept"])
+        self.assertIn("homelab-control-plane:6443", apply_tests["accept"])
+        self.assertIn("100.64.0.1:443", apply_tests["deny"])
 
     def test_codex_dns_exception_does_not_expand_ci_or_lan_access(self):
         policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())

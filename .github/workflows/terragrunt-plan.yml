@@ -122,6 +122,14 @@ jobs:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
+      - name: Cache Terragrunt Providers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/terragrunt/providers
+          key: terragrunt-providers-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'IaC/**/*.tf', 'IaC/terragrunt-catalog/**/*.hcl') }}
+          restore-keys: |
+            terragrunt-providers-v1-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Verify Live Plan Inputs
         env:
           AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}

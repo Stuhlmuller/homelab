@@ -8,7 +8,7 @@ Deploy one AdGuard Home instance in existing `automation`, register it through
 Terragrunt/Argo, expose UDP/TCP DNS with a Tailscale operator LoadBalancer Service,
 and serve its authenticated UI at `https://adguard.stinkyboi.com` through existing
 private Traefik ingress. Retain existing split DNS and MagicDNS. After the new
-signed endpoint passes direct acceptance, commit its observed address and apply
+identity-verified endpoint passes direct acceptance, commit its observed address and apply
 only the reviewed DNS configuration change through the administrator-owned
 Tailscale unit. Normal client DNS acceptance completes the rollout.
 
@@ -43,7 +43,7 @@ Pre-research and post-design: all five principles pass at design level.
 | --- | --- |
 | Repository-owned state | App, secret, routes, signing target, DNS and rollout checks are committed before application; no ad hoc live patching |
 | Secret safety | Generated internal admin password in existing encrypted SSM/state; ESO renders bcrypt; mounted files only |
-| Validate before change | Image prerequisite delivery, runtime fixture, targeted preflight, signed-endpoint checks, exact saved DNS plan |
+| Validate before change | Image prerequisite delivery, runtime fixture, targeted preflight, mode-aware endpoint checks, exact saved DNS plan |
 | Reviewable/teachable | Small dependency-ordered PRs and affected inventory/ingress/storage/secret docs; explicit rollback |
 | Reproducible ownership | Existing shared app registration and SSM unit; ordinary bootstrap retains declared dependencies |
 
@@ -121,10 +121,11 @@ UI edits are transient and not the supported persistent configuration path.
    Extend targeted apply for `adguard` following codex signer namespace/SSM
    handling, but check `nfs-default` and the correct upstream applications.
 3. Apply exact reviewed main through existing workflow, verify SSM/ESO/PVC,
-   workload, private route and operator-created DNS Service. Use the existing
-   trusted signer with a new fixed `--adguard-only` target; never broaden the
+   workload, private route and operator-created DNS Service. When Lock is enabled, use the existing
+   trusted signer with the fixed `--adguard-only` target; skip signing when
+   Lock is explicitly disabled; never broaden the
    Codex webhook signer or trust a new signing authority for this task.
-4. Validate observed Service IP against signed online peer and run all direct
+4. Validate observed Service IP against the mode-verified online peer and run all direct
    acceptance. Save private receipts tied to source/config/peer identity.
 5. Only then author the cutover commit: replace the two globals with the observed
    AdGuard IPv4, `use_with_exit_node=true`, `override_local_dns=true`; retain
@@ -141,14 +142,14 @@ UI edits are transient and not the supported persistent configuration path.
 7. Read back effective tailnet DNS; run normal-client acceptance and revision
    checks. Keep the issue open until required functional evidence passes.
 
-If signing/admin access is unavailable, complete source delivery that is safe
+If required signing (enabled Lock) or administrator access is unavailable, complete source delivery that is safe
 without it, preserve the exact pending operation, and request only that missing
 operator handoff when concrete. Do not mutate access policy to unblock the task.
 
 ## Cutover evidence freshness and binding
 
 The helper defaults to preview; `--mode cutover --execute` reruns all required
-direct DNS, active-filter, administration and signed-endpoint checks in that same
+direct DNS, active-filter, administration and mode-aware endpoint checks in that same
 invocation. A stored success receipt alone never authorizes execution. The full
 check set must finish within 300 monotonic seconds. Its completion-to-apply
 interval must be at most 60 monotonic seconds; otherwise repeat the check set.
@@ -156,7 +157,7 @@ Reject negative ages, future-dated persisted receipts and wall-clock regression;
 monotonic timing governs live deadlines. Persist UTC start/end only for audit.
 
 Bind the live result to clean current-main SHA, deployed app revision, config
-revision, DNS Service UID/IP, peer public key/name/tag/signature, exact saved-plan
+revision, DNS Service UID/IP, peer public key/name/tag, explicit Lock mode and applicable signature, exact saved-plan
 SHA-256, and the complete before/after DNS policies. Immediately before apply,
 re-read source/main, configuration and endpoint identity, live DNS policy and
 plan-file digest; require equality with the checked snapshot. Any change
@@ -233,5 +234,80 @@ Source changes:
 ## Complexity Tracking
 
 No constitution exception. Separate app rollout and DNS cutover are necessary
-because the operator assigns the endpoint and Tailnet Lock requires its actual
-identity before activation. Existing source owners remain authoritative.
+because the operator assigns the endpoint and its identity and applicable
+Tailnet Lock requirements must be verified before activation. Existing source owners remain authoritative.
+
+## Unlocked-tailnet acceptance amendment
+
+Owner correction: Lock is disabled. Scope is the acceptance helper and runbooks;
+no runtime manifests, DNS policy, credentials or shared signing semantics change.
+
+### Mode selection and identity verification
+
+Add AdGuard-only read-only functions in `scripts/adguard-check.py`. Read the
+existing Mac Tailscale binary's status and lock status through the existing
+bounded, sanitized command wrapper. Require a dictionary and an actual boolean
+`Enabled`; missing/null/string/numeric modes fail. Require Running, Self.Online,
+expected MagicDNSSuffix and no explicit expired local identity in both modes.
+There is no CLI flag, environment variable or receipt that selects unlocked mode.
+
+For enabled Lock, retain `SIGNER.local_signer()` and
+`SIGNER.inspect_target(SIGNER.ADGUARD_TARGET, ...)`, requiring signed=true.
+Append `lock_enabled: true` to that peer evidence. Existing signing commands and
+canary/other ingress callers remain unchanged. Their existing upstream-version
+limitations are not silently weakened by this amendment.
+
+For disabled Lock, read the exact `automation/adguard-dns` Service, require
+exactly one selected managed proxy Pod in `tailscale`, then exec read-only
+`tailscale status --json` and `tailscale lock status --json` in its tailscale
+container. Require proxy Enabled to be exactly false too. Validate the same
+parent-resource labels, Service UID/app label, ready/non-deleting Pod, fixed
+hostname/tag, expected tailnet, Running/Online state and valid tailnet IPs as
+existing target validation. Require nonempty Pod UID and valid node public key.
+Reject explicit expired proxy or local peer. Require the Service-published
+hostname and addresses to match the proxy; retain the final Service reread.
+
+Use local status.Peer to cross-check the proxy independently of Kubernetes:
+exactly one peer with matching stable ID, numeric NodeID, PublicKey, DNSName,
+TailscaleIPs and expected Tags, Online=true and no explicit Expired=true. Validate
+nonempty stable ID, positive integer NodeID (not boolean), a nodekey hex value,
+unique nonempty addresses within tailnet ranges, InNetworkMap=true and the
+expected map-key binding. Reject a zero node key. When disabled lock NodeKey is
+present, require it to match that device status PublicKey; missing optional
+signing keys remain valid.
+Never substitute hostname-only or IP-only matching. Disabled lock output may
+omit signing fields; do not require or invent a rotation key or signature there.
+
+### Evidence and races
+
+Unlocked peer evidence contains dns, node_key, pod_uid, device_id, node_id,
+tags, sorted addresses, lock_enabled=false and signed=false. Locked evidence
+retains existing signing fields plus lock_enabled=true. Snapshot validation
+requires explicit boolean mode and signed value appropriate to that mode;
+missing or ambiguous mode fails. The full peer object already participates in
+before/after direct snapshots and fresh pre-apply cutover binding, so mode and
+identity drift invalidate acceptance. Recheck local mode around identity reads
+as well. Do not claim atomic observation across machines or immunity to changes
+after the last read. Rollback retains its independent existing path.
+
+### Validation and delivery
+
+Extend existing adguard-check fixtures with valid unlocked identity and locked
+regression coverage; negative fixtures cover every identity component, ownership,
+missing/malformed mode, local/proxy disagreement, duplicate or absent local peer,
+offline/expired states and mode change during inspection. Direct-acceptance and
+cutover tests must show observed mode drift blocks success/apply. Keep shared
+signing tests passing and verify no signing command is invoked for unlocked mode.
+Existing offline CI already runs the touched test scripts; no new workflow needed.
+
+Update app README and OpenWiki inventory to make signing conditional and guide
+the owner directly to acceptance on an unlocked tailnet. Deliver a normal
+protected PR, then use merged current-main code for Mac checks. Unit fixtures
+are not live acceptance. Cloud UDP/recovery limitations remain; owner runs actual
+UDP/TCP, admin, recovery and normal-client checks locally. Global DNS cutover
+stays pending those gates. Reverting this helper change restores the old refusal
+on unlocked tailnets and makes no live Lock or DNS change.
+
+Constitution pre/post amendment review: all five principles pass. Repository
+ownership, secret custody, validation, protected delivery and existing bootstrap
+remain unchanged. No exception or new approval is needed for this source fix.
