@@ -25,4 +25,6 @@
 
 ## Review Evidence
 
-Reviewed FR-001–FR-009 against both stories and SC-001–SC-004. The request necessarily names Terragrunt and its backend ownership; algorithm, generated provider names and migration mechanics remain planning concerns. No material requirement ambiguity needs user input.
+Reviewed FR-001–FR-009 against both stories and SC-001–SC-004. The request necessarily names Terragrunt and its
+backend ownership; algorithm, generated provider names and migration mechanics remain planning concerns. No material
+requirement ambiguity needs user input.
