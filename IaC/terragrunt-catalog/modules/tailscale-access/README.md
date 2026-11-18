@@ -3,10 +3,6 @@
 The `operator/tailscale-access` Terragrunt unit owns the complete tailnet policy,
 DNS configuration, tailnet settings, contact addresses, and three scoped CI auth
 keys through `tailscale/tailscale` 0.29.2.
-The tailnet keeps Tailnet Lock enabled; OAuth/OIDC enrollment alone cannot sign
-a new node. Existing unused federated identities remain protected in state until
-the final migration retirement removes them through a reviewed provider apply
-after signed-key CI acceptance.
 Ordinary CI never applies this unit or receives policy administration scopes.
 State and saved plans use the existing encrypted homelab S3 backend.
 
@@ -90,12 +86,11 @@ retained identities keep `prevent_destroy`. Do not remove resources from state
 to bypass that guard. The aggregate DNS resource is alpha in provider 0.29.2;
 pin its version and check the exact plan before updating it.
 The keys are reusable, ephemeral, preauthorized, scoped to separate CI tags, and
-expire after 90 days. `preauthorized` is not a Tailnet Lock signature.
+expire after 90 days.
 
-The sensitive `github_auth_keys` output is consumed only by the fixed operator
-publisher. Never run an unredirected `terragrunt output -json` or paste its output.
-The raw keys remain in encrypted state; signing and publication capture private
-subprocess output without displaying it or passing keys in process arguments.
+The sensitive `github_auth_keys` output contains the three CI credentials. Keep
+outputs and saved plans private; never run an unredirected `terragrunt output -json`
+or paste its output. Raw keys remain in encrypted state.
 
 | Output key | GitHub secret | Scope | Node tag |
 | --- | --- | --- | --- |
@@ -103,140 +98,28 @@ subprocess output without displaying it or passing keys in process arguments.
 | `apply` | `TAILSCALE_AUTH_KEY` | `homelab-production` environment | `tag:homelab-ci-apply` |
 | `cordium` | `TAILSCALE_CORDIUM_AUTH_KEY` | Repository | `tag:homelab-ci-cordium` |
 
-Run the publisher on this homelab's trusted Mac signing node after the provider
-apply. It uses `/Applications/Tailscale.app/Contents/MacOS/Tailscale`, verifies
-Tailnet Lock is enabled and this node is a trusted signer, and checks the fixed
-GitHub environment owner-review and branch protections. The default is read-only.
-`--execute` also requires a clean checkout at signed, verified current `main`.
+CI uses the scoped auth key from the corresponding protected GitHub secret.
+The [Harbor mirror](../../../../docs/harbor-tailscale-production.md) enrolls
+with its checksum-pinned native client and removes its ephemeral node on cleanup.
+Cordium's separate repository secret has no Kubernetes RBAC binding. Exact-main
+and trusted-PR workflow checks remain necessary: auth keys do not encode GitHub
+OIDC subject or workflow claims.
 
-```sh
-nix develop --command python3 -I scripts/tailscale-ci-configure.py
-nix develop --command python3 -I scripts/tailscale-ci-configure.py --execute
-```
+## Auth key rotation
 
-Signing uses `tailscale lock sign file:/dev/stdin`, passing the raw key through
-stdin without putting it in arguments or a temporary file. The sandboxed macOS
-Tailscale app cannot read the helper's private config-directory files; stdin keeps
-this path compatible with its sandbox. A successful sign can return before the
-Mac's local trusted-key list receives the update. The helper saves the validated
-wrapped output in private `ci-signing-receipt.json` before any post-sign readback,
-then checks up to 16 snapshots with two-second waits. It requires exactly one
-new credential signer with matching auth-key metadata and no unrelated trust
-changes. A timeout retains the receipt; rerunning resumes verification without
-signing again. Preview never promotes or removes a pending receipt.
+Rotate every 60 days from provider creation, before the 90-day expiry. Increment
+the committed `ci_key_generation` in
+[`terragrunt.hcl`](../../units/operator/tailscale-access/terragrunt.hcl),
+review and merge it, then use the encrypted saved-plan path above. Expect three
+key replacements with no policy or identity changes. `create_before_destroy`
+creates replacements first; the same apply revokes old auth keys. Coordinate
+credential publication with CI dispatches. Auth-key deletion does not revoke
+already enrolled nodes. Invalid keys are not silently recreated under the same
+generation (`recreate_if_invalid = "never"`); prepare a reviewed generation
+change when replacement is needed. Keep credentials out of arguments, logs and
+git, and verify actual protected plan, apply and Cordium enrollment after rotation.
 
-After verification, wrapped keys and their separate public authority identities
-are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` before publication,
-then the pending receipt is removed. Both files require mode `0600` in the same
-owned `0700` directory. Keep an encrypted private backup; never put either file
-in git or an ordinary support bundle. An advisory lock prevents concurrent
-publishers on this Mac. Complete a pending receipt before changing generations
-or retiring previous authorities.
-
-The helper sends each wrapped key to `gh secret set` over stdin. GitHub can expose
-only secret metadata, so the helper checks presence and leaves actual key
-acceptance to protected CI runs. Only after all three publications and metadata
-checks succeed does it delete the two environment `TAILSCALE_CLIENT_ID` variables
-and repository `TAILSCALE_CORDIUM_CLIENT_ID`. It changes no other secret or
-variable. Partial publication keeps all old variables; rerunning is safe.
-Retained provider identity outputs must not be republished.
-
-CI consumers use the protected pre-signed key and a per-job state directory for
-Tailnet Key Authority state. The [Harbor mirror](../../../../docs/harbor-tailscale-production.md)
-enrolls with its checksum-pinned native client and logs out its ephemeral node
-on cleanup. Plan/apply secrets stay behind their existing
-protected environments; Cordium's separate repository secret supports trusted
-branch denial tests and has no Kubernetes RBAC binding. The workflow's exact-main
-and trusted-PR checks remain necessary: signed keys do not carry GitHub OIDC
-subject/workflow claims.
-
-## Interrupted signing recovery
-
-An older publisher could discard a successful CLI receipt when its immediate
-local readback was stale. Public authority metadata cannot reconstruct the
-wrapped key's delegated private key. Restore an existing private receipt/cache
-when available; normal publication refuses to sign an already-matching uncached
-authority. Do not remove broad groups of pre-auth authorities or disable lock.
-
-For an exact failed attempt without a receipt, preview this separate recovery
-command from reviewed source, using the recorded public authority and its exact
-`wrapper_createtime` Unix timestamp:
-
-```sh
-nix develop --command python3 -I scripts/tailscale-ci-configure.py \
-  --recover-orphan apply --authority '<exact-tlpub>' --created-at '<unix-timestamp>'
-```
-
-Only add `--execute` after reviewing that preview on clean signed current main.
-The fixed identity must match its current provider key, the authority must be
-unique with matching purpose, original auth-key stable ID, this Mac's node ID
-and a creation timestamp within the last day. Recovery refuses any local pending
-receipt, a matching cached key, or any of the three published GitHub secrets.
-It queries the official read-only affected-signature endpoint and requires an
-empty response before removing only that authority with `--re-sign=false`.
-Nonempty, malformed or failed lookups block removal; GitHub secret absence alone
-is insufficient. The query is a snapshot, so keep other signing/join activity
-paused through this narrow recovery.
-
-The helper waits for removal readback and verifies all other authorities and
-metadata remain unchanged. An already-absent target is a no-op. Recovery never
-signs or publishes; normal preview/execute remains a separate command afterward.
-The fixed failure path and private receipts preserve recovery if readback times
-out. No provider resource or generation change is required for this repair.
-
-## Rotation and retirement
-
-Generation 2 was created on October 14, 2026 UTC. Rotate every 60 days from
-the provider creation timestamp, before the 90-day expiry. No timestamp or local environment
-variable silently changes desired state. Increment the committed
-`ci_key_generation` in
-[`IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl`](../../terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl),
-review/merge it, then use the private saved-plan path above. Expect three key
-replacements and no policy or identity changes. `create_before_destroy` creates
-the replacements first; the same apply then revokes old auth keys. Pause new CI
-dispatches during apply/publication; existing enrolled nodes are not revoked by
-auth-key deletion. An expired/revoked key is not automatically recreated under
-the same generation (`recreate_if_invalid = "never"`). Increment the generation
-through a reviewed recovery change if an early replacement is needed.
-
-Publish the new generation with the same preview/execute commands. Verify one
-protected plan including real-write denial, one apply diagnostics run, and the
-Cordium happy/denial checks before retiring old signing authority:
-
-```sh
-nix develop --command python3 -I scripts/tailscale-ci-configure.py --retire-previous
-nix develop --command python3 -I scripts/tailscale-ci-configure.py --retire-previous --execute
-```
-
-The retirement mode removes only older-generation authorities recorded by this
-publisher and matched to their original auth-key metadata. It requires valid,
-cached current signatures first. Preview and execution both validate every
-current signature and all previous authority metadata before any removal;
-execution rechecks each target immediately before removing it. Already-absent
-previous authorities remain safe to retry. Preview never signs, publishes or
-changes the cache. `tailscale lock remove` re-signs existing nodes by default;
-the helper never disables Tailnet Lock or removes unrelated signers.
-It deletes old wrapped cache entries only after authority removal is confirmed.
-Do not roll back a generation or restore revoked keys; prepare a fresh generation.
-
-A pre-signed key embeds a delegated private node-signing key and its credential,
-not the trusted authority's private voting key. The CLI creates a distinct
-trusted credential signer; the private cache records its public identity for
-reuse and retirement. Delegated node-signing capability is broader than normal
-auth-key tag permissions and survives auth-key expiry/revocation while that
-authority remains trusted. The explicit retirement step is therefore required,
-not optional cleanup. Treat any leak as a signing-key
-incident using Tailscale's recovery procedure, not merely an auth-key rotation.
-This deployment intentionally accepts that tradeoff to retain Tailnet Lock while
-using ephemeral GitHub-hosted runners.
-
-Primary references: [pinned GitHub Action Tailnet Lock setup](https://github.com/tailscale/github-action/blob/d1b6cd204f8dceda5b3eaad7f1f767be390056cd/README.md#tailnet-lock),
-[CLI signing and authority removal](https://tailscale.com/docs/reference/tailscale-cli/lock),
-[provider auth-key resource](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/tailnet_key),
-[pinned CLI authority creation](https://github.com/tailscale/tailscale/blob/v1.102.4/cmd/tailscale/cli/tailnet-lock.go#L750-L790),
-[separate delegated key construction](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/ipnlocal/tailnet-lock.go#L1220-L1249),
-[asynchronous authority sync](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/ipnlocal/tailnet-lock.go#L889-L966),
-[read-only affected-signature endpoint](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/localapi/tailnetlock.go#L292-L315).
+[Provider auth-key resource](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/tailnet_key).
 
 ## API proxy acceptance
 
@@ -248,7 +131,7 @@ rejects every non-dry-run write by that group. The protected apply group retains
 cluster administration for the existing Argo CD bootstrap and cluster RBAC.
 
 Deploy and verify the API proxy, admission policy, and RBAC before switching CI.
-After signed-key publication, require an authenticated protected plan and apply
+With the scoped credentials available, require an authenticated protected plan and apply
 through `homelab-tailscale-operator.tail67beb.ts.net`, a rejected real write by
 the plan group, and the existing Cordium denial/cleanup checks. The CI cutover
 wires `scripts/ci/tailscale-access-check.py plan` into the plan workflow. It
@@ -269,38 +152,5 @@ tofu -chdir=IaC/terragrunt-catalog/modules/tailscale-access init -backend=false
 tofu -chdir=IaC/terragrunt-catalog/modules/tailscale-access validate
 tofu -chdir=IaC/terragrunt-catalog/modules/tailscale-access test
 nix develop --command python3 -I scripts/ci/install-kubeconfig-test.py
-python3 -I scripts/ci/tailscale-ci-configure-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 ```
-
-## Codex Cloud enrollment
-
-`codex-signer.tf` owns the dedicated ephemeral Codex auth key, persistent
-signer enrollment key, read-only device OAuth client, management-event webhook
-and five encrypted SSM values. Runtime SSM encryption uses `alias/aws/ssm` in
-`us-west-2`; state/plan encryption remains in `us-east-1`. The shared SSM unit
-must grant External Secrets the four exact runtime paths before activation;
-the cloud auth key stays operator-only. This adds AWS provider 6.56.0 to the
-existing administrator unit; workload CI does not apply it. Review the full
-saved plan, including unrelated tailnet drift, before applying. Follow the
-[signer runbook](../../../../clusters/homelab/apps/codex-cloud-signer/README.md)
-for staged activation, owner signer trust, recovery and actual cloud acceptance.
-
-For the Codex-only rollout, review the full private plan first, then generate
-an exact saved plan with `-target=aws_ssm_parameter.codex_signer`. This includes
-the credential dependencies and required ACL update, while leaving unrelated
-DNS/settings adoption untouched. Inspect its actions before applying: nine
-creates, expected ACL update, no deletion/replacement or unrelated resource.
-Refresh it from current clean `main` after merge; a feature-branch preview is
-not an apply receipt.
-
-The Codex OAuth client, webhook and both enrollment keys use the separate
-`tailscale.codex_bootstrap` provider. It reads a short-lived Owner/Admin API key
-from the regular mode-0600 file
-`~/.config/homelab/tailscale/codex-signer-owner-api-key` in a mode-0700 directory.
-The established OAuth provider remains responsible for existing tailnet
-resources and the policy; its existing client cannot create the runtime OAuth
-client and has no webhook write scope. The owner key is never sent to a Pod or
-SSM. Revoke/remove it after the saved-plan apply; future changes to the Codex resources need a new owner credential in the same
-private slot. With that file absent, ordinary refreshes fall back to the
-existing read-capable operator OAuth client, preserving other operator work.

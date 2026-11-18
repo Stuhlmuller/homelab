@@ -10,7 +10,7 @@ R1 resolution: Cutover execution reruns every required direct acceptance check
 in the same invocation; a saved receipt alone is never authorization. Full-set
 maximum 300 monotonic seconds; success-to-apply maximum 60 seconds. Reject
 future/negative times and clock regression. Bind source/deployed/config revisions,
-Service UID/IP, peer key/name/tag/signature, plan digest and full before/after DNS
+Service UID/IP, peer key/name/tag, plan digest and full before/after DNS
 policy. Re-read main/config/endpoint/live policy/plan bytes immediately before
 apply. Preserve native state locking/stale-plan rejection. Negative cases include
 expired checks/delay, future timestamps, changed bindings and plan bytes.

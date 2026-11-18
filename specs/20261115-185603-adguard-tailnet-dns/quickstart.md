@@ -19,7 +19,7 @@ git diff --check
 ```
 
 Use repository Nix tooling and relevant validation-runbook commands for HCL,
-rendering, generated registration, image coverage, secret policy and signer
+rendering, generated registration, image coverage, secret policy
 fixtures. Runtime fixture uses the pinned image, exact security context and
 synthetic credentials. Prove startup/authentication, both DNS transports,
 private failure isolation, failed filter refresh retention, privacy settings,
@@ -42,16 +42,11 @@ kubectl --request-timeout=10s -n automation get service adguard-dns
 python3 scripts/verify-gitops.py --application adguard --expected-sha <deployed-sha> --deployment automation/adguard
 ```
 
-Do not print Secret data. On the owner Mac, use reviewed main. Only if Tailnet
-Lock is enabled, preview and execute the fixed signing target with an existing
-trusted signer. If Lock is disabled, skip both signing commands. Direct acceptance
-independently verifies live Lock mode, online identity and Service address:
+Do not print Secret data. On the owner Mac, use reviewed current `main` and
+verify the Service-owned online proxy identity and observed address. Run direct
+acceptance with a private administrator file and a new private receipt:
 
 ```sh
-# Enabled Tailnet Lock only:
-python3 -I scripts/tailscale-ingress-sign.py --adguard-only
-python3 -I scripts/tailscale-ingress-sign.py --adguard-only --execute
-# Both locked and unlocked tailnets:
 python3 -I scripts/adguard-check.py --server <observed-adguard-tailnet-ip> --password-file <private-admin-file> --receipt <new-private-direct-receipt>
 ```
 
