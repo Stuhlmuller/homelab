@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Source implementation complete; delivery review and runtime acceptance pending
+**Status**: Deployed; functional acceptance and DNS cutover pending
 
 **Input**: "deploy adguard to the homelab, create a Tailscale ingress for that service, then use that dns server for the Tailscale dns so I don’t get ads while using the tailnet"
 
@@ -38,6 +38,18 @@ These are agent-resolved decisions from repository evidence, not new user answer
   retries, matching the existing homelab DNS checker. Record failure and block
   cutover when a required query misses the deadline. This is an acceptance
   bound, not an availability or capacity service-level guarantee.
+
+### Endpoint verification
+
+- The owner runs actual Mac checks locally; cloud fixtures do not establish
+  normal-client acceptance.
+- Match the connected client's peer to the Service-owned proxy using stable
+  device ID, numeric NodeID, node key, expected tailnet, hostname, tag, addresses,
+  online state and Kubernetes ownership. Missing or inconsistent observations
+  are rejected. Repeat checks around collection and before DNS application.
+- Changed identity observations invalidate previous acceptance evidence. The
+  final observation is not an atomic guarantee across machines.
+- Restoring captured prior DNS policy remains independent of AdGuard health.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -135,6 +147,16 @@ and access configuration without disrupting the active tailnet.
    **Then** filtering rules and administrator access are restored; query history
    is not required for recovery.
 
+### Endpoint identity acceptance
+
+1. **Given** a connected client and a ready Service-owned proxy with matching
+   stable identity, **When** acceptance runs, **Then** all DNS, administration,
+   health and revision checks run against the observed endpoint.
+2. **Given** missing, malformed, mismatched or changing identity observations,
+   **When** acceptance or cutover is evaluated, **Then** it fails before DNS changes.
+3. **Given** a failed filtering resolver, **When** prior DNS policy is restored,
+   **Then** rollback does not depend on the failed resolver's health.
+
 ### Edge Cases
 
 - An ad domain is absent from the selected lists or shares its domain with
@@ -145,7 +167,7 @@ and access configuration without disrupting the active tailnet.
 - Queries require TCP, concern IPv6 records, or use an exit node.
 - A filter download or upstream resolver fails; the last usable configuration
   remains intact and the service does not silently disable filtering.
-- Resolver address or tailnet identity changes, or Tailnet Lock rejects a peer;
+- Resolver address or tailnet identity changes, or a peer becomes unreachable;
   dependent settings must not be activated from a guessed or stale address.
 - The resolver, its host, or persistent storage is unavailable.
 - Private service DNS is unavailable; private names must not fall through to
@@ -213,6 +235,15 @@ and access configuration without disrupting the active tailnet.
   operational documentation, and retain revision-bound functional evidence.
   Written manifests or a merged PR alone must not be reported as deployment.
 
+- **FR-020**: Verify the connected client and declared proxy against the expected
+  tailnet, online state, stable device ID, numeric NodeID, public key, hostname,
+  tag, published addresses and Kubernetes resource ownership. Reject missing,
+  malformed, inconsistent or changing observations.
+- **FR-021**: Bind acceptance and cutover evidence to the full verified proxy
+  identity. Changes observed during acceptance or final pre-apply checks
+  invalidate previous evidence. Preserve independent rollback and all direct
+  DNS, administration, recovery, source-revision and normal-client requirements.
+
 ### Key Entities
 
 - **Filtering configuration**: enabled lists, update policy, blocking behavior,
@@ -248,6 +279,10 @@ and access configuration without disrupting the active tailnet.
   direct and client checks, prior DNS policy, rollback procedure and any
   unavailable acceptance condition. Required unverified behavior stays open.
 
+- **SC-007**: A matching online client/proxy identity passes verification; every
+  tested missing, malformed, mismatched or changed identity is rejected before
+  DNS mutation, while functional DNS and administration checks remain mandatory.
+
 ## Assumptions
 
 - “AdGuard” means AdGuard Home, a self-hosted DNS filtering service. DNS-level
@@ -264,6 +299,7 @@ and access configuration without disrupting the active tailnet.
   tailnet DNS until recovery or deliberate rollback.
 - Per-client browsing history is unnecessary for the requested result and is
   disabled by default. Aggregate health and synthetic checks suffice.
-- Existing trusted enrollment, secret handling, image publication, storage and
-  protected delivery mechanisms are reused. Missing runtime access or signing
-  capability is recorded as an execution dependency, not bypassed.
+- Existing enrollment, secret handling, image publication, storage and protected
+  delivery mechanisms are reused. Missing runtime or administrator access is
+  recorded as an execution dependency; source or fixture success cannot replace
+  required owner-run acceptance.

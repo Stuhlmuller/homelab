@@ -1,6 +1,6 @@
 # AdGuard Home
 
-Image publication, deployment, signed-peer enrollment and live acceptance are
+Image publication, deployment, peer identity verification and live acceptance are
 tracked separately; this application does not change global Tailscale DNS.
 
 One AdGuard Home v0.107.80 replica answers UDP/TCP 53 through the operator-owned
@@ -11,19 +11,9 @@ declared in both Traefik and the private DNS view; the existing wildcard
 certificate covers it. Neither Service exposes a public endpoint or an
 administration port through the DNS LoadBalancer.
 
-After deployment, the existing trusted Mac signer can preview and then sign only
-this fixed proxy from a clean checkout of current `main`:
-
-```sh
-python3 -I scripts/tailscale-ingress-sign.py --adguard-only
-python3 -I scripts/tailscale-ingress-sign.py --adguard-only --execute
-```
-
-This verifies the authenticated homelab API, exact Service owner, online proxy
-identity, hostname/tag and the existing local signing authority. Execution
-rechecks current main and proxy identity before signing. It does not grant new
-signing authority or change DNS policy. Signature verification is still followed
-by direct resolver and private administration acceptance before DNS cutover.
+After deployment, use a clean checkout of current `main` on the owner Mac.
+Verify the online proxy identity and observed Service address, then run the
+direct DNS and authenticated administration acceptance below before DNS cutover.
 
 The runtime uses UID/GID 65534, a read-only root, no privilege escalation and only
 `NET_BIND_SERVICE`. Its upstream binary carries file capabilities, so run it
@@ -43,7 +33,7 @@ Query history, file query logs, statistics and automatic client discovery are of
 The NetworkPolicy declares DNS ingress from Tailscale, administration from
 Traefik, cluster/private DNS, the two public upstreams and public HTTPS filter
 downloads. The existing Flannel installation does **not** enforce NetworkPolicy.
-Actual external access relies on tailnet grants/device trust and administration
+Actual external access relies on tailnet grants, device authentication and administration
 authentication; this manifest is not evidence of enforced Pod isolation.
 
 The generated SSM `/homelab/adguard/admin-password` credential is 32 ASCII
@@ -78,7 +68,8 @@ synthetic DNS/filter servers and synthetic credentials, then removes them. It
 does not prove Harbor publication, Tailscale reachability, or client DNS adoption.
 
 The direct acceptance helper requires the deployed private HTTPS route, the
-existing trusted signer, and a clean checkout of verified current `main`. Supply
+owner Mac connected to the expected tailnet, and a clean checkout of verified
+current `main`. Supply
 the observed Service address and an owner-only mode-0600 file containing the
 protected admin credential; never put that value on the command line:
 
@@ -86,12 +77,18 @@ protected admin credential; never put that value on the command line:
 python3 -I scripts/adguard-check.py --server <observed-tailnet-ip> --password-file <private-file>
 ```
 
+The helper matches the Mac's current peer to the exact Service-owned ready
+proxy. Stable device ID, numeric NodeID, node key, hostname, tag and addresses
+must agree; the peer must be online and present in the network map. Missing or
+malformed observations, wrong ownership, expired peers and identity changes
+fail acceptance. Read-only status checks are repeated around identity collection.
+
 It reads live resources and the authenticated filter API, verifies an enabled
 list actually blocks the selected test name, checks ten blocked/permitted A
 queries per transport plus AAAA/NXDOMAIN and the private-name inventory, then
 rechecks source/configuration/endpoint identity. Each DNS query has one attempt
-and a hard three-second subprocess deadline. It performs no Kubernetes writes,
-signing or DNS policy changes. HTTPS administration checks validate the certificate,
+and a hard three-second subprocess deadline. It performs no Kubernetes writes or
+DNS policy changes. HTTPS administration checks validate the certificate,
 authenticate the expected admin, require disabled history/statistics, and verify
 that anonymous protected reads and an intentionally invalid configuration-write
 request are rejected. The invalid value cannot alter a setting even if
@@ -159,7 +156,7 @@ is still necessary; this does not repair an unavailable private DNS resolver.
 After cutover, use `scripts/adguard-check.py --mode client` with the same
 `--server` and `--password-file`, plus a new `--receipt` path in a private0700
 directory outside the checkout. Run in the temporary parser shell above. This
-adapter supports the existing trusted Mac: it checks Tailscale DNS acceptance,
+adapter supports the owner Mac: it checks Tailscale DNS acceptance,
 `scutil` resolver presence and full live DNS policy, then uses native
 `socket.getaddrinfo` for ten blocked/permitted samples, private names and MagicDNS.
 It clears macOS caches before samples using `dscacheutil` and a HUP to
@@ -242,10 +239,13 @@ declared authenticated operator proxy
 `https://homelab-tailscale-operator.tail67beb.ts.net`. TLS verification must remain
 enabled for the selected endpoint. The helper records and rechecks that endpoint;
 it does not create a Kubernetes identity or grant access. The direct/client
-acceptance helpers still require the existing trusted Mac signing client.
+acceptance helpers require the owner Mac connected to the expected tailnet.
 
 The receipt proves isolated configuration, authentication, and filtering recovery.
 It preserves the private resolver address but does not prove connectivity from
 Docker to the cluster-private resolver, production PVC recovery, or normal client
 DNS. Run the live direct and client checks separately. Synthetic CI recovery
 results do not establish that a live protected-source recovery has passed.
+
+Successful source tests do not establish live DNS, administration, recovery or
+normal-client acceptance.

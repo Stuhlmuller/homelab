@@ -85,7 +85,7 @@ directly to the Istio gateway with its original Host header, and
 the public certificate/DNS shape.
 
 Public DNS reconciliation now follows the [staged cutover](../traefik/CUTOVER.md)
-from clean reviewed main. It writes fixed DNS-only mesh records after signed
+from clean reviewed main. It writes fixed DNS-only mesh records after online
 proxy, canonical TLS, backend and node-registry checks. Public n8n and Policy Bot
 registrations move through their fixed callback helpers only after Funnel
 preflight; fresh signed deliveries precede legacy-route retirement.

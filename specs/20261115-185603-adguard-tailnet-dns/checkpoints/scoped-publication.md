@@ -46,7 +46,7 @@ then dispatch existing harbor-mirror.yml with image_scope=adguard and exact new
 main. Require success before T031 consumer review/merge. Reconcile original app
 branch with new main carefully (overlap in terragrunt tests/script and offline
 hash table), validate affected source and continue targeted CI deployment. No
-request for routine permissions. Operator enrollment/signing and live DNS/client
+request for routine permissions. Operator enrollment and live DNS/client
 acceptance remain required for actual goal completion. Goal active; new meaningful
 progress resets prior no-progress wait count. No Notion, live AWS/Kubernetes
 mutations or DNS cutover in this increment.

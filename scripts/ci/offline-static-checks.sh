@@ -846,6 +846,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
   jq -e '
     [.jobs["static-policy"].steps[] | select(.id == "live-plan-scope")] as $scope |
     [.jobs["static-policy"].steps[] | select(.name == "Run Static Checks")] as $conftest |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Cache Terragrunt Providers")] as $provider_cache |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Verify Live Plan Inputs")] as $plan_inputs |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
@@ -872,6 +873,10 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
       "id-token": "write"
     } and
     .jobs["terragrunt-plan"].env == null and
+    ($provider_cache | length) == 1 and
+    $provider_cache[0].uses == "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830" and
+    $provider_cache[0].with.path == "~/.cache/terragrunt/providers" and
+    $provider_cache[0].env == null and
     ($plan_inputs | length) == 1 and
     $plan_inputs[0].env == {
       "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
@@ -1123,7 +1128,7 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
-.github/workflows/terragrunt-plan.yml 955f02170dbd3ff8a8e692281a759ead321a99fa296bc795481d5383217b254e
+.github/workflows/terragrunt-plan.yml e4a8c39b31991cb53ff574fe2e228662900312185f4343c1041aafd77a7e0181
 .github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
 EOF
 echo "::endgroup::"

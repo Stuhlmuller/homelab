@@ -46,3 +46,7 @@ No questions are required at this stage. Separate clarification must assess
 cross-platform and exit-node behavior, bootstrap trust dependencies, DNS policy
 ownership, state recovery, and the explicit single-resolver assumption before
 planning. It may revise this checklist if it finds a requirement gap.
+
+Endpoint identity coverage: FR-020/021 and SC-007 require exact observed identity,
+resource ownership, fresh pre-apply binding, functional checks and independent
+rollback. Fixture success remains distinct from owner-run acceptance.

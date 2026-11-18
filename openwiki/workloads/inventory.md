@@ -349,7 +349,7 @@ The resolver watches the approved `traefik-private` Service's hostname
 annotation and published ingress IP; reviewed HTTPS routes must match those
 names. The first handoff checks all 27 migration names, while later paired
 route/annotation changes update DNS without a zone-record edit. Its two Pods
-need no PVC, DNS database, backup, or application secret. Direct signed-proxy
+need no PVC, DNS database, backup, or application secret. Direct proxy
 and DNS checks precede the owner tailnet nameserver setting; public address
 records remain until separate client acceptance and guarded retirement.
 
@@ -882,16 +882,6 @@ remain distinct milestones.
 Web, Sidekiq, streaming and migration/owner Jobs select Acer for memory
 headroom. Datastores and the local-socket backup Job remain on `zimaboard-1`.
 
-## Codex Cloud signer
-
-The staged [Codex signer](../../clusters/homelab/apps/codex-cloud-signer/README.md)
-registers in `automation` with automatic sync disabled. Its authenticated
-Tailscale Funnel callback signs only newly enrolled ephemeral Linux nodes with
-exactly `tag:codex-cloud`. The owner must trust its persistent daemon before
-readiness succeeds; source registration is not live acceptance. The complete
-state stays on a retained local volume on `acer`, with no automatic off-node
-copy of signing authority.
-
 ## Uptime Kuma availability monitoring
 
 The [Uptime Kuma overlay](../../clusters/homelab/apps/uptime-kuma/README.md)
@@ -931,7 +921,7 @@ preserved. No automatic unfiltered fallback is configured. Query history and
 statistics are disabled; the retained 1Gi NFS claim holds replaceable filter cache.
 
 Source registration does not activate global tailnet DNS. After image publication,
-GitOps rollout, trusted-Mac peer signing and live direct/admin/recovery checks,
+GitOps rollout, verified peer identity and live direct/admin/recovery checks,
 a separate reviewed change must use the observed proxy address. The guarded
 saved-plan helper applies only that DNS policy change. Native macOS client checks
 then verify normal resolver use; exit-node acceptance requires a selected,
@@ -941,7 +931,12 @@ not been switched. Explicit ExternalSecret remote-reference defaults prevent
 admission defaulting from leaving Argo CD OutOfSync. Isolated recovery accepts
 the direct API or the declared authenticated Tailscale operator proxy with TLS
 verification enabled; it records and rechecks the selected endpoint. This does
-not replace the trusted Mac required for peer signing and client acceptance.
+not replace the owner Mac required for actual client acceptance.
+[AdGuard acceptance](../../scripts/adguard-check.py) matches its current peer
+to the Service-owned proxy using stable device ID, numeric NodeID, public key,
+hostname, tag, published addresses, Pod ownership and online state. Missing,
+inconsistent or changing identity observations fail closed. All direct DNS,
+filtering and authenticated administration checks remain required.
 
 AdGuard also has a Kuma workload-readiness monitor with exact Deployment metrics
 and freshness checks. This does not prove DNS filtering or successful client

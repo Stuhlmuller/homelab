@@ -12,7 +12,7 @@ The plan and quickstart require successful publication before consuming source
 merges. Allowing unmerged source preparation while publication runs satisfies
 that intent. T003+T030 precede T031/T032; T036 direct acceptance still precedes
 T037 observed-IP source, T038 saved-plan cutover, and T039 real-client checks.
-No runtime, signing, administrator, secret or acceptance gate was relaxed.
+No runtime, administrator, secret or acceptance gate was relaxed.
 
 Artifacts checked: spec30a2157dac9fbf66fbeb7f568e3919628b48e7d94a983bc196a7e2a9ea6d0058;
 pland1ad6d39e407bb1e2c57b08a961736ad14c7569bc6c0919108a62b2728038cfb;

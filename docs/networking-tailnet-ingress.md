@@ -35,7 +35,7 @@ Tailscale IPv4; unrelated names and non-address types, including apex mail
 records, forward to public DNS. Traefik still owns TLS and route restrictions.
 The current ingress is IPv4-only. Keep approved AAAA empty until a reviewed
 network change supports it. The resolver has a distinct Tailscale IP and a
-signed `homelab-dns` proxy; never use the ingress IP as the nameserver.
+`homelab-dns` proxy; never use the ingress IP as the nameserver.
 
 After the DNS image is present in Harbor and the resolver is deployed, inspect
 its Service IP and run the direct UDP/TCP handoff check:
@@ -57,7 +57,7 @@ the Cloudflare zone and DNS-01
 validation, four legacy public endpoints (`octelium-transport`,
 `kubernetes-api-ci`, `n8n-webhook`, and `policy-bot-hook`), and unrelated names
 remain. A resolver outage after retirement gives those 26 names no public app fallback;
-recover the declared resolver or signed proxy without republishing addresses.
+recover the declared resolver or proxy without republishing addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
@@ -94,6 +94,23 @@ those names resolve to private Traefik after DNS cutover. Changing its catalog
 is separate from this transport change.
 
 ## Tailnet Exit Node And LAN Route
+
+### Codex service destinations
+
+The `tag:homelab-ci-apply` devices can reach the homelab ingress, operator,
+Funnel hosts, and exit-node connector, plus the named NAS and cluster hosts in
+`scripts/config/tailscale-policy.json`. The NAS remains user-owned and untagged;
+`homelab-nas` names its Tailscale IP, while `homelab-nas-lan` names its LAN IP.
+The cluster host aliases cover the control plane and three workers. These are
+explicit destinations so Codex does not receive access to all tailnet members
+or the full `10.1.0.0/24` route. Service authentication and Kubernetes RBAC
+still apply after network access is allowed.
+
+The grant permits all ports on those named homelab destinations. Review a new
+destination's owner and address before adding it, and update the two Tailscale
+signing/approval guards and the policy tests with the same change. Check the NAS
+alias when replacing the NAS. The `tag:homelab-ci-plan` and
+`tag:homelab-ci-cordium` identities keep their existing narrow grants.
 
 The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing

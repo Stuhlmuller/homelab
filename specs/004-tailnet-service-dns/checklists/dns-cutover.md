@@ -49,7 +49,7 @@
 
 - [x] CHK026 Is the owner's tailnet DNS setting a distinct gate before public retirement, with exit-node behavior called out where relevant? [Dependency, Contract §Handoff boundary]
 - [x] CHK027 Are the live public baseline, prior TTL, exact retirement target set, and off-tailnet impact decision required before deletion? [Dependency, Contract §Retirement preconditions]
-- [x] CHK028 Are tailnet access policy and Tailnet Lock trust documented as prerequisites to offering the DNS endpoint? [Dependency, Spec §FR-012; Plan §Design 3]
+- [x] CHK028 Are tailnet access policy and device identity documented as prerequisites to offering the DNS endpoint? [Dependency, Spec §FR-012; Plan §Design 3]
 - [x] CHK029 Is the rollback source and preservation of unrelated public names/types specified? [Dependency, Contract §Recovery and rollback; Data Model §Public record and cutover evidence]
 
 ## Notes

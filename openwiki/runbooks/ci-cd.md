@@ -64,8 +64,6 @@ sources:
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-65f9beab84e0d9f1e53996b0
-    resource: repo://scripts/ci/harbor-tailscale-production-sign-test.py
   - id: openwiki-source-a176afce8833edc1068e3844
     resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
   - id: openwiki-source-2b445535596913b662665f3c
@@ -94,8 +92,6 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-  - id: openwiki-source-6e855dc9874bfb4186cb56cd
-    resource: repo://scripts/harbor-tailscale-production-sign.py
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -104,12 +100,6 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-  - id: openwiki-source-86b15583c888c3f27ebbf159
-    resource: repo://specs/006-harbor-production-key-recovery/research.md
-  - id: openwiki-source-70e28a7019d6be2d8b9097fb
-    resource: repo://specs/006-harbor-production-key-recovery/spec.md
-  - id: openwiki-source-96978e573fe3617478834e28
-    resource: repo://specs/006-harbor-production-key-recovery/tasks.md
 generated: { by: "codex", at: "2026-10-31T22:18:24.858Z" }
 verified:
   - by: openwiki/0.7.0
@@ -331,52 +321,6 @@ The pool remains disabled and existing job selectors stay unchanged. The
 [runner contract](../../builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.
-
-## Production-only Harbor signing recovery
-
-The [production signer](../../scripts/harbor-tailscale-production-sign.py)
-defaults to read-only preview. It accepts only existing `apply` generation 2,
-expiry `2027-01-25T02:58:13Z`, the approved Mac authority and pinned operator
-CLI. It requires clean, signed current `main` and the approved GitHub operator.
-See [the exact commands](../../specs/006-harbor-production-key-recovery/quickstart.md)
-and [the separate installer](../../docs/harbor-tailscale-production.md).
-Publishing this source does not authorize signing, installation or dispatch.
-
-An explicitly approved signing attempt creates one persistent delegated
-pre-auth authority. The existing `tag:homelab-ci-apply` identity carries
-Kubernetes cluster-admin and ingress/operator TCP/443 access. Key expiry or
-GitHub secret deletion does not establish authority or enrolled-node revocation.
-Signing, secret installation, mirror dispatch and runtime acceptance remain
-separate gates; old authorities and other identities are preserved.
-
-Before signing, the helper fsyncs a private intent and exclusive output capture
-under the existing owner-only Tailscale configuration directory. Both files are
-0600. The raw key uses stdin; private output never enters public diagnostics.
-Exact provider, Mac, trust metadata/votes and cache readback precede appending
-one production cache record. Existing intent or capture blocks another attempt.
-
-```mermaid
-flowchart TD
-    Preview["Validate source and existing production identity"] --> Approval["Separate persistent-authority approval"]
-    Approval --> Intent["Persist private intent and capture"]
-    Intent --> Attempt["One signing attempt"]
-    Attempt --> Proof{"Complete output and matching readback"}
-    Proof -->|yes| Cache["Append one production cache record"]
-    Proof -->|no| Hold["Retain evidence and recover only"]
-    Hold --> Recovery{"Complete capture and verified identity"}
-    Recovery -->|yes| Cache
-    Recovery -->|no| Stop["Stop for separate recovery review"]
-    Cache --> Install["Separate secret-installation approval"]
-```
-
-The signer journals one attempt; recovery never invokes signing.
-
-Upstream adds the authority before printing its wrapper. Missing or partial
-output may therefore be irrecoverable. Never erase the intent or blindly retry;
-orphan assessment and retirement require a separate exact-target review.
-The [mock-only tests](../../scripts/ci/harbor-tailscale-production-sign-test.py)
-exercise scope, pins, private files and interrupted completion. They prove
-neither production signing nor live mirror, backup, restore or rollout acceptance.
 
 ## Credential recovery: 2026-09-26
 

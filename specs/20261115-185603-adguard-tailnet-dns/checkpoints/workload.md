@@ -41,7 +41,7 @@ adguard-policy-final.log and adguard-fixture-final.log.
 
 T003 remains pending: publication run43777917412 was still copying/verifying
 images at00:58UTC, monitored solely by watcher80837. No consuming merge, live
-SSM/Application, signing or DNS change occurred. T014 onward remain pending.
-Next separate turn: scoped convergence on T008–T013, then T014–T015 signer and
+SSM/Application or DNS change occurred. T014 onward remain pending.
+Next separate turn: scoped convergence on T008–T013, then direct endpoint and
 read-only live acceptance support. Continue the same publication watcher.
 No Notion updates, as requested. Extension hooks are empty.

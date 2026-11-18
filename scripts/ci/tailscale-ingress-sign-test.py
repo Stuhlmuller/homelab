@@ -382,6 +382,14 @@ class IngressSigning(unittest.TestCase):
     def test_canary_signing_requires_live_safe_policy(self):
         good = canary_policy()
         SIGNER.validate_canary_policy(good, copy.deepcopy(good))
+        reviewed = copy.deepcopy(good)
+        reviewed["hosts"] = copy.deepcopy(SIGNER.SAFE_HOSTS)
+        reviewed["grants"][0]["dst"].append("homelab-nas")
+        SIGNER.validate_canary_policy(reviewed, copy.deepcopy(reviewed))
+        unsafe_host = copy.deepcopy(reviewed)
+        unsafe_host["hosts"]["homelab-nas"] = "100.64.0.1"
+        with self.assertRaises(SIGNER.GUARDS.Failure):
+            SIGNER.validate_canary_policy(unsafe_host, copy.deepcopy(unsafe_host))
         for destination in ("*", "autogroup:tagged", "100.64.0.0/10",
                             "tag:homelab-ingress-canary", "svc:homelab-private-ingress"):
             unsafe = copy.deepcopy(good)

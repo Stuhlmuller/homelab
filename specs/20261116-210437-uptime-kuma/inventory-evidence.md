@@ -14,7 +14,6 @@ Source entries: 55; live Applications: 56; union: 60.
 | bazarr | IaC/homelab/us-west-2/apps/bazarr/stack.hcl | Synced/Healthy |
 | bulldozer | IaC/homelab/us-west-2/apps/bulldozer/stack.hcl | OutOfSync/Healthy |
 | cert-manager | IaC/homelab/us-west-2/apps/cert-manager/stack.hcl | Synced/Healthy |
-| codex-cloud-signer | IaC/homelab/us-west-2/apps/codex-cloud-signer/stack.hcl | absent/absent |
 | compass | IaC/homelab/us-west-2/apps/compass/stack.hcl | Synced/Healthy |
 | cordium | IaC/homelab/us-west-2/apps/cordium/stack.hcl | Synced/Healthy |
 | cordium-bootstrap | child/bootstrap owner: classify in T006 | Synced/Healthy |
