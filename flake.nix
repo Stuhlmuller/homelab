@@ -8,6 +8,26 @@
   outputs =
     { self, nixpkgs, ... }:
     let
+      terragruntVersion = "1.2.2";
+      # Official release SHA256SUMS verified before pinning these binary hashes.
+      terragruntBinaries = {
+        aarch64-darwin = {
+          target = "darwin_arm64";
+          hash = "sha256-cGnuxRJ/AHUlsReKeC6AEhg0LPIjYzxuhQh2LeGRZtY=";
+        };
+        x86_64-darwin = {
+          target = "darwin_amd64";
+          hash = "sha256-vzrEexx3OrZ/Sk52Ho2xaqh6JFThJwjDUHAm3Dv2zfk=";
+        };
+        aarch64-linux = {
+          target = "linux_arm64";
+          hash = "sha256-pzDH2vL7fdE+bnsBazqJ/U9Ua8gaMfj/GUdIZsVmt1U=";
+        };
+        x86_64-linux = {
+          target = "linux_amd64";
+          hash = "sha256-G6StEc9qwnfoulmj/c64V2d44i9qJL7dVC6RutnzZJE=";
+        };
+      };
       xerjVersion = "1.0.0-rc.96";
       xerjArchives = {
         aarch64-darwin = {
@@ -65,6 +85,22 @@
               runHook postInstall
             '';
             meta.mainProgram = "openwiki";
+          };
+          terragrunt = pkgs.stdenvNoCC.mkDerivation {
+            pname = "terragrunt";
+            version = terragruntVersion;
+            src = pkgs.fetchurl {
+              url = "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${terragruntBinaries.${system}.target}";
+              inherit (terragruntBinaries.${system}) hash;
+            };
+            dontUnpack = true;
+            dontStrip = true;
+            installPhase = ''
+              runHook preInstall
+              install -Dm755 "$src" "$out/bin/terragrunt"
+              runHook postInstall
+            '';
+            meta.mainProgram = "terragrunt";
           };
           xerj = pkgs.stdenvNoCC.mkDerivation {
             pname = "xerj";
@@ -231,7 +267,7 @@
             skopeo
             sops
             talosctl
-            terragrunt
+            self.packages.${system}.terragrunt
             unzip
             yamllint
             yq-go

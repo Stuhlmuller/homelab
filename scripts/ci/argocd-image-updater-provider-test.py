@@ -12,7 +12,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -167,25 +166,11 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(200, {'apiVersion': 'v1', 'kind': 'Status', 'status': 'Success'})
 
 
-def strip_encryption(text):
-    """Use test-local state; omit only KMS encryption from the actual module."""
-    match = re.search(r'(?m)^  encryption \{', text)
-    if match is None:
-        return text
-    start = text.index('{', match.start())
-    depth = 1
-    end = start + 1
-    while depth:
-        depth += (text[end] == '{') - (text[end] == '}')
-        end += 1
-    return text[:match.start()] + text[end:]
-
-
 def install_module(target, source):
     for path in target.glob('module-*.tf'):
         path.unlink()
     for path in source.glob('*.tf'):
-        (target / ('module-' + path.name)).write_text(strip_encryption(path.read_text()))
+        (target / ('module-' + path.name)).write_text(path.read_text())
 
 
 def main():
@@ -249,7 +234,7 @@ def main():
                 enrollment = {'paused': False, 'images': [{'alias': 'app', 'image_name': 'example.invalid/app:stable',
                     'source_paths': ['clusters/homelab/apps/fixture/values.yaml'],
                     renderer: {'spec': 'image'} if renderer == 'helm' else {'name': 'app'}}]}
-                config = {'manifest': manifest, 'image_update': enrollment, 'kms_key_id': 'unused-test-local-state'}
+                config = {'manifest': manifest, 'image_update': enrollment}
 
                 def save():
                     encoded = json.dumps(config)
