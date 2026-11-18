@@ -41,6 +41,21 @@ against PostgreSQL.
 
 ## NFS Interruption Recovery
 
+PostgreSQL 14 writes temporary collector statistics to a 32 MiB memory-backed
+`emptyDir` at `/run/postgresql-stats`, configured with `stats_temp_directory`.
+Keeping these frequently refreshed files off NFS avoids statistics reads
+waiting up to ten seconds for a stalled collector. The existing pod `fsGroup`
+makes the mount writable by UID/GID 65534. Database files, WAL, and permanent
+statistics remain on the existing PVC; this does not weaken commit durability.
+The memory limit includes these temporary files. Remove this PostgreSQL-14-only
+setting when migrating to PostgreSQL 15 or newer, which uses shared-memory
+statistics. See the [PostgreSQL 14 documentation](https://www.postgresql.org/docs/14/runtime-config-statistics.html).
+
+Changing this setting rolls the single database pod, causing a brief n8n outage.
+Rollback is a Git revert of the arguments and temporary volume; retain the PVC.
+This reduces statistics-related NFS traffic but does not eliminate stalls in
+durable database I/O.
+
 The readiness and liveness probes execute `SELECT 1`, so accepting a socket
 without completing database work does not count as healthy. Readiness removes
 PostgreSQL from its Service after six failed checks, but startup and liveness
@@ -58,13 +73,17 @@ kubectl -n automation get secret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get statefulset,pod,pvc,svc -l app.kubernetes.io/name=n8n-postgres
 kubectl -n automation exec statefulset/n8n-postgres -- \
   psql -U postgres -d n8n -Atqc 'select 1'
+kubectl -n automation exec statefulset/n8n-postgres -- \
+  psql -U postgres -d n8n -Atqc 'show stats_temp_directory'
 kubectl -n automation rollout status deployment/n8n --timeout=10m
 curl -sS -o /dev/null -w '%{http_code}\n' \
   https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 ```
 
 Require a Ready PostgreSQL Pod, bound PVC, successful SQL query, and n8n
-readiness. The missing callback should return an n8n HTTP 404 rather than a
+readiness. The statistics directory must be `/run/postgresql-stats` on a tmpfs
+mount. Check fresh logs for collector warnings and database ping timeouts.
+The missing callback should return an n8n HTTP 404 rather than a
 gateway response. Follow the [n8n callback gates](../n8n/README.md#access-contract)
 for fixed-hook migration and fresh signed-delivery acceptance.
 
