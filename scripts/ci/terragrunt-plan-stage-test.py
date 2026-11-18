@@ -151,6 +151,7 @@ class PrivatePlanStageTest(unittest.TestCase):
             with self.subTest(stack_changed=stack_changed, inputs_changed=inputs_changed):
                 script = ('set -euo pipefail\n'
                           'azuread_credentials_available() { return 1; }\n'
+                          'azuread_plan_filters=()\n'
                           f'terragrunt_azuread_stack_changed() {{ return {0 if stack_changed else 1}; }}\n'
                           f'terragrunt_azuread_plan_inputs_changed() {{ return {0 if inputs_changed else 1}; }}\n'
                           + section)
