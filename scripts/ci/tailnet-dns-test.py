@@ -267,4 +267,4 @@ if __name__ == "__main__":
     try:
         main()
     except (AssertionError, KeyError, ValueError, subprocess.CalledProcessError) as error:
-        raise SystemExit(f"Private DNS contract failed: {error}") from error
+        raise SystemExit(f"Private DNS contract failed: {error}\n{getattr(error, 'stderr', '')}") from error
