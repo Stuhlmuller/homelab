@@ -135,6 +135,8 @@ responds slowly. Initial collection returns unavailable until totals exist.
 The startup probe allows two minutes for the HTTP server to start before liveness
 checks begin. The Deployment allows twelve minutes for cold-inventory readiness,
 avoiding the default ten-minute progress deadline and an unnecessary Argo retry.
+All probes allow five seconds for responses: the default one-second liveness
+timeout caused avoidable restarts under load, discarding the collected metrics cache.
 Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric
 data and evaluation errors are also alerting. Cached scan totals expire no later
