@@ -231,17 +231,8 @@ plan_and_apply_argocd_apps() {
   fi
 
   conftest test --policy policy --output github "${plan_json_files[@]}"
-  if [[ "$existing_argocd_only" == true ]] &&
-    jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("create"))))' \
-      "${plan_json_files[@]}" >/dev/null; then
-    echo "Existing-only Argo CD apply would create an Application; use a targeted apply after its gates." >&2
-    return 1
-  fi
-  if jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("delete"))))' \
-    "${plan_json_files[@]}" >/dev/null; then
-    echo "Argo CD Application replacement or deletion requires explicit state repair or deleted-unit handling." >&2
-    return 1
-  fi
+  python3 -I scripts/ci/argocd-registration-plan-check.py \
+    --existing-only "$existing_argocd_only" "${plan_json_files[@]}"
 
   (
     cd IaC/homelab/us-west-2/apps

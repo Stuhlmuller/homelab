@@ -1,92 +1,130 @@
-# Image Automation And Image Updater
+# Argo CD Image Updater
 
-## Current contract
+The native ImageUpdater controller resolves an operator-selected mutable image
+tag and writes its digest to the Application through Argo CD. It does not write
+workload versions or hashes to Git. Git source branches remain ordinary
+Application configuration; a Git branch is not an image tag.
 
-The controller source is staged with zero replicas; its stack is not registered
-in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`. Read-only checks on 2026-10-10 confirmed that its
-Argo CD Application and Deployment are absent. Register the stack through the
-normal Terragrunt workflow before treating the controller as deployed.
-Enrollment is generated from
-`clusters/homelab/apps/harbor/image-automation.json` and must match
-`python3 -I scripts/ci/image-automation.py render-check`. The intended
-write-back branch is `main:codex/image-updater-proposals`; a separate main-owned
-workflow validates signed single-parent candidates before any non-force update.
-Routine updates require verified Harbor receipts, complete platform pulls and
-workload compatibility. Recovery binds the originating failure and retained
-known-good digest; unsafe or unknown current data pauses and alerts without data
-restore. Enable replicas only through a reviewed change after recovery readiness.
+The declared controller has one replica and no enrolled workloads. Source
+configuration and registry manifest availability have been checked; controller
+readiness and a real workload update are still pending deployment evidence.
 
-The native Chainguard receipt is protected-workflow evidence, not an Image
-Updater release. For the current Python and curl candidates it proves the
-catalog-pinned root index, required platform children, authenticated private
-Harbor pull, and zero reported scan findings. The artifact-provenance importer
-accepts a receipt-state change only from a successful protected receipt. That
-state does not advance `verified-stable` or enroll a consumer. A later
-compatibility migration must add a direct digest-pinned
-`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<digest>` reference
-before updater enrollment can be reviewed.
-Native enrollment renders without a `verified-stable` alias; protected receipt
-imports do not publish that alias.
+Uptime Kuma monitors the declared controller Deployment in `argocd` using the
+existing fresh Prometheus workload-health signals. This covers readiness and
+observed generation, not registry access or successful image updates.
 
-Renovate continues to own unrelated image and chart updates. Enrolled Harbor
-targets transfer ownership only after their `automation_status` becomes
-`enrolled`; the checked-in pilot is still `not-enrolled` while publication and
-compatibility evidence are pending.
+## Enroll a workload
 
-The staged Terragrunt Application defines three sources: the pinned Image
-Updater Helm chart, a repository values ref, and the Kustomize source containing
-the paused configuration. The configured replica count stays at zero until recovery
-readiness is accepted.
+Use the shared `argocd-app` Terragrunt unit and add `image_update` to its stack
+values. This example uses placeholders, not a recommended channel:
 
-## Verification
-
-```sh
-python3 -I scripts/ci/image-automation.py check
-python3 -I scripts/ci/image-automation.py render-check
-python3 -I scripts/ci/harbor-native-chainguard-receipt.py plan
-python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
-nix develop --command bash scripts/ci/static-checks.sh
+```hcl
+image_update = {
+  paused = false
+  images = [{
+    alias        = "app"
+    image_name   = "harbor.stinkyboi.com/PROJECT/IMAGE:OPERATOR_TAG"
+    source_paths = ["clusters/homelab/apps/APP/values.yaml"]
+    helm         = { name = "image.repository", tag = "image.tag" }
+  }]
+}
 ```
 
-For a reviewed direct promotion, first enable the repository variable
-`IMAGE_AUTOMATION_PROMOTION_ENABLED=true`, then dispatch `image-automation.yml`
-with `operation=promote` from `main`. The job fetches only the proposal branch,
-validates the exact single-parent candidate with trusted `main` code, compares
-the live ref again, and requests a non-force update. It requires the reviewed
-`homelab-production` environment. No controller or workflow may force-push,
-cherry-pick, or execute proposal-branch code.
-The independent Image Update Gate runs before that write job and checks the
-candidate tree's semantic scope with read-only permissions.
-Committed `scripts/config/image-automation-candidate.json` contains the base,
-parents, application, operation, and changes; it must omit `candidate_sha`.
-Each validation job reads that file from the fetched proposal commit and passes
-the commit's resolved SHA separately through `--candidate-sha`. The trusted
-validator adds that SHA to its in-memory candidate. Embedding the enclosing
-commit's SHA in its own tree would change the SHA; supplied metadata cannot
-override the Git-derived identity.
-The `observe` job runs only on a trusted manual `verify` or `promote` dispatch.
-It reads the durable journal and sends bounded Discord alerts for expired failed
-or paused observations; missing notification credentials fail visibly without
-printing the webhook. Removing the former five-minute schedule reduces Actions
-usage but also stops automatic journal alerts. Dispatch `operation=verify` from
-`main` when checking for stalled updates. Restore a reviewed schedule if
-automatic alerting becomes necessary.
-If the protected direct write fails after the same candidate validation, the
-workflow revalidates the proposal and queues its branch for normal protected
-auto-merge.
-Promotion also rejects proposal branches containing files outside the candidate
-metadata, state journal, and enrolled consumer targets, including symlinks.
+For a chart with one combined image field use `helm = { spec = "image" }`.
+For Kustomize use `kustomize = { name = "ORIGINAL_IMAGE_NAME" }` instead.
+Set the same mutable tag in the referenced workload file. Each source path must
+contain exactly one occurrence of the selected repository with that tag; multiple
+occurrences of the same package in one file are rejected. Paths must belong to
+the Application source or its referenced values file. Existing Harbor publication
+and provenance policy still applies; this does not create a new mirror channel.
 
-Recovery uses the same candidate contract. A failed deployment blocks routine
-updates; a bound rollback requires a fresh safe current-data result. Unsafe or
-unknown data records a pause and failed-digest rejection without restoring
-data. State is journaled before ref movement so interruption cannot create a
-second recovery attempt.
+The Application must have one Helm or Kustomize renderer at `spec.source` or
+`spec.sources[0]`. Additional sources may only supply references. Plugins,
+hydrators, other renderer positions, and mixed owners are rejected. Keep the
+Application's `helm.parameters` or `kustomize.images` collection **absent** from
+Git, including empty arrays. Put ordinary chart settings in values files. Existing
+configured override arrays must first be removed through the default module's
+normal reviewed reconciliation before enrollment; this is not automatic migration.
 
-## Rollback
+Add one exact Renovate rule for each owned repository/file pair:
 
-Keep the previous known-good Harbor digest and deployment record. If promotion
-or rollout fails, use the repository-owned `recover` and `pause-reject`
-operations; do not patch Argo CD or Kubernetes resources manually. A reviewed
-resolution and newly verified healthy baseline are required before resuming
-routine updates.
+```json
+{
+  "description": "Argo CD runtime digest ownership",
+  "matchDatasources": ["docker"],
+  "matchPackageNames": ["harbor.stinkyboi.com/PROJECT/IMAGE"],
+  "matchFileNames": ["clusters/homelab/apps/APP/values.yaml"],
+  "enabled": false
+}
+```
+
+Broad rules do not establish ownership. Policy rejects missing, orphaned or
+conflicting rules and legacy/runtime dual enrollment. Unenrolled images retain
+the existing digest and Renovate policies.
+
+## Change selectors, pause and edit sources
+
+Change both the workload bootstrap tag and `image_update.images[].image_name`
+together. Do not commit the resolved digest. Set `paused = true` and let that
+change reconcile to pause the native CR. Metadata and destination edits retain
+ordinary Terraform ownership.
+
+The opt-in module retains the same `kubernetes_manifest.this` address. Literal
+`ignore_changes` paths and provider `computed_fields` preserve runtime overrides;
+other Application fields remain managed. Kubernetes treats multi-source arrays
+atomically, so concurrent source edits may fail with a field ownership conflict.
+The enrolled module uses `force_conflicts = false`: resolve the conflict through
+the following declared handoff, never by forcing an apply or patching the cluster.
+
+1. Reconcile `image_update.paused = true` before editing the source.
+2. Move the same mapping to `image_update_handoff` with `paused = true`, removing
+   `image_update`. Keep override collections absent and make the intended source
+   edit. The default module retains the current runtime digest while removing the
+   updater CR. The default module uses its existing forced ownership only after
+   this declared pause and ownership transfer. Keep the exact Renovate rules and workload tag unchanged unless
+   intentionally changing that selector. Handoff metadata keeps policy ownership.
+3. Restore `image_update`, remove `image_update_handoff`, and reconcile before
+   resuming. Reenrollment preserves the current digest. No hash is copied to code.
+
+The saved-plan registration guard permits updater deletion only when both the
+configured and refreshed observed CR are paused and the same plan retains the
+same Application. Existing-only registration may create the native updater CR
+beside a retained Application, but cannot create a new Application. Unknown state,
+identity mismatches, replacements and proof borrowed from another unit fail before
+apply. The actual-provider regression exercises this guard on both removal plans
+and the reenrollment plan; it does not prove live controller reconciliation.
+
+The two inputs are mutually exclusive. The handoff is only supported after the
+runtime collections were absent throughout enrolled desired configuration.
+
+## Remove ownership or recover
+
+Permanent removal is different from temporary handoff: pause and reconcile,
+remove both ownership inputs, explicitly clear or replace the override collection
+through the default module, and restore the ordinary workload/Renovate policy
+(including removing its marked exception). Omission alone preserves runtime data
+and therefore is not permanent removal. Review the resulting plan for no
+Application replacement. Recreation uses the declared bootstrap selector until
+the controller resolves it again; observe that reconciliation before declaring
+recovery complete.
+
+The real provider regression uses a local API fixture to inspect refresh, plan,
+apply payloads and conflict propagation. It is not evidence of live Kubernetes
+managed-field behavior or successful controller reconciliation. Runtime acceptance
+requires publishing two digests behind an operator-selected tag, observing the
+second, and confirming an unrelated normal apply preserves it.
+
+## Protected delivery and validation
+
+All configuration changes use ordinary protected pull requests. The historical
+image catalog remains separate; its optional proposal workflow can create/reuse
+a PR and request normal auto-merge for the exact validated head. It cannot write
+`main` directly or bypass checks. GitHub's default workflow token may not trigger
+new PR checks; if those checks are absent, delivery waits for the normal permitted
+CI path rather than bypassing protection.
+
+Offline checks run native HCL/unit, policy and protected-PR regression fixtures.
+The `Argo CD runtime image ownership` pull-request workflow downloads the pinned
+provider for an isolated API test and renders the pinned Helm chart. See the
+[validation quickstart](../specs/20261117-050238-mutable-image-digests/quickstart.md)
+for commands and the distinction between source validation and runtime evidence.
