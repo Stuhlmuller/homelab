@@ -403,8 +403,11 @@ both SHA-256 hashes, the exact subject child, and reachable SPDX library package
 with supported versioned package identifiers. Container-root, OS-only and
 file-only inventories fail. Version 1 receipts cannot prove this coverage. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
-receipt status. It checks the event PR head only after confirming that head is
-still in the open `main` PR list, then rechecks on `main` pushes only when exact
+receipt status. It checks the event PR head against the current GitHub PR record
+and requires its target to be `main`. Open PRs use current main as the comparison
+base. A queued event whose exact head has already merged uses the PR's premerge
+base, so receipt changes still undergo immutable artifact verification. Closed
+unmerged PRs and superseded heads fail. It rechecks on `main` pushes only when exact
 base/head native receipt entries differ. Unreadable state or a missing receipt
 map is included and fails closed. Unrelated open PR heads keep
 their earlier status, avoiding repeated writes to GitHub's per-head/context
@@ -430,7 +433,10 @@ successful submission does not prove a successful scan.
 Backfill traverses the complete repository/artifact inventory, including histories
 over 1,000 artifacts, bounded at 1,000 repositories and 10,000 total artifacts
 before submitting scans; duplicate IDs and inconsistent pagination fail closed.
-The separate robot inventory retains its 1,000-object safety bound.
+Scan-summary requests use ten-artifact pages: a 100-artifact page exceeded the
+ten-second request timeout during the Distribution v3 rollout. The PostSync
+hook allows 15 minutes for the full inventory without relaxing its count or
+duplicate checks. The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
 Grafana receives `harbor_vulnerability_critical_total` from the repository-owned

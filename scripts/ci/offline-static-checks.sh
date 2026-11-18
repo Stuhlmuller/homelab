@@ -1107,7 +1107,7 @@ done <<'EOF'
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml 4f1506a4f1cfb0bf8ab85b5c2cbdd59969b5568bad07dc9ba03064b29e363895
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml a56c74f332781b68633f38fc40280351caca7d292e3cc072a656644d2677a300
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
@@ -1246,7 +1246,10 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
       contains("jq -r '\''.[].head.sha'\''") and
       contains("$GITHUB_EVENT_NAME") and
-      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\" || exit 1") and
+      contains("verification_base_sha=\"$base_sha\"") and
+      contains("scripts/ci/harbor-native-chainguard-receipt-import.py event-base") and
+      contains("--event-file \"$GITHUB_EVENT_PATH\" --base-sha \"$base_sha\" --token-file \"$token_file\"") and
+      contains("--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"") and
       contains("native-receipts-unchanged") and
       contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
       contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
@@ -1273,7 +1276,7 @@ while read -r source expected_hash; do
     exit 1
   }
 done <<'EOF'
-scripts/ci/harbor-native-chainguard-receipt-import.py a2ac20c35e1b57d9238bb8ab76a4f154a20e0a98b17cb248fd0935ac241a2b22
+scripts/ci/harbor-native-chainguard-receipt-import.py 3bb5541f181af9d8945ea5be68ecccaf9d7a1a1dc9b432d45a0f52e241af4c3e
 scripts/ci/harbor-native-chainguard-receipt.py aa0f770ca2d3ca4184d609581f11fb828d28a1c0e219cedbf744cbb5caad5380
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |

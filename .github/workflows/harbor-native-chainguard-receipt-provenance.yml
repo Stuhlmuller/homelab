@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           umask 077
           base_sha="$(git rev-parse HEAD)"
+          verification_base_sha="$base_sha"
           [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
           token_file="$(mktemp)"
           pulls_file="$(mktemp)"
@@ -51,7 +52,8 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
             event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
             [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
-            grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+            verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
+              --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"
             printf '%s\n' "$event_head" >"$heads_file"
           else
             [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
@@ -85,7 +87,7 @@ jobs:
           status_failed=0
           while IFS= read -r head_sha; do
             if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
-              --base-sha "$base_sha" --head-sha "$head_sha" \
+              --base-sha "$verification_base_sha" --head-sha "$head_sha" \
               --token-file "$token_file" && \
               [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
               state=success

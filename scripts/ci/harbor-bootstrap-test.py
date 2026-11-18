@@ -585,6 +585,8 @@ class BootstrapTest(unittest.TestCase):
                             for _, path, _ in self.api.requests))
         self.assertTrue(any("/app101/artifacts?" in path and "page=2" in path
                             for _, path, _ in self.api.requests))
+        self.assertTrue(all("page_size=10" in path for _, path, _ in self.api.requests
+                            if "/artifacts?" in path))
 
     def test_backfill_scans_missing_image_after_one_thousand_artifacts(self):
         self.api.repositories = [{"id": 1, "name": "homelab/app"}]
@@ -593,7 +595,7 @@ class BootstrapTest(unittest.TestCase):
         bootstrap.backfill_scans(self.client)
         scans = [path for _, path, _ in self.api.requests if path.endswith("/scan")]
         self.assertEqual(scans, [f"/projects/homelab/repositories/app/artifacts/sha256:{1001:064x}/scan"])
-        self.assertTrue(any("/app/artifacts?" in path and "page=11" in path
+        self.assertTrue(any("/app/artifacts?" in path and "page=101" in path
                             for _, path, _ in self.api.requests))
 
     def test_backfill_rechecks_reports_before_requesting_scan(self):
