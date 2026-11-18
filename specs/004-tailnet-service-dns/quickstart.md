@@ -29,25 +29,22 @@ saved-plan gate before applying its new Application; treat any unavailable gate 
 
 ## Resolver rollout and direct queries
 
-After the image is published and reviewed source is merged, use the normal Terragrunt/Argo delivery path. Run the signer and read-only checker from the configured trusted signer Mac with read-only Kubernetes access; use a separate ordinary tailnet member client to prove its UDP/TCP 53 reachability. Inspect rather than mutate live objects:
+After the image is published and reviewed source is merged, use the normal Terragrunt/Argo delivery path. Use an authorized tailnet member client to prove UDP/TCP 53 reachability with direct queries. Inspect rather than mutate live objects:
 
 ```sh
 kubectl -n argocd get application tailnet-dns
 kubectl -n tailnet-dns get deployment,service,pod
 kubectl -n tailnet-dns get service tailnet-dns -o json
 kubectl -n traefik get service traefik-private -o json
-python3 -I scripts/tailscale-ingress-sign.py --dns-only
-python3 -I scripts/tailscale-ingress-sign.py --dns-only --execute
 ```
 
-Expected: Argo is Synced/Healthy at reviewed `main`, resolver Pods are Ready, `tailnet-dns` has one published Tailscale IPv4, `traefik-private` has its current published IPv4, and the fixed signer reports the DNS proxy signed without disabling Tailnet Lock. Use the exact resolver IP observed above as `<DNS_TAILNET_IP>`:
+Expected: Argo is Synced/Healthy at reviewed `main`, resolver Pods are Ready, `tailnet-dns` has one published Tailscale IPv4, `traefik-private` has its current published IPv4. Use the exact resolver IP observed above as `<DNS_TAILNET_IP>`:
 
 ```sh
 dig @<DNS_TAILNET_IP> stinkyboi.com A +noall +comments +answer
 dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +noall +comments +answer
 dig @<DNS_TAILNET_IP> stinkyboi.com MX +noall +answer
 dig @<DNS_TAILNET_IP> mastodon.stinkyboi.com A +noall +answer
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 ```
 
 Expected: UDP and TCP A answers for the apex match the private Traefik Service IPv4; all 26 exact names and a real Cordium wildcard child pass the full check; approved AAAA queries have no public
@@ -57,11 +54,11 @@ identity in private rollout evidence. Check live convergence on the first later 
 
 ## Read-only health check and recovery
 
-From the trusted signer Mac with tailnet and read-only Kubernetes access, re-run `python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>` when DNS is suspected unhealthy and after any
-recovery. The routine check follows current approved Service-annotation names rather than freezing the migration inventory. A failure identifies the affected query or path; inspect Argo Application
-health, resolver Pods, the DNS Service's current status IP and the proxy's signed Tailnet Lock identity. Restore the failed declaration through reviewed Argo/Terragrunt desired state, or re-sign the
-fixed proxy identity if its key rotated. Re-run direct UDP/TCP queries and the current approved-name check before testing normal OS DNS and HTTPS. Keep retired public records absent during resolver
-recovery.
+From an authorized tailnet client, query current approved names over UDP/TCP.
+Inspect Argo health, resolver Pods, the DNS Service address and online proxy
+identity. Restore failed declarations through reviewed Argo/Terragrunt desired
+state, then repeat direct queries, ordinary OS resolution and HTTPS. Keep retired
+public records absent during resolver recovery.
 
 ## Owner handoff and later cutover
 
@@ -69,4 +66,4 @@ recovery.
 
 After the owner reports the setting active, verify normal OS resolution from an ordinary tailnet client (for example with Python `socket.getaddrinfo`, not only `dig @server`), existing HTTPS, Fleet,
 Harbor node pulls, native Cordium/API clients and Funnel callback restrictions. Then follow the current [26-name retirement gates](../005-retire-public-app-dns/contracts/cutover.md) and ingress runbook. The apex retains public A and mail records, while all 27 approved names retain private answers. If any gate fails,
-keep the selected public records and restore private resolution through Argo/Terragrunt and the fixed signer.
+keep the selected public records and restore private resolution through Argo/Terragrunt.

@@ -35,6 +35,6 @@ private authenticated administration, verified-before-cutover ordering, client
 acceptance, and rollback are covered. No essential user decision identified.
 
 Runtime access, actual endpoint identity/address, images, persistent storage,
-and enrollment/signing remain to be investigated during clarification/planning.
+and enrollment remain to be investigated during clarification/planning.
 They are unverified dependencies, not proof of a blocker or successful rollout.
 No implementation, DNS policy mutation, merge, or deployment performed.

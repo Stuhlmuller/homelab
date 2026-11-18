@@ -114,7 +114,7 @@ inside the current 29-name inventory.
    incomplete page, missing evidence, and partial retry. After the old TTL,
    check authoritative and recursive public answers and normal tailnet access.
 5. **Recover privately:** During a resolver fault, use the existing read-only
-   checker and declared Argo/Terragrunt or fixed signer path. Keep retired
+   checker and declared Argo/Terragrunt path. Keep retired
    public records absent. A policy reversal is a separate reviewed change.
 
 ## Project Structure

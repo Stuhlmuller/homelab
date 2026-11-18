@@ -25,7 +25,7 @@ Unrelated application drift was observed but is outside this increment.
 Docker server 28.4.0 is available; kubectl and gh work. Default sandbox cannot
 activate Nix because user namespaces are restricted. Escalated execution of the
 reviewed default devShell was approved and is provisioning the pinned tools;
-no flake or lockfile changes. Signing/admin access remains a later dependency.
+no flake or lockfile changes. Administrator access remains a later dependency.
 
 No live mutation, image publication or deployment occurred. T002 verification
 and results will be appended before this increment is complete.
@@ -57,4 +57,5 @@ PR and exact-main publication. Existing all scope is required for this new image
 no adguard-specific publisher scope exists. Read protected delivery instructions
 before creating the PR. Keep source consumers unmerged until full-pull evidence.
 
-Tracking limitation: automatic approval review rejected even the concise Notion Next step update in this increment, citing unestablished destination ownership/payload authorization for infrastructure status. No retry or alternate external delivery attempted. Local checkpoint remains canonical; leave Notion writes paused pending user authorization.
+Tracking limitation: automatic approval review rejected even the concise Notion Next step update in this increment, citing unestablished destination ownership/payload authorization
+for infrastructure status. No retry or alternate external delivery attempted. Local checkpoint remains canonical; leave Notion writes paused pending user authorization.

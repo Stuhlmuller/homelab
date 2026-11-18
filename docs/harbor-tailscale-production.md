@@ -1,111 +1,45 @@
-# Production-only Harbor Tailnet access
+# Harbor access through Tailscale
 
-The public mirror workflow joins the existing tailnet and uses Harbor's private
-HTTPS hostname directly. `harbor-publish.sh <mirror-scope> --tailscale` neither
-installs a kubeconfig nor calls Kubernetes, changes `/etc/hosts`, or starts a
-port-forward. TLS verification, the registry 401 challenge, separate existing
-publisher/pull robots, digest verification and complete pulls remain required.
-Other publication workflows retain their existing transport. This change does
-not migrate the other homelab access workflows or change routes, ACLs or RBAC.
+The public mirror workflow joins the tailnet and uses Harbor's private HTTPS
+hostname directly. `harbor-publish.sh <mirror-scope> --tailscale` does not require
+a kubeconfig, Kubernetes calls, host-file changes or port forwarding. TLS
+verification, the registry 401 challenge, separate publisher/pull robots, digest
+verification and complete pulls remain required.
 
 The workflow is dispatch-only, restricted to exact reviewed `main` and the
-`homelab-production` environment. Publishing this source does not enroll a node.
-The credential-check step fails when the production key is absent; Tailnet
-Lock rejects unsigned enrollment. Pipeline results determine readiness without
-additional document-derived signing, installation, or dispatch approvals.
+`homelab-production` environment. Its credential check fails when the
+environment's `TAILSCALE_AUTH_KEY` is absent. The administrator-owned
+[Tailscale access module](../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+owns the provider key and its lifetime. Keep raw credentials in protected
+credential storage and out of command arguments, logs and git.
 
-## Credential preview and installation
+## Identity and lifetime
 
-The production-only helper reuses an existing provider `apply` key and cached
-Tailnet Lock wrapper. It has no signing, key creation, provider apply, node
-registration, variable deletion, or authority removal operation. It never
-publishes to plan or Cordium. Existing provider outputs and the private cache
-bundle all three identities; only the production record is selected or used.
-No private values are printed. Do not run the three-identity publisher for this
-bounded recovery.
+The `apply` identity carries `tag:homelab-ci-apply`. Its policy grants TCP 443 to
+`tag:homelab-ingress` and `tag:k8s-operator`, plus UDP/TCP 53 to the ingress-tagged
+DNS resolver. Its Kubernetes binding is cluster-admin, so this credential carries
+more access than Harbor alone even though the mirror does not call Kubernetes.
 
-The production helper canonicalizes public authority names in memory: Tailscale
-JSON uses `nlpub:<hex>`, while its CLI uses `tlpub:<hex>` for the same key bytes
-([pinned implementation](https://github.com/tailscale/tailscale/blob/v1.102.3/types/key/nl.go)).
-Duplicate aliases and malformed keys fail closed. This never changes cache files
-or relaxes the provider fingerprint, wrapped key, generation or authority metadata
-checks. Equal generation alone does not make a stale signed cache usable.
+The provider auth key is reusable, ephemeral and preauthorized, with a 90-day
+maximum lifetime. Each job uses its own private daemon state directory, accepts
+tailnet DNS and declines subnet routes. The mirror verifies the official Linux
+amd64 1.102.3 archive against its reviewed checksum and passes the auth key to
+the native client over stdin. It verifies the authenticated production tag
+before AWS access. Cleanup logs out, stops the daemon, runs native network
+cleanup and deletes private job state. The job uses the existing AWS role and
+Harbor robot.
 
-The helper reads the existing private production key/cache from clean signed
-current `main`:
+## Acceptance and recovery
 
-```sh
-nix develop --command python3 -I scripts/harbor-tailscale-production.py
-```
+Protected mirror steps check actual enrollment and cleanup, strict TLS, complete
+destination pulls, and platform/digest equality. Executable release checks own
+readiness. A source change alone does not prove live enrollment or publication.
 
-Preview reports only identity/tag, generation, existing public authority,
-expiration and fixed secret destination. Missing/mismatched cache or trust
-metadata stops; it never signs a replacement. The preview supplies the exact generation, authority and
-expiration consumed by the installation helper.
-
-The installation command binds those values:
-
-```sh
-nix develop --command python3 -I scripts/harbor-tailscale-production.py \
-  --execute --generation <reviewed-generation> \
-  --authority <reviewed-tlpub> --expires-at <reviewed-expiration>
-```
-
-Execution requires a clean checkout at GitHub's signed current `main`, the
-`rstuhlmuller` account, protected main, the production branch/protection contract,
-and an absent destination secret. The only write is
-`Stuhlmuller/homelab` environment `homelab-production` secret
-`TAILSCALE_AUTH_KEY`, passed over stdin. Metadata readback confirms presence;
-it cannot prove the stored value or enrollment works. An uncertain write stops
-without retrying. GitHub has no conditional secret-create operation: keep other
-secret publishers stopped during this action. This helper refuses to replace
-an existing secret.
-
-## Identity, lifetime and authority
-
-The existing identity is `apply`, tag `tag:homelab-ci-apply`. Current source grants
-it TCP 443 to `tag:homelab-ingress` and `tag:k8s-operator`, plus TCP/UDP 53
-to the ingress-tagged split DNS resolver. Its Kubernetes binding
-is cluster-admin; publishing this key therefore enables more authority than
-Harbor alone, even though this mirror path never calls Kubernetes. No ACL or
-RBAC expansion is proposed.
-
-The provider key is reusable, ephemeral and preauthorized, with a 90-day maximum
-lifetime. Preview requires 7-90 days remaining; it does not extend expiration.
-Each job uses its own Tailnet Key Authority state directory, accepts tailnet
-DNS and declines subnet routes on its first connection. The mirror verifies the
-official Linux amd64 1.102.3 archive against its reviewed checksum and passes
-the key to the native client over stdin. It checks the authenticated node's
-production tag before AWS access. Cleanup logs out, stops the daemon, runs its native network cleanup and
-removes the job's private state. The job uses the existing AWS role and Harbor robot.
-
-Tailnet Lock remains enabled. The cached wrapper includes a delegated private
-signing key. This proposal creates no new delegation and never exports the
-Mac's voting key, but putting that wrapper in CI is persistent credential access.
-Auth-key expiry or secret deletion does not remove the existing signing authority
-or necessarily revoke already enrolled nodes. Key, node and authority revocation
-are distinct operations; neither helper
-removes shared authorities or re-signs other nodes.
-
-[Tailscale's Action](https://github.com/tailscale/github-action#tailnet-lock)
-requires a pre-signed key for unattended locked-tailnet enrollment. Signing each
-runner node directly avoids a pre-auth-key delegation, but needs a secure per-run
-request/signing path. No such service is implemented here, and none is installed
-by this patch. Reusing the existing wrapper is the bounded supported path.
-
-## Acceptance and rollback
-
-The protected mirror runs at exact current `main`. Its steps check actual
-Tailnet enrollment/cleanup, strict TLS, complete destination pulls and
-platform/digest equality. Executable release checks own runtime readiness;
-this runbook does not hold individual PRs or add manual acceptance gates.
-
-Revert this source through protected PRs to stop future use; that does not revoke
-a published key or enrolled nodes. Deleting the production secret prevents
-future jobs from using it.
-Preserve encrypted provider state and the private cache for recovery. Key or
-signing-authority retirement remains a distinct operation. Do not restore
-Octelium or broaden network access as an automatic fallback.
+Revert through protected PRs to stop future workflow use. Deleting the GitHub
+secret prevents future jobs from using it; auth-key revocation and removal of
+already enrolled devices remain separate credential-management operations.
+Preserve encrypted provider state. Restore connectivity through the declared
+network path without broadening access as an automatic fallback.
 
 ## Existing verification/access limits
 

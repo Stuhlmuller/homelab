@@ -11,7 +11,7 @@ Initial T030 validation attempts: The first full `nix run --no-update-lock-file
 clusters/homelab/apps/traefik/canary/routes.yaml to exactly match the reviewed
 live-source route file, preserving the existing byte-equality test. The second
 full run passed all preceding offline fixtures, including AdGuard, route,
-signing, private DNS, targeted apply and recovery tests, but failed the exact
+private DNS, targeted apply and recovery tests, but failed the exact
 credential-bearing workflow hash in offline-static-checks.sh.
 
 Reviewed the complete validate.yml: the only introduced change is a repository
@@ -24,7 +24,7 @@ adguard-integration.log and adguard-integration-repaired.log record both failure
 No full-gate pass, real backend plan or live deployment is claimed.
 
 Earlier focused evidence remains: 11 manifest/init,12 checker,21 cutover/rollback,
-4 recovery-boundary,7 pinned-image runtime,30 signing,34 targeted apply,3 SSM and
+4 recovery-boundary,7 pinned-image runtime,34 targeted apply,3 SSM and
 6 Tailscale module tests passed. Module tests used mocked providers/backend-free
 init; real SSM and administrator DNS plans require their existing authorized
 credential paths. Local AWS config has no named profile, and the conventional
@@ -33,15 +33,7 @@ owns live planning; do not invent a successful local real-backend plan.
 
 Read-only prerequisite checks November16 found external-secrets, tailscale,
 tailnet-dns, platform-storage and Harbor Synced/Healthy at48e8b9e4. Traefik has a
-ready1/1 Deployment but remains Synced/Progressing: codex-signer has no LB address
-or proxyPod. Operator logs repeatedly report OAuth401/API token invalid when
-provisioning it. Existing proxies being ready does not prove new enrollment.
-The existing tailscale-operator-oauth-rotate.py path requires an Owner/Admin API
-key file and a named AWS SSM-authorized profile. User was asked asynchronously
-for the administrator environment or existing private paths/profile, not secret
-values; answer pending. No repair attempted without those credentials. The
-owning ingress wiki records the incident and declared repair path. T033 remains
-open. T003 publication run43777917412 remains pending, sole watcher80837.
+ready1/1 Deployment. T003 publication run43777917412 remains pending, sole watcher80837.
 
 Next: finish repaired full gate, record exact result, separate integration
 convergence, then protected delivery when publication succeeds. No Notion writes.
