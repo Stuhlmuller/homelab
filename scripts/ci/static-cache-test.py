@@ -44,6 +44,19 @@ if "render" in args:
     print(json.dumps({"locals": {"emergency_global_admin_enabled": enabled}, "exclude": {"if": not enabled, "actions": ["apply", "destroy"]}}))
 ''')
             binary.chmod(0o700)
+            scanner = directory / "pre-commit"
+            scanner.write_text(f"#!{sys.executable}\n" + '''
+import json, os, pathlib, sys
+root = pathlib.Path(__file__).parent
+assert sys.argv[1:] == ["run", "checkov_secrets", "--all-files"]
+assert "PYTHONPATH" not in os.environ and "PYTHONHOME" not in os.environ
+with (root / "calls.jsonl").open("a") as stream:
+    stream.write(json.dumps({"cache": os.environ["TG_DOWNLOAD_DIR"], "cwd": os.getcwd(),
+                             "tool": "pre-commit", "args": sys.argv[1:]}) + "\\n")
+if os.environ["CACHE_TEST_FAILURE"] == "scanner":
+    sys.exit(19)
+''')
+            scanner.chmod(0o700)
             # Execute the complete real shell flow, including each unit's init,
             # while replacing expensive tests/scanners with inert functions.
             harness = '''
@@ -86,6 +99,13 @@ source "$1" --offline-verified
             "tailscale-access",
         })
         self.assertGreaterEqual(sum(call["args"] == ["render"] for call in calls), 3)
+        scans = [call for call in calls if call.get("tool") == "pre-commit"]
+        self.assertEqual(len(scans), 1)
+        self.assertEqual(scans[0]["args"], ["run", "checkov_secrets", "--all-files"])
+
+    def test_scanner_failure_cleans_private_cache(self):
+        result, _ = self.run_gate("scanner")
+        self.assertEqual(result.returncode, 19, result.stderr)
 
     def test_init_failure_cleans_private_cache(self):
         result, _ = self.run_gate("init")
