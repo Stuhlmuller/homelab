@@ -314,11 +314,14 @@ Langfuse Application; it does not widen the Terragrunt filter or advance the
 full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
 [deployment and readiness gates](../../clusters/homelab/apps/langfuse/README.md#validation).
 
-Deleted workflow-owned units use temporary configurations at their original
-backend paths. Their generated providers retain the state key-provider and
-encryption-method identities, so retirement can read encrypted state and apply
-only the reviewed, policy-checked destroy plan. Retained secret and backup data
-remain protected by their existing ownership and policy gates.
+Deleted workflow-owned units use temporary configurations at their original backend paths and inherit the shared
+AES-GCM state and saved-plan policy from [`IaC/root.hcl`](../../IaC/root.hcl). Terragrunt generates provider and
+method blocks named `default`; `encrypted_metadata_alias = "key_provider.aws_kms.main"` preserves the former
+key-provider metadata identity, not the former encryption-method label. Retirement can therefore read records
+encrypted under the old policy and apply only the reviewed, policy-checked destroy plan. Previously unencrypted
+records require the separately scoped adoption described in the
+[state encryption guide](../../docs/state-encryption.md).
+Retained secret and backup data remain protected by their existing ownership and policy gates.
 
 ## Provider Scope
 

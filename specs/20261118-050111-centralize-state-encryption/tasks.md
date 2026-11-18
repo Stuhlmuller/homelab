@@ -216,3 +216,23 @@ The repair changes formatting and import hygiene only; original task semantics a
   convergence per FR-007 and FR-008 (partial).
 
 Dependency: T015 → T016 → separate independent convergence. Earlier validation limits remain unchanged.
+
+
+## Phase 9: Convergence
+
+Delivery finding F4: authored wiki pages still omit root ownership and describe former retirement method identities.
+The corrected plan follows the Repository OpenWiki Policy: use normal file tools for scoped authored-page updates.
+This supersedes the earlier lifecycle-unavailable exception while preserving its historical checkpoints.
+
+- [x] T017 After T016, update `openwiki/operations/state-encryption.md` with shared root ownership, minimum
+  Terragrunt v1.2.2, plaintext migration and rollback boundaries, and a link to `docs/state-encryption.md`. Correct
+  the retirement explanation in `openwiki/architecture/gitops-flow.md` to describe root inheritance and generated
+  `default` labels, with `encrypted_metadata_alias` preserving the former key-provider metadata identity rather
+  than the former encryption-method identity. Keep the existing source-authored guide and README, backend paths,
+  and retirement policy gates intact. Preserve generated Claims, indexes, provenance and run state. Run
+  `scripts/ci/openwiki-check.py` and Markdown lint using `.github/linters/.markdown-lint.yml` on affected authored
+  pages and feature artifacts; record exact outcomes in this feature's `checkpoint.md`, then obtain separate
+  independent convergence per FR-008, FR-009 and Constitution IV (partial).
+
+Dependency: T016 → T017 → separate independent convergence. Existing task markers and validation limits remain intact.
+The user-directed main-merge and auto-merge hold remains in force; implementation and checks may continue.

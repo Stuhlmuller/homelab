@@ -11,6 +11,23 @@ Runtime SSM SecureStrings use AWS-managed `alias/aws/ssm` in `us-west-2`.
 OpenTofu retains `alias/homelab-opentofu` in `us-east-1` for client-side state
 and plan encryption. These keys have separate ownership and purposes.
 
+The shared [`IaC/root.hcl`](../../IaC/root.hcl) owns client-side state and saved-plan encryption through
+`remote_state.encryption`. Units, including temporary retirement configurations, inherit that policy; reusable
+modules no longer declare their own encryption blocks or accept encryption-only inputs. Use the pinned
+Terragrunt v1.2.2 development shell or a newer supported generator; the root rejects older versions.
+
+Terragrunt generates provider and AES-GCM method blocks named `default`. The policy sets
+`encrypted_metadata_alias = "key_provider.aws_kms.main"` to retain the key-provider metadata identity stored with
+previously encrypted records. It does not preserve the former method block's label. The KMS key, region and
+existing backend paths remain unchanged, and state and saved-plan encryption are both enforced.
+
+No plaintext fallback is configured. Previously unencrypted records fail closed and need a separately scoped
+adoption path before apply. For previously encrypted modules, the metadata alias preserves compatibility with
+the old policy. Newly protected units must retain equivalent encryption after their first ciphertext write,
+including during a source rollback, until a separate migration is designed. See the
+[state encryption guide](../../docs/state-encryption.md) for verification limits, plaintext adoption and safe
+rollback boundaries. A source revert is not a state restore.
+
 `IaC/homelab/us-west-2/operator/state-bucket-encryption` manages the existing S3 backend bucket's
 encryption settings through `IaC/terragrunt-catalog/modules/aws-s3-bucket-encryption`. S3 Bucket
 Keys are enabled; SSE-KMS, version history and OpenTofu client encryption remain

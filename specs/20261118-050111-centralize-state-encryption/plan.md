@@ -56,6 +56,8 @@ scripts/ci/offline-checks.sh
 flake.nix
 docs/state-encryption.md
 README.md
+openwiki/operations/state-encryption.md
+openwiki/architecture/gitops-flow.md
 specs/20261118-050111-centralize-state-encryption/{spec,plan,research,data-model,quickstart,checkpoint}.md
 ```
 
@@ -95,13 +97,19 @@ internal generation behavior.
    string assertion. This checks metadata migration and plan behavior without pretending to test AWS permissions. Keep
    all fixture secrets/results temporary and public-safe.
 6. Register the focused regression in `scripts/ci/offline-checks.sh` beside the existing stack regression; static
-   checks consume this owner through nix-checks. Publish source-authored guidance in `docs/state-encryption.md` and
-   link it from README. OpenWiki lifecycle tools and a readily callable CLI are unavailable here, so preserve the
-   managed wiki/control artifacts and record that limit. This coordinator-authorized documentation path fulfills
-   FR-008 without claiming an unperformed wiki update. Explain ownership, exact minimum/pin, metadata alias rationale,
-   verification limitations, fail-closed legacy plaintext handling and source rollback. Distinguish previously
-   encrypted modules from newly protected units: after a newly covered unit writes ciphertext, retain equivalent
-   encryption during a source rollback until a separate migration is designed. No live state download.
+   checks consume this owner through nix-checks. Retain `docs/state-encryption.md` and its README link. Also update
+   the affected authored pages `openwiki/operations/state-encryption.md` and `openwiki/architecture/gitops-flow.md`
+   with normal file tools in the same change, following the Repository OpenWiki Policy in `AGENTS.md`.
+   That policy overrides native lifecycle sequencing for scoped authored-page edits; missing native tools do not
+   block or excuse these updates. Leave generated Claims, indexes, provenance and run state untouched.
+   Explain root ownership, minimum Terragrunt 1.2.2, plaintext handling, verification limits and rollback boundaries
+   in the operations page, linking the full guide where useful. Correct the GitOps retirement explanation:
+   root inheritance supplies AES-GCM, generated provider and method labels are `default`, and
+   `encrypted_metadata_alias` preserves the former key-provider metadata identity only. Do not claim retention
+   of the former encryption-method identity. Preserve unchanged backend paths and existing retirement policy gates.
+   Distinguish previously encrypted modules from newly protected units: after a newly covered unit writes
+   ciphertext, retain equivalent encryption during source rollback until a separate migration is designed.
+   No live state download.
 
 ## Verification and Rollback
 
@@ -115,8 +123,13 @@ roll back source.
 
 ## Recorded Design Amendment
 
-The implementation found no callable OpenWiki lifecycle tool/CLI. The coordinator authorized source-authored
-`docs/state-encryption.md` plus README instead of the planned managed wiki update. Existing managed wiki content was
-not edited and no lifecycle operation is claimed. This changes the documentation destination, not the FR-008 behavior
-or acceptance obligation. The actual declared regression owner is `scripts/ci/offline-checks.sh` , consumed by the
-static/Nix check path. Existing stage checkpoints retain the original decision and execution history.
+Earlier stages treated unavailable native OpenWiki lifecycle tools as grounds to skip authored wiki updates.
+That was an interpretation error: the Repository OpenWiki Policy in `AGENTS.md` explicitly authorizes normal
+file tools for scoped authored-page changes and requires affected pages in the same PR. It overrides the native
+sequencing in local skills. The source-authored guide and README remain useful but do not replace those updates.
+
+The corrected design includes both affected authored pages alongside the existing guide. Generated Claims,
+indexes, provenance and run state remain owned by native OpenWiki and must not be hand-edited. Earlier checkpoints
+are retained as historical evidence; their lifecycle-unavailable exception is superseded by this correction.
+Review evidence: thread `PRRT_kwDOOgYRfM64zIdp`, comment `4609760812`, concerning original commit `f29165e8`.
+The actual regression owner remains `scripts/ci/offline-checks.sh`, consumed by the static/Nix check path.

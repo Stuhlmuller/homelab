@@ -79,10 +79,24 @@ covers it. Baseline pinned tools verified by coordinator: Terragrunt 1.0.4, Open
 
 ## Documentation and validation ownership amendment
 
-Decision: use source-authored docs/state-encryption.md plus README, as authorized by coordinator after unavailable
-OpenWiki lifecycle tools/CLI were established. Rationale: FR-008 requires source-linked
-ownership/compatibility/validation/rollback documentation, which this destination supplies without hand-editing
-managed wiki or control artifacts. Alternative rejected: claim a wiki lifecycle update that could not be executed. The
-wiki remains unchanged and tooling limitation remains disclosed. Actual validation owner is
-scripts/ci/offline-checks.sh beside stack regression, consumed by static checks through Nix; avoid duplicate static
-registration.
+Decision: retain `docs/state-encryption.md` and README guidance and also update the affected authored wiki pages
+`openwiki/operations/state-encryption.md` and `openwiki/architecture/gitops-flow.md` using normal file tools.
+Rationale: the Repository OpenWiki Policy in `AGENTS.md` explicitly permits scoped authored-page edits alongside
+source changes, requires affected pages in the same PR and overrides native sequencing in local skills.
+Unavailable native lifecycle tools do not prevent authored-page maintenance. Generated Claims, indexes, provenance
+and run state remain untouched and owned by native OpenWiki.
+
+Correction: the earlier lifecycle-unavailable exception was our interpretation error, not an actual access or
+policy blocker. Preserve its checkpoints as history but do not use it as the current design or completion claim.
+The guide supplements the wiki updates rather than replacing them. This repairs FR-008 documentation coverage
+without changing encryption behavior or requiring an unrelated native refresh queue.
+
+Source evidence: the operations page lacks centralized root ownership and the minimum generator version.
+The GitOps retirement paragraph incorrectly promises retained encryption-method identities. It must instead
+explain inherited root AES-GCM, generated `default` provider/method labels and the metadata alias that preserves
+only the former key-provider metadata identity. Retain backend-path and retirement-gate statements.
+Review evidence: thread `PRRT_kwDOOgYRfM64zIdp`, comment `4609760812`, original commit `f29165e8`.
+
+Actual validation owner remains `scripts/ci/offline-checks.sh` beside the stack regression, consumed by static
+checks through Nix. Validate authored-page links/frontmatter/navigation with `scripts/ci/openwiki-check.py` and
+apply the repository Markdown rules. No generated-artifact edit or live infrastructure operation is needed.

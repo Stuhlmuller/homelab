@@ -459,3 +459,48 @@ Final run passed2tests in32.066s. Earlier harness failures were corrected and ar
 - Task digest: `cef36a5085e803305cd69049a858bb2ed1ea8cf3f8cf5c416206c6db95726fdb`.
 - Exact lint and secret checks run again after this wrapped note, before signed publication.
 - Earlier broad-static, authenticated-plan and live-apply limits remain qualified; await exact-head CI.
+
+## Authored wiki policy planning correction
+
+- Stage: owning plan repair complete; next: task amendment before authored-page implementation.
+- Read the Repository OpenWiki Policy in `AGENTS.md` and the two affected page sections.
+  It explicitly permits normal file tools for scoped authored-page edits and requires same-PR updates.
+  It overrides native sequencing in local skills; missing lifecycle tools are not a blocker for authored pages.
+- Earlier lifecycle-unavailable exception was our interpretation error. Historical checkpoints remain preserved,
+  but that exception is superseded. No claim is made that authored pages were updated in an earlier stage.
+- Plan/research now retain the guide and README and require both affected authored wiki pages.
+  Operations must explain root ownership, minimum 1.2.2, plaintext and rollback boundaries or link the guide.
+  GitOps retirement must distinguish generated `default` labels from preserved key-provider metadata identity;
+  do not claim preservation of encryption-method identity.
+- Generated Claims, indexes, provenance and run state remain untouched. No native refresh queue is a prerequisite.
+- Review evidence: thread `PRRT_kwDOOgYRfM64zIdp`, comment `4609760812`, original commit `f29165e8`.
+- No authored source page, task, application behavior, Git history or publication changed in this planning turn.
+
+## Authored wiki implementation checkpoint
+
+- Stage: T017 complete; next: independent convergence before parent-owned signing and delivery.
+- Updated authored `openwiki/operations/state-encryption.md` using normal file tools under the repository policy.
+  Added root ownership, minimum Terragrunt 1.2.2, generated default labels, key-provider metadata alias,
+  fail-closed plaintext adoption and safe rollback boundaries, linking the existing source guide.
+- Corrected only the retirement paragraph in authored `openwiki/architecture/gitops-flow.md`.
+  It now distinguishes inherited AES-GCM and generated default labels from preserved key-provider metadata identity.
+  It no longer claims retention of the former encryption-method label; original backend paths and gates remain.
+- Preserved existing frontmatter, bucket ownership, confidential recovery/archive details and other page content.
+  No generated Claims, indexes, provenance or run-state artifacts were edited.
+- Earlier lifecycle-tool exception was our interpretation error, superseded by the Repository OpenWiki Policy.
+  These are actual authored-page writes; no native lifecycle refresh is claimed or required.
+- Final Markdown validation used `markdownlint --config .github/linters/.markdown-lint.yml` on both authored pages,
+  README, source guide, the two changed module READMEs and all feature Markdown after these evidence/task edits.
+  `python3 -I scripts/ci/openwiki-check.py` and `git diff --check` also passed in the pinned Nix shell.
+  Exact command and output are recorded in `/tmp/encryption-t017-docs.log` and the tool-call evidence.
+- Functional crypto/provider tests were not repeated for prose-only updates. Earlier execution limits remain.
+  No Git history, GitHub publication, main merge or auto-merge change occurred; the user-directed hold remains.
+
+## T017 independent convergence
+
+- Independent convergence confirms all 17 tasks are covered and both authored wiki pages are accurate.
+- Root ownership, minimum generator version, default labels and metadata alias semantics are explicit.
+- Existing recovery guidance and generated-artifact boundaries remain intact.
+- Task digest: `f76781dfcc5fcccaa7fa4761ff4d8fc05db0d6102b15e9fd79de6783d669b5a8`.
+- Parent verified the two page baselines match remote signed head 7f93ff95 before publication.
+- Publish and verify the fix before resolving review thread PRRT_kwDOOgYRfM64zIdp.
