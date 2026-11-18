@@ -7,7 +7,7 @@ source preparation wait for the whole publisher. Align the graph with the
 existing intent; no requirement, design, runtime gate or task description changes.
 
 T002 now precedes T004–007 source; T003 and T030 jointly precede T031 review,
-then T032 protected consuming merge. T033–040 runtime/signing/DNS/client checks
+then T032 protected consuming merge. T033–040 runtime/DNS/client checks
 retain their order. T003 stays open. All 40 task lines and their checkboxes are
 byte-for-byte preserved (only T001/T002 complete); no source implementation or
 application/DNS mutation occurred in this task correction.

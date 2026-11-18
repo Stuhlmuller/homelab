@@ -12,7 +12,7 @@ constitution context; before/after hook inventory empty.
 Generated tasks.md with 40 sequential tasks: setup 2, foundational 5, US1 8,
 US2 5, US3 4, US4 4, integration/delivery 12. Story phases are in priority order;
 live US2 activation is in the final phase after US3/US4 and direct acceptance.
-Dependencies explicitly separate image publication, app rollout, signed endpoint,
+Dependencies explicitly separate image publication, app rollout, endpoint,
 observed-IP cutover and normal client evidence. No guessed endpoint enters source.
 Two independent fixture tasks are marked parallel; shared files stay sequential.
 

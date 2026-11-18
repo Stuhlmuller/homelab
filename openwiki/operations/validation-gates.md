@@ -286,10 +286,6 @@ sources:
     resource: repo://scripts/ci/tailscale-access-check-test.py
   - id: openwiki-source-f8287cec4efc309562629516
     resource: repo://scripts/ci/tailscale-access-check.py
-  - id: openwiki-source-fc269dae2f6a8501f0c0fb75
-    resource: repo://scripts/ci/tailscale-ci-configure-test.py
-  - id: openwiki-source-4ac432ebb03e57e6e256a336
-    resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-bd3e0276a60a943533e8286a
@@ -625,43 +621,15 @@ earlier-response confusion, and malformed bodies before DNS can change.
 Validate and test the Tailscale provider module, compare the complete live policy,
 and import the existing ACL before the private authenticated saved plan. Do not
 apply a plan that replaces the existing ACL. After foundation adoption, the
-Tailnet Lock addition must create exactly three scoped CI auth keys and preserve
-the ACL and dormant federated identities. Keep state, tokens and saved plans
-private. Generation rotation must replace keys, not merely update a description.
+CI key configuration must preserve scoped tags, existing policy and protected
+identities. Keep state, tokens and saved plans private. Generation rotation must
+replace keys, not merely update a description. Validate provider key tag, expiry
+and rotation contracts; real provider planning proves replacement behavior.
 
-Offline validation also runs the fixed ingress signer and CI publisher tests. They
-reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
-unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
-permissions. Signer fixtures also cover the CLI's null empty peer classes before
-any proxy is visible and after every proxy is signed. Publisher fixtures use
-distinct delegated and trusted signer keys. They reject missing, ambiguous or
-unrelated trust changes after signing, and mismatched cached authority identities
-or metadata. Publication tests require all three secret writes and metadata
-checks before deleting the old variables, reuse cached signatures on retry, and
-restrict authority retirement to previous generations. Retirement regressions
-corrupt each current or previous record, including later list positions, and
-require both preview and execution to fail with zero removals, unchanged cache,
-and no signing/publication. They also cover target drift after preflight and
-already-absent previous authority retries. Pending-receipt regressions cover
-lagging readback, timeout/retry without re-signing, durable cache replay after a
-partial write, and preview/retirement refusal while a receipt remains. Narrow
-orphan-recovery fixtures require exact provider/Mac/time metadata, no published
-fixed secrets and an empty binary affected-signature lookup; malformed, populated
-or failed lookups and unrelated trust drift stop removal. Mock provider tests cover
-tag, expiry and explicit-rotation contracts; real provider planning remains the
-proof of replacement behavior.
-
-Before mesh acceptance, run `tailscale-ingress-sign.py` in preview mode, then
-execute only from reviewed current main. Each proxy's public node and rotation
-keys must match the exact controller-owned Kubernetes resource and local lock
-peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
-The `scripts/tailscale-service-host-approve.py` fixture rejects broad tailnet
-grants, source/live policy drift, auto-approval, wrong Service ports or host
-ID, stale StatefulSet/Pod revisions, changed Pod placement/state, widened
-listeners or TLS mounts, unsigned or mismatched node identity, wrong Serve
-target, and a changed preview fingerprint before its only approval POST.
-It is offline proof of refusal paths; the Service, pending host, policy
-readback, signed canary, and TailVIP traffic still need live qualification.
+For proxy acceptance, verify the controller-owned Kubernetes resource, online
+Tailscale device identity, hostname, tag and observed address. Candidate Service
+hosts also require exact policy grants, pending-host identity and raw TCP Serve
+configuration. Prove actual traffic and wrong-host/withdrawal refusal paths.
 
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium
@@ -704,8 +672,8 @@ backend `X-Request-ID`, and root HTTP 404 without that header. Tests reject wron
 statuses, missing/malformed/duplicate IDs and a root forwarded to the backend.
 This proves routing only; fresh successful signed GitHub delivery proves the
 callback path after cutover. No webhook POST or redelivery is part of preflight.
-The CI publisher test separately requires all three raw signing keys on stdin,
-never arguments or temporary files, with private captured command failures.
+Keep raw CI auth keys out of arguments, temporary files and public logs.
+Credential-bearing command failures require private output handling.
 
 Phase 2a removes the public DNS restoration workflow and helper, changes internal
 CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before
@@ -813,16 +781,11 @@ Protected DNS mirror run `39161113974` passed at `main` `5558f8c1` with
 unchanged digest and complete authenticated Harbor pull. This scoped receipt
 does not prove live resolver health.
 
-After Argo reports the `tailnet-dns` Application Synced/Healthy, sign the fixed
-DNS proxy under Tailnet Lock and run
-`python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>`
-from the trusted signer Mac with read-only cluster access. The checker binds
-the observed IP to the online signed peer, rejects other selected Services,
-and probes all 29 current approved A/AAAA names over UDP and TCP, including a Cordium
-wildcard child. It compares public apex MX/TXT and an unrelated public name.
-These checks establish a handoff gate, not owner tailnet DNS configuration or
-normal client resolution. Leave public app records until those later checks
-pass; the `--retire-private` helper is deletion-only and separately guarded.
+After Argo reports `tailnet-dns` Synced/Healthy, verify its observed Service IP
+and online proxy identity. Probe current approved A/AAAA names over UDP and TCP,
+including a concrete Cordium wildcard child. Compare public apex MX/TXT and an
+unrelated public name. Direct queries establish resolver reachability; ordinary
+client resolution also requires the correct tailnet nameserver configuration.
 
 ### Public app subdomain retirement
 
@@ -2925,14 +2888,14 @@ Record unhealthy targets as findings rather than weakening predicates.
 The [AdGuard runbook](../../clusters/homelab/apps/adguard/README.md) separates
 source validation, rollout, direct acceptance and normal-client acceptance.
 Offline checks cover manifests/init, live-evidence validation, exact saved-plan
-cutover/rollback, protected recovery boundaries, routes, signing and targeted
+cutover/rollback, protected recovery boundaries, routes and targeted
 Terragrunt apply. The required repository job also runs the pinned AdGuard Docker
 fixture against synthetic DNS/filter servers, including cache failure, privacy,
 replacement and fresh restore. `bind.dnsutils` supplies the same `dig` used by the
 operator checker. Synthetic tests do not prove Harbor publication or live access.
 
 Live acceptance requires the published pinned image, current GitOps resources,
-trusted-Mac signed proxy, both DNS transports, private names, authenticated HTTPS
+online operator-owned proxy, both DNS transports, private names, authenticated HTTPS
 administration and protected-source recovery. The DNS cutover helper binds a
 fresh administrator saved plan to observed service/peer/source/configuration and
 live policy. Rollback excludes AdGuard health dependencies. Native client mode

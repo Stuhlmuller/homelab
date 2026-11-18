@@ -15,7 +15,7 @@ observed AdGuard IP enters source only atT037, not now.
 Fresh plan inspection validates only one fully-known DNS update with matching
 before/after/current source, no unrelated actions/output/drift/replacement.
 Fresh DNS/admin acceptance then binds current/deployed/config source, exact
-Service UID/IP and signed peer, saved-plan bytes and full live/desired policies.
+Service UID/IP and peer, saved-plan bytes and full live/desired policies.
 Final reads must agree within300s full check and60s final interval; clocks and
 future evidence fail closed. Native locks/encryption are retained. A local
 advisory lock serializes receipt users. Owned regular0600 files in owned0700

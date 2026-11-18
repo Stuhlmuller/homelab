@@ -65,7 +65,7 @@ AdGuard is unreachable. Normal cutover must still require healthy AdGuard.
 | CHK018 | PASS | Plan requires one validated bcrypt user, protected source and explicit revision/rollout |
 | CHK019 | PASS | FR-016 and plan disable logs/statistics; receipts exclude credentials/history |
 | CHK020 | PASS | Plan explicitly says Flannel NetworkPolicy is unenforced; external trust/auth boundary named |
-| CHK021 | PASS | Plan keeps existing trusted signer/admin host and rejects broader Codex/CI authority |
+| CHK021 | PASS | Plan keeps existing administrator host and rejects broader CI authority |
 | CHK022 | PASS | Plan constitution table distinguishes design from runtime checks; delivery sequence gates prerequisites |
 | CHK023 | PASS | Spec edge cases/assumptions exclude bypass, off-tailnet enforcement and universal ad removal |
 | CHK024 | PASS | SC-005/006 and guide separate fixture/source, publication, runtime, client and restore evidence |
