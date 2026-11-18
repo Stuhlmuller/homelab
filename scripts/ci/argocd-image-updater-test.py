@@ -44,7 +44,7 @@ def evaluate(scratch, values):
 def hcl_cases():
     source = (MODULE / "main.tf").read_text()
     default_module = ROOT / "IaC/terragrunt-catalog/modules/argocd-application-kubernetes"
-    assert source.split("\nlocals {", 1)[0].strip() == (default_module / "main.tf").read_text().split("\nlocals {", 1)[0].strip(), "provider/encryption settings diverged"
+    assert source.split("\nlocals {", 1)[0].strip() == (default_module / "versions.tf").read_text().strip(), "provider/encryption settings diverged"
     assert (MODULE / "variables.tf").read_text().split('variable "manifest"', 1)[0].strip() == (default_module / "variables.tf").read_text().split('variable "manifest"', 1)[0].strip(), "KMS contract diverged"
     blocks = re.findall(r"(?ms)^locals \{.*?^\}", source)
     assert blocks, "module must expose its actual native CR locals"
