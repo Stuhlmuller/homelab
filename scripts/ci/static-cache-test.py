@@ -44,6 +44,16 @@ if "render" in args:
     print(json.dumps({"locals": {"emergency_global_admin_enabled": enabled}, "exclude": {"if": not enabled, "actions": ["apply", "destroy"]}}))
 ''')
             binary.chmod(0o700)
+            scanner = directory / "pre-commit"
+            scanner.write_text(f"#!{sys.executable}\n" + '''
+import json, pathlib, sys
+args = sys.argv[1:]
+assert args[:3] == ["run", "checkov_secrets", "--all-files"]
+config = json.loads(pathlib.Path(args[args.index("--config") + 1]).read_text())
+assert len(config["repos"]) == 1 and config["repos"][0]["repo"] == "local"
+assert config["repos"][0]["hooks"][0]["language"] == "system"
+''')
+            scanner.chmod(0o700)
             # Execute the complete real shell flow, including each unit's init,
             # while replacing expensive tests/scanners with inert functions.
             harness = '''
