@@ -490,6 +490,32 @@ inputs = {
                          "IaC/homelab/live/argocd-apps/sparse-app/terraform.tfstate")
         self.assertFalse((self.root / "homelab/us-west-2/apps/sparse-app/.terragrunt-stack").exists())
 
+    def test_backend_state_mapping_compatibility(self):
+        mappings = {
+            "homelab/us-west-2/apps/fleet/azuread": "live/azuread-applications/fleet",
+            "homelab/us-west-2/apps/fleet/pilot-user": "live/azuread-applications/fleet-pilot-user",
+            "homelab/us-west-2/apps/grafana/azuread": "live/azuread-applications/grafana",
+            "homelab/us-west-2/apps/octelium/azuread": "live/azuread-applications/octelium",
+            "homelab/us-west-2/apps/langfuse/blob-storage": "live/langfuse-blob-storage",
+            "homelab/us-west-2/apps/example/argocd": "live/argocd-apps/example",
+            "homelab/us-west-2/apps/fleet/argocd": "live/argocd-apps/fleet",
+            "homelab/us-west-2/shared/aws-ssm-parameters": "live/aws-ssm-parameters",
+            "homelab/us-west-2/operator/example": "operator/example",
+            "homelab/us-west-2/bootstrap/example": "bootstrap/example",
+            "live/argocd-apps/retired": "live/argocd-apps/retired",
+            "legacy": "legacy",
+        }
+        for unit_path, state_path in mappings.items():
+            with self.subTest(unit_path=unit_path):
+                target = self.root / unit_path
+                target.mkdir(parents=True, exist_ok=True)
+                (target / "terragrunt.hcl").write_text(
+                    'include "root" { path = find_in_parent_folders("root.hcl") }\n')
+                rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
+                                          "--write=false", "--no-color", cwd=target))
+                self.assertEqual(rendered["remote_state"]["config"]["key"],
+                                 f"IaC/homelab/{state_path}/terraform.tfstate")
+
     def test_overrides_preserve_siblings_and_replace_lists(self):
         rendered = self.render("override-app")
         manifest = rendered["inputs"]["manifest"]

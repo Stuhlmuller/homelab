@@ -67,3 +67,8 @@ into responsibility-specific files within the same module directory.
 Module READMEs link the owning Terragrunt callers for complete usage examples.
 These file boundaries preserve resource addresses and the historical backend
 key mappings in `IaC/root.hcl`.
+
+Backend derivation uses named locals in `IaC/root.hcl` for unit prefixes,
+legacy application exceptions, regional/shared fallback paths and the final
+state key. `SharedAppTemplateTest.test_backend_state_mapping_compatibility`
+renders representative callers to protect those historical mappings.

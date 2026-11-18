@@ -14,6 +14,30 @@ locals {
     Project     = "homelab"
     Owner       = "Stuhlmuller"
   }
+
+  unit_path            = path_relative_to_include()
+  app_unit_prefix      = "homelab/us-west-2/apps/"
+  shared_unit_prefix   = "homelab/us-west-2/shared/"
+  regional_unit_prefix = "homelab/us-west-2/"
+  legacy_app_state_paths = {
+    "homelab/us-west-2/apps/fleet/azuread"         = "live/azuread-applications/fleet"
+    "homelab/us-west-2/apps/fleet/pilot-user"      = "live/azuread-applications/fleet-pilot-user"
+    "homelab/us-west-2/apps/grafana/azuread"       = "live/azuread-applications/grafana"
+    "homelab/us-west-2/apps/octelium/azuread"      = "live/azuread-applications/octelium"
+    "homelab/us-west-2/apps/langfuse/blob-storage" = "live/langfuse-blob-storage"
+  }
+  regional_state_path = replace(local.unit_path, local.regional_unit_prefix, "")
+  non_app_state_path = (
+    startswith(local.unit_path, local.shared_unit_prefix)
+    ? "live/${replace(local.unit_path, local.shared_unit_prefix, "")}"
+    : local.regional_state_path
+  )
+  state_path = startswith(local.unit_path, local.app_unit_prefix) ? lookup(
+    local.legacy_app_state_paths,
+    local.unit_path,
+    "live/argocd-apps/${split("/", local.unit_path)[3]}"
+  ) : local.non_app_state_path
+  state_key = "IaC/${lower(local.project_name)}/${local.state_path}/terraform.tfstate"
 }
 
 remote_state {
@@ -23,14 +47,8 @@ remote_state {
     if_exists = "overwrite"
   }
   config = {
-    bucket = "rstuhlmuller-aws-s3-use1-datalake"
-    key = "IaC/${lower(local.project_name)}/${startswith(path_relative_to_include(), "homelab/us-west-2/apps/") ? lookup({
-      "homelab/us-west-2/apps/fleet/azuread"         = "live/azuread-applications/fleet"
-      "homelab/us-west-2/apps/fleet/pilot-user"      = "live/azuread-applications/fleet-pilot-user"
-      "homelab/us-west-2/apps/grafana/azuread"       = "live/azuread-applications/grafana"
-      "homelab/us-west-2/apps/octelium/azuread"      = "live/azuread-applications/octelium"
-      "homelab/us-west-2/apps/langfuse/blob-storage" = "live/langfuse-blob-storage"
-    }, path_relative_to_include(), "live/argocd-apps/${split("/", path_relative_to_include())[3]}") : startswith(path_relative_to_include(), "homelab/us-west-2/shared/") ? "live/${replace(path_relative_to_include(), "homelab/us-west-2/shared/", "")}" : replace(path_relative_to_include(), "homelab/us-west-2/", "")}/terraform.tfstate"
+    bucket       = "rstuhlmuller-aws-s3-use1-datalake"
+    key          = local.state_key
     region       = local.state_region
     encrypt      = true
     kms_key_id   = local.kms_key_id
