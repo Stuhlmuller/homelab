@@ -545,3 +545,30 @@ that coverage. No remaining source findings. Full static checks, actionlint,
 Markdown and whitespace checks passed after T024. T018 remains pending the
 recorded Harbor remediation blocker, fresh exact-head checks, protected merge
 and declared targeted deployment. No runtime acceptance or merge is claimed.
+
+## T025 CI repair plan and task checkpoint
+
+Exact-head 41c891fa static job 133861190925 reported CKV_SECRET_6 for the inert
+literal bearer token in the provider fixture. The loopback server does not use
+authentication. Bounded correction: remove the unnecessary token and verify the
+actual provider remains functional, then run the pinned secret scanner. No
+suppression or scanner-policy change is planned. T025 appended; requirements and
+saved-plan safety checks are unchanged. Analysis finds no new design dependency.
+
+## T025 implementation and validation checkpoint
+
+Removed the unnecessary loopback provider token without adding a scanner
+suppression or changing policy. Actual Kubernetes provider 3.2.1 tests passed
+all four forms, 54 captured apply requests and six expected conflicts, including
+the real registration plan guard. Pinned Nix Checkov secrets scan with
+`--enable-secret-scan-all-files` on the changed fixture passed exit 0; Ruff,
+repository-configured Markdown lint and diff checks passed. Logs:
+`/tmp/image-updater-token-repair.log` and
+`/tmp/image-updater-token-secret-scan.log`. T025 complete; separate convergence
+and parent-owned publication follow. No remote writes in this increment.
+
+Parent-provided independent delivery blocker evidence remains unchanged:
+current main `8b37fe41c9a1f0cf54ac0e4486232dac7f24eafe` also fails Harbor
+`validation:remediation` in run 44064699631, job 133975234921; PR head 41c891fa
+fails the same check in run 44030526568, job 133861087298. No unrelated Harbor
+version or check changes were made. T018 remains pending protected delivery.

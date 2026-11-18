@@ -210,7 +210,7 @@ def main():
                 install_module(case, opted)
                 (case / 'provider.tf').write_text('provider "kubernetes" {\n'
                     f'  host = "http://127.0.0.1:{api.server_port}"\n'
-                    '  token = "local-fixture-only"\n}\n')
+                    '}\n')
                 env = {key: value for key, value in os.environ.items()
                        if not key.startswith(('KUBE_', 'TF_VAR_'))}
 

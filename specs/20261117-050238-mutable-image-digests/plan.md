@@ -370,3 +370,11 @@ lifecycle expressions and the need to leave all unenrolled Applications unchange
 Duplicated provider/encryption defaults require parity checks. Generated dynamic
 lifecycle expressions, broad source ignores, and fleet-wide resource moves were
 rejected as less reviewable for this bounded contract.
+
+## Loopback fixture credential correction
+
+Checkov CKV_SECRET_6 flags the provider fixture's inert literal bearer token.
+The isolated loopback API does not authenticate requests, so omit the unnecessary
+provider token entirely. Preserve the explicit loopback host and environment
+isolation. Validate with the actual provider regression and pinned Checkov secret
+scan; do not suppress the finding or change scanner policy.

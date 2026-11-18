@@ -194,3 +194,9 @@ requirements. Keep custom checklist markers reviewer-owned.
   saved-plan compatibility regression. Add a focused workflow-filter assertion and
   validate workflow syntax per T023 and plan: Registration apply guard correction
   (partial, MEDIUM).
+
+- [x] T025 Remove the unnecessary literal provider token from the isolated API
+  fixture in `scripts/ci/argocd-image-updater-provider-test.py`, following plan:
+  Loopback fixture credential correction. Run all actual-provider cases and the
+  pinned Checkov secret scan; preserve scanner policy and record evidence before
+  parent-owned delivery. Depends on completed T023/T024.
