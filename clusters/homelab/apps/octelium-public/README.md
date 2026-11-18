@@ -133,10 +133,13 @@ kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 python3 scripts/octelium-tunnel-check.py
 dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://portal.stinkyboi.com/
 ```
+
+Use the full [direct resolver verification](../../../../docs/networking-tailnet-ingress.md#direct-resolver-verification) procedure for approved-name, identity and answer checks.
