@@ -295,3 +295,20 @@ rendering or an Argo CD sync alone.
 [chart-release]: https://github.com/goharbor/harbor-helm/releases/tag/v1.19.2
 [harbor-release]: https://github.com/goharbor/harbor/releases/tag/v2.15.2
 [limits]: https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-413/
+
+
+## Distribution v3 core rollout
+
+Core uses the private image published by
+[run 44243677226](https://github.com/Stuhlmuller/homelab/actions/runs/44243677226)
+from source commit `7df0e0044c7975c57de8093e827ab83fc3c2928f`.
+The publisher verified a zero-match runtime audit, complete authenticated pull
+and signature before returning the digest pinned in values.yaml.
+The harbor ServiceAccount supplies the existing harbor-pull credential.
+Core rolls with its existing RollingUpdate strategy so the current replica
+serves authentication while the new image pulls.
+
+Retain the previous upstream core reference for recovery:
+`docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7`.
+Restore it through reviewed GitOps only after checking database compatibility;
+preserve all claims and backup data.

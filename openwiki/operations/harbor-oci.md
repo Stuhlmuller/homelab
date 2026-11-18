@@ -1353,3 +1353,11 @@ registry authentication, health contexts and forged-JWK rejection, and rejects
 legacy Distribution packages in the compiled core graph. Registryctl retains
 its separate dependency contract. Publication still requires an unfiltered
 zero-match runtime scan before a consuming digest can roll out.
+
+
+The v3 core image passed protected publication in
+[run 44243677226](https://github.com/Stuhlmuller/homelab/actions/runs/44243677226),
+including the zero-match runtime audit and authenticated pull/signature checks.
+Harbor values pin its private digest. The harbor ServiceAccount references the
+existing harbor-pull Secret, and the core Deployment retains RollingUpdate.
+The [app runbook](../../clusters/homelab/apps/harbor/README.md) records recovery.
