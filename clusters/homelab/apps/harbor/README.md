@@ -131,6 +131,9 @@ took 545 seconds under concurrent load on the CPU-limited core. Each API read al
 under load; response-size and pagination checks remain enforced. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
+The startup probe allows two minutes for the HTTP server to start before liveness
+checks begin. The Deployment allows twelve minutes for cold-inventory readiness,
+avoiding the default ten-minute progress deadline and an unnecessary Argo retry.
 Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric
 data and evaluation errors are also alerting. Cached scan totals expire no later
