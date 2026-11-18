@@ -188,7 +188,8 @@ class ExecutionContract(unittest.TestCase):
         peer = {'dns': 'homelab-adguard.tail67beb.ts.net', 'node_key': 'nodekey:' + 'b' * 64,
                 'pod_uid': 'pod', 'device_id': 'device', 'node_id': 7, 'tags': ['tag:homelab-ingress'],
                 'addresses': ['100.99.0.1'], 'lock_enabled': False, 'signed': False}
-        adapter = FakeAdapter(); adapter.snapshot_value['peer'] = copy.deepcopy(peer)
+        adapter = FakeAdapter()
+        adapter.snapshot_value['peer'] = copy.deepcopy(peer)
         self.assertEqual(CUTOVER.reconcile(adapter, True), 'applied')
         self.assertEqual(adapter.saved['binding']['peer'], peer)
         self.assertEqual(adapter.checks, 1)
@@ -199,21 +200,27 @@ class ExecutionContract(unittest.TestCase):
                      lambda p: p.update(pod_uid='replacement'), lambda p: p.update(tags=['tag:other']),
                      lambda p: p.update(addresses=['100.99.0.2'])]
         for mutation in mutations:
-            adapter = FakeAdapter(); adapter.snapshot_value['peer'] = copy.deepcopy(peer)
+            adapter = FakeAdapter()
+            adapter.snapshot_value['peer'] = copy.deepcopy(peer)
             adapter.drift = lambda a: mutation(a.snapshot_value['peer'])
-            with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
-            self.assertEqual(adapter.applies, 0); self.assertIsNone(adapter.saved)
+            with self.assertRaises(CUTOVER.Failure):
+                CUTOVER.reconcile(adapter, True)
+            self.assertEqual(adapter.applies, 0)
+            self.assertIsNone(adapter.saved)
             self.assertEqual(adapter.checks, 1)
 
     def test_historical_receipt_cannot_replace_fresh_direct_acceptance(self):
-        adapter = FakeAdapter(); CUTOVER.reconcile(adapter, True)
+        adapter = FakeAdapter()
+        CUTOVER.reconcile(adapter, True)
         adapter.live = adapter.before
         adapter.saved['phase'] = 'failed-needs-new-plan'
         adapter.saved['inspected_at'] = time.time() - 1
-        adapter.plan_digest = '2' * 64; adapter.plan_time = time.time()
+        adapter.plan_digest = '2' * 64
+        adapter.plan_time = time.time()
         adapter.applies = 0
         adapter.direct_check = Mock(side_effect=CUTOVER.Failure('fresh acceptance unavailable'))
-        with self.assertRaises(CUTOVER.Failure): CUTOVER.reconcile(adapter, True)
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.reconcile(adapter, True)
         adapter.direct_check.assert_called_once_with()
         self.assertEqual(adapter.applies, 0)
 

@@ -250,7 +250,8 @@ class DirectCheck(unittest.TestCase):
         peer = dict(locked, lock_enabled=False, signed=False)
         for change_service in (False, True):
             last = copy.deepcopy(objects[('Service', 'adguard-dns')])
-            if change_service: last['metadata']['uid'] = 'replacement'
+            if change_service:
+                last['metadata']['uid'] = 'replacement'
             responses = ['https://10.1.0.199:6443',
                          *[json.dumps(v) for v in objects.values()], json.dumps(app), json.dumps(last)]
             with patch.object(CHECK.SIGNER.GUARDS, 'verify_main', return_value='a' * 40) as main, \
@@ -259,10 +260,12 @@ class DirectCheck(unittest.TestCase):
                     patch.object(CHECK, 'inspect_adguard_peer', return_value=peer) as inspect, \
                     patch.object(CHECK.SIGNER, 'local_signer', side_effect=AssertionError('legacy direct path')):
                 if change_service:
-                    with self.assertRaises(CHECK.Failure): CHECK.snapshot('100.99.0.1')
+                    with self.assertRaises(CHECK.Failure):
+                        CHECK.snapshot('100.99.0.1')
                 else:
                     self.assertEqual(CHECK.snapshot('100.99.0.1')['peer'], peer)
-                inspect.assert_called_once_with(); main.assert_called_once_with()
+                inspect.assert_called_once_with()
+                main.assert_called_once_with()
 
     def test_unlocked_client_still_requires_policy_samples_and_fresh_identity(self):
         client = {'os': 'Darwin', 'os_version': '15.0', 'client_version': '1.102.4',
@@ -275,7 +278,8 @@ class DirectCheck(unittest.TestCase):
         desired = {'magic_dns': True, 'override_local_dns': True,
                    'nameservers': [{'address': '100.99.0.1', 'use_with_exit_node': True}]}
         for case in ('valid', 'wrong-policy', 'changed-client', 'changed-mode', 'samples-fail'):
-            reader = Mock(); reader.read.return_value = desired if case != 'wrong-policy' else {}
+            reader = Mock()
+            reader.read.return_value = desired if case != 'wrong-policy' else {}
             control = SimpleNamespace(DNSReader=Mock(return_value=reader),
                                       read_source_policy=Mock(return_value=desired))
             final_client = dict(client, device_id='other') if case == 'changed-client' else client
@@ -288,14 +292,16 @@ class DirectCheck(unittest.TestCase):
                     patch.object(CHECK, 'snapshot', return_value=fresh):
                 if case == 'valid':
                     result = CHECK.verify_client('100.99.0.1', Path('/unused'))
-                    self.assertTrue(result['client_acceptance']); self.assertTrue(result['admin_acceptance'])
+                    self.assertTrue(result['client_acceptance'])
+                    self.assertTrue(result['admin_acceptance'])
                     self.assertEqual(result['peer'], peer)
                     self.assertEqual(inspect.call_count, 2)
                     self.assertEqual(reader.read.call_count, 2)
                     samples.assert_called_once_with('doubleclick.net', direct['private_names'], direct['private_ip'],
                                                     client['magic_name'], client['magic_ips'])
                 else:
-                    with self.assertRaises(CHECK.Failure): CHECK.verify_client('100.99.0.1', Path('/unused'))
+                    with self.assertRaises(CHECK.Failure):
+                        CHECK.verify_client('100.99.0.1', Path('/unused'))
                 verify.assert_called_once_with('100.99.0.1', Path('/unused'), 'doubleclick.net')
 
 
@@ -342,12 +348,15 @@ class PeerIdentity(unittest.TestCase):
         for value in (None, {}, [], {'Enabled': None}, {'Enabled': 'false'},
                       {'Enabled': 0}, {'Enabled': 1}):
             for index in (1, 5):
-                args = self.arguments(); args[index] = value
+                args = self.arguments()
+                args[index] = value
                 with self.subTest(index=index, value=value), self.assertRaises(CHECK.Failure):
                     CHECK.validate_unlocked_peer(*args)
         for index in (1, 5):
-            args = self.arguments(); args[index]['Enabled'] = True
-            with self.assertRaises(CHECK.Failure): CHECK.validate_unlocked_peer(*args)
+            args = self.arguments()
+            args[index]['Enabled'] = True
+            with self.assertRaises(CHECK.Failure):
+                CHECK.validate_unlocked_peer(*args)
         self.assertIs(CHECK.validate_local_mode(self.local, {'Enabled': True}), True)
 
     def test_local_and_proxy_availability_and_tailnet(self):
@@ -355,8 +364,10 @@ class PeerIdentity(unittest.TestCase):
             for path, value in ((('BackendState',), 'Stopped'),
                                 (('CurrentTailnet', 'MagicDNSSuffix'), 'other.ts.net'),
                                 (('Self', 'Online'), False), (('Self', 'Expired'), True)):
-                args = self.arguments(); target = args[index]
-                for key in path[:-1]: target = target[key]
+                args = self.arguments()
+                target = args[index]
+                for key in path[:-1]:
+                    target = target[key]
                 target[path[-1]] = value
                 with self.subTest(index=index, path=path), self.assertRaises(CHECK.Failure):
                     CHECK.validate_unlocked_peer(*args)
@@ -390,7 +401,8 @@ class PeerIdentity(unittest.TestCase):
                       {self.key: self.peer, 'duplicate': self.peer},
                       {self.key: dict(self.peer, InNetworkMap=False)},
                       {self.key: {k: v for k, v in self.peer.items() if k != 'InNetworkMap'}}):
-            args = self.arguments(); args[0]['Peer'] = peers
+            args = self.arguments()
+            args[0]['Peer'] = peers
             with self.subTest(peers=peers), self.assertRaises(CHECK.Failure):
                 CHECK.validate_unlocked_peer(*args)
 
@@ -409,14 +421,18 @@ class PeerIdentity(unittest.TestCase):
         for label in self.pod['metadata']['labels']:
             mutations.append(lambda a, key=label: a[3]['metadata']['labels'].update({key: 'wrong'}))
         for mutate in mutations:
-            args = self.arguments(); mutate(args)
-            with self.assertRaises(CHECK.Failure): CHECK.validate_unlocked_peer(*args)
+            args = self.arguments()
+            mutate(args)
+            with self.assertRaises(CHECK.Failure):
+                CHECK.validate_unlocked_peer(*args)
 
     def test_present_optional_lock_keys_must_match(self):
         for index in (1, 5):
             for key in (None, '', 'nodekey:' + 'c' * 64):
-                args = self.arguments(); args[index]['NodeKey'] = key
-                with self.assertRaises(CHECK.Failure): CHECK.validate_unlocked_peer(*args)
+                args = self.arguments()
+                args[index]['NodeKey'] = key
+                with self.assertRaises(CHECK.Failure):
+                    CHECK.validate_unlocked_peer(*args)
 
     def responses(self):
         return [copy.deepcopy(v) for v in [self.local, self.lock, self.service, {'items': [self.pod]},
@@ -427,8 +443,10 @@ class PeerIdentity(unittest.TestCase):
                 patch.object(CHECK.SIGNER, 'local_signer') as signer, \
                 patch.object(CHECK.SIGNER, 'inspect_target') as inspect:
             result = CHECK.inspect_adguard_peer()
-        signer.assert_not_called(); inspect.assert_not_called()
-        self.assertFalse(result['lock_enabled']); self.assertFalse(result['signed'])
+        signer.assert_not_called()
+        inspect.assert_not_called()
+        self.assertFalse(result['lock_enabled'])
+        self.assertFalse(result['signed'])
         commands = [call.args[0] for call in run.call_args_list]
         self.assertEqual(commands[:2], [[CHECK.SIGNER.TAILSCALE, 'status', '--json'],
                                        [CHECK.SIGNER.TAILSCALE, 'lock', 'status', '--json']])
@@ -446,9 +464,11 @@ class PeerIdentity(unittest.TestCase):
                        lambda r: r[3].update(items=[]),
                        lambda r: r[3].update(items=[self.pod, self.pod]),
                        lambda r: r[3]['items'][0]['metadata'].update(name='unexpected')):
-            responses = copy.deepcopy(self.responses()); mutate(responses)
+            responses = copy.deepcopy(self.responses())
+            mutate(responses)
             with patch.object(CHECK, 'run', side_effect=[json.dumps(v) for v in responses]), \
-                    self.assertRaises(CHECK.Failure): CHECK.inspect_adguard_peer()
+                    self.assertRaises(CHECK.Failure):
+                CHECK.inspect_adguard_peer()
 
     def test_collector_rejects_command_and_json_failure(self):
         for value in ('not-json', 'null', '[]'):
@@ -468,7 +488,8 @@ class PeerIdentity(unittest.TestCase):
                 if final_mode and signature:
                     self.assertEqual(CHECK.inspect_adguard_peer(), dict(signed, lock_enabled=True))
                 else:
-                    with self.assertRaises(CHECK.Failure): CHECK.inspect_adguard_peer()
+                    with self.assertRaises(CHECK.Failure):
+                        CHECK.inspect_adguard_peer()
                 signer.assert_called_once_with()
                 inspect.assert_called_once_with(CHECK.SIGNER.ADGUARD_TARGET, {'fixture': True})
         for method in ('local_signer', 'inspect_target'):
@@ -476,7 +497,8 @@ class PeerIdentity(unittest.TestCase):
                     patch.object(CHECK.SIGNER, 'local_signer', return_value={}), \
                     patch.object(CHECK.SIGNER, 'inspect_target', return_value=signed), \
                     patch.object(CHECK.SIGNER, method, side_effect=CHECK.SIGNER.GUARDS.Failure('strict guard')):
-                with self.assertRaises(CHECK.SIGNER.GUARDS.Failure): CHECK.inspect_adguard_peer()
+                with self.assertRaises(CHECK.SIGNER.GUARDS.Failure):
+                    CHECK.inspect_adguard_peer()
 
 
 if __name__ == '__main__':
