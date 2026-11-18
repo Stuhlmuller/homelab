@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["istio", "prometheus", "grafana"]
+  dependencies = ["../../istio/argocd", "../../prometheus/argocd", "../../grafana/argocd"]
   spec = {
     destination = {
       namespace = "istio-system"

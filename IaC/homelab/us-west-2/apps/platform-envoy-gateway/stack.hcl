@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["istio", "cert-manager", "platform-gateway-api-crds"]
+  dependencies = ["../../istio/argocd", "../../cert-manager/argocd", "../../platform-gateway-api-crds/argocd"]
   metadata = {
     annotations = {
       "argocd.argoproj.io/compare-options" = "ServerSideDiff=true"

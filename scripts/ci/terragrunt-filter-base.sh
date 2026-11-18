@@ -161,6 +161,11 @@ terragrunt_azuread_stack_changed() {
     IaC/homelab/us-west-2/apps/octelium/terragrunt.stack.hcl \
     IaC/homelab/us-west-2/apps/octelium/azuread \
     IaC/terragrunt-catalog/units/live/azuread-applications \
+    IaC/homelab/us-west-2/apps/fleet/identity.hcl \
+    IaC/homelab/us-west-2/apps/fleet/pilot-user.hcl \
+    IaC/homelab/us-west-2/apps/grafana/identity.hcl \
+    IaC/homelab/us-west-2/apps/octelium/identity.hcl \
+    IaC/terragrunt-catalog/modules/azuread-oidc-application \
     IaC/terragrunt-catalog/modules/azuread-saml-application \
     IaC/terragrunt-catalog/modules/azuread-family-user; then
     return 0

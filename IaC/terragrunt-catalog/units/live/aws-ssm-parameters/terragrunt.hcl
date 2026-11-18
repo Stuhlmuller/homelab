@@ -24,6 +24,7 @@ EOF
 }
 
 inputs = {
+  tags       = local.root_config.locals.default_tags
   aws_region = local.aws_region
   kms_key_id = local.root_config.locals.runtime_kms_key_id
   parameter_reader_iam_user_names = [

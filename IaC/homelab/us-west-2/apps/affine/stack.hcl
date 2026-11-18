@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "cert-manager", "istio", "octelium", "octelium-public", "platform-storage"]
+  dependencies = ["../../external-secrets/argocd", "../../cert-manager/argocd", "../../istio/argocd", "../../octelium/argocd", "../../octelium-public/argocd", "../../platform-storage/argocd"]
   spec = {
     syncPolicy = {
       retry = {

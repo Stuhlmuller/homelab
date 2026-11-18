@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["cert-manager", "istio", "deluge", "media-postgres", "prowlarr", "platform-storage"]
+  dependencies = ["../../cert-manager/argocd", "../../istio/argocd", "../../deluge/argocd", "../../media-postgres/argocd", "../../prowlarr/argocd", "../../platform-storage/argocd"]
   spec = {
     destination = {
       namespace = "media"

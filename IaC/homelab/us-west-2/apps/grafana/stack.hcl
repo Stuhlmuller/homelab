@@ -9,7 +9,7 @@ inputs = {
     }
   }
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "cert-manager", "istio", "prometheus", "platform-storage"]
+  dependencies = ["../../external-secrets/argocd", "../../cert-manager/argocd", "../../istio/argocd", "../../prometheus/argocd", "../../platform-storage/argocd"]
   spec = {
     destination = {
       namespace = "monitoring"

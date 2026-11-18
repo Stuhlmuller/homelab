@@ -65,6 +65,26 @@ keys. Existing identity and storage units retain explicit legacy mappings in
 `IaC/root.hcl`. Additional app-local units use their full relative path as the
 state identity, so a new sibling cannot inherit the Application's state.
 The stack regression renders both units and checks their distinct backend keys.
+
+App identity inputs live beside each app stack in `identity.hcl` (and Fleet's
+`pilot-user.hcl`). Catalog units consume generated values. The local
+`azuread-oidc-application` module owns the shared registration, SSO password,
+owner lookup and parameter resources at their existing root resource addresses.
+
+Account metadata comes from the nearest `account.hcl`; deployment region comes
+from the nearest `region.hcl`. The root retains the historical Homelab fallback
+for legacy destroy/recovery paths outside that hierarchy. Backend location and
+state encryption remain independent of the deployment region. Only units whose
+modules consume AWS region or tags pass those inputs; state encryption stays shared.
+
+Application dependency entries are paths relative to the generated unit, such as
+`../../cert-manager/argocd`, `../../../shared/aws-ssm-parameters`, or
+`../blob-storage`. The template joins these paths without interpreting app names.
+
+The [local catalog guide](../../IaC/terragrunt-catalog/README.md) maps module,
+template and live-input ownership with existing examples. Catalog discovery
+includes both the local catalog and the external repository.
+
 ## Module File Organization
 
 Local modules keep input declarations in `variables.tf`, outputs in `outputs.tf`
