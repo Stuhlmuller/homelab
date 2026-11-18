@@ -106,7 +106,8 @@ class AdGuardManifestTests(unittest.TestCase):
         self.assertEqual(secret["spec"]["refreshPolicy"], "OnChange")
         self.assertIn("homelab.stuhlmuller.dev/generated-secret-revision", secret["metadata"]["annotations"])
         self.assertEqual(secret["spec"]["data"], [{"secretKey": "password", "remoteRef": {
-            "key": "/homelab/adguard/admin-password"}}])
+            "key": "/homelab/adguard/admin-password", "conversionStrategy": "Default",
+            "decodingStrategy": "None", "metadataPolicy": "None"}}])
 
     def test_initialized_private_configuration(self):
         config = render_config()

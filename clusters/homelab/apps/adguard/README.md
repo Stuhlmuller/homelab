@@ -1,7 +1,6 @@
 # AdGuard Home
 
-This source is staged for the AdGuard tailnet deployment. Image publication,
-signed-peer enrollment and live acceptance are
+Image publication, deployment, signed-peer enrollment and live acceptance are
 tracked separately; this application does not change global Tailscale DNS.
 
 One AdGuard Home v0.107.80 replica answers UDP/TCP 53 through the operator-owned
@@ -55,6 +54,9 @@ credential or configuration. Startup validates schema 34 and the single bcrypt
 user, resolves the fixed private DNS Service, then atomically writes mode-0600
 configuration into a memory-backed emptyDir. UI edits are transient: Git plus
 the protected SSM credential are the authoritative recovery sources.
+
+The remote-reference conversion, decoding and metadata defaults are explicit so
+External Secrets admission does not leave the Application OutOfSync.
 
 The retained 1Gi `nfs-default` claim stores replaceable filter/work cache. Recreate
 keeps one writer; Argo prune/delete protection preserves the claim. Failed filter
@@ -234,6 +236,13 @@ the reviewed image before an outage; the helper never implicitly pulls an image.
 A fresh restore also needs access to the published filter list. Production has
 no unfiltered fallback. During an outage, use the DNS rollback command above
 through the existing administrator path before repairing service.
+
+Recovery accepts the direct Kubernetes endpoint `https://10.1.0.199:6443` or the
+declared authenticated operator proxy
+`https://homelab-tailscale-operator.tail67beb.ts.net`. TLS verification must remain
+enabled for the selected endpoint. The helper records and rechecks that endpoint;
+it does not create a Kubernetes identity or grant access. The direct/client
+acceptance helpers still require the existing trusted Mac signing client.
 
 The receipt proves isolated configuration, authentication, and filtering recovery.
 It preserves the private resolver address but does not prove connectivity from

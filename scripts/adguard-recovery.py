@@ -17,6 +17,7 @@ import socket
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from uuid import uuid4
 
@@ -34,6 +35,23 @@ CHECK = load('recovery_check', ROOT / 'scripts/adguard-check.py')
 INIT = load('recovery_init', ROOT / 'clusters/homelab/apps/adguard/init-config.py')
 PARAMETER = '/homelab/adguard/admin-password'
 REGION = 'us-west-2'
+RECOVERY_API_SERVERS = frozenset({
+    'https://10.1.0.199:6443',
+    'https://homelab-tailscale-operator.tail67beb.ts.net',
+})
+
+
+def verify_recovery_api():
+    config = json.loads(CHECK.run(['kubectl', 'config', 'view', '--minify', '-o', 'json']))
+    clusters = config.get('clusters', [])
+    CHECK.require(len(clusters) == 1, 'Recovery requires one declared homelab API endpoint')
+    cluster = clusters[0]['cluster']
+    server = cluster.get('server')
+    CHECK.require(server in RECOVERY_API_SERVERS, 'Recovery requires a declared homelab API endpoint')
+    CHECK.require(cluster.get('insecure-skip-tls-verify', False) is False
+                  and cluster.get('tls-server-name') in (None, '', urllib.parse.urlsplit(server).hostname),
+                  'Recovery requires TLS verification of the declared API endpoint')
+    return server
 
 
 def render_config(template, password):
@@ -245,8 +263,7 @@ def main(argv=None):
         receipt = CHECK.SIGNER.OAUTH.receipt_path(args.receipt)
         CHECK.require(not receipt.exists(), 'Use a new protected recovery receipt path')
         revision = CHECK.SIGNER.GUARDS.verify_main()
-        context = CHECK.run(['kubectl', 'config', 'view', '--minify', '-o', 'jsonpath={.clusters[0].cluster.server}']).strip()
-        CHECK.require(context == 'https://10.1.0.199:6443', 'Recovery source requires the authenticated homelab API')
+        api_server = verify_recovery_api()
         docs = CHECK.source_documents()
         template = docs[('ExternalSecret', 'adguard-config')]['spec']['target']['template']['data']['config.json']
         image = docs[('Deployment', 'adguard')]['spec']['template']['spec']['containers'][0]['image']
@@ -261,10 +278,11 @@ def main(argv=None):
         current_version = json.loads(CHECK.run(['aws', 'ssm', 'get-parameter', '--region', REGION, '--name', PARAMETER,
                                                '--query', 'Parameter.{ARN:ARN,Version:Version}', '--output', 'json']))
         fresh_service = CHECK.DNS.service('tailnet-dns', 'tailnet-dns')
-        CHECK.require(CHECK.SIGNER.GUARDS.verify_main() == revision and current_version == version
+        CHECK.require(CHECK.SIGNER.GUARDS.verify_main() == revision and verify_recovery_api() == api_server
+                      and current_version == version
                       and fresh_service['metadata']['uid'] == service['metadata']['uid']
                       and fresh_service['spec']['clusterIP'] == private_ip, 'Recovery sources changed during verification')
-        result.update(source_revision=revision, credential_source=version, image=image,
+        result.update(source_revision=revision, api_server=api_server, credential_source=version, image=image,
                       private_resolver_service_uid=service['metadata']['uid'], private_upstream=private_ip,
                       completed_at=datetime.now(timezone.utc).isoformat())
         CHECK.SIGNER.OAUTH.save_receipt(receipt, result, first=True)

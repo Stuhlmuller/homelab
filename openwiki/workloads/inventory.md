@@ -319,7 +319,7 @@ and device connection tests.
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `traefik` | ingress foundation | `traefik` | `clusters/homelab/apps/traefik` | `IaC/homelab/us-west-2/apps/traefik/argocd` | cert-manager, istio, tailscale; operator policy before proxy registration |
 | `tailnet-dns` | tailnet application resolver | `tailnet-dns` | `clusters/homelab/platform/tailnet-dns` | `IaC/homelab/us-west-2/apps/tailnet-dns/argocd` | tailscale, traefik, published pinned Harbor DNS image |
-| `adguard` | staged tailnet ad-blocking DNS | `automation` | `clusters/homelab/apps/adguard` | `IaC/homelab/us-west-2/apps/adguard/argocd` | external-secrets, tailscale, traefik, tailnet-dns, platform-storage |
+| `adguard` | private tailnet ad-blocking DNS; acceptance pending | `automation` | `clusters/homelab/apps/adguard` | `IaC/homelab/us-west-2/apps/adguard/argocd` | external-secrets, tailscale, traefik, tailnet-dns, platform-storage |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/homelab/us-west-2/apps/platform-dns/argocd`          | Argo CD bootstrap                                           |
 | `platform-multus`       | support                   | `kube-system`           | `clusters/homelab/platform/multus`            | `IaC/homelab/us-west-2/apps/platform-multus/argocd`       | Octelium data-plane prerequisites                           |
 | `platform-storage`      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`           | `IaC/homelab/us-west-2/apps/platform-storage/argocd`      | QNAP NFS export                                             |
@@ -935,7 +935,13 @@ GitOps rollout, trusted-Mac peer signing and live direct/admin/recovery checks,
 a separate reviewed change must use the observed proxy address. The guarded
 saved-plan helper applies only that DNS policy change. Native macOS client checks
 then verify normal resolver use; exit-node acceptance requires a selected,
-supported exit node. Deployment and client acceptance are still pending.
+supported exit node. The [targeted deployment](https://github.com/Stuhlmuller/homelab/actions/runs/44233104891)
+succeeded; functional and client acceptance remain pending, and global DNS has
+not been switched. Explicit ExternalSecret remote-reference defaults prevent
+admission defaulting from leaving Argo CD OutOfSync. Isolated recovery accepts
+the direct API or the declared authenticated Tailscale operator proxy with TLS
+verification enabled; it records and rechecks the selected endpoint. This does
+not replace the trusted Mac required for peer signing and client acceptance.
 
 AdGuard also has a Kuma workload-readiness monitor with exact Deployment metrics
 and freshness checks. This does not prove DNS filtering or successful client
