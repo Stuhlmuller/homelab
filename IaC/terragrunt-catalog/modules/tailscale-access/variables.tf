@@ -7,19 +7,6 @@ variable "policy" {
   }
 }
 
-variable "kms_key_id" {
-  type = string
-}
-
-variable "kms_region" {
-  type = string
-}
-
-variable "kms_key_spec" {
-  type    = string
-  default = "AES_256"
-}
-
 variable "ci_key_generation" {
   description = "Committed CI key rotation generation. Increment every 60 days; keys expire after 90 days."
   type        = number
