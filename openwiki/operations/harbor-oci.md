@@ -453,8 +453,13 @@ and evaluation errors also alert. The collector attempts refreshes every five mi
 The 156-repository mirror inventory took 545 seconds under concurrent load;
 a 30-second read timeout accommodates scan-summary assembly. Cached metrics expire eleven minutes
 after the last successful collection, and script revisions roll the collector through its
-versioned pod-template annotation. The raw Grafana query preserves healthy
-zero-valued project series while missing telemetry enters Alerting. A completed
+versioned pod-template annotation.
+The exporter allows two minutes for Python startup and twelve minutes for rollout
+progress. A cold inventory plus an early liveness restart previously exceeded
+the default ten-minute progress deadline, consuming Argo's operation budget in
+a retry before bootstrap could finish. Readiness still requires fresh metrics;
+the startup probe checks only the local HTTP server.
+The raw Grafana query preserves healthy zero-valued project series while missing telemetry enters Alerting. A completed
 Harbor scan that omits its zero-valued `Critical` severity bucket contributes
 zero. Triage in
 Harbor, then rebuild and roll out a
