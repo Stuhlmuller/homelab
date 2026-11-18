@@ -433,6 +433,13 @@ gate remains disabled; these permissions are source intent, not live access.
   ExternalSecret polls the current SSM version every five minutes so bootstrap
   can replace the declared placeholder without a follow-up git change. The
   production apply adopts a pre-populated Cordium parameter before planning.
+- Cordium genesis uses a separate temporary Kubernetes ServiceAccount and
+  cluster RBAC. A failed Argo cleanup hook can strand those privileged objects.
+  The [Cordium recovery runbook](../../clusters/homelab/apps/cordium/README.md)
+  requires a clean exact-main checkout, matched live UIDs, a finished failed
+  child sync and no active bootstrap workload before a reviewed one-shot,
+  UID-preconditioned deletion. A full child sync reruns genesis and is not the
+  retirement procedure.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
   and adoptable only as an OpenTofu state tombstone because the production

@@ -238,10 +238,27 @@ kubectl -n octelium logs job/cordium-genesis-cleanup
 
 After a successful full child sync, or a failed sync whose SyncFail cleanup
 completed, the two `get` commands for the bootstrap identity must return
-`NotFound`, and the authorization check must print `no`. If control-plane or
-scheduler failure also prevented cleanup, recover it, inspect these resources,
-and start a full `cordium-bootstrap` sync. The cleanup is idempotent, and the
-new sync recreates the identity only immediately before genesis.
+`NotFound`. A generic `kubectl auth can-i --as` result can reflect the caller's
+impersonation setup; verify denial with a genuinely token-bound bootstrap
+identity probe in a private operator session. Do not run a full child sync just
+to remove a stranded identity: it recreates the privileged hooks and reruns
+genesis.
+
+If the cleanup hook fails and leaves the identity, use the reviewed one-shot
+`scripts/cordium-genesis-recovery.py` from a clean checkout of the exact current
+`main` commit. First inspect the failed child operation, its private Job logs
+when retained, the three exact resource UIDs, and whether any Pod or Job still
+uses the identity. Record the expected SHA and UIDs privately. Run the script
+without `--execute` to validate the live fence, then obtain the normal review
+for the exact live recovery before using `--execute` with the same four inputs.
+The script requires a finished failed child sync, complete Pod/Job inventories,
+matching Argo hook labels and UIDs, and no active bootstrap workload. It sends
+UID-preconditioned DELETE requests only for the named ServiceAccount,
+ClusterRole and ClusterRoleBinding, then verifies absence. It does not touch
+the persistent cleanup identity or rerun genesis. If the source or live UIDs
+change, restart review; if a partial deletion occurs, inspect the remaining
+objects and prepare a new reviewed recovery input rather than bypassing the
+fence. Do not publish private Job output or kubeconfig material.
 
 Verify the human developer path end to end with the public repository:
 
