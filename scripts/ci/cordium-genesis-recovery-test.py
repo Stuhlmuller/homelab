@@ -139,6 +139,26 @@ class RecoveryFenceTest(unittest.TestCase):
         proxy.assert_not_called()
         delete.assert_not_called()
 
+    def test_execute_rechecks_paused_child_and_all_final_absences(self):
+        app, pods, jobs, resources = fixtures()
+        pod_list = {"kind": "PodList", "metadata": {"resourceVersion": "1"}, "items": pods}
+        job_list = {"kind": "JobList", "metadata": {"resourceVersion": "1"}, "items": jobs}
+        process = mock.Mock()
+        with (mock.patch.object(sys, "argv", ["recovery", "a" * 40, *UIDS, "--execute"]),
+              mock.patch.object(MODULE, "source_guard") as source,
+              mock.patch.object(MODULE, "kubectl_json", side_effect=[app, *resources, app, app, app, app]),
+              mock.patch.object(MODULE, "kubectl_raw_json", side_effect=[pod_list, job_list] * 4),
+              mock.patch.object(MODULE, "proxy_start", return_value=(process, "/private/kubernetes.sock", "/private")),
+              mock.patch.object(MODULE, "delete_with_uid") as delete,
+              mock.patch.object(MODULE, "verify_absent") as absent,
+              mock.patch.object(MODULE.shutil, "rmtree"),
+              mock.patch("builtins.print")):
+            MODULE.main()
+        self.assertEqual(source.call_count, 4)
+        self.assertEqual(delete.call_count, 3)
+        self.assertEqual(absent.call_count, 6)
+        process.terminate.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

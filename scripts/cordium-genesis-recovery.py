@@ -195,6 +195,12 @@ def main():
                 complete(kubectl_raw_json(JOBS_PATH), "JobList"))
             delete_with_uid(socket_path, path, uid)
             verify_absent(socket_path, path)
+        for _, _, path in TARGETS:
+            verify_absent(socket_path, path)
+        final_app = kubectl_json("-n", "argocd", "get", "application", "cordium-bootstrap")
+        if (final_app.get("operation") is not None or
+                final_app.get("spec", {}).get("syncPolicy", {}).get("automated", {}).get("enabled") is not False):
+            raise ValueError("Cordium bootstrap sync state changed after recovery")
     finally:
         try:
             process.terminate()

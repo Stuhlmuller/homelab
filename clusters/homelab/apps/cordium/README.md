@@ -265,7 +265,11 @@ the persistent cleanup identity or rerun genesis. It also rechecks that the
 live child remains auto-sync paused before each deletion. If the source or live UIDs
 change, restart review; if a partial deletion occurs, inspect the remaining
 objects and prepare a new reviewed recovery input rather than bypassing the
-fence. Do not publish private Job output or kubeconfig material.
+fence. Coordinate with operators so nobody starts a manual child sync during
+the recovery window; the script cannot atomically lock Argo CD. After it
+finishes, recheck the paused child operation and all three absent resources
+before a private token-bound denial probe. Do not publish private Job output
+or kubeconfig material.
 
 Verify the human developer path end to end with the public repository:
 
