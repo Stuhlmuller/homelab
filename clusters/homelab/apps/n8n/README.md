@@ -248,7 +248,7 @@ listener is active. Published production executions appear under Executions.
 - Public callbacks: `https://n8n-webhook.tail67beb.ts.net` through Funnel and
   Traefik, only `/webhook`, `/webhook-test`, and `/webhook-waiting` paths.
 
-`WEBHOOK_URL` advertises the Funnel host. Converge and verify that route before
+`N8N_WEBHOOK_URL` advertises the Funnel host for production and test callbacks. Converge and verify that route before
 n8n rolls out, because active integrations can register hooks on startup.
 Keep editor, static-asset and API routes private. Internal self-API calls use
 plain HTTP on the Service's port `5678`; TLS terminates at Traefik, so an HTTPS
