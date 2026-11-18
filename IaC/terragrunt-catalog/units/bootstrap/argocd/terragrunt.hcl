@@ -48,7 +48,7 @@ EOF
 }
 
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=19df2cb291eef0084cafb85bed644dcdb082108c"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/helm-release"
 
   after_hook "apply_self_management_application" {
     commands = ["apply"]

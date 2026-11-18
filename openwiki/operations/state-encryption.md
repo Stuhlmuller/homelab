@@ -60,3 +60,9 @@ this records retained recovery material, not a new restore exercise.
 
 Related: [Storage And State](../architecture/storage-and-state.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), [GitOps Flow](../architecture/gitops-flow.md).
+
+The bootstrap Helm release also uses the local catalog module. Its former pinned
+external module carried a second encryption block, which conflicts with the
+root-generated backend policy. The local copy preserves `helm_release.this`,
+provider constraints and all release inputs/outputs while removing that duplicate
+policy; no backend key or resource address migration is involved.
