@@ -39,6 +39,13 @@ SAFE_DESTINATIONS = {
     '10.1.0.0/24', 'autogroup:member', 'tag:ci', 'tag:homelab-ci-apply',
     'tag:homelab-ci-cordium', 'tag:homelab-ci-plan', 'tag:homelab-funnel',
     'tag:homelab-ingress', 'tag:k8s', 'tag:k8s-operator', SERVICE,
+    'homelab-nas', 'homelab-nas-lan', 'homelab-control-plane',
+    'homelab-worker-0', 'homelab-worker-1', 'homelab-worker-2',
+}
+SAFE_HOSTS = {
+    'homelab-nas': '100.111.238.93', 'homelab-nas-lan': '10.1.0.2',
+    'homelab-control-plane': '10.1.0.199', 'homelab-worker-0': '10.1.0.200',
+    'homelab-worker-1': '10.1.0.201', 'homelab-worker-2': '10.1.0.202',
 }
 CANARY_ENTRYPOINTS = {
     '--entrypoints.web.address=127.0.0.1:8000',
@@ -94,6 +101,7 @@ def api_json(path, key, *, method='GET', payload=None):
 
 def policy_contract(source, live):
     require(isinstance(source, dict) and live == source, 'Live tailnet policy differs from current source')
+    require(source.get('hosts', {}) in ({}, SAFE_HOSTS), 'Unreviewed homelab host mapping')
     require(source.get('acls') == [] and source.get('tagOwners', {}).get(TAG) == ['tag:k8s-operator'],
             'Canary policy ownership or legacy ACLs changed')
     auto = source.get('autoApprovers', {}).get('services', {})
