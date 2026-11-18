@@ -187,7 +187,9 @@ def rendered_contract():
             "both resolver views must expose DNS port 53")
     command = ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
                "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-    chart = subprocess.run(command, text=True, capture_output=True, check=True)
+    chart = subprocess.run(command, text=True, capture_output=True)
+    if chart.returncode:
+        raise ValueError(f"Helm public chart render failed: {chart.stderr.strip()}")
     require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
     rendered = chart.stdout
     documents = json.loads(subprocess.check_output(
