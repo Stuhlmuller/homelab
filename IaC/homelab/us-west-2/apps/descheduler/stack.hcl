@@ -33,8 +33,8 @@ inputs = {
       {
         repoURL = local.shared.repo_url
         path    = "."
-        # Stage 1 retains the verified inert profile until the zero-replica
-        # revision has merged and its live scale-down has been observed.
+        # Stage 1 retains the verified inert profile until the suspended
+        # CronJob revision has merged and zero live Pods are observed.
         targetRevision = "934770124f6e3b3c1b0857ce8e510e0ea7a1e894"
         ref            = "values"
         directory = {

@@ -45,7 +45,7 @@ echo "Descheduler: only a suspended CronJob renders during staging"
 python3 -I scripts/ci/descheduler-policy-check.py "$rendered"
 
 # The Argo values ref stays on the old inert revision during stage one. Its
-# Helm parameter must still render a zero-replica Deployment after sync.
+# Helm parameters must still render only a suspended CronJob after sync.
 git show 934770124f6e3b3c1b0857ce8e510e0ea7a1e894:clusters/homelab/apps/descheduler/values.yaml >"$pinned_values"
 helm template descheduler descheduler --repo https://kubernetes-sigs.github.io/descheduler \
   --version 0.33.0 --namespace kube-system --values "$pinned_values" --set kind=CronJob --set suspend=true |
