@@ -19,6 +19,6 @@ declared scopes are devices:core, auth_keys, and services. The administrator
 credential reference has been requested without asking for secret values in chat.
 Do not broaden the operator credential or treat source merge as DNS activation.
 
-Phone check after activation: connect Tailscale, request doubleclick.net, and
+Phone check after activation: connect Tailscale, request a domain blocked by the active filter, and
 match the blocked query in the authenticated Query Log. A failed page load alone
 is inconclusive. Runtime deployment and DNS readback must be reported separately.

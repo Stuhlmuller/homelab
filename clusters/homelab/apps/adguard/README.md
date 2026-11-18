@@ -256,7 +256,7 @@ normal-client acceptance.
 ## Phone verification
 
 After DNS activation, connect the phone to Tailscale with Tailscale DNS enabled.
-Open `https://doubleclick.net` and then the authenticated **Query Log** at
+Request a domain blocked by the active filter, then open **Query Log** at
 `https://adguard.stinkyboi.com`. A matching blocked query confirms the request
 reached AdGuard and was filtered; a failed browser load alone is inconclusive.
 Browser secure DNS or a separate private relay can bypass tailnet DNS.
