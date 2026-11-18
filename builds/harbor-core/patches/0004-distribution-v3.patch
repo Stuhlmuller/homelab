@@ -2264,36 +2264,6 @@
 +func (m FilteringManager) AddResponse(resp *http.Response) error {
 +	return m.base.AddResponse(resp)
 +}
---- a/src/pkg/registry/client.go
-+++ b/src/pkg/registry/client.go
-@@ -26,11 +26,11 @@
- 	"strings"
- 	"time"
- 
--	"github.com/docker/distribution"
--	"github.com/docker/distribution/manifest/manifestlist"
--	_ "github.com/docker/distribution/manifest/ocischema" // register oci manifest unmarshal function
--	"github.com/docker/distribution/manifest/schema1"
--	"github.com/docker/distribution/manifest/schema2"
-+	"github.com/distribution/distribution/v3"
-+	"github.com/distribution/distribution/v3/manifest/manifestlist"
-+	_ "github.com/distribution/distribution/v3/manifest/ocischema" // register oci manifest unmarshal function
-+	"github.com/goharbor/harbor/src/pkg/distribution/schema1"
-+	"github.com/distribution/distribution/v3/manifest/schema2"
- 	"github.com/opencontainers/go-digest"
- 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
- 
---- a/src/pkg/registry/client_test.go
-+++ b/src/pkg/registry/client_test.go
-@@ -21,7 +21,7 @@
- 	"strconv"
- 	"testing"
- 
--	"github.com/docker/distribution/manifest/schema2"
-+	"github.com/distribution/distribution/v3/manifest/schema2"
- 	"github.com/stretchr/testify/suite"
- 
- 	"github.com/goharbor/harbor/src/common/utils/test"
 --- a/src/pkg/token/claims/v2/claims.go
 +++ b/src/pkg/token/claims/v2/claims.go
 @@ -17,7 +17,7 @@
@@ -2459,3 +2429,143 @@
  	mock "github.com/stretchr/testify/mock"
  )
  
+--- a/src/pkg/registry/client.go
++++ b/src/pkg/registry/client.go
+@@ -26,11 +26,11 @@
+ 	"strings"
+ 	"time"
+ 
+-	"github.com/docker/distribution"
+-	"github.com/docker/distribution/manifest/manifestlist"
+-	_ "github.com/docker/distribution/manifest/ocischema" // register oci manifest unmarshal function
+-	"github.com/docker/distribution/manifest/schema1"
+-	"github.com/docker/distribution/manifest/schema2"
++	"github.com/distribution/distribution/v3"
++	"github.com/distribution/distribution/v3/manifest/manifestlist"
++	_ "github.com/distribution/distribution/v3/manifest/ocischema" // register oci manifest unmarshal function
++	"github.com/distribution/distribution/v3/manifest/schema2"
++	"github.com/goharbor/harbor/src/pkg/distribution/schema1"
+ 	"github.com/opencontainers/go-digest"
+ 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+ 
+@@ -317,12 +317,28 @@
+ 		return nil, "", err
+ 	}
+ 	mediaType := resp.Header.Get("Content-Type")
+-	manifest, _, err := distribution.UnmarshalManifest(mediaType, payload)
+-	if err != nil {
+-		return nil, "", err
+-	}
+-	digest := resp.Header.Get("Docker-Content-Digest")
+-	return manifest, digest, nil
++	manifest, descriptor, err := distribution.UnmarshalManifest(mediaType, payload)
++	if err != nil {
++		return nil, "", err
++	}
++	if strings.Contains(reference, ":") {
++		requested, err := digest.Parse(reference)
++		if err != nil {
++			return nil, "", err
++		}
++		actual := descriptor.Digest
++		if requested.Algorithm() != actual.Algorithm() {
++			if legacy, ok := manifest.(*schema1.SignedManifest); ok {
++				payload = legacy.Canonical
++			}
++			actual = requested.Algorithm().FromBytes(payload)
++		}
++		if requested != actual {
++			return nil, "", fmt.Errorf("manifest digest mismatch: requested %s, received %s", requested, actual)
++		}
++	}
++	contentDigest := resp.Header.Get("Docker-Content-Digest")
++	return manifest, contentDigest, nil
+ }
+ 
+ func (c *client) PushManifest(repository, reference, mediaType string, payload []byte) (string, error) {
+--- a/src/pkg/registry/client_test.go
++++ b/src/pkg/registry/client_test.go
+@@ -18,10 +18,15 @@
+ 	"encoding/json"
+ 	"io"
+ 	"net/http"
++	"net/http/httptest"
+ 	"strconv"
++	"strings"
+ 	"testing"
+ 
+-	"github.com/docker/distribution/manifest/schema2"
++	"github.com/distribution/distribution/v3/manifest/schema2"
++	"github.com/docker/libtrust"
++	"github.com/goharbor/harbor/src/pkg/distribution/schema1"
++	"github.com/opencontainers/go-digest"
+ 	"github.com/stretchr/testify/suite"
+ 
+ 	"github.com/goharbor/harbor/src/common/utils/test"
+@@ -388,3 +393,66 @@
+ func TestClientTestSuite(t *testing.T) {
+ 	suite.Run(t, &clientTestSuite{})
+ }
++
++func TestPullManifestVerifiesRequestedDigest(t *testing.T) {
++	canonical := []byte(`{"schemaVersion":1,"name":"library/legacy","tag":"latest","architecture":"amd64","fsLayers":[],"history":[]}`)
++	key, err := libtrust.GenerateECP256PrivateKey()
++	if err != nil {
++		t.Fatal(err)
++	}
++	signature, err := libtrust.NewJSONSignature(canonical)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := signature.Sign(key); err != nil {
++		t.Fatal(err)
++	}
++	signed, err := signature.PrettySignature("signatures")
++	if err != nil {
++		t.Fatal(err)
++	}
++
++	for _, fixture := range []struct {
++		name, mediaType        string
++		payload, digestPayload []byte
++	}{
++		{"schema2", schema2.MediaTypeManifest,
++			[]byte(`{"schemaVersion":2,"mediaType":"application/vnd.docker.distribution.manifest.v2+json","config":{"mediaType":"application/vnd.docker.container.image.v1+json","digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":0},"layers":[]}`), nil},
++		{"schema1", schema1.MediaTypeSignedManifest, signed, canonical},
++	} {
++		if fixture.digestPayload == nil {
++			fixture.digestPayload = fixture.payload
++		}
++		for _, valid := range []bool{true, false} {
++			name := fixture.name + "/forged"
++			requested := digest.FromString("substituted manifest")
++			if valid {
++				name = fixture.name + "/valid"
++				requested = digest.FromBytes(fixture.digestPayload)
++			}
++			t.Run(name, func(t *testing.T) {
++				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++					if r.URL.Path == "/v2/" {
++						w.WriteHeader(http.StatusOK)
++						return
++					}
++					if !strings.HasSuffix(r.URL.Path, "/"+requested.String()) {
++						t.Errorf("unexpected request path %s", r.URL.Path)
++					}
++					w.Header().Set("Content-Type", fixture.mediaType)
++					w.Header().Set("Docker-Content-Digest", requested.String())
++					_, _ = w.Write(fixture.payload)
++				}))
++				defer server.Close()
++				manifest, _, err := NewClient(server.URL, "", "", true).PullManifest("library/test", requested.String())
++				if valid {
++					if err != nil || manifest == nil {
++						t.Fatalf("valid digest rejected: %v", err)
++					}
++				} else if err == nil || manifest != nil {
++					t.Fatal("accepted substituted manifest with forged matching digest header")
++				}
++			})
++		}
++	}
++}
