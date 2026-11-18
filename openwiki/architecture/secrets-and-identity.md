@@ -116,8 +116,6 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
-    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -878,19 +876,13 @@ JIT/SCIM provisioning stays disabled. The public native-client route continues
 without Octelium redirects; Fleet authenticates administrative requests.
 
 Read-only inspection found Entra Free and enabled Security Defaults. The
-owner remains the existing external Microsoft-account member until a separately
-authorized admin-center conversion. Fleet, Grafana and Octelium now bind its
-immutable object ID so the supported transition can preserve ownership.
-`scripts/entra-owner-conversion.py` prepares a private read-only receipt and
-attests the converted target identity after the operator action; it never writes
-Graph. It rejects the current federated `stuhlmuller.net` target; do not run
-the conversion until a separately reviewed change reconciles the protected
-federation or selects a managed target and updates its dependent mappings. Its
-independent cloud-only recovery Global Administrator prerequisite
-is disabled by default and requires a separately reviewed saved plan and sign-in.
-After any later conversion, clear the recovery Azure CLI session and sign in as
-the converted owner before attesting; the helper checks Graph `/me` against
-the immutable owner ID and target UPN.
+owner remains the existing external Microsoft-account member. Fleet, Grafana
+and Octelium bind its immutable object ID. The blocked one-off conversion
+helper and manual portal exception have been removed; the federated
+`stuhlmuller.net` target remains unresolved. A future identity change needs
+fresh implementation and validation of federation, mappings and independent
+recovery access. The cloud-only recovery Global Administrator unit remains
+disabled by default.
 The Fleet console SAML target is `rodman@stuhlmuller.net`; the existing
 `rodman@stinkyboi.com` local administrator remains recovery-only. API topology
 readback does not prove the browser SAML callback or recovery login.
@@ -968,11 +960,10 @@ authentication flow is not proof of denial. Keep actual HUMAN identifiers privat
 The [`operator/entra-owner-mail` unit](../../IaC/terragrunt-catalog/modules/entra-owner-mail/README.md)
 retires the historical mail-only Graph PATCH. Its `removed` block forgets only
 the retired Terraform state address after a separately reviewed plan; it does
-not write Graph or release the old SMTP alias. The supported replacement is an
-in-place Entra admin-center conversion of the existing owner, bounded by the
-private prepare/attest receipt and independent recovery administrator. Neither
-this source declaration nor the older successful mail plan proves that
-conversion or any new Fleet login has occurred.
+not write Graph or release the old SMTP alias. The blocked one-off owner
+conversion procedure has been removed; the federated target remains unresolved.
+Neither source cleanup nor the older successful mail plan proves conversion or
+any new Fleet login.
 
 ## Harbor registry identities
 

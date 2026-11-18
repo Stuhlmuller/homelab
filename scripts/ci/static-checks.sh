@@ -204,7 +204,6 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
   )
 done
 python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
-python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 echo "::endgroup::"
 
