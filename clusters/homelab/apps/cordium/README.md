@@ -45,6 +45,12 @@ failed child sync runs the cleanup and removes the identity. In-operation
 retries are disabled because Argo CD keeps their original timeout start; the
 next new full `cordium-bootstrap` sync gets a fresh 15-minute budget and
 recreates the identity at PostSync wave -1.
+After the September 12 cleanup hook failure stranded the privileged identity,
+the child Application's automated sync is paused in source. Keep it paused
+until the cleanup failure is diagnosed and a separate reviewed source change
+proves safe reactivation. Parent Argo reconciliation must make the live child
+`spec.syncPolicy.automated.enabled` false before one-shot recovery; merely
+merging this source does not prove the pause reached the cluster.
 Do not use selective sync because Argo CD does not run hooks during selective
 sync. Generated Octelium/Cordium runtime resources remain owned by Octelium
 controllers.
@@ -255,7 +261,8 @@ The script requires a finished failed child sync, complete Pod/Job inventories,
 matching Argo hook labels and UIDs, and no active bootstrap workload. It sends
 UID-preconditioned DELETE requests only for the named ServiceAccount,
 ClusterRole and ClusterRoleBinding, then verifies absence. It does not touch
-the persistent cleanup identity or rerun genesis. If the source or live UIDs
+the persistent cleanup identity or rerun genesis. It also rechecks that the
+live child remains auto-sync paused before each deletion. If the source or live UIDs
 change, restart review; if a partial deletion occurs, inspect the remaining
 objects and prepare a new reviewed recovery input rather than bypassing the
 fence. Do not publish private Job output or kubeconfig material.

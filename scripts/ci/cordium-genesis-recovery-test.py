@@ -23,6 +23,7 @@ UIDS = tuple(f"00000000-0000-0000-0000-{n:012d}" for n in (1, 2, 3))
 
 def fixtures():
     app = {"metadata": {"name": "cordium-bootstrap"},
+           "spec": {"syncPolicy": {"automated": {"enabled": False}}},
            "status": {"operationState": {"phase": "Failed", "finishedAt": "fixed"},
                       "sync": {"status": "Synced"}}}
     resources = []
@@ -47,6 +48,10 @@ class RecoveryFenceTest(unittest.TestCase):
                         MODULE.validate_snapshot(app, pods, jobs, resources, UIDS)
 
     def test_active_operation_or_workload_is_denied(self):
+        app, pods, jobs, resources = fixtures()
+        app["spec"]["syncPolicy"]["automated"]["enabled"] = True
+        with self.assertRaises(ValueError):
+            MODULE.validate_snapshot(app, pods, jobs, resources, UIDS)
         app, pods, jobs, resources = fixtures()
         app["operation"] = {"sync": {}}
         with self.assertRaises(ValueError):

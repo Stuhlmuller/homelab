@@ -216,6 +216,14 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	cordium_bootstrap_application
+	sync_policy := object.get(object.get(input, "spec", {}), "syncPolicy", {})
+	automated := object.get(sync_policy, "automated", {})
+	object.get(automated, "enabled", null) != false
+	msg := "Application cordium-bootstrap must keep automated sync paused during bootstrap identity recovery"
+}
+
+deny contains msg if {
 	cordium_genesis_bootstrap_identity
 	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
 	object.get(annotations, "argocd.argoproj.io/hook", "") != "PostSync"

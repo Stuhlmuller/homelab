@@ -125,6 +125,14 @@ test_rejects_retried_cordium_bootstrap_application if {
 	contains(msg, "must disable retries")
 }
 
+test_rejects_auto_sync_during_cordium_recovery if {
+	resource := cordium_bootstrap_app("1", ["resources-finalizer.argocd.argoproj.io"], "clusters/homelab/apps/cordium-bootstrap", 0)
+	unsafe := object.union(resource, {"spec": object.union(resource.spec, {"syncPolicy": object.union(resource.spec.syncPolicy, {"automated": {"enabled": true}})})})
+	violations := deny with input as unsafe
+	some msg in violations
+	contains(msg, "automated sync paused")
+}
+
 test_rejects_persistent_cordium_genesis_identity if {
 	resource := cordium_bootstrap_identity({})
 	violations := deny with input as resource
@@ -254,7 +262,7 @@ cordium_bootstrap_app(wave, finalizers, path, retry_limit) := {
 		"annotations": {"argocd.argoproj.io/sync-wave": wave},
 	},
 	"spec": {
-		"syncPolicy": {"retry": {"limit": retry_limit}},
+		"syncPolicy": {"retry": {"limit": retry_limit}, "automated": {"enabled": false}},
 		"source": {
 			"repoURL": "https://github.com/Stuhlmuller/homelab.git",
 			"targetRevision": "main",

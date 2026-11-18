@@ -59,6 +59,7 @@ def validate_snapshot(application, pods, jobs, resources, expected):
     operation = status.get("operationState", {})
     if (application.get("metadata", {}).get("name") != "cordium-bootstrap" or
             application.get("operation") is not None or
+            application.get("spec", {}).get("syncPolicy", {}).get("automated", {}).get("enabled") is not False or
             operation.get("phase") != "Failed" or not operation.get("finishedAt") or
             status.get("sync", {}).get("status") != "Synced"):
         raise ValueError("Cordium bootstrap is not a finished failed sync")
@@ -185,6 +186,7 @@ def main():
             source_guard(args.expected_main_sha)
             current_app = kubectl_json("-n", "argocd", "get", "application", "cordium-bootstrap")
             if (current_app.get("operation") is not None or
+                    current_app.get("spec", {}).get("syncPolicy", {}).get("automated", {}).get("enabled") is not False or
                     current_app.get("status", {}).get("operationState", {}).get("phase") != "Failed" or
                     not current_app.get("status", {}).get("operationState", {}).get("finishedAt")):
                 raise ValueError("Cordium bootstrap operation changed during recovery")
