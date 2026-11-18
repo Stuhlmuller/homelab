@@ -13,5 +13,5 @@ The corresponding Codeberg OCI chart manifest digest remains pinned as
 The test prefers the public OCI chart and verifies its manifest digest. If the
 registry fetch fails in a recognized way, it verifies this exact package hash
 before rendering the same values and asserting the same Kubernetes resource
-contract. A changed or
-missing package fails closed. The upstream project is licensed under Apache-2.0.
+contract. A changed or missing package fails closed. The upstream project is
+licensed under Apache-2.0; its license text is included as `k8s-gateway-LICENSE`.
