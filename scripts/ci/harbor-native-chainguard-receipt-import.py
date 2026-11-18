@@ -395,10 +395,35 @@ def token(path):
     return value
 
 
+def event_base(client, event, current_base):
+    require(isinstance(current_base, str) and SHA.fullmatch(current_base) is not None,
+            "current main revision is invalid")
+    require(isinstance(event, dict) and event.get("repository", {}).get("full_name") == REPOSITORY,
+            "pull request event repository is invalid")
+    number = event.get("number")
+    head = event.get("pull_request", {}).get("head", {}).get("sha")
+    require(type(number) is int and number > 0 and isinstance(head, str) and SHA.fullmatch(head) is not None,
+            "pull request event identity is invalid")
+    pull = client.json(f"/repos/{REPOSITORY}/pulls/{number}")
+    require(pull.get("number") == number and pull.get("head", {}).get("sha") == head
+            and pull.get("base", {}).get("ref") == "main"
+            and pull.get("base", {}).get("repo", {}).get("full_name") == REPOSITORY,
+            "pull request event no longer identifies the current main-targeting head")
+    if pull.get("state") == "open" and pull.get("merged") is False:
+        return current_base
+    require(pull.get("state") == "closed" and pull.get("merged") is True,
+            "pull request was closed without merging")
+    base = pull.get("base", {}).get("sha")
+    require(isinstance(base, str) and SHA.fullmatch(base) is not None,
+            "merged pull request base revision is invalid")
+    # Comparing against merged main would hide newly imported receipts as unchanged.
+    return base
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=("import", "verify-state-change", "verify-pull-request",
-                                            "native-receipts-unchanged"))
+                                            "native-receipts-unchanged", "event-base"))
     parser.add_argument("--config", type=Path, default=AUTOMATION)
     parser.add_argument("--state", type=Path, default=STATE)
     parser.add_argument("--base-state", type=Path)
@@ -408,10 +433,14 @@ def main():
     parser.add_argument("--base-sha")
     parser.add_argument("--head-sha")
     parser.add_argument("--token-file", type=Path)
+    parser.add_argument("--event-file", type=Path)
     args = parser.parse_args()
     config = read_json(args.config)
     client = GitHubActionsClient(token(args.token_file))
-    if args.command == "import":
+    if args.command == "event-base":
+        require(args.event_file is not None, "event-base requires --event-file")
+        print(event_base(client, read_json(args.event_file), args.base_sha))
+    elif args.command == "import":
         require(args.output is not None and args.run_id is not None and args.expected_sha is not None,
                 "import requires --output, --run-id, and --expected-sha")
         receipts, provenance = verify_artifact(client, REPOSITORY, args.run_id, args.expected_sha, native_plans(config))

@@ -373,16 +373,32 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(rendered["remote_state"]["config"]["key"],
                          "IaC/homelab/live/argocd-apps/retired/terraform.tfstate")
         generated = rendered["generate"]["deleted_unit_destroy_config"]["contents"]
-        self.assertIn('key_provider "aws_kms" "main"', generated)
-        self.assertIn('kms_key_id = "alias/fixture-state"', generated)
-        self.assertIn('region     = "us-east-2"', generated)
-        self.assertNotIn("alias/aws/ssm", generated)
-        self.assertIn('method "aes_gcm" "main"', generated)
-        self.assertIn("keys = key_provider.aws_kms.main", generated)
-        self.assertEqual(generated.count("method   = method.aes_gcm.main"), 2)
-        self.assertEqual(generated.count("enforced = true"), 2)
-        self.assertIn('state {', generated)
-        self.assertIn('plan {', generated)
+        self.assertNotIn("encryption {", generated)
+        self.assertEqual(rendered["remote_state"]["encryption"], {
+            "key_provider": "aws_kms", "kms_key_id": "alias/fixture-state",
+            "key_spec": "AES_256", "region": "us-east-2", "enforced": True,
+            "encrypted_metadata_alias": "key_provider.aws_kms.main"})
+        self.assertNotIn("alias/aws/ssm", json.dumps(rendered["remote_state"]["encryption"]))
+        # Capture actual generation without invoking S3/KMS or installing providers.
+        capture = self.root / "retired-backend.txt"
+        shim = self.root / "capture-tofu"
+        shim.write_text("#!/usr/bin/env python3\nimport pathlib,sys\n"
+                        "if any('version' in a for a in sys.argv):\n"
+                        " print('OpenTofu v1.11.8')\n"
+                        "else:\n"
+                        f" pathlib.Path({str(capture)!r}).write_text(pathlib.Path('backend.tf').read_text())\n")
+        shim.chmod(0o755)
+        run("terragrunt", "--log-disable", "run", "--tf-path", str(shim),
+            "--download-dir", str(self.root / "retired-cache"), "--", "init", "-backend=false",
+            cwd=self.root / "destroy/IaC/live/argocd-apps/retired")
+        backend = capture.read_text()
+        self.assertIn('key_provider "aws_kms" "default"', backend)
+        self.assertIn('encrypted_metadata_alias = "key_provider.aws_kms.main"', backend)
+        self.assertIn('"alias/fixture-state"', backend)
+        self.assertIn('"us-east-2"', backend)
+        self.assertEqual(backend.count("enforced = true"), 2)
+        self.assertEqual(backend.count("encryption {"), 1)
+
 
     def test_azure_changes_still_require_azure_credentials(self):
         self.stack.write_text(self.stack.read_text().replace('name = "identity"',

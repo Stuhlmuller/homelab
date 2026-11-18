@@ -381,14 +381,14 @@ def robot_name(name, project_name):
     return f"{PREFIX}{project_name}+{name}"
 
 
-def read_pages(client, path, parameters, max_count=None):
+def read_pages(client, path, parameters, max_count=None, page_size=100):
     objects = []
     seen_ids = set()
     expected_total = None
     count = 0
     page = 1
     while True:
-        query = urllib.parse.urlencode({**parameters, "page": page, "page_size": 100})
+        query = urllib.parse.urlencode({**parameters, "page": page, "page_size": page_size})
         document, headers = client.request("GET", path + "?" + query)
         try:
             total = int(headers.get("X-Total-Count", ""))
@@ -402,7 +402,7 @@ def read_pages(client, path, parameters, max_count=None):
         # Harbor's Go handler serializes an empty result slice as null.
         if document is None and total == 0:
             document = []
-        if not isinstance(document, list) or len(document) > 100:
+        if not isinstance(document, list) or len(document) > page_size:
             raise BootstrapError("Harbor object listing is malformed")
         for item in document:
             if not isinstance(item, dict):
@@ -453,10 +453,11 @@ def backfill_scans(client):
             raise BootstrapError("Harbor returned the wrong image repository")
         encoded = urllib.parse.quote(urllib.parse.quote(name[8:], safe=""), safe="")
         path = f"/projects/homelab/repositories/{encoded}/artifacts"
+        # Scan-summary assembly exceeds the request timeout on large pages.
         artifacts = read_pages(client, path, {"sort": "id", "with_scan_overview": "true",
                                               "with_sbom_overview": "true",
                                               "with_accessory": "true", "with_tag": "false"},
-                               max_count=MAX_SCAN_ARTIFACTS)
+                               max_count=MAX_SCAN_ARTIFACTS, page_size=10)
         inventoried += len(artifacts)
         if inventoried > MAX_SCAN_ARTIFACTS:
             raise BootstrapError("Harbor image scan inventory exceeds its fixed limit")
