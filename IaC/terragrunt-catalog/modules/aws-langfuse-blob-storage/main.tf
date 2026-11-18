@@ -1,14 +1,3 @@
-terraform {
-  required_version = ">= 1.9.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "6.65.0"
-    }
-  }
-}
-
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
@@ -124,74 +113,4 @@ resource "aws_s3_bucket_lifecycle_configuration" "langfuse" {
   }
 
   depends_on = [aws_s3_bucket_versioning.langfuse]
-}
-
-resource "aws_iam_user" "langfuse" {
-  # checkov:skip=CKV_AWS_273: Non-human S3 client with no console login; this Talos cluster has no workload IAM federation configured.
-  name = "homelab-langfuse-s3"
-  path = "/homelab/"
-  tags = var.tags
-}
-
-data "aws_iam_policy_document" "langfuse" {
-  statement {
-    sid = "ListLangfuseBlobBucket"
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:ListBucket",
-      "s3:ListBucketMultipartUploads",
-    ]
-    resources = [local.bucket_arn]
-  }
-
-  statement {
-    sid = "WriteLangfuseBlobObjects"
-    actions = [
-      "s3:AbortMultipartUpload",
-      "s3:DeleteObject",
-      "s3:GetObject",
-      "s3:ListMultipartUploadParts",
-      "s3:PutObject",
-    ]
-    resources = ["${local.bucket_arn}/*"]
-  }
-}
-
-resource "aws_iam_user_policy" "langfuse" {
-  # checkov:skip=CKV_AWS_40: One non-human client receives only the exact dedicated bucket permissions, avoiding a reusable broader group.
-  name   = "langfuse-blob-storage"
-  user   = aws_iam_user.langfuse.name
-  policy = data.aws_iam_policy_document.langfuse.json
-}
-
-resource "aws_iam_access_key" "langfuse" {
-  user = aws_iam_user.langfuse.name
-}
-
-resource "aws_ssm_parameter" "access_key_id" {
-  region      = var.aws_region
-  name        = "/homelab/langfuse/s3-access-key-id"
-  description = "Langfuse S3 blob-storage access key ID."
-  type        = "SecureString"
-  value       = sensitive(aws_iam_access_key.langfuse.id)
-  key_id      = var.parameter_kms_key_id
-  tags        = var.tags
-}
-
-resource "aws_ssm_parameter" "secret_access_key" {
-  region      = var.aws_region
-  name        = "/homelab/langfuse/s3-secret-access-key"
-  description = "Langfuse S3 blob-storage secret access key."
-  type        = "SecureString"
-  value       = sensitive(aws_iam_access_key.langfuse.secret)
-  key_id      = var.parameter_kms_key_id
-  tags        = var.tags
-}
-
-output "bucket_name" {
-  value = aws_s3_bucket.langfuse.id
-}
-
-output "region" {
-  value = var.aws_region
 }
