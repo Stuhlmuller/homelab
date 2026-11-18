@@ -74,6 +74,10 @@ spec:
               readOnly: true
       containers:
         - name: postgres
+          args:
+            - postgres
+            - -c
+            - stats_temp_directory=/run/postgresql-stats
           image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
           imagePullPolicy: Always
           env:
@@ -140,6 +144,8 @@ spec:
               drop:
                 - ALL
           volumeMounts:
+            - name: statistics
+              mountPath: /run/postgresql-stats
             - name: auth
               mountPath: /run/secrets/n8n-postgres
               readOnly: true
@@ -149,6 +155,10 @@ spec:
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
       volumes:
+        - name: statistics
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Mi
         - name: auth
           secret:
             secretName: n8n-postgres-auth
