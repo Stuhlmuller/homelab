@@ -42,8 +42,10 @@ The resolver accepts DNS on UDP 53 and TCP 53 at its Tailscale-assigned IPv4. It
 
 The apex retains its public A record and is outside this fail-closed guarantee.
 
-The plugin TTL and cache maximum are 30 seconds. The permanent offline contract exercises paired add/change/remove declarations. At initial rollout, the repo-owned read-only check queries the observed
-resolver tailnet IP over UDP and TCP, compares all 27 newly registered names with live Service status, and verifies local authority/provenance. This proves the Service watch publishes the approved
+The plugin TTL and cache maximum are 30 seconds. The permanent offline contract exercises paired add/change/remove declarations. At initial rollout, the bounded direct-query check
+queries the observed
+resolver tailnet IP over UDP and TCP, compares all 27 newly registered names with live Service status, and verifies local authority/provenance. This proves the Service watch
+publishes the approved
 names, while future rename/removal convergence remains to be observed on the first actual reviewed change. Run it from the trusted
 authorized client before handoff and when diagnosing or recovering an outage.
 

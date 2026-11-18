@@ -287,9 +287,12 @@ the Application, verify the `homelab-dns` proxy, and check its **observed**
 tailnet IP from an authorized tailnet client:
 
 ```sh
-dig @<DNS_TAILNET_IP> stinkyboi.com A +time=3 +tries=1
-dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +time=3 +tries=1
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1
 ```
+
+Follow the complete [direct resolver verification](../../docs/networking-tailnet-ingress.md#direct-resolver-verification)
+for approved names, peer/Service identity and expected private/public answers.
 
 The owner then sets that IP as a restricted `stinkyboi.com` nameserver in
 Tailscale DNS. Check normal client DNS and HTTPS before removing any public
