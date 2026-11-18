@@ -1,4 +1,6 @@
 operatorConfig:
+  podAnnotations:
+    homelab.stinkyboi.com/rotation-id: "2026-11-17-01"
   hostname: homelab-tailscale-operator
   image:
     repository: harbor.stinkyboi.com/mirror/docker.io/tailscale/k8s-operator
