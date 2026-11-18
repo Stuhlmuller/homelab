@@ -185,3 +185,81 @@ not merely source-file presence or unchecked fixture descriptions.
 - [X] T046 Reconcile AdGuard source with the merged Uptime Kuma ownership/catalog and shared route/apply policies; retain both applications, add exact AdGuard readiness coverage to the exhaustive catalog, and validate affected guards before draft delivery.
 
 - [X] T047 Deliver the `bind.dnsutils` devShell addition as a prerequisite before the final AdGuard publication receipt, preserving the byte-identical publication bundle across consumer delivery; run the exact-main scoped publisher after that toolchain source is merged.
+
+## Phase 12: Unlocked amendment — US1 identity verification (P1)
+
+The owner confirms Lock is disabled. Requirements review CHK001–012 passed in
+`checkpoints/unlocked-review.md`. This append preserves T001–T047 and their
+checkboxes as history; it does not assert that unchecked delivery or acceptance
+work has passed. For future execution, FR-020/021 supersede T035's unconditional
+signing instruction: signing applies only to enabled Lock; unlocked acceptance
+must independently observe and verify mode and identity. The historical US1
+“signed” goal now means identity-verified with the applicable signature.
+
+**Goal**: Verify the declared AdGuard peer under explicitly observed disabled Lock
+without weakening enabled-mode signing or any shared signing caller.
+**Independent evidence**: Synthetic positive/negative identity and collector
+fixtures, followed by actual Mac direct acceptance at T055. Fixtures alone do
+not establish DNS availability or authorize cutover.
+
+- [X] T048 [US1] Add failing pure-validator cases in `scripts/ci/adguard-check-test.py` for matching unlocked client/proxy identity and exact evidence shape; reject missing/null/string/numeric mode, mode disagreement, wrong tailnet/hostname/tag/key/address/stable ID/NodeID, boolean or nonpositive NodeID, zero-valued node keys, peers that are missing or repeated, mismatched Peer map key, absent/false InNetworkMap, offline/expired state, invalid/duplicate/non-tailnet addresses, missing Pod UID, wrong ownership/Service UID and non-ready/deleting Pod; accept omitted optional disabled signing fields but reject a present mismatched Lock NodeKey. Add failing collector and enabled-mode regression cases in `scripts/ci/adguard-check-test.py` using mocked bounded command reads: require exactly one managed proxy, explicit local/proxy mode agreement and local mode recheck around inspection; retain `SIGNER.local_signer()` and fixed-target inspection with signed=true when enabled, fail their errors closed, and prove unlocked collection never invokes signing or a Lock-policy mutation. Keep `scripts/ci/tailscale-ingress-sign-test.py` unchanged unless an independently justified fixture correction is needed; do not relax its requirements.
+
+- [X] T049 [US1] Implement AdGuard-only pure unlocked identity validation in `scripts/adguard-check.py` against the reviewed local Peer/proxy Self/Service/Pod contract, satisfying T048; emit exactly dns, node_key, pod_uid, device_id, node_id, tags, sorted addresses, lock_enabled=false and signed=false, with no rotation key or fabricated signature. Implement AdGuard-only read-only mode selection and collection in `scripts/adguard-check.py`, satisfying T048: use the existing Mac binary and sanitized bounded wrapper, require Running/Online/expected tailnet and no explicit local expiry, inspect only the fixed Service and managed proxy, reread local mode and Service, and retain shared enabled-mode helpers with lock_enabled=true. Add no override flag/environment input, credentials, policy write, or change to `scripts/tailscale-ingress-sign.py` semantics.
+
+## Phase 13: Unlocked amendment — US2 evidence and cutover binding (P1)
+
+**Goal**: Prevent stale or ambiguous mode/identity evidence from authorizing DNS
+changes while preserving normal-client requirements and independent rollback.
+**Independent evidence**: Direct snapshot failure and cutover no-apply fixtures;
+actual adoption remains T037–T039 after required live gates.
+
+- [X] T050 [US2] Add failing direct/snapshot tests in `scripts/ci/adguard-check-test.py` for explicit boolean lock_enabled and mode-appropriate signed values; reject missing/ambiguous mode, false signatures when locked, claimed signatures when unlocked, and observed mode/identity changes between before/after direct snapshots. Assert unchanged DNS, administration, revision and client-mode gates still run on valid unlocked evidence. Add cutover binding regressions in `scripts/ci/adguard-dns-cutover-test.py` with valid unlocked peer evidence and mode/identity drift in the fresh pre-apply snapshot; assert no apply on drift and no stored receipt substitute. Preserve locked fixtures and rollback eligibility with unavailable AdGuard/peer and missing historical mode evidence, while retaining prior-policy, source, live-policy, saved-plan and timing guards.
+
+- [X] T051 [US2] Integrate mode-aware snapshot validation in `scripts/adguard-check.py`, satisfying T050 through the existing full-peer equality and cutover binding in `scripts/adguard-dns-cutover.py`; avoid changing the cutover helper unless a failing contract test demonstrates a missing binding. Preserve fresh checks, existing timing limits, normal-client behavior and the separate rollback path; do not claim observations are atomic.
+
+## Phase 14: Unlocked amendment — documentation, delivery and live handoff
+
+US3 private administration and US4 recovery retain their existing implementation
+and T036 functional requirements; this amendment adds no alternative acceptance
+criteria for either story.
+
+- [X] T052 Update `clusters/homelab/apps/adguard/README.md` to make signing conditional, direct unlocked users to the normal acceptance command, explain explicit observed mode and unsigned evidence, and disclose the retained enabled v1.102.3 Lock-peer schema incompatibility without suggesting bypasses. Preserve credential custody, TLS/admin, recovery and client instructions; explain that reverting the helper restores refusal without changing live Lock or DNS. Update `openwiki/workloads/inventory.md` with the same conditional signing and retained locked-schema compatibility limitation, source links and actual pending Mac acceptance/cutover status; preserve generated wiki artifacts and do not imply fixture success proves deployment or client behavior.
+
+- [ ] T053 Run the touched `scripts/ci/adguard-check-test.py` and `scripts/ci/adguard-dns-cutover-test.py`, shared `scripts/ci/tailscale-ingress-sign-test.py`, relevant recovery/regression checks and the documentation checks required by `docs/validation-runbook.md`; record exact commands/results, source revision and unavailable checks in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/unlocked-validation.md`. Review the complete amendment for unchanged signing/current-main/credential/rollback boundaries before delivery.
+
+- [ ] T054 Deliver the scoped helper/tests/docs amendment through `.agents/skills/homelab-protected-prs/SKILL.md`, retaining ownership and exact-commit CI/review evidence; record PR, merged main revision and remaining operational gates in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/unlocked-delivery.md`. Do not mark T035–T039 passed from source delivery or change DNS/Lock policy as part of this PR.
+
+- [ ] T055 Prepare and track the owner-run current-main Mac acceptance using `scripts/adguard-check.py` and `scripts/adguard-recovery.py`; record sanitized actual mode/identity, direct UDP/TCP/admin and required replacement/recovery results or explicit blockers in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`. Reconcile T035 conditionally without signing when unlocked; complete existing T036 before T037–T038, then require actual system-resolver/private/MagicDNS and conditional exit-node evidence at T039. Keep absent receipts outstanding; the cloud agent cannot run the owner's Mac checks.
+
+### Amendment dependencies and incremental strategy
+
+```text
+requirements review -> T048 -> T049 -> T050 -> T051
+T051 -> T052 -> T053 -> T054 -> T055
+T055 direct/admin/recovery gates + T036 -> existing T037 -> T038 -> T039 -> T040
+```
+
+Tests precede implementation: T048 specifies the validator/collector; T050
+specifies direct/cutover integration before T051. US1 is the smallest useful
+source increment, but the deliverable MVP includes US2 binding regressions,
+documentation and validation before protected delivery. No DNS cutover is part
+of this amendment's source change.
+
+There are no parallel writer tasks: US1 and US2 share helper/test files, and
+T052 groups the coordinated README/wiki update. A possible later parallel
+example is independent read-only review of US1 identity and US2 cutover behavior
+after T051; no task requires additional agents. US3/US4 retain actual acceptance
+at T036/T055 without new implementation scope.
+
+### Amendment requirement coverage
+
+| Requirement | Tasks |
+| --- | --- |
+| FR-020: explicit observed modes, identity, retained signing, no trust mutation | T048–T049, T052–T055 |
+| FR-021: evidence invalidation, unchanged functional/client/rollback gates and unrelated workflows | T048–T055; existing T036–T039 |
+| SC-007: valid unlocked and retained locked checks; negative mode/identity/no-mutation evidence | T048–T051, T053, T055 |
+
+All eight appended tasks T048–T055 start unchecked: US1 two, US2 two,
+cross-cutting four. Historical checkbox state remains unchanged. Next stage is
+separate Spec Kit analysis; no implementation or live acceptance occurred during
+task generation.
