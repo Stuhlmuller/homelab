@@ -24,6 +24,7 @@ class Timeout(unittest.TestCase):
                          "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
                 shutil.copyfile(ROOT / name, root / name)
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
+                         "cordium-genesis-recovery-test.py",
                          "openclaw-retirement-status-test.py",
                          "openclaw-enterprise-operations-test.py",
                          "openclaw-legacy-netns-preflight-test.py",

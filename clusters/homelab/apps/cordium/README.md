@@ -45,6 +45,12 @@ failed child sync runs the cleanup and removes the identity. In-operation
 retries are disabled because Argo CD keeps their original timeout start; the
 next new full `cordium-bootstrap` sync gets a fresh 15-minute budget and
 recreates the identity at PostSync wave -1.
+After the September 12 cleanup hook failure stranded the privileged identity,
+the child Application's automated sync is paused in source. Keep it paused
+until the cleanup failure is diagnosed and a separate reviewed source change
+proves safe reactivation. Parent Argo reconciliation must make the live child
+`spec.syncPolicy.automated.enabled` false before one-shot recovery; merely
+merging this source does not prove the pause reached the cluster.
 Do not use selective sync because Argo CD does not run hooks during selective
 sync. Generated Octelium/Cordium runtime resources remain owned by Octelium
 controllers.
@@ -238,10 +244,32 @@ kubectl -n octelium logs job/cordium-genesis-cleanup
 
 After a successful full child sync, or a failed sync whose SyncFail cleanup
 completed, the two `get` commands for the bootstrap identity must return
-`NotFound`, and the authorization check must print `no`. If control-plane or
-scheduler failure also prevented cleanup, recover it, inspect these resources,
-and start a full `cordium-bootstrap` sync. The cleanup is idempotent, and the
-new sync recreates the identity only immediately before genesis.
+`NotFound`. A generic `kubectl auth can-i --as` result can reflect the caller's
+impersonation setup; verify denial with a genuinely token-bound bootstrap
+identity probe in a private operator session. Do not run a full child sync just
+to remove a stranded identity: it recreates the privileged hooks and reruns
+genesis.
+
+If the cleanup hook fails and leaves the identity, use the reviewed one-shot
+`scripts/cordium-genesis-recovery.py` from a clean checkout of the exact current
+`main` commit. First inspect the failed child operation, its private Job logs
+when retained, the three exact resource UIDs, and whether any Pod or Job still
+uses the identity. Record the expected SHA and UIDs privately. Run the script
+without `--execute` to validate the live fence, then obtain the normal review
+for the exact live recovery before using `--execute` with the same four inputs.
+The script requires a finished failed child sync, complete Pod/Job inventories,
+matching Argo hook labels and UIDs, and no active bootstrap workload. It sends
+UID-preconditioned DELETE requests only for the named ServiceAccount,
+ClusterRole and ClusterRoleBinding, then verifies absence. It does not touch
+the persistent cleanup identity or rerun genesis. It also rechecks that the
+live child remains auto-sync paused before each deletion. If the source or live UIDs
+change, restart review; if a partial deletion occurs, inspect the remaining
+objects and prepare a new reviewed recovery input rather than bypassing the
+fence. Coordinate with operators so nobody starts a manual child sync during
+the recovery window; the script cannot atomically lock Argo CD. After it
+finishes, recheck the paused child operation and all three absent resources
+before a private token-bound denial probe. Do not publish private Job output
+or kubeconfig material.
 
 Verify the human developer path end to end with the public repository:
 
