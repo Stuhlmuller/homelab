@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -203,8 +204,9 @@ def chart_failure_hint(stderr):
     return "unknown"
 
 
-def render_pinned_chart(command):
-    """Prefer the reviewed OCI digest, then use the identical packaged bytes."""
+def fetch_pinned_chart(destination):
+    """Fetch only the pinned OCI package, falling back to exact reviewed bytes."""
+    command = ["helm", "pull", CHART, "--version", "4.0.0", "--destination", str(destination)]
     for attempt in range(4):
         try:
             chart = subprocess.run(command, text=True, capture_output=True,
@@ -214,32 +216,37 @@ def render_pinned_chart(command):
         else:
             if chart.returncode == 0:
                 require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
-                return chart.stdout
+                return destination / "k8s-gateway-4.0.0.tgz"
             hint = chart_failure_hint(chart.stderr)
-            require(hint != "unknown", "pinned OCI chart render failed (non-fetch); "
-                    "private Helm output withheld")
         if attempt < 3:
             time.sleep(2 ** (attempt + 1))
+    print(f"Public OCI chart fetch unavailable ({hint}); using reviewed package.", file=sys.stderr)
+    return CHART_PACKAGE
+
+
+def render_pinned_chart():
+    """Render one SHA-verified package; values errors never trigger fallback."""
     catalog = json.loads(CHART_CATALOG.read_text())
     matches = [row for row in catalog["charts"] if row["chart"] == "k8s-gateway"
                and row["version"] == "4.0.0"
                and row["repository"] == "codeberg.org/k8s-gateway/charts"]
     require(len(matches) == 1 and matches[0]["sha256"] == CHART_PACKAGE_SHA256,
             "reviewed chart 4.0.0 catalog hash changed")
-    require(CHART_PACKAGE.is_file()
-            and hashlib.sha256(CHART_PACKAGE.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
-            "reviewed chart 4.0.0 fallback package is missing or changed")
-    require(command[3:6] == [CHART, "--version", "4.0.0"], "chart render command changed")
-    fallback = [*command[:3], str(CHART_PACKAGE), *command[6:]]
-    try:
-        local = subprocess.run(fallback, text=True, capture_output=True,
-                               check=False, timeout=20)
-    except subprocess.TimeoutExpired as error:
-        raise ValueError("exact-package fallback timed out; private Helm output withheld") from error
-    require(local.returncode == 0,
-            f"pinned chart render failed after 4 OCI attempts ({hint}) and exact-package fallback; "
-            "private Helm output withheld")
-    return local.stdout
+    with tempfile.TemporaryDirectory(prefix="tailnet-chart-") as directory:
+        package = fetch_pinned_chart(Path(directory))
+        require(package.is_file()
+                and hashlib.sha256(package.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
+                "reviewed chart 4.0.0 package is missing or changed")
+        command = ["helm", "template", "tailnet-dns", str(package),
+                   "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
+        try:
+            rendered = subprocess.run(command, text=True, capture_output=True,
+                                      check=False, timeout=20)
+        except subprocess.TimeoutExpired as error:
+            raise ValueError("pinned chart template timed out; private Helm output withheld") from error
+        require(rendered.returncode == 0,
+                "pinned chart template failed; private Helm output withheld")
+        return rendered.stdout
 
 
 def rendered_contract():
@@ -247,9 +254,7 @@ def rendered_contract():
     servers = dns_values["servers"]
     require(len(servers) == 2 and all(s["servicePort"] == 53 for s in servers),
             "both resolver views must expose DNS port 53")
-    command = ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
-               "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-    rendered = render_pinned_chart(command)
+    rendered = render_pinned_chart()
     documents = json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
     resources = {(doc["kind"], doc["metadata"]["name"]): doc for doc in documents}
