@@ -1,5 +1,7 @@
 operatorConfig:
   hostname: homelab-tailscale-operator
+  podAnnotations:
+    homelab.stinkyboi.com/oauth-rotation-id: "20261118-ssm-v3"
   image:
     repository: harbor.stinkyboi.com/mirror/docker.io/tailscale/k8s-operator
     digest: sha256:d86a8be7ad9d38714968f5d4e010ba8dad30c8f672736ef94eda9b250febeb12
