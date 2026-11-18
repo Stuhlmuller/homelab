@@ -2720,6 +2720,11 @@ descriptors. Its scan-client fixture requires Harbor's exact vulnerability
 report negotiation header. The static gate rejects commit-status write grants
 in pull-request workflows, so the trusted base receipt provenance status cannot
 be forged by the ordinary lint job. These checks do not dispatch the receipt.
+The trusted provenance workflow has an exact job/script allowlist and canonical
+workflow hash; reviewed edits must update both and test the actual workflow.
+The static secret scan derives a local system hook from the pinned pre-commit
+configuration, preserving text selection and reviewed findings without fetching
+remote hook environments inside offline fixtures.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked
@@ -2901,3 +2906,34 @@ fresh administrator saved plan to observed service/peer/source/configuration and
 live policy. Rollback excludes AdGuard health dependencies. Native client mode
 currently supports macOS and records daemon/exit-node metadata; direct queries
 cannot count as normal-client or exit-node proof. These live gates remain pending.
+
+### Source-only Application stack refactors
+
+The Mastodon release preflight treats an edit confined to its `stack.hcl` as
+source-only only when real Terragrunt generation/rendering at the merge base and
+PR head proves identical module files, declared inputs, backend/provider config,
+and normalized dependency edges. Changed workload files, missing evidence, or
+any runtime-contract difference retain the existing Synced/Healthy, backup and
+restore requirements. The comparison also evaluates shared roots and templates,
+so changing them cannot conceal a changed Application manifest. Negative tests
+cover manifest, dependency, backend, provider and module changes. Shared-only
+root/template/module edits also trigger the live preflight. Equivalence supports
+only the current local Application root module: unsupported JSON or generated
+variables, indirect file/module inputs, extra arguments and hooks fail closed.
+The existing apply guard is matched exactly and its script contents are compared.
+
+On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main
+`6f8112890`; three Deployments were out of sync and the live web replica count
+was zero. Image pins matched source. No workload was changed by this layout
+refactor. Follow-up: inspect the existing workload pause/drift ownership and
+reconcile through reviewed GitOps before a runtime change; the live release
+gate continues rejecting that baseline for material changes.
+
+### Application plan API concurrency
+
+The [PR plan runner](../../scripts/ci/terragrunt-plan.sh) limits Application
+registration plans to two concurrent units. Runs at eight concurrent units
+intermittently failed Kubernetes OpenAPI discovery through the CI API proxy
+(connection resets and deadlines across different units). This reduces discovery
+pressure while preserving every selected unit, plan policy, and failure status.
+AzureAD planning retains its separate concurrency limit.

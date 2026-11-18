@@ -391,8 +391,7 @@ cluster CA is intentionally rotated.
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
-| openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
+| openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | bulldozer | `bulldozer-config` | `bulldozer-config` | `/homelab/bulldozer/github-app/integration-id`, `/homelab/bulldozer/github-app/webhook-secret`, `/homelab/bulldozer/github-app/private-key` |
@@ -486,18 +485,10 @@ SSM, then bump `homelab.rst.io/openclaw-grafana-login-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` to the latest SSM parameter
 version so GitOps rolls OpenClaw and reloads the environment variables.
 
-OpenClaw also reads GitHub App credentials from
-`/homelab/openclaw/github-app/id`,
-`/homelab/openclaw/github-app/installation-id`, and
-`/homelab/openclaw/github-app/private-key`. Only the app container receives the
-ID values as `GITHUB_APP_ID` and `GITHUB_APP_INSTALLATION_ID`.
-The PEM is mounted from `openclaw-github-app-private-key` at
-`/var/run/secrets/openclaw/github-app/private-key.pem`, and
-`GITHUB_APP_PRIVATE_KEY_PATH` points at that file. After replacing SSM
-placeholders, bump
-`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in
-`clusters/homelab/apps/openclaw/values.yaml` so env-backed values reload through
-a normal GitOps rollout.
+The OpenClaw GitHub App SSM parameters remain as retained state tombstones.
+No OpenClaw ExternalSecret reads them and the Pod receives no App key, IDs, or
+mount. Rotate the previously mounted key after the App scope review in #859;
+do not reintroduce the key while the application sandbox is disabled.
 
 Octelium reads `/homelab/octelium/client-auth-token` through
 `octelium-client-auth` as the workload authentication token for the

@@ -183,7 +183,9 @@ echo "::group::Argo CD Application registration plan"
 (
   cd IaC/homelab/us-west-2/apps
   if ((${#argocd_plan_filters[@]} > 0)); then
-    terragrunt run --all "${argocd_plan_filters[@]}" --parallelism 8 -- plan -lock=false -out plan.out -no-color
+    # Each provider fetches Kubernetes OpenAPI independently. Bound concurrent
+    # discovery through the CI API proxy; all selected units still get planned.
+    terragrunt run --all "${argocd_plan_filters[@]}" --parallelism 2 -- plan -lock=false -out plan.out -no-color
   fi
 )
 echo "::endgroup::"

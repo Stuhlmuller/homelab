@@ -233,13 +233,22 @@ one-replica GitOps revision.
 
 ## Access Contract
 
+`N8N_WEBHOOK_URL` advertises the public Funnel base for both production and test
+callbacks. In n8n 2.43.7, legacy `WEBHOOK_URL` only overrides production;
+test callbacks otherwise fall back to the private `N8N_EDITOR_BASE_URL`.
+Keep the editor base private and use the public callback base for both modes.
+After a URL configuration rollout, refresh the editor and start a new test
+listener so the GitHub Trigger registers a `/webhook-test/` URL on
+`n8n-webhook.tail67beb.ts.net`. Generate the selected GitHub event while the
+listener is active. Published production executions appear under Executions.
+
 - Editor/UI: `https://n8n.stinkyboi.com` through private Tailscale and Traefik.
 - Internal self-API: `http://n8n.automation.svc.cluster.local:5678/api/v1`,
   limited to the `automation/n8n` service account and n8n API-key authentication.
 - Public callbacks: `https://n8n-webhook.tail67beb.ts.net` through Funnel and
   Traefik, only `/webhook`, `/webhook-test`, and `/webhook-waiting` paths.
 
-`WEBHOOK_URL` advertises the Funnel host. Converge and verify that route before
+`N8N_WEBHOOK_URL` advertises the Funnel host for production and test callbacks. Converge and verify that route before
 n8n rolls out, because active integrations can register hooks on startup.
 Keep editor, static-asset and API routes private. Internal self-API calls use
 plain HTTP on the Service's port `5678`; TLS terminates at Traefik, so an HTTPS
@@ -287,6 +296,14 @@ read access and a pull request delivery after activation; a ping alone cannot
 pass. A successful check does not replace a real n8n workflow execution check.
 
 ## Database Readiness
+
+n8n is temporarily scheduled on `zimaboard-1` to recover from node-wide CPU,
+memory, and I/O contention on `zimaboard-0`, which also disrupted CoreDNS.
+The existing `Recreate` strategy and NFS PVC preserve a single application
+writer during relocation. This selector limits failover: if `zimaboard-1` is
+unavailable, n8n stays Pending. Remove it through GitOps after the affected
+node has stable DNS, workload probes, and sufficient capacity. Do not reduce
+the memory request to force placement on a smaller node.
 
 The pod uses `DB_TYPE=postgresdb` and waits for an authenticated connection to
 `n8n-postgres.automation.svc.cluster.local:5432` before starting n8n. If the

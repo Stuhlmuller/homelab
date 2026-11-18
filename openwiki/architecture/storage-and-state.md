@@ -572,6 +572,25 @@ termination grace remain.
 
 ### Pending n8n PostgreSQL upgrade
 
+After the statistics-storage fix deployed, n8n on `zimaboard-0` still failed
+database DNS lookups while unrelated node controllers restarted under high
+CPU, memory, and I/O pressure. A temporary
+[n8n node selector](../../clusters/homelab/apps/n8n/values.yaml) places it on
+`zimaboard-1`; its NFS PVC has no node affinity and remains unchanged. The
+single-writer `Recreate` strategy is preserved. This contains the application
+outage rather than repairing the overloaded node; remove the selector after
+node recovery and capacity verification, and verify DNS after relocation.
+
+The 2026-11-17 investigation found n8n database ping timeouts alongside
+PostgreSQL 14 collector warnings and a collector waiting on file I/O. Database
+connections were mostly idle and CPU/memory use was low. The
+[database StatefulSet](../../clusters/homelab/apps/n8n-postgres/statefulset.yaml)
+places transient collector statistics on a bounded memory-backed `emptyDir`
+instead of NFS. Durable data and WAL stay on the original PVC. This targets
+collector stalls; it does not establish that all NFS latency is resolved.
+Remove `stats_temp_directory` during the future major upgrade: PostgreSQL 15+
+uses shared-memory statistics and no longer accepts that setting.
+
 On 2026-10-05 PDT, `n8n-postgres` was still pinned to PostgreSQL 14.23 while
 n8n reported PostgreSQL 14 as unsupported (17+ supported; 16 compatibility
 only). Availability recovered, but schedule a reviewed major-version migration:

@@ -52,6 +52,10 @@ jobs:
                 requires_live_plan=true
                 requires_runtime_check=true
                 ;;
+              IaC/root.hcl|IaC/kubernetes-provider.hcl|IaC/stack-defaults.hcl|IaC/homelab/account.hcl|IaC/homelab/us-west-2/region.hcl|IaC/terragrunt-catalog/units/live/argocd-app/*|IaC/terragrunt-catalog/modules/argocd-application-*/*)
+                requires_live_plan=true
+                requires_runtime_check=true
+                ;;
               IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;

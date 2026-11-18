@@ -426,7 +426,7 @@ class SharedAppTemplateTest(unittest.TestCase):
                         cls.root / "terragrunt-catalog/units/live/argocd-app")
         shutil.copyfile(ROOT / "IaC/stack-defaults.hcl", cls.root / "stack-defaults.hcl")
         overrides = '''defaults = local.shared.argocd_defaults
-    dependencies = ["sparse-app"]
+    dependencies = ["../../sparse-app/argocd"]
     metadata = {
       labels = { "app.kubernetes.io/part-of" = "fixture" }
       annotations = { "example.invalid/reviewed" = "true" }
@@ -506,15 +506,34 @@ inputs = {
                          "IaC/homelab/live/argocd-apps/sparse-app/terraform.tfstate")
         self.assertFalse((self.root / "homelab/us-west-2/apps/sparse-app/.terragrunt-stack").exists())
 
+    def test_scope_settings_follow_unit_ancestors(self):
+        scope = self.root / "other"
+        target = scope / "eu-west-1"
+        path = target / "service"
+        path.mkdir(parents=True, exist_ok=True)
+        (scope / "account.hcl").write_text(
+            'locals {\n account_name = "other"\n default_tags = { Project = "other" }\n}\n')
+        (target / "region.hcl").write_text('locals { aws_region = "eu-west-1" }\n')
+        (path / "terragrunt.hcl").write_text(
+            'include "root" {\n path = find_in_parent_folders("root.hcl")\n expose = true\n}\n'
+            'inputs = { region = include.root.locals.aws_region }\n')
+        rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
+                                  "--write=false", "--no-color", cwd=path))
+        self.assertEqual(rendered["inputs"]["region"], "eu-west-1")
+        self.assertEqual(rendered["remote_state"]["config"]["key"],
+                         "IaC/other/other/eu-west-1/service/terraform.tfstate")
+        self.assertNotIn("aws_region", self.render("sparse-app")["inputs"])
+        self.assertNotIn("tags", self.render("sparse-app")["inputs"])
+
     def test_new_app_unit_cannot_share_application_state(self):
-        path = self.root / "homelab/us-west-2/apps/sparse-app/extra"
-        path.mkdir(exist_ok=True)
+        path = self.root / "homelab/us-west-2/apps/sparse-app/extra/argocd"
+        path.mkdir(parents=True, exist_ok=True)
         (path / "terragrunt.hcl").write_text(
             'include "root" { path = find_in_parent_folders("root.hcl") }\n')
         rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
                                   "--write=false", "--no-color", cwd=path))
         self.assertEqual(rendered["remote_state"]["config"]["key"],
-                         "IaC/homelab/homelab/us-west-2/apps/sparse-app/extra/terraform.tfstate")
+                         "IaC/homelab/homelab/us-west-2/apps/sparse-app/extra/argocd/terraform.tfstate")
         self.assertNotEqual(rendered["remote_state"]["config"]["key"],
                             self.render("sparse-app")["remote_state"]["config"]["key"])
 

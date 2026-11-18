@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["platform-dns"]
+  dependencies = ["../../platform-dns/argocd"]
   spec = {
     sources = [
       {

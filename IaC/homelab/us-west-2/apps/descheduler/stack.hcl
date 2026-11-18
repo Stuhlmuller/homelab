@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["prometheus"]
+  dependencies = ["../../prometheus/argocd"]
   spec = {
     destination = {
       namespace = "kube-system"

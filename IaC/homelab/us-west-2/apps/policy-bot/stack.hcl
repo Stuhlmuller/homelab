@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "cert-manager", "istio"]
+  dependencies = ["../../external-secrets/argocd", "../../cert-manager/argocd", "../../istio/argocd"]
   spec = {
     project = "homelab-workloads"
     destination = {

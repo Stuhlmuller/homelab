@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["platform-network-policy"]
+  dependencies = ["../../platform-network-policy/argocd"]
   spec = {
     destination = {
       namespace = "kube-system"

@@ -926,7 +926,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "e416d6560dbb02c20cf506a91d78283f6d9a49acf6678ad8c40fffe713b9e1c1" ]] || {
+[[ "$scope_body_sha256" == "22c70ea54b7675e4b43d232adad1d2922d5de5ce115e7f1c9f50449533910d69" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1107,7 +1107,7 @@ done <<'EOF'
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml 4f1506a4f1cfb0bf8ab85b5c2cbdd59969b5568bad07dc9ba03064b29e363895
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml ffeb8e028695da7d275fbf022fd2affcfbd68a1b67f51d934fc173420d84d04e
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
@@ -1128,7 +1128,7 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
-.github/workflows/terragrunt-plan.yml e4a8c39b31991cb53ff574fe2e228662900312185f4343c1041aafd77a7e0181
+.github/workflows/terragrunt-plan.yml ea06666d43dc3e734f79c4897959ade291279f363b115d51d1e3a6a46dc985fd
 .github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
 EOF
 echo "::endgroup::"
@@ -1216,9 +1216,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
     [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
-    (.on | keys | sort) == ["pull_request_target", "push"] and
+    (.on | keys | sort) == ["push", "workflow_run"] and
     .on.push == {"branches": ["main"]} and
-	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
+    .on.workflow_run == {"workflows": ["Terragrunt Plan"], "types": ["completed"]} and
     .permissions == {} and
     .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
     .env == null and
@@ -1247,8 +1247,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("jq -r '\''.[].head.sha'\''") and
       contains("$GITHUB_EVENT_NAME") and
       contains("verification_base_sha=\"$base_sha\"") and
-      contains("scripts/ci/harbor-native-chainguard-receipt-import.py event-base") and
-      contains("--event-file \"$GITHUB_EVENT_PATH\" --base-sha \"$base_sha\" --token-file \"$token_file\"") and
+      contains(".workflow_run.event == \"pull_request\"") and
+      contains(".workflow_run.head_sha") and
+      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\"") and
       contains("--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"") and
       contains("native-receipts-unchanged") and
       contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
@@ -1256,6 +1257,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/commits/main") and
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
+python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"
@@ -1656,6 +1658,7 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 node scripts/ci/openclaw-github-check.cjs
+python3 -I scripts/ci/openclaw-credential-containment-test.py
 # homelab-workloads deliberately has no cluster-scoped resource permissions.
 kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \
   '[select(.kind == "PersistentVolume" or .kind == "StorageClass")] | length == 0' - >/dev/null

@@ -7,7 +7,8 @@ unit "argocd_apps_grafana" {
 }
 
 unit "azuread_applications_grafana" {
-  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/live/azuread-applications/grafana"
+  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/live/azuread-applications/oidc"
   path                    = "azuread"
   no_dot_terragrunt_stack = true
+  values                  = read_terragrunt_config("${get_terragrunt_dir()}/identity.hcl").inputs
 }
