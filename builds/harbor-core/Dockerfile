@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/go:latest@sha256:c81d42afe2d9f5728a63998d93340553b46b0a8f149888527f1ab9deb3dfa9ef AS build
+FROM cgr.dev/chainguard/go:latest@sha256:b49aac675fb8613c532b0dd60492f2afa8af358590817d8cede2e5c4c47bd0e3 AS build
 USER 0
 WORKDIR /src/upstream/src
 COPY upstream/ /src/upstream/
@@ -24,6 +24,9 @@ RUN --network=none cp pkg/artifact/manager.go /src/patched-manager.go \
        -o /out/harbor_core ./core
 
 FROM docker.io/goharbor/harbor-core:v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112
+USER 0
+RUN tdnf install -y openssl-3.5.9-0.2.ph5 openssl-libs-3.5.9-0.2.ph5 pcre2-libs-10.40-11.ph5 && tdnf clean all
+USER 10000
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Harbor core with byte-preserving identical child relation handling"
