@@ -7,11 +7,14 @@ if __name__ == "__main__" and not sys.flags.isolated:
 from contextlib import contextmanager
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import signal
 import subprocess
-from uuid import uuid4
+import socket
+import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("verify_gitops", ROOT / "scripts/verify-gitops.py")
@@ -75,19 +78,62 @@ def kube_context():
 
 
 @contextmanager
-def argocd_context(expected):
+def argocd_server(expected, expected_uid):
     require(kube_context() == expected, "kube_context_changed")
-    name = "harbor-full-sync-" + uuid4().hex
-    require(name not in run("kubectl", "config", "get-contexts", "-o", "name").splitlines(),
-            "temporary_context_exists")
-    try:
-        run("kubectl", "config", "set-context", name, "--cluster", expected["cluster"],
-            "--user", expected["user"], "--namespace", "argocd")
-        yield name
-    finally:
-        # A failed or interrupted CLI may already have removed the temporary context.
-        if name in run("kubectl", "config", "get-contexts", "-o", "name").splitlines():
-            run("kubectl", "config", "delete-context", name)
+    # v3.3.6 dashboard prints port zero instead of its allocated port. Select an
+    # ephemeral port explicitly; a competing bind fails closed during startup.
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    endpoint = "127.0.0.1:" + str(port)
+    with tempfile.TemporaryDirectory(prefix="harbor-full-sync-") as directory:
+        # An absent config prevents a user's stored core-mode setting from
+        # starting another headless server. No kubeconfig is copied or changed.
+        config = str(Path(directory) / "absent-config")
+        # Append mode keeps child writes independent of readiness polling seeks.
+        with (Path(directory) / "server.log").open(mode="a+t") as output:
+            process = subprocess.Popen(
+                ["argocd", "admin", "dashboard", "--namespace", "argocd",
+                 "--context", expected["name"], "--address", "127.0.0.1",
+                 "--port", str(port), "--config", config], cwd=ROOT,
+                stdout=output, stderr=output, start_new_session=True)
+            try:
+                deadline = time.monotonic() + 90
+                while True:
+                    require(process.poll() is None, "argocd_server_exited")
+                    require(time.monotonic() < deadline, "argocd_server_timeout")
+                    output.seek(0)
+                    logs = output.read(1024 * 1024 + 1)
+                    require(len(logs) <= 1024 * 1024, "argocd_server_output_limit")
+                    if "Argo CD UI is available at http://" in logs:
+                        require("Argo CD UI is available at http://" + endpoint + "\n" in logs,
+                                "argocd_server_endpoint")
+                        break
+                    time.sleep(0.2)
+                flags = ("--server", endpoint, "--plaintext", "--config", config)
+                # Prove the transport reaches the intended Application before
+                # repeating all live preconditions immediately before mutation.
+                app = json.loads(run("argocd", "app", "get", "harbor", *flags, "-o", "json"))
+                # Argo RPC JSON omits Kubernetes type metadata.
+                metadata = app["metadata"]
+                require(metadata.get("name") == "harbor" and metadata.get("namespace") == "argocd"
+                        and not metadata.get("deletionTimestamp")
+                        and app.get("kind", "Application") == "Application", "argocd_application_identity")
+                require(metadata.get("uid") == expected_uid, "argocd_application_uid")
+                yield flags
+            finally:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait(timeout=5)
 
 
 def contract(app, expected):
@@ -163,15 +209,15 @@ def recover(expected, execute=False):
     before = preflight(expected)
     if not execute:
         return {"ready": True, "executed": False, "expected_sha": expected}
-    # Repeat every precondition immediately before requesting the full sync.
-    require(preflight(expected) == before, "preflight_changed")
-    with argocd_context(before["context"]) as context:
-        run("argocd", "app", "sync", "harbor", "--core", "--kube-context", context,
+    with argocd_server(before["context"], before["uid"]) as flags:
+        # Server startup can take time; repeat every precondition after readiness.
+        require(preflight(expected) == before, "preflight_changed")
+        run("argocd", "app", "sync", "harbor", *flags,
             "--revisions", CHART, "--source-positions", "1",
             "--revisions", expected, "--source-positions", "2",
             "--revisions", expected, "--source-positions", "3",
             "--timeout", "900", timeout=930)
-        run("argocd", "app", "wait", "harbor", "--core", "--kube-context", context,
+        run("argocd", "app", "wait", "harbor", *flags,
             "--sync", "--health", "--operation", "--timeout", "900", timeout=930)
     require(kube_context() == before["context"], "kube_context_changed")
     postflight(expected, before)

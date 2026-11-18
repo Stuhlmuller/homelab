@@ -5,12 +5,12 @@ import copy
 import importlib.util
 import io
 import json
+import os
 import signal
 from pathlib import Path
 import subprocess
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,7 +26,7 @@ RECOVER = module("harbor_recovery", ROOT / "scripts/harbor-full-sync.py")
 FIXTURE = module("gitops_fixtures", ROOT / "scripts/ci/verify-gitops-test.py")
 SHA = FIXTURE.SHA
 IMAGE = "harbor.stinkyboi.com/homelab/homelab-harbor-core:homelab-" + SHA + "@" + FIXTURE.DIGEST
-CONTEXT = "harbor-full-sync-" + "f" * 32
+ENDPOINT = "127.0.0.1:45678"
 
 
 class Cluster:
@@ -115,16 +115,11 @@ class Commands:
             return json.dumps({"current-context": self.current_context,
                                "contexts": [{"name": self.current_context,
                                              "context": self.contexts[self.current_context]}]})
-        if args == ("kubectl", "config", "get-contexts", "-o", "name"):
-            return "\n".join(self.contexts) + "\n"
-        if args[:3] == ("kubectl", "config", "set-context"):
-            assert args == ("kubectl", "config", "set-context", CONTEXT, "--cluster", "homelab",
-                            "--user", "admin", "--namespace", "argocd")
-            self.contexts[CONTEXT] = {"cluster": "homelab", "user": "admin", "namespace": "argocd"}
-            return ""
-        if args == ("kubectl", "config", "delete-context", CONTEXT):
-            del self.contexts[CONTEXT]
-            return ""
+        if args[:4] == ("argocd", "app", "get", "harbor"):
+            app = copy.deepcopy(self.cluster.app)
+            app.pop("kind", None)
+            app.pop("apiVersion", None)
+            return json.dumps(app)
         if args[:4] == ("argocd", "app", "sync", "harbor"):
             if self.interrupt_sync:
                 signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
@@ -141,12 +136,41 @@ class RecoveryTests(unittest.TestCase):
     def setUp(self):
         self.cluster = Cluster()
         self.commands = Commands(self.cluster)
+        self.process = MagicMock(pid=12345)
+        self.process.poll.return_value = None
+        self.startup_log = "Argo CD UI is available at http://" + ENDPOINT + "\n"
+        self.socket = MagicMock()
+        self.socket.__enter__.return_value.getsockname.return_value = ("127.0.0.1", 45678)
+        self.popen = MagicMock(side_effect=self.start_server)
+        self.killpg = MagicMock()
+        self.config = None
         self.patches = [patch.object(RECOVER, "run", self.commands),
                         patch.object(RECOVER, "read", self.cluster.read),
-                        patch.object(RECOVER, "uuid4", return_value=SimpleNamespace(hex="f" * 32))]
+                        patch.object(RECOVER.socket, "socket", return_value=self.socket),
+                        patch.object(RECOVER.subprocess, "Popen", self.popen),
+                        patch.object(RECOVER.os, "killpg", self.killpg)]
         for item in self.patches:
             item.start()
             self.addCleanup(item.stop)
+
+    def start_server(self, args, **kwargs):
+        self.config = args[-1]
+        self.assertEqual(args, ["argocd", "admin", "dashboard", "--namespace", "argocd",
+                               "--context", "operator", "--address", "127.0.0.1",
+                               "--port", "45678", "--config", self.config])
+        self.assertTrue(kwargs["start_new_session"])
+        # Child stdout must append even after the parent seeks for readiness.
+        output = kwargs["stdout"]
+        output.write("startup\n")
+        output.flush()
+        output.seek(0)
+        os.write(output.fileno(), b"child log\n")
+        output.seek(0)
+        self.assertEqual(output.read(), "startup\nchild log\n")
+        self.assertFalse(Path(self.config).exists())
+        kwargs["stdout"].write(self.startup_log)
+        kwargs["stdout"].flush()
+        return self.process
 
     def test_preview_has_no_argocd_mutation(self):
         self.assertEqual(RECOVER.recover(SHA), {"ready": True, "executed": False, "expected_sha": SHA})
@@ -156,13 +180,18 @@ class RecoveryTests(unittest.TestCase):
         result = RECOVER.recover(SHA, True)
         self.assertTrue(result["controller_verified"])
         self.assertTrue(result["postsync_hooks_verified"])
+        self.killpg.assert_called_once_with(12345, signal.SIGTERM)
+        self.process.wait.assert_called_once_with(timeout=10)
+        self.assertFalse(Path(self.config).parent.exists())
         actual = [(args, timeout) for args, timeout in self.commands.calls if args[0] == "argocd"]
+        flags = ("--server", ENDPOINT, "--plaintext", "--config", self.config)
         self.assertEqual(actual, [
-            (("argocd", "app", "sync", "harbor", "--core", "--kube-context", CONTEXT,
+            (("argocd", "app", "get", "harbor", *flags, "-o", "json"), 30),
+            (("argocd", "app", "sync", "harbor", *flags,
               "--revisions", RECOVER.CHART,
               "--source-positions", "1", "--revisions", SHA, "--source-positions", "2",
               "--revisions", SHA, "--source-positions", "3", "--timeout", "900"), 930),
-            (("argocd", "app", "wait", "harbor", "--core", "--kube-context", CONTEXT,
+            (("argocd", "app", "wait", "harbor", *flags,
               "--sync", "--health", "--operation",
               "--timeout", "900"), 930),
         ])
@@ -171,26 +200,84 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(self.commands.contexts,
                          {"operator": {"cluster": "homelab", "user": "admin", "namespace": "default"}})
 
-    def test_temporary_context_cleanup_on_sync_failure_and_when_already_absent(self):
+    def test_transport_rpc_identity_rejects_wrong_or_deleting_application(self):
+        original = self.commands
+        for change in (lambda app: app["metadata"].update(name="other"),
+                       lambda app: app["metadata"].update(namespace="default"),
+                       lambda app: app["metadata"].update(deletionTimestamp="2026-11-18T00:00:00Z"),
+                       lambda app: app.update(kind="Secret")):
+            def wrong_identity(*args, **kwargs):
+                result = original(*args, **kwargs)
+                if args[:3] == ("argocd", "app", "get"):
+                    app = json.loads(result)
+                    change(app)
+                    return json.dumps(app)
+                return result
+            with patch.object(RECOVER, "run", wrong_identity):
+                with self.assertRaisesRegex(RECOVER.Failure, "argocd_application_identity"):
+                    RECOVER.recover(SHA, True)
+        self.assertFalse(any(args[:3] == ("argocd", "app", "sync") for args, _ in self.commands.calls))
+        self.assertEqual(self.killpg.call_count, 4)
+
+    def test_transport_application_uid_must_match_preflight(self):
+        original = self.commands
+        def wrong_application(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if args[:3] == ("argocd", "app", "get"):
+                app = json.loads(result)
+                app["metadata"]["uid"] = "00000000-0000-4000-8000-000000000099"
+                return json.dumps(app)
+            return result
+        with patch.object(RECOVER, "run", wrong_application):
+            with self.assertRaisesRegex(RECOVER.Failure, "argocd_application_uid"):
+                RECOVER.recover(SHA, True)
+        self.assertFalse(any(args[:3] == ("argocd", "app", "sync") for args, _ in self.commands.calls))
+        self.killpg.assert_called_once_with(12345, signal.SIGTERM)
+        self.process.wait.assert_called_once_with(timeout=10)
+        self.assertFalse(Path(self.config).parent.exists())
+
+    def test_readiness_failure_never_requests_sync_and_cleans_server(self):
+        original = self.commands
+        def failed_get(*args, **kwargs):
+            if args[:3] == ("argocd", "app", "get"):
+                raise subprocess.CalledProcessError(1, args, stderr="private-credential")
+            return original(*args, **kwargs)
+        with patch.object(RECOVER, "run", failed_get):
+            with self.assertRaises(subprocess.CalledProcessError):
+                RECOVER.recover(SHA, True)
+        self.killpg.assert_called_once_with(12345, signal.SIGTERM)
+        self.assertFalse(any(args[:3] == ("argocd", "app", "sync") for args, _ in self.commands.calls))
+
+    def test_server_cleanup_on_sync_failure(self):
         self.commands.fail_sync = True
         with self.assertRaises(subprocess.CalledProcessError):
             RECOVER.recover(SHA, True)
-        self.assertNotIn(CONTEXT, self.commands.contexts)
-        self.assertEqual(self.commands.current_context, "operator")
-        self.commands.calls.clear()
-        with RECOVER.argocd_context(RECOVER.kube_context()):
-            del self.commands.contexts[CONTEXT]
-        self.assertFalse(any(args[:3] == ("kubectl", "config", "delete-context")
-                             for args, _ in self.commands.calls))
+        self.killpg.assert_called_once_with(12345, signal.SIGTERM)
+        self.process.wait.assert_called_once_with(timeout=10)
+        self.assertFalse(Path(self.config).parent.exists())
 
-    def test_temporary_context_does_not_replace_existing_context_or_accept_changed_identity(self):
-        self.commands.contexts[CONTEXT] = {"cluster": "other", "user": "other"}
-        with self.assertRaisesRegex(RECOVER.Failure, "temporary_context_exists"):
+    def test_server_fails_closed_for_exit_wrong_endpoint_timeout_and_bind_failure(self):
+        for mode in ("exit", "endpoint", "timeout", "bind"):
+            with self.subTest(mode=mode):
+                self.process.poll.return_value = 1 if mode == "exit" else None
+                self.startup_log = "Argo CD UI is available at http://0.0.0.0:45678\n" if mode == "endpoint" else ""
+                self.socket.__enter__.return_value.bind.side_effect = OSError("bind failed") if mode == "bind" else None
+                with patch.object(RECOVER.time, "monotonic", side_effect=[0, 91] if mode == "timeout" else [0, 1]):
+                    with self.assertRaises((RECOVER.Failure, OSError)):
+                        RECOVER.recover(SHA, True)
+                self.assertFalse(any(args[:3] == ("argocd", "app", "sync") for args, _ in self.commands.calls))
+
+    def test_server_escalates_cleanup_and_accepts_already_exited_group(self):
+        self.process.wait.side_effect = [subprocess.TimeoutExpired("argocd", 10), 0]
+        RECOVER.recover(SHA, True)
+        self.assertEqual([call.args for call in self.killpg.call_args_list],
+                         [(12345, signal.SIGTERM), (12345, signal.SIGKILL)])
+        self.cluster = Cluster()
+        self.commands.cluster = self.cluster
+        with patch.object(RECOVER, "read", self.cluster.read):
+            self.process.wait.side_effect = None
+            self.killpg.side_effect = ProcessLookupError
             RECOVER.recover(SHA, True)
-        self.assertEqual(self.commands.contexts[CONTEXT], {"cluster": "other", "user": "other"})
-        with self.assertRaisesRegex(RECOVER.Failure, "kube_context_changed"):
-            with RECOVER.argocd_context({"name": "operator", "cluster": "other", "user": "admin"}):
-                self.fail("changed context was accepted")
 
     def test_dirty_or_wrong_checkout_and_remote_fail_before_sync(self):
         for name, value in [("dirty", "?? secret\n"), ("head", "b" * 40), ("remote", "b" * 40)]:
@@ -244,7 +331,7 @@ class RecoveryTests(unittest.TestCase):
         with patch.object(RECOVER, "preflight", side_effect=[before, {**before, "uid": "changed"}]):
             with self.assertRaisesRegex(RECOVER.Failure, "preflight_changed"):
                 RECOVER.recover(SHA, True)
-        self.assertFalse(any(args[0] == "argocd" for args, _ in self.commands.calls))
+        self.assertFalse(any(args[:3] == ("argocd", "app", "sync") for args, _ in self.commands.calls))
 
     def test_success_requires_new_exact_operation_and_both_postsync_hooks(self):
         before = RECOVER.preflight(SHA)
@@ -272,19 +359,21 @@ class RecoveryTests(unittest.TestCase):
             self.assertEqual(RECOVER.main(["--expected-sha", SHA, "--execute"]), 1)
         self.assertNotIn("private-credential", output.getvalue())
         self.assertEqual(json.loads(output.getvalue())["blocker"], "command_unavailable_or_failed")
+        self.patches[3].stop()
         result = subprocess.run(["python3", str(ROOT / "scripts/harbor-full-sync.py"), "--help"],
                                 capture_output=True, text=True, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("python3 -I", result.stderr)
 
-    def test_sigterm_cleans_temporary_context_and_restores_signal_handler(self):
+    def test_sigterm_cleans_server_and_restores_signal_handler(self):
         previous = signal.getsignal(signal.SIGTERM)
         self.commands.interrupt_sync = True
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             self.assertEqual(RECOVER.main(["--expected-sha", SHA, "--execute"]), 1)
         self.assertEqual(json.loads(output.getvalue())["blocker"], "interrupted")
-        self.assertNotIn(CONTEXT, self.commands.contexts)
+        self.killpg.assert_called_once_with(12345, signal.SIGTERM)
+        self.assertFalse(Path(self.config).parent.exists())
         self.assertEqual(self.commands.current_context, "operator")
         self.assertIs(signal.getsignal(signal.SIGTERM), previous)
 

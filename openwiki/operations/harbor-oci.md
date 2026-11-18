@@ -448,6 +448,9 @@ healthy runtime and the specific prior controller timeout before one full sync.
 Its fresh operation must complete bootstrap and backup; it does not relax the
 shared timeout or skip readiness. The separate robot inventory retains its
 1,000-object safety bound.
+The recovery command uses a temporary loopback Argo API with explicit namespace
+and Kubernetes context: CLI v3.3.6 ignores `--kube-context` during `--core`
+startup. This transport does not edit kubeconfig and is stopped on exit.
 See `clusters/homelab/apps/harbor/README.md`.
 
 Grafana receives `harbor_vulnerability_critical_total` from the repository-owned
@@ -457,7 +460,11 @@ artifact names, digests, CVE IDs, or credentials in metrics. The Grafana rule
 alerts at critical severity after five minutes for a nonzero count; absent data
 and evaluation errors also alert. The collector attempts refreshes every five minutes with one active inventory.
 The 156-repository mirror inventory took 545 seconds under concurrent load;
-a 30-second read timeout accommodates scan-summary assembly. Cached metrics expire eleven minutes
+a 30-second read timeout accommodates scan-summary assembly. A live inventory
+failed after three successful reads on a transient connection error; ten later
+reads succeeded. Each GET now permits three transport attempts with one- and
+two-second backoff, preserving prior pages without retrying HTTP or data-validation
+failures. Cached metrics expire eleven minutes
 after the last successful collection, and script revisions roll the collector through its
 versioned pod-template annotation.
 The exporter allows two minutes for Python startup and twelve minutes for rollout
