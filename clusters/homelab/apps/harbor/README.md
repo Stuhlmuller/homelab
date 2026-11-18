@@ -125,13 +125,15 @@ The Deployment references the namespace-local `harbor-pull` Docker-config Secret
 for its staged internal image migration. Kubelet uses it only when its image
 needs Harbor authentication; the credential is never mounted in the exporter.
 
-The ServiceMonitor is scraped every minute. Collection runs in the background;
+The ServiceMonitor is scraped every minute. Collection starts at most every ten
+minutes: the 156-repository mirror inventory takes several minutes on the
+CPU-limited core. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
 Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric
 data and evaluation errors are also alerting. Cached scan totals expire no later
-than six minutes after the last successful collection, so a failed collector
+than eleven minutes after the last successful collection, so a failed collector
 cannot make the security signal look healthy. The generated ConfigMap name is
 stable, so each script change must increment the Deployment's
 `homelab.rst.io/vulnerability-exporter-script-revision` pod-template annotation
