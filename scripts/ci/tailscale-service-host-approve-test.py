@@ -102,6 +102,10 @@ class PolicyBoundary(TestCase):
     def test_scoped_test_client_only(self):
         wanted = policy()
         APPROVAL.policy_contract(wanted, copy.deepcopy(wanted))
+        unsafe_host = copy.deepcopy(wanted)
+        unsafe_host['hosts'] = {**APPROVAL.SAFE_HOSTS, 'homelab-nas': '100.64.0.1'}
+        with self.assertRaises(APPROVAL.GUARDS.Failure):
+            APPROVAL.policy_contract(unsafe_host, copy.deepcopy(unsafe_host))
         for mutate in (
             lambda p: p['grants'].append({'src': ['tag:ci'], 'dst': ['*'], 'ip': ['*']}),
             lambda p: p['grants'][0]['ip'].__setitem__(0, '*'),

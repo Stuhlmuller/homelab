@@ -1,6 +1,6 @@
 # AdGuard Home
 
-Image publication, deployment, signed-peer enrollment and live acceptance are
+Image publication, deployment, peer identity verification and live acceptance are
 tracked separately; this application does not change global Tailscale DNS.
 
 One AdGuard Home v0.107.80 replica answers UDP/TCP 53 through the operator-owned
@@ -11,8 +11,10 @@ declared in both Traefik and the private DNS view; the existing wildcard
 certificate covers it. Neither Service exposes a public endpoint or an
 administration port through the DNS LoadBalancer.
 
-After deployment, the existing trusted Mac signer can preview and then sign only
-this fixed proxy from a clean checkout of current `main`:
+After deployment, use a clean checkout of current `main` on the owner Mac.
+If Tailnet Lock is disabled, skip signing and run the direct acceptance command
+below. If Lock is enabled, an existing trusted Mac signer can preview and sign
+only this fixed proxy:
 
 ```sh
 python3 -I scripts/tailscale-ingress-sign.py --adguard-only
@@ -24,6 +26,13 @@ identity, hostname/tag and the existing local signing authority. Execution
 rechecks current main and proxy identity before signing. It does not grant new
 signing authority or change DNS policy. Signature verification is still followed
 by direct resolver and private administration acceptance before DNS cutover.
+
+The shared signer currently expects the legacy enabled-Lock peer fields.
+Tailscale v1.102.3's versioned enabled output uses a different peer schema; that
+combination fails closed until a separate compatibility fix preserves the
+signature checks. Do not disable Lock or bypass checks to work around it.
+The unlocked acceptance path uses the current status peer schema and does not
+invoke the signing helper.
 
 The runtime uses UID/GID 65534, a read-only root, no privilege escalation and only
 `NET_BIND_SERVICE`. Its upstream binary carries file capabilities, so run it
@@ -78,13 +87,22 @@ synthetic DNS/filter servers and synthetic credentials, then removes them. It
 does not prove Harbor publication, Tailscale reachability, or client DNS adoption.
 
 The direct acceptance helper requires the deployed private HTTPS route, the
-existing trusted signer, and a clean checkout of verified current `main`. Supply
+owner Mac connected to the expected tailnet, and a clean checkout of verified
+current `main`. Enabled Lock additionally requires the existing trusted signer. Supply
 the observed Service address and an owner-only mode-0600 file containing the
 protected admin credential; never put that value on the command line:
 
 ```sh
 python3 -I scripts/adguard-check.py --server <observed-tailnet-ip> --password-file <private-file>
 ```
+
+It requires explicit and consistent live Lock observations from the Mac and
+proxy. On an unlocked tailnet it matches the Mac's current peer to the exact
+Service-owned ready proxy: stable device ID, numeric NodeID, node key, hostname,
+tag and addresses must agree. Its receipt records `lock_enabled: false` and
+`signed: false`; this is verified identity, not signature evidence. Missing or
+malformed mode, wrong ownership, offline/expired peers and observed mode/identity
+changes fail acceptance. Enabled Lock retains the existing signature checks.
 
 It reads live resources and the authenticated filter API, verifies an enabled
 list actually blocks the selected test name, checks ten blocked/permitted A
@@ -249,3 +267,7 @@ It preserves the private resolver address but does not prove connectivity from
 Docker to the cluster-private resolver, production PVC recovery, or normal client
 DNS. Run the live direct and client checks separately. Synthetic CI recovery
 results do not establish that a live protected-source recovery has passed.
+
+Reverting the mode-aware acceptance helper restores the previous refusal on
+unlocked tailnets; it does not change live Tailnet Lock or DNS policy. Successful
+source tests are not live Mac DNS/admin/recovery or normal-client acceptance.

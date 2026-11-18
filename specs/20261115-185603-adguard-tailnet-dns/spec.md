@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Source implementation complete; delivery review and runtime acceptance pending
+**Status**: Deployed; unlocked-tailnet acceptance amendment in specification; functional acceptance and DNS cutover pending
 
 **Input**: "deploy adguard to the homelab, create a Tailscale ingress for that service, then use that dns server for the Tailscale dns so I don’t get ads while using the tailnet"
 
@@ -38,6 +38,33 @@ These are agent-resolved decisions from repository evidence, not new user answer
   retries, matching the existing homelab DNS checker. Record failure and block
   cutover when a required query misses the deadline. This is an acceptance
   bound, not an availability or capacity service-level guarantee.
+
+### Session 2026-11-17: owner correction
+
+- Owner statement: “tailnet lock is disabled on my tailnet by the way”.
+- The owner runs Mac checks locally; the cloud agent cannot connect to that Mac.
+- AdGuard acceptance must respect the existing Lock mode without changing it.
+  An unlocked tailnet still requires verified endpoint identity and access;
+  it cannot truthfully produce evidence of a Tailnet Lock signature.
+
+### Session 2026-11-17: amendment clarification
+
+The following decisions are agent-resolved from existing acceptance and cutover
+behavior, not additional owner statements.
+
+- Lock mode is an observed prerequisite, not an option to skip verification.
+  Neither absent observations nor an operator override can select unlocked mode.
+- An unlocked peer is authenticated through the existing tailnet connection and
+  matched to the declared Kubernetes proxy; it is not described as signed.
+- Mode and identity must remain consistent throughout direct acceptance and the
+  final pre-apply check. A changed observation requires fresh acceptance rather
+  than reuse of a prior receipt. This does not claim protection against an
+  undetectable change after the final observation.
+- Existing rollback remains independent of AdGuard health and signing readiness;
+  restoring captured prior DNS policy must remain possible during resolver failure.
+- This fix changes only AdGuard acceptance and its instructions. Enabling Lock,
+  enrolling a signer, migrating OAuth to workload federation, and changing other
+  ingress signing workflows are outside this amendment.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -135,6 +162,21 @@ and access configuration without disrupting the active tailnet.
    **Then** filtering rules and administrator access are restored; query history
    is not required for recovery.
 
+### Acceptance amendment: existing Tailnet Lock mode
+
+1. **Given** the authorized client and declared AdGuard proxy both report Lock
+   disabled and agree on the proxy identity, **When** direct acceptance runs,
+   **Then** identity verification succeeds without requiring a signing authority,
+   and all DNS, administration, health and revision checks still run.
+2. **Given** Lock is enabled, **When** acceptance runs, **Then** the existing
+   signer and proxy signature requirements remain enforced.
+3. **Given** missing, malformed, disagreeing or changing Lock observations,
+   **When** acceptance or cutover is evaluated, **Then** it fails before changing
+   DNS; no missing value is interpreted as disabled.
+4. **Given** an unlocked tailnet, **When** the owner follows the runbook,
+   **Then** no signing or Lock-policy change is requested, and evidence describes
+   an unlocked verified peer without claiming a signature.
+
 ### Edge Cases
 
 - An ad domain is absent from the selected lists or shares its domain with
@@ -213,6 +255,21 @@ and access configuration without disrupting the active tailnet.
   operational documentation, and retain revision-bound functional evidence.
   Written manifests or a merged PR alone must not be reported as deployment.
 
+- **FR-020**: Support acceptance under the tailnet's existing Lock mode.
+  Require explicit, consistent live mode observations from the authorized client
+  and proxy. Preserve expected tailnet, online state, stable device identity,
+  node key, hostname, tag, published addresses and Kubernetes resource ownership
+  checks in either mode. Enabled Lock retains existing trusted-signer and signed
+  proxy requirements. Missing, malformed, inconsistent or changing observations
+  fail closed. Never change Lock policy or fabricate signature evidence.
+- **FR-021**: Bind acceptance and cutover evidence to the verified Lock mode and
+  proxy identity so a change observed during acceptance or the final pre-apply
+  check invalidates previous evidence. Rollback to captured prior DNS policy
+  remains independent of AdGuard health and signing readiness. Existing direct DNS,
+  administration, recovery, source-revision and post-cutover client requirements
+  remain mandatory. Signing commands remain limited to locked-tailnet signing;
+  unrelated ingress and canary workflows retain their current safeguards.
+
 ### Key Entities
 
 - **Filtering configuration**: enabled lists, update policy, blocking behavior,
@@ -248,6 +305,12 @@ and access configuration without disrupting the active tailnet.
   direct and client checks, prior DNS policy, rollback procedure and any
   unavailable acceptance condition. Required unverified behavior stays open.
 
+- **SC-007**: An explicitly unlocked, identity-matched client/proxy pair passes
+  identity verification; an enabled pair must meet existing signature checks.
+  Every tested missing, malformed, mismatched or changed mode/identity is rejected
+  before DNS mutation. Evidence distinguishes unsigned unlocked verification
+  from signed locked verification.
+
 ## Assumptions
 
 - “AdGuard” means AdGuard Home, a self-hosted DNS filtering service. DNS-level
@@ -265,5 +328,7 @@ and access configuration without disrupting the active tailnet.
 - Per-client browsing history is unnecessary for the requested result and is
   disabled by default. Aggregate health and synthetic checks suffice.
 - Existing trusted enrollment, secret handling, image publication, storage and
-  protected delivery mechanisms are reused. Missing runtime access or signing
-  capability is recorded as an execution dependency, not bypassed.
+  protected delivery mechanisms are reused. Missing runtime access, or signing
+  capability when Lock is enabled, is recorded as an execution dependency, not
+  bypassed. The owner confirms Lock is disabled; acceptance must independently
+  verify current mode rather than rely only on that statement.

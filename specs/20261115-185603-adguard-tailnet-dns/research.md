@@ -102,9 +102,11 @@ and verify configured blocking responses, including AAAA.
 **Decision:** Separate verified deployment from observed-IP DNS commit/application.
 Keep the single existing tailscale_dns_configuration resource, global
 use_with_exit_node=true and override_local_dns=true; preserve split DNS/MagicDNS.
-Use existing trusted fixed-target Mac signer with a new exact AdGuard target.
+When Tailnet Lock is enabled, use the existing trusted fixed-target Mac signer
+with the exact AdGuard target. The unlocked amendment below supersedes the
+original unconditional signing assumption.
 Constrain saved-plan apply with code and negative tests, not prose-only claims.
-**Rationale:** Operator-assigned address and actual signed peer are runtime facts.
+**Rationale:** Operator-assigned address and peer identity/mode are runtime facts.
 Provider supports complete DNS configuration and warns against mixing separate
 DNS resources. Exit-node use flag requires client >=1.88.1.
 **Alternatives:** Guessed IP, competing provider resource, ad hoc API write,
@@ -133,3 +135,40 @@ read in full; local tailscale-access runbook, signer and targeted CI apply paths
 
 All design decisions are resolved. Image execution, secret render, recovery,
 policy enforcement and live rollout are validation tasks, not claimed results.
+
+## Unlocked-tailnet amendment research
+
+Owner confirms disabled Lock. Bounded read-only research inspected official
+Tailscale v1.102.3, commit `53a0d659afa51835dd7a9283873cca44261454f8`.
+XERJ tools/executable were unavailable; no node or corpus was installed. The
+coordinator also read the cited PeerStatus and lock JSON serialization sections.
+
+- [PeerStatus and status map](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/ipn/ipnstate/ipnstate.go):
+  Self and Peer use stable ID, numeric NodeID, node PublicKey, DNSName, Tags,
+  TailscaleIPs, Online, optional Expired and InNetworkMap. Peer map keys are node
+  public keys. DNSName has a trailing dot; HostName is not unique.
+- [Status CLI](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/cmd/tailscale/cli/status.go):
+  status JSON directly marshals ipnstate.Status.
+- [Lock serialization](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/cmd/tailscale/cli/jsonoutput/tailnet-lock-status.go):
+  disabled response includes SchemaVersion=1 and explicit Enabled=false.
+  PublicKey and NodeKey are optional; disabled responses omit signature and
+  trusted/visible/filtered peer fields.
+
+**Decision:** Verify disabled mode using an exact boolean and independently match
+local Peer to proxy Self plus Kubernetes ownership. Do not use Lock peer lists
+when disabled. Optional NodeKey, when present, must agree with device status.
+**Rationale:** This reflects actual serialized fields without substituting a
+missing signature for successful signing. Online/identity do not prove DNS;
+functional tests remain mandatory.
+**Alternatives rejected:** Enabling Lock, trusting a new signer, a skip-trust flag,
+forcing signed=true, hostname-only matching, or weakening shared signing helpers.
+
+**Compatibility finding:** Enabled v1.102.3 Lock peers use stable ID and DNSName,
+whereas the existing shared helper expects legacy StableID/numeric ID/Name.
+This amendment keeps that path strict and unchanged; it does not claim that
+locked acceptance works against a newly incompatible CLI schema. Record the
+limitation in the affected operator documentation during implementation; a
+future enabled-mode compatibility fix must retain equivalent signature checks.
+
+Constitution gates pass before and after design. Runtime Mac version and actual
+acceptance remain to be verified; schema failures remain explicit failures.
