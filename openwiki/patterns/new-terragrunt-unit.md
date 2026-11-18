@@ -57,3 +57,13 @@ OpenTofu's `contains` rejects a null search value, even in a list containing nul
 Update [GitOps Flow](../architecture/gitops-flow.md) and [Validation Gates](../operations/validation-gates.md) when the
 unit changes workflow, bootstrap behavior, module ownership, validation, or
 dependency structure.
+
+## Module File Organization
+
+Local modules keep input declarations in `variables.tf`, outputs in `outputs.tf`
+and provider requirements or state encryption settings in `versions.tf`.
+Larger modules separate publisher IAM, reader IAM and credential publication
+into responsibility-specific files within the same module directory.
+Module READMEs link the owning Terragrunt callers for complete usage examples.
+These file boundaries preserve resource addresses and the historical backend
+key mappings in `IaC/root.hcl`.
