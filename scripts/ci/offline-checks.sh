@@ -114,6 +114,7 @@ python3 -I scripts/ci/harbor-native-chainguard-receipt-import-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
 python3 -I scripts/ci/harbor-core-scan-check-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
+python3 -I scripts/ci/harbor-full-sync-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
 python3 -I scripts/ci/image-automation-test.py
 python3 -I scripts/ci/image-automation-promote-test.py

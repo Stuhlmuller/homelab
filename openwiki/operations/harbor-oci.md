@@ -439,9 +439,15 @@ over 1,000 artifacts, bounded at 1,000 repositories and 10,000 total artifacts
 before submitting scans; duplicate IDs and inconsistent pagination fail closed.
 Scan-summary requests use ten-artifact pages: a 100-artifact page exceeded the
 ten-second request timeout during the Distribution v3 rollout. The PostSync
-hook allows ten minutes for the full inventory, leaving room for backup within
-Argo CD's 15-minute operation timeout, without relaxing its count or
-duplicate checks. The separate robot inventory retains its 1,000-object safety bound.
+hook allows ten minutes for the full inventory without relaxing its count or
+duplicate checks. Argo CD's 15-minute operation budget also includes runtime
+readiness: the cold exporter reached readiness and bootstrap succeeded, but
+the initial backup was terminated at that limit. The reviewed
+`scripts/harbor-full-sync.py` recovery path checks current main, exact sources,
+healthy runtime and the specific prior controller timeout before one full sync.
+Its fresh operation must complete bootstrap and backup; it does not relax the
+shared timeout or skip readiness. The separate robot inventory retains its
+1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
 Grafana receives `harbor_vulnerability_critical_total` from the repository-owned
