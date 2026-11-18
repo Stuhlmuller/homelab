@@ -1342,3 +1342,14 @@ validates its exact catalog entry before credentials and preserves normal
 digest/full authenticated pull verification. This adds no running workload.
 Publication evidence is required before the app consumer reaches main; see the
 [publication runbook](../../docs/harbor-image-mirroring.md#updates-and-coverage).
+
+
+### Distribution v3 core migration
+
+The [fourth source patch](../../builds/harbor-core/patches/0004-distribution-v3.patch)
+moves core to Distribution v3.1.2 and go-containerregistry v0.22.1. Its local
+Apache-2.0 schema1 reader preserves existing artifact parsing. The build tests
+registry authentication, health contexts and forged-JWK rejection, and rejects
+legacy Distribution packages in the compiled core graph. Registryctl retains
+its separate dependency contract. Publication still requires an unfiltered
+zero-match runtime scan before a consuming digest can roll out.
