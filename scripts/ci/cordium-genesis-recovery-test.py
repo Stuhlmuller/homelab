@@ -98,7 +98,10 @@ class RecoveryFenceTest(unittest.TestCase):
 
     def test_default_cli_is_read_only(self):
         app, pods, jobs, resources = fixtures()
-        listing = lambda entries: {"metadata": {"resourceVersion": "1"}, "items": entries}
+
+        def listing(entries):
+            return {"metadata": {"resourceVersion": "1"}, "items": entries}
+
         reads = [app, listing(pods), listing(jobs), *resources]
         with (mock.patch.object(sys, "argv", ["recovery", "a" * 40, *UIDS]),
               mock.patch.object(MODULE, "source_guard"),
