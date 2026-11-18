@@ -15,6 +15,28 @@ spec.loader.exec_module(RECOVERY)
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_declared_api_endpoints_require_verified_tls(self):
+        for server in RECOVERY.RECOVERY_API_SERVERS:
+            with self.subTest(server=server), patch.object(RECOVERY.CHECK, 'run',
+                    return_value=json.dumps({'clusters': [{'cluster': {'server': server}}]})):
+                self.assertEqual(RECOVERY.verify_recovery_api(), server)
+        for cluster in (
+                {'server': 'https://example.invalid'},
+                {'server': 'http://10.1.0.199:6443'},
+                {'server': 'https://homelab-tailscale-operator.tail67beb.ts.net.example.invalid'},
+                {'server': 'https://homelab-tailscale-operator.tail67beb.ts.net',
+                 'insecure-skip-tls-verify': True},
+                {'server': 'https://10.1.0.199:6443', 'tls-server-name': 'example.invalid'}):
+            with self.subTest(cluster=cluster), patch.object(RECOVERY.CHECK, 'run',
+                    return_value=json.dumps({'clusters': [{'cluster': cluster}]})):
+                with self.assertRaises(RECOVERY.CHECK.Failure):
+                    RECOVERY.verify_recovery_api()
+        for clusters in ([], [{'cluster': {}}, {'cluster': {}}]):
+            with self.subTest(clusters=clusters), patch.object(RECOVERY.CHECK, 'run',
+                    return_value=json.dumps({'clusters': clusters})):
+                with self.assertRaises(RECOVERY.CHECK.Failure):
+                    RECOVERY.verify_recovery_api()
+
     def test_wrong_account_stops_before_secret_read(self):
         with patch.object(RECOVERY.CHECK, 'run', return_value='000000000000') as run:
             with self.assertRaises(RECOVERY.CHECK.Failure):
