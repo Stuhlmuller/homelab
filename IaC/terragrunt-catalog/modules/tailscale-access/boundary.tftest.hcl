@@ -23,9 +23,6 @@ variables {
   aws_region        = "us-west-2"
   ci_key_generation = 1
   policy            = "{\"grants\":[]}"
-  kms_key_id        = "alias/test-only"
-  kms_region        = "us-east-1"
-  kms_key_spec      = "AES_256"
 }
 
 run "identity_boundaries" {
