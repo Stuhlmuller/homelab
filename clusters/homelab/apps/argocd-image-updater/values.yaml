@@ -1,22 +1,20 @@
-# Keep the controller paused until Harbor publication, promotion and recovery
-# readiness gates have reviewed evidence.
+# An idle controller is safe: only explicit native ImageUpdater CRs enroll apps.
+# Workload tags are operator-selected; each CR uses digest + argocd write-back.
 crds:
   install: true
   keep: true
 
-replicaCount: 0
+replicaCount: 1
 image:
   repository: harbor.stinkyboi.com/mirror/quay.io/argoprojlabs/argocd-image-updater
   tag: v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b
 extraArgs:
-  - --git-commit-method=api
+  - --interval=2m
 config:
-  logLevel: info
-  applicationsAPI: argocd
-  gitCommitUser: image-updater[bot]
-  gitCommitMail: image-updater[bot]@users.noreply.github.com
-# checkov:skip=CKV_SECRET_6: Public Image Updater write-back selector, not credential material.
-  gitWriteBackMethod: "git:secret:argocd-image-updater"
-  gitBranch: "main:codex/image-updater-proposals"
-  interval: 2m
-  updateStrategy: digest
+  log.level: info
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

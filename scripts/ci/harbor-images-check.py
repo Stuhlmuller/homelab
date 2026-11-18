@@ -46,6 +46,11 @@ NATIVE_RECEIPT_IMPORT_SPEC = importlib.util.spec_from_file_location(
 )
 NATIVE_RECEIPT_IMPORT = importlib.util.module_from_spec(NATIVE_RECEIPT_IMPORT_SPEC)
 NATIVE_RECEIPT_IMPORT_SPEC.loader.exec_module(NATIVE_RECEIPT_IMPORT)
+RUNTIME_POLICY_SPEC = importlib.util.spec_from_file_location(
+    "argocd_image_updater_policy", Path(__file__).with_name("argocd-image-updater-policy.py")
+)
+RUNTIME_POLICY = importlib.util.module_from_spec(RUNTIME_POLICY_SPEC)
+RUNTIME_POLICY_SPEC.loader.exec_module(RUNTIME_POLICY)
 
 
 def normalize(image):
@@ -125,6 +130,27 @@ def yaml_documents(paths):
         ["yq", "ea", "-o=json", "-I=0",
          '[., (.. | select(tag == "!!map" and has("helm")) | .helm.values | select(tag == "!!str") | from_yaml)]',
          *map(str, paths)], text=True))
+
+
+def runtime_unmirrored(paths, known_mirrors, known, known_tags, allowed):
+    """Retain source identity so one enrollment cannot exempt another file."""
+    entries = json.loads(subprocess.check_output(
+        ["yq", "ea", "-o=json", "-I=0",
+         '[{"path": filename, "document": .}, (.. | select(tag == "!!map" and has("helm")) | .helm.values | select(tag == "!!str") | {"path": filename, "document": from_yaml})]',
+         *map(str, paths)], text=True))
+    missing = set()
+    for entry in entries:
+        path = str(Path(entry["path"]).relative_to(ROOT))
+        for image in declared_images(entry["document"])[0]:
+            if image.startswith("harbor.stinkyboi.com/homelab/"):
+                continue  # Native receipt validation remains unchanged below.
+            if image.startswith("harbor.stinkyboi.com/mirror/"):
+                if mirror_reference(image) in known_mirrors or RUNTIME_POLICY.permits(allowed, path, image, known_tags):
+                    continue
+            elif catalog_reference(image) in known | known_tags:
+                continue
+            missing.add(normalize(image))
+    return sorted(missing)
 
 
 def manifest_paths():
@@ -404,6 +430,12 @@ def check():
                      and (mirror_reference(image) not in known_mirrors
                           if image.startswith("harbor.stinkyboi.com/mirror/")
                           else catalog_reference(image) not in known | known_tags))
+    try:
+        runtime_owned = RUNTIME_POLICY.load(ROOT)
+    except (ValueError, subprocess.SubprocessError) as error:
+        raise SystemExit(f"Invalid Image Updater ownership: {error}") from error
+    if runtime_owned:
+        missing = runtime_unmirrored(paths, known_mirrors, known, known_tags, runtime_owned)
     missing_digests = sorted(digests - known_digests - {
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),

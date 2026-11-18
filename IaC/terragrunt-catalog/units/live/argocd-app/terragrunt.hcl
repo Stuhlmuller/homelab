@@ -7,17 +7,19 @@ include "kubernetes_provider" {
 }
 
 terraform {
-  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/argocd-application-kubernetes"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/${local.image_update == null ? "argocd-application-kubernetes" : "argocd-application-image-updater"}"
 }
 
 locals {
-  stack_values = jsondecode(read_tfvars_file("terragrunt.values.hcl"))
-  defaults     = local.stack_values.defaults
-  name         = basename(dirname(get_terragrunt_dir()))
-  metadata     = try(local.stack_values.metadata, {})
-  spec         = try(local.stack_values.spec, {})
-  sync_policy  = try(local.spec.syncPolicy, {})
-  retry        = try(local.sync_policy.retry, {})
+  stack_values         = jsondecode(read_tfvars_file("terragrunt.values.hcl"))
+  defaults             = local.stack_values.defaults
+  name                 = basename(dirname(get_terragrunt_dir()))
+  metadata             = try(local.stack_values.metadata, {})
+  spec                 = try(local.stack_values.spec, {})
+  sync_policy          = try(local.spec.syncPolicy, {})
+  retry                = try(local.sync_policy.retry, {})
+  image_update         = try(local.stack_values.image_update, null)
+  image_update_handoff = try(local.stack_values.image_update_handoff, null)
 
   # Merge the common CRD maps explicitly. Lists (sources, syncOptions, info,
   # ignoreDifferences) replace defaults; they must never be concatenated.
@@ -25,13 +27,14 @@ locals {
     metadata = merge(local.defaults.manifest.metadata, { name = local.name }, local.metadata, {
       labels = merge(local.defaults.manifest.metadata.labels, try(local.metadata.labels, {}))
     })
-    spec = merge(local.defaults.manifest.spec, {
-      sources = [{
-        repoURL        = local.defaults.repo_url
-        targetRevision = local.defaults.target_revision
-        path           = "${local.defaults.source_root}/${local.name}"
-      }]
-      }, local.spec, {
+    spec = merge(local.defaults.manifest.spec, jsondecode(
+      try(local.spec.source, null) != null || try(local.spec.sources, null) != null ? "{}" : jsonencode({
+        sources = [{
+          repoURL        = local.defaults.repo_url
+          targetRevision = local.defaults.target_revision
+          path           = "${local.defaults.source_root}/${local.name}"
+        }]
+      })), local.spec, {
       destination = merge(local.defaults.manifest.spec.destination, { namespace = local.name }, try(local.spec.destination, {}))
       syncPolicy = merge(local.defaults.manifest.spec.syncPolicy, local.sync_policy, {
         automated = merge(local.defaults.manifest.spec.syncPolicy.automated, try(local.sync_policy.automated, {}))
@@ -50,6 +53,7 @@ dependencies {
   ]
 }
 
-inputs = {
+inputs = merge({
   manifest = local.manifest
-}
+  }, local.image_update == null ? {} : { image_update = local.image_update },
+local.image_update_handoff == null ? {} : { image_update_handoff = local.image_update_handoff })

@@ -39,3 +39,11 @@ condition = "AND"
 paths = ['''docs/evidence/openclaw-enterprise-policy-review\.json''', '''scripts/ci/network-policy-inventory-test\.py''']
 regexTarget = "line"
 regexes = ['''(?m)^\s*"(?:secretman|octelium/octeliumee-secretman)": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1",?$''']
+
+[[allowlists]]
+description = "Public unchanged Go module checksum in the Distribution migration patch"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^builds/harbor-core/patches/0004-distribution-v3\.patch$''']
+regexTarget = "line"
+regexes = ['''(?m)^ github\.com/docker/docker-credential-helpers v0\.9\.5 h1:EFNN8DHvaiK8zVqFA2DT6BjXE0GzfLOZ38ggPTKePkY=$''']
