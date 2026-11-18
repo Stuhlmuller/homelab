@@ -572,6 +572,15 @@ termination grace remain.
 
 ### Pending n8n PostgreSQL upgrade
 
+After the statistics-storage fix deployed, n8n on `zimaboard-0` still failed
+database DNS lookups while unrelated node controllers restarted under high
+CPU, memory, and I/O pressure. A temporary
+[n8n node selector](../../clusters/homelab/apps/n8n/values.yaml) places it on
+`zimaboard-1`; its NFS PVC has no node affinity and remains unchanged. The
+single-writer `Recreate` strategy is preserved. This contains the application
+outage rather than repairing the overloaded node; remove the selector after
+node recovery and capacity verification, and verify DNS after relocation.
+
 The 2026-11-17 investigation found n8n database ping timeouts alongside
 PostgreSQL 14 collector warnings and a collector waiting on file I/O. Database
 connections were mostly idle and CPU/memory use was low. The
