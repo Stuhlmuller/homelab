@@ -28,7 +28,9 @@ with TTL 10. General DNS uses the existing Cloudflare malware-filtering servers;
 private `stinkyboi.com` queries use the numeric cluster-local `tailnet-dns`
 Service address resolved at startup. There is no fallback resolver. Per-source
 rate limiting is disabled because operator proxies can aggregate client traffic.
-Query history, file query logs, statistics and automatic client discovery are off.
+The authenticated Query Log shows at most 1,000 recent queries held in memory.
+Client IPs remain anonymized; restart clears this history. File query logs,
+statistics and automatic client discovery are off.
 
 The NetworkPolicy declares DNS ingress from Tailscale, administration from
 Traefik, cluster/private DNS, the two public upstreams and public HTTPS filter
@@ -89,7 +91,7 @@ queries per transport plus AAAA/NXDOMAIN and the private-name inventory, then
 rechecks source/configuration/endpoint identity. Each DNS query has one attempt
 and a hard three-second subprocess deadline. It performs no Kubernetes writes or
 DNS policy changes. HTTPS administration checks validate the certificate,
-authenticate the expected admin, require disabled history/statistics, and verify
+authenticate the expected admin, require query visibility with disabled statistics, and verify
 that anonymous protected reads and an intentionally invalid configuration-write
 request are rejected. The invalid value cannot alter a setting even if
 authentication is missing. Authenticated first-run setup must also be unavailable.
@@ -223,7 +225,7 @@ Use a new receipt in an owned mode-0700 directory outside the repository.
 The helper checks the AWS account, reads the exact SSM parameter privately,
 and reconstructs the template three times. Disposable containers test initial
 startup, replacement after a local configuration change, and restore with an
-empty work directory. It verifies administrator authentication, disabled history,
+empty work directory. It verifies administrator authentication, query visibility,
 filter membership, and blocked/permitted DNS over UDP and TCP. Containers bind
 only loopback, use scratch directories, and never mount production storage.
 Only credential ARN/version metadata enters the mode-0600 receipt.
@@ -250,3 +252,13 @@ results do not establish that a live protected-source recovery has passed.
 
 Successful source tests do not establish live DNS, administration, recovery or
 normal-client acceptance.
+
+## Phone verification
+
+After DNS activation, connect the phone to Tailscale with Tailscale DNS enabled.
+Open `https://doubleclick.net` and then the authenticated **Query Log** at
+`https://adguard.stinkyboi.com`. A matching blocked query confirms the request
+reached AdGuard and was filtered; a failed browser load alone is inconclusive.
+Browser secure DNS or a separate private relay can bypass tailnet DNS.
+The Query Log is available without enabling statistics/dashboard retention.
+Phone verification can follow deployment; Mac client testing is optional.
