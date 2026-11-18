@@ -2928,3 +2928,12 @@ was zero. Image pins matched source. No workload was changed by this layout
 refactor. Follow-up: inspect the existing workload pause/drift ownership and
 reconcile through reviewed GitOps before a runtime change; the live release
 gate continues rejecting that baseline for material changes.
+
+### Application plan API concurrency
+
+The [PR plan runner](../../scripts/ci/terragrunt-plan.sh) limits Application
+registration plans to two concurrent units. Runs at eight concurrent units
+intermittently failed Kubernetes OpenAPI discovery through the CI API proxy
+(connection resets and deadlines across different units). This reduces discovery
+pressure while preserving every selected unit, plan policy, and failure status.
+AzureAD planning retains its separate concurrency limit.
