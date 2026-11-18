@@ -30,3 +30,12 @@
 - Independent read-only review found no material findings.
 - No live administrator plan has run in cloud; the existing Mac credential
   custody and encrypted backend remain required for activation.
+
+## Native module CI correction
+
+CI exposed the T037 active-source assertion still requiring the prior policy.
+The assertion now requires the exact sole observed resolver and exit-node flag,
+override enabled, MagicDNS enabled, empty search paths and unchanged split DNS.
+The historical rollback/synthetic fixture and all other boundary checks remain
+unchanged. Backend-free generated operator init/validate and all six native
+OpenTofu tests passed locally. Independent review found no material findings.
