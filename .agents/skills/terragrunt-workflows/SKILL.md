@@ -52,8 +52,7 @@ with defaults. Lists such as `sources`, `syncOptions`, `info` and
 rendered manifest when overriding them. Omit empty `kustomize = {}`: Argo CD
 normalizes it away and leaves the declared Application OutOfSync.
 
-Use the app file's `inputs.dependencies` for registration ordering: sibling app names or an
-explicit relative unit reference, matching existing entries. A `dependency`
+Use the app file's `inputs.dependencies` for registration ordering: explicit paths relative to the generated unit directory, matching existing entries. A `dependency`
 block is needed only when consuming outputs. Registration order does not prove
 runtime readiness. Remove unused registrations from the explicit stack after
 verifying their resources are absent or safe to delete. The protected workflow

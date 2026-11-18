@@ -60,3 +60,16 @@ this records retained recovery material, not a new restore exercise.
 
 Related: [Storage And State](../architecture/storage-and-state.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), [GitOps Flow](../architecture/gitops-flow.md).
+
+The bootstrap Helm release also uses the local catalog module. Its former pinned
+external module carried a second encryption block, which conflicts with the
+root-generated backend policy. The local copy preserves `helm_release.this`,
+provider constraints and all release inputs/outputs while removing that duplicate
+policy; no backend key or resource address migration is involved.
+
+Authenticated planning found the legacy application-backup-storage state was
+plaintext after the shared-encryption change. The root now permits plaintext
+reads only for that exact homelab unit, preserving AES-GCM writes and its existing
+backend key. All other units remain enforced. A read-only plan leaves the state
+untouched; remove this scoped fallback after the first declared encrypted apply
+is verified. See [migration behavior](../../docs/state-encryption.md).

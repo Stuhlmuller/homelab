@@ -61,8 +61,9 @@ class EncryptionCompatibilityTest(unittest.TestCase):
 ''' % PASSPHRASE if encrypted else ""
         self.backend.write_text('terraform {\n  backend "local" {}\n' + encryption + '}\n')
 
-    def generated_policy(self, alias=OLD_ALIAS):
+    def generated_policy(self, alias=OLD_ALIAS, migration=False):
         alias_setting = f'    encrypted_metadata_alias = "{alias}"\n' if alias else ""
+        policy = 'fallback = { method = "unencrypted" }' if migration else "enforced = true"
         generation = self.directory / "generation"
         generation.mkdir(exist_ok=True)
         (generation / "main.tf").write_text("# Backend generation only; no resources or state.\n")
@@ -76,10 +77,10 @@ class EncryptionCompatibilityTest(unittest.TestCase):
   encryption = {
     key_provider = "pbkdf2"
     passphrase = "%s"
-    enforced = true
+    %s
 %s  }
 }
-''' % (PASSPHRASE, alias_setting))
+''' % (PASSPHRASE, policy, alias_setting))
         # v1.2.2 stages source-less units in its cache. Generate in a separate
         # empty module so init never attempts to read the compatibility records.
         cache = generation / ".terragrunt-cache"
@@ -90,8 +91,11 @@ class EncryptionCompatibilityTest(unittest.TestCase):
         generated = generated_files[0].read_text()
         self.backend.write_text(generated)
         self.assertIn('key_provider "pbkdf2" "default"', generated)
-        self.assertEqual(generated.count("enforced = true"), 2)
-        self.assertNotIn("fallback", generated)
+        self.assertEqual(generated.count("enforced = true"), 0 if migration else 2)
+        if migration:
+            self.assertEqual(generated.count("fallback {"), 2)
+        else:
+            self.assertNotIn("fallback", generated)
 
     def assert_encrypted(self, path):
         record = json.loads(path.read_bytes())
@@ -131,6 +135,29 @@ class EncryptionCompatibilityTest(unittest.TestCase):
         self.assertEqual(json.loads(self.tofu("output", "-json"))["fixture"]["value"], "three")
         self.assert_encrypted(self.directory / "terraform.tfstate")
 
+    def test_scoped_plaintext_migration_keeps_reads_read_only_and_writes_encrypted(self):
+        self.old_policy(encrypted=False)
+        self.tofu("init", "-input=false")
+        self.tofu("apply", "-auto-approve", "-input=false")
+        self.tofu("plan", "-out=plain.plan", "-input=false")
+        plain = (self.directory / "terraform.tfstate").read_bytes()
+        lineage = json.loads(plain)["lineage"]
+        self.generated_policy(migration=True)
+        self.assertEqual(json.loads(self.tofu("output", "-json"))["fixture"]["value"], "one")
+        self.assertEqual((self.directory / "terraform.tfstate").read_bytes(), plain)
+        self.module.write_text(self.module.read_text().replace('"one"', '"two"'))
+        self.tofu("plan", "-out=migration.plan", "-input=false")
+        self.assert_encrypted(self.directory / "migration.plan")
+        self.assertEqual((self.directory / "terraform.tfstate").read_bytes(), plain)
+        self.tofu("apply", "-input=false", "migration.plan")
+        self.assert_encrypted(self.directory / "terraform.tfstate")
+        self.assertEqual(json.loads(self.tofu("state", "pull"))["lineage"], lineage)
+        self.generated_policy()
+        self.assertEqual(json.loads(self.tofu("output", "-json"))["fixture"]["value"], "two")
+        self.tofu("show", "-json", "plain.plan", succeeds=False)
+        self.assertEqual(json.loads(self.tofu("show", "-json", "migration.plan"))
+                         ["resource_changes"][0]["address"], "terraform_data.fixture")
+
     def test_generated_policy_rejects_plaintext_state_and_saved_plan(self):
         self.old_policy(encrypted=False)
         self.tofu("init", "-input=false")
@@ -142,6 +169,38 @@ class EncryptionCompatibilityTest(unittest.TestCase):
 
 
 class RootPolicyTest(unittest.TestCase):
+    def test_plaintext_fallback_is_limited_to_observed_legacy_unit(self):
+        root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix="migration-scope-") as directory:
+            fixture = Path(directory)
+            run(fixture, "git", "init", "-q")
+            for name in ("root.hcl", "homelab/account.hcl", "homelab/us-west-2/region.hcl"):
+                target = fixture / "IaC" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(root / "IaC" / name, target)
+            for name in ("application-backup-storage", "application-backup-storage-sibling", "etcd-backup-storage"):
+                unit = fixture / "IaC/homelab/us-west-2/operator" / name
+                unit.mkdir(parents=True)
+                (unit / "terragrunt.hcl").write_text('include "root" { path = find_in_parent_folders("root.hcl") }\n')
+                data = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))
+                encryption = data["remote_state"]["encryption"]
+                self.assertEqual(encryption["key_provider"], "aws_kms")
+                self.assertEqual(encryption["encrypted_metadata_alias"], "key_provider.aws_kms.main")
+                if name == "application-backup-storage":
+                    self.assertEqual(encryption["fallback"], {"method": "unencrypted"})
+                    self.assertNotIn("enforced", encryption)
+                    self.assertEqual(data["remote_state"]["config"]["key"],
+                                     "IaC/homelab/operator/application-backup-storage/terraform.tfstate")
+                else:
+                    self.assertTrue(encryption["enforced"])
+                    self.assertNotIn("fallback", encryption)
+            account = fixture / "IaC/homelab/account.hcl"
+            account.write_text(account.read_text().replace('account_name = "homelab"', 'account_name = "other"'))
+            unit = fixture / "IaC/homelab/us-west-2/operator/application-backup-storage"
+            encryption = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))["remote_state"]["encryption"]
+            self.assertTrue(encryption["enforced"])
+            self.assertNotIn("fallback", encryption)
+
     def test_shared_root_owns_compatible_encryption_and_backend(self):
         root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(prefix="root-encryption-") as directory:

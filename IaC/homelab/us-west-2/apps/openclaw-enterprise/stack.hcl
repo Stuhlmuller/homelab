@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["openclaw-enterprise-foundation", "platform-envoy-gateway"]
+  dependencies = ["../../openclaw-enterprise-foundation/argocd", "../../platform-envoy-gateway/argocd"]
   spec = {
     project = "openclaw-enterprise"
     destination = {

@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["octelium-cluster", "octelium-storage"]
+  dependencies = ["../../octelium-cluster/argocd", "../../octelium-storage/argocd"]
   spec = {
     destination = {
       namespace = "octelium"

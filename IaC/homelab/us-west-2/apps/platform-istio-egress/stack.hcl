@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["istio", "platform-gateway-api-crds"]
+  dependencies = ["../../istio/argocd", "../../platform-gateway-api-crds/argocd"]
   spec = {
     destination = {
       namespace = "istio-egress"

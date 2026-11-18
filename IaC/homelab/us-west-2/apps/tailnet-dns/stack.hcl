@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["tailscale", "traefik"]
+  dependencies = ["../../tailscale/argocd", "../../traefik/argocd"]
   spec = {
     destination = {
       namespace = "tailnet-dns"

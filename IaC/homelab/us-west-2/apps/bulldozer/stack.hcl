@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "traefik"]
+  dependencies = ["../../external-secrets/argocd", "../../traefik/argocd"]
   spec = {
     project = "homelab-workloads"
     destination = {

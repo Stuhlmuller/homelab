@@ -5,12 +5,12 @@ locals {
 inputs = {
   defaults = local.shared.argocd_defaults
   dependencies = [
-    "../aws-ssm-parameters",
-    "external-secrets",
-    "cert-manager",
-    "istio",
-    "octelium-public",
-    "platform-storage"
+    "../../../shared/aws-ssm-parameters",
+    "../../external-secrets/argocd",
+    "../../cert-manager/argocd",
+    "../../istio/argocd",
+    "../../octelium-public/argocd",
+    "../../platform-storage/argocd"
   ]
   spec = {
     info = [

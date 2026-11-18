@@ -4,5 +4,5 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "istio", "octelium-cluster"]
+  dependencies = ["../../external-secrets/argocd", "../../istio/argocd", "../../octelium-cluster/argocd"]
 }

@@ -49,7 +49,7 @@ locals {
 dependencies {
   paths = [
     for dependency in try(local.stack_values.dependencies, []) :
-    "${get_terragrunt_dir()}/${dependency == "../langfuse-blob-storage" ? "../blob-storage" : startswith(dependency, "../") ? "../../../shared/${replace(dependency, "../", "")}" : "../../${dependency}/argocd"}"
+    "${get_terragrunt_dir()}/${dependency}"
   ]
 }
 

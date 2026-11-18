@@ -86,6 +86,25 @@ class ReleaseCheckTest(unittest.TestCase):
         self.assertTrue(release.runtime_changed(["clusters/homelab/apps/mastodon/workloads.yaml"]))
         self.assertTrue(release.runtime_changed(["IaC/homelab/us-west-2/apps/mastodon/terragrunt.stack.hcl"]))
 
+    def test_shared_changes_reach_workflow_and_live_preflight(self):
+        workflow = (Path(__file__).parents[2] / ".github/workflows/terragrunt-plan.yml").read_text()
+        classify = workflow.split('          requires_live_plan=false', 1)[1].split('          echo "requires-live-plan=', 1)[0]
+        classify = textwrap.dedent('          requires_live_plan=false' + classify)
+        for path in ("IaC/root.hcl", "IaC/stack-defaults.hcl", "IaC/kubernetes-provider.hcl",
+                     "IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl",
+                     "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"):
+            result = subprocess.run(["bash", "-c", 'changed_paths="$1"\n' + classify +
+                                     '\nprintf "%s %s" "$requires_live_plan" "$requires_runtime_check"', "fixture", path],
+                                    capture_output=True, text=True, check=True)
+            self.assertEqual(result.stdout, "true true", path)
+            changed = subprocess.CompletedProcess([], 0, path + "\0")
+            with (patch("sys.argv", ["check", "--base-ref", "origin/main"]),
+                  patch.object(release.subprocess, "run", return_value=changed),
+                  patch.object(release, "read_json", side_effect=ValueError("missing evidence")) as read,
+                  contextlib.redirect_stderr(io.StringIO())):
+                self.assertEqual(release.main(), 1)
+                self.assertEqual(read.call_count, 1, path)
+
     def test_fresh_ordered_evidence_passes(self):
         self.assertEqual(release.failures(APP, CRON, [BACKUP, RESTORE], NOW), [])
 
