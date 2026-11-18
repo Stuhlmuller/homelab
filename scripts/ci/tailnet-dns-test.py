@@ -6,6 +6,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -180,6 +181,34 @@ def mutation_checks(values, routes, inventory, dns_values):
             "OCE wildcard must match only opaque Agent hosts")
 
 
+def chart_failure_hint(stderr):
+    """Return only a fixed label; public CI must never print Helm's raw output."""
+    output = stderr.lower()
+    if any(fragment in output for fragment in ("429", "too many requests", "rate limit")):
+        return "rate-limit"
+    if any(fragment in output for fragment in ("no such host", "could not resolve",
+                                               "temporary failure in name resolution", "timeout",
+                                               "connection refused", "tls handshake")):
+        return "transport"
+    if any(fragment in output for fragment in ("401", "403", "unauthorized", "forbidden")):
+        return "access"
+    if any(fragment in output for fragment in ("404", "not found")):
+        return "unavailable"
+    return "unknown"
+
+
+def render_pinned_chart(command):
+    """Retry a bounded public chart fetch without accepting a different chart."""
+    for attempt in range(4):
+        chart = subprocess.run(command, text=True, capture_output=True, check=False)
+        if chart.returncode == 0:
+            return chart
+        if attempt < 3:
+            time.sleep(2 ** (attempt + 1))
+    raise ValueError(f"pinned chart render failed after 4 attempts ({chart_failure_hint(chart.stderr)}); "
+                     "private Helm output withheld")
+
+
 def rendered_contract():
     dns_values = load_yaml(DNS_VALUES)
     servers = dns_values["servers"]
@@ -187,7 +216,7 @@ def rendered_contract():
             "both resolver views must expose DNS port 53")
     command = ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
                "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-    chart = subprocess.run(command, text=True, capture_output=True, check=True)
+    chart = render_pinned_chart(command)
     require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
     rendered = chart.stdout
     documents = json.loads(subprocess.check_output(
