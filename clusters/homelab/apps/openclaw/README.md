@@ -737,56 +737,14 @@ After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
 refreshes the Secret and rolls the pod that reads it.
 
-## GitHub App Credentials
+## GitHub App Credential Containment
 
-OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:
-
-<!-- markdownlint-disable MD013 -->
-
-| SSM parameter | Pod surface |
-| --- | --- |
-| `/homelab/openclaw/github-app/id` | `GITHUB_APP_ID` |
-| `/homelab/openclaw/github-app/installation-id` | `GITHUB_APP_INSTALLATION_ID` |
-| `/homelab/openclaw/github-app/private-key` | `/var/run/secrets/openclaw/github-app/private-key.pem` |
-
-<!-- markdownlint-enable MD013 -->
-
-The pod sets `GITHUB_APP_PRIVATE_KEY_PATH` to
-`/var/run/secrets/openclaw/github-app/private-key.pem`. The private key is
-mounted as a file from `openclaw-github-app-private-key`, so the PEM is not
-copied into the process environment. Other OpenClaw secret keys are mapped with
-explicit `secretKeyRef` entries rather than a broad `envFrom` import.
-
-After replacing any GitHub App SSM placeholder, bump
-`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in `values.yaml`
-to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
-environment variables.
-
-The managed `assistant/gh` wrapper precedes the toolbox on the app's PATH.
-It signs a GitHub App JWT using Node's built-in crypto, requests a fresh
-installation token for `homelab`, and passes it through a private temporary
-native CLI config file. Each invocation cleans up its own file; no token is
-stored on the PVC or injected into a subprocess environment. The temporary
-`GH_CONFIG_DIR` is an internal per-process path, not a desired-state input.
-Tokens expire after one hour; renewal happens on every command, without a
-timer or cached credentials. Git HTTPS uses this wrapper as its credential
-helper. Existing commit signing remains separate.
-
-The token requests contents, pull requests, issues, and workflows write access,
-plus Actions, checks, statuses, and metadata read access. It does not request
-the installation's administration or secret-management permissions. See
-[GitHub's installation-token flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
-
-Verify from the app container using `gh api repos/Stuhlmuller/homelab/pulls
---jq length` and `gh api installation/repositories --jq '.repositories[].full_name'`.
-The second command must list only `Stuhlmuller/homelab`. A missing/invalid key,
-denied token request, or missing installation access fails closed; do not print
-tokens or use another account to bypass it. Run `node
-scripts/ci/openclaw-github-check.cjs` locally for signing, scope, renewal, private
-file permissions, cleanup, CLI exit-code propagation, and failure checks.
-Rollback by reverting the wrapper, PATH, Git helper, and assistant bundle digest
-through GitOps. Live acceptance remains pending until the new pod passes these
-authenticated reads.
+The OpenClaw Pod has no GitHub App ID, installation ID, private-key Secret,
+or key mount. Its managed `assistant/gh` wrapper fails closed without those
+credentials. Keep the SSM parameters as state tombstones until App scope and
+key rotation are resolved under #859; do not reconnect the Pod while its
+sandbox is disabled. This source change removes a credential path but does
+not prove runtime sandboxing or rotate the previously mounted key.
 
 ## OpenRouter Free Through LiteLLM
 

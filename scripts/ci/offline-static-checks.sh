@@ -1656,6 +1656,7 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 node scripts/ci/openclaw-github-check.cjs
+python3 -I scripts/ci/openclaw-credential-containment-test.py
 # homelab-workloads deliberately has no cluster-scoped resource permissions.
 kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \
   '[select(.kind == "PersistentVolume" or .kind == "StorageClass")] | length == 0' - >/dev/null
