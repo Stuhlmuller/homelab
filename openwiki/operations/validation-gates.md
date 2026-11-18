@@ -2720,6 +2720,11 @@ descriptors. Its scan-client fixture requires Harbor's exact vulnerability
 report negotiation header. The static gate rejects commit-status write grants
 in pull-request workflows, so the trusted base receipt provenance status cannot
 be forged by the ordinary lint job. These checks do not dispatch the receipt.
+The trusted provenance workflow has an exact job/script allowlist and canonical
+workflow hash; reviewed edits must update both and test the actual workflow.
+The static secret scan derives a local system hook from the pinned pre-commit
+configuration, preserving text selection and reviewed findings without fetching
+remote hook environments inside offline fixtures.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked
