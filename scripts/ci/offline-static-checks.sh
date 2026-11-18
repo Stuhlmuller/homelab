@@ -926,7 +926,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "e416d6560dbb02c20cf506a91d78283f6d9a49acf6678ad8c40fffe713b9e1c1" ]] || {
+[[ "$scope_body_sha256" == "22c70ea54b7675e4b43d232adad1d2922d5de5ce115e7f1c9f50449533910d69" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1128,7 +1128,7 @@ done <<'EOF'
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
-.github/workflows/terragrunt-plan.yml e4a8c39b31991cb53ff574fe2e228662900312185f4343c1041aafd77a7e0181
+.github/workflows/terragrunt-plan.yml ea06666d43dc3e734f79c4897959ade291279f363b115d51d1e3a6a46dc985fd
 .github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
 EOF
 echo "::endgroup::"

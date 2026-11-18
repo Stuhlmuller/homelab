@@ -18,6 +18,8 @@ class EquivalenceTest(unittest.TestCase):
         cls.root = Path(cls.temporary.name)
         shutil.copytree(ROOT / "IaC", cls.root / "IaC", ignore=shutil.ignore_patterns(
             ".terragrunt-cache", ".terraform", ".terragrunt-stack", "*.tfstate*"))
+        (cls.root / "scripts/ci").mkdir(parents=True)
+        shutil.copyfile(ROOT / "scripts/ci/terragrunt-current-main.sh", cls.root / "scripts/ci/terragrunt-current-main.sh")
         subprocess.run(["git", "init", "-q"], cwd=cls.root, check=True)
         cls.stack = cls.root / "IaC/homelab/us-west-2/apps/mastodon/stack.hcl"
         cls.baseline = CHECK["contract"](cls.root, "mastodon")
@@ -58,6 +60,21 @@ class EquivalenceTest(unittest.TestCase):
         result = self.changed(self.root / 'IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf',
                               lambda s: s + '\noutput "changed" { value = true }\n')
         self.assertNotEqual(self.baseline, result)
+
+    def test_unsupported_external_inputs_fail_closed(self):
+        module = self.root / "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/extra.tf.json"
+        try:
+            module.write_text('{"variable": {"hidden": {"type": "string"}}}')
+            with self.assertRaises(ValueError):
+                CHECK["contract"](self.root, "mastodon")
+        finally:
+            module.unlink()
+        with self.assertRaises(ValueError):
+            self.changed(self.root / 'IaC/kubernetes-provider.hcl', lambda s: s.replace('provider "kubernetes" {', 'variable "hidden" {}\nprovider "kubernetes" {'))
+        with self.assertRaises(ValueError):
+            self.changed(self.root / 'IaC/kubernetes-provider.hcl', lambda s: s.replace('provider "kubernetes" {', 'locals { hidden = file("shared.json") }\nprovider "kubernetes" {'))
+        with self.assertRaises(ValueError):
+            self.changed(self.root / 'IaC/root.hcl', lambda s: s.replace('terraform {', 'terraform {\nextra_arguments "hidden" {\n commands = ["plan"]\n arguments = ["-var-file=hidden.tfvars"]\n }'))
 
     def test_workload_files_and_failed_reads_cannot_claim_equivalence(self):
         path = 'IaC/homelab/us-west-2/apps/mastodon/stack.hcl'

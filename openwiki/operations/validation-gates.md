@@ -2916,7 +2916,11 @@ and normalized dependency edges. Changed workload files, missing evidence, or
 any runtime-contract difference retain the existing Synced/Healthy, backup and
 restore requirements. The comparison also evaluates shared roots and templates,
 so changing them cannot conceal a changed Application manifest. Negative tests
-cover manifest, dependency, backend, provider and module changes.
+cover manifest, dependency, backend, provider and module changes. Shared-only
+root/template/module edits also trigger the live preflight. Equivalence supports
+only the current local Application root module: unsupported JSON or generated
+variables, indirect file/module inputs, extra arguments and hooks fail closed.
+The existing apply guard is matched exactly and its script contents are compared.
 
 On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main
 `6f8112890`; three Deployments were out of sync and the live web replica count

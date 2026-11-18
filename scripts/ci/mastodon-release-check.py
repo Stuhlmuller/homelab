@@ -13,7 +13,11 @@ EQUIVALENCE = runpy.run_path(str(Path(__file__).with_name("terragrunt-app-equiva
 
 def runtime_changed(paths):
     return any((path.startswith("clusters/homelab/apps/mastodon/")
-                or path.startswith("IaC/") and "/mastodon/" in path)
+                or path.startswith("IaC/") and "/mastodon/" in path
+                or path in {"IaC/root.hcl", "IaC/kubernetes-provider.hcl", "IaC/stack-defaults.hcl",
+                            "IaC/homelab/account.hcl", "IaC/homelab/us-west-2/region.hcl"}
+                or path.startswith("IaC/terragrunt-catalog/units/live/argocd-app/")
+                or path.startswith("IaC/terragrunt-catalog/modules/argocd-application-"))
                and not path.endswith(".md") for path in paths)
 
 
