@@ -57,3 +57,11 @@ OpenTofu's `contains` rejects a null search value, even in a list containing nul
 Update [GitOps Flow](../architecture/gitops-flow.md) and [Validation Gates](../operations/validation-gates.md) when the
 unit changes workflow, bootstrap behavior, module ownership, validation, or
 dependency structure.
+
+## State identity for additional units
+
+Application units ending in `/argocd` retain their historical Application state
+keys. Existing identity and storage units retain explicit legacy mappings in
+`IaC/root.hcl`. Additional app-local units use their full relative path as the
+state identity, so a new sibling cannot inherit the Application's state.
+The stack regression renders both units and checks their distinct backend keys.
