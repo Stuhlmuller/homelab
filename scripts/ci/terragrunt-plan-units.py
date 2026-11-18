@@ -27,7 +27,7 @@ def select_units(allowed, changed, discovered):
         parts = PurePosixPath(path).parts
         # Generated units are ignored by Git. A sidecar or stack change must
         # select that application's units even when native find returns no units.
-        if len(parts) >= 5 and parts[:3] == DEPLOYMENT.parts and parts[3] == "apps":
+        if len(parts) >= 6 and parts[:3] == DEPLOYMENT.parts and parts[3] == "apps":
             prefix = f"apps/{parts[4]}/"
             selected.update(unit for unit in allowed if unit.startswith(prefix))
         elif (path.startswith("IaC/") or path.startswith("scripts/ci/terragrunt-")

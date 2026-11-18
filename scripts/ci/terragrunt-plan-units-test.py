@@ -25,7 +25,7 @@ class SelectionTest(unittest.TestCase):
                          ["apps/two/argocd", "apps/two/azuread"])
 
     def test_shared_inputs_force_coverage(self):
-        for path in ("IaC/root.hcl", "IaC/stack-defaults.hcl",
+        for path in ("IaC/root.hcl", "IaC/stack-defaults.hcl", f"{PREFIX}/apps/common.hcl",
                      "IaC/terragrunt-catalog/modules/argocd/main.tf",
                      "IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl",
                      "flake.lock", "policy/terraform.rego", str(HELPER.relative_to(HELPER.parents[2]))):
