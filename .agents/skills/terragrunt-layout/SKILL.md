@@ -99,11 +99,6 @@ the composition itself repeats. Edit the authored source and regenerate using
 the repository workflow. For implicit stacks, directory placement defines the
 group of units available to orchestration.
 
-Before creating anything, identify the existing module and template that fit.
-Expose inputs callers need, retain shared constraints in the reusable implementation,
-and use existing catalog scaffolding when available.
-[Developer self-service](https://docs.gruntwork.io/2.0/docs/overview/concepts/developer-self-service/)
-
 ## Preserve state and dependency ownership
 
 For each proposed unit, record its authored path, generated path if applicable,
@@ -114,11 +109,6 @@ migration before moving an existing unit.
 Use dependency outputs when values must flow between units. Use ordering
 dependencies when only execution order matters. Check that the dependency graph
 has no cycle and each managed resource has one owner.
-
-Name resources and attach metadata using the target platform's conventions.
-Keep shared metadata at its common scope and instance metadata near the unit.
-Inspect effective values for naming limits and fields that affect resource identity.
-[Labels and tags](https://docs.gruntwork.io/2.0/docs/overview/concepts/labels-tags/)
 
 ## Verify the layout
 
