@@ -127,7 +127,8 @@ needs Harbor authentication; the credential is never mounted in the exporter.
 
 The ServiceMonitor is scraped every minute. Collection starts at most every ten
 minutes: the 156-repository mirror inventory takes several minutes on the
-CPU-limited core. Collection runs in the background;
+CPU-limited core. Each API read allows 30 seconds for scan-summary assembly
+under load; response-size and pagination checks remain enforced. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
 Grafana alerts after five minutes
