@@ -297,6 +297,14 @@ pass. A successful check does not replace a real n8n workflow execution check.
 
 ## Database Readiness
 
+n8n is temporarily scheduled on `zimaboard-1` to recover from node-wide CPU,
+memory, and I/O contention on `zimaboard-0`, which also disrupted CoreDNS.
+The existing `Recreate` strategy and NFS PVC preserve a single application
+writer during relocation. This selector limits failover: if `zimaboard-1` is
+unavailable, n8n stays Pending. Remove it through GitOps after the affected
+node has stable DNS, workload probes, and sufficient capacity. Do not reduce
+the memory request to force placement on a smaller node.
+
 The pod uses `DB_TYPE=postgresdb` and waits for an authenticated connection to
 `n8n-postgres.automation.svc.cluster.local:5432` before starting n8n. If the
 wait init container fails, inspect the `n8n-postgres-auth` and

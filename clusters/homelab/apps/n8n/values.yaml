@@ -6,6 +6,8 @@ controllers:
       identifier: n8n
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       securityContext:
         runAsGroup: 1000
         runAsNonRoot: true
