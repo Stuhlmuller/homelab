@@ -18,7 +18,7 @@ Historical incident notes are observations rather than current policy.
 | PR approval | `.policy.yml` and GitHub rulesets |
 | Static, security, and manifest validation | `scripts/ci/offline-checks.sh`, `scripts/ci/static-checks.sh`, `scripts/ci/conftest-policies.sh` |
 | Current-main and environment restrictions | Production workflows and `scripts/ci/terragrunt-current-main.sh` |
-| Tailnet enrollment and signed credentials | `harbor-mirror.yml` credential check and Tailscale enrollment |
+| Tailnet enrollment and scoped credentials | `harbor-mirror.yml` credential check and Tailscale enrollment |
 | Image publication and complete pulls | `scripts/ci/harbor-publish.sh` |
 | Mastodon database release readiness | `scripts/ci/mastodon-release-check.py` in the protected live-plan job |
 
@@ -959,7 +959,7 @@ Fleet's generated credentials without reconciling AzureAD, Langfuse storage,
 bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
 reviewed images with `harbor-mirror.yml` first and verify private DNS through
-the signed tailnet resolver in the ordered cutover, following the
+the tailnet resolver in the ordered cutover, following the
 [Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC

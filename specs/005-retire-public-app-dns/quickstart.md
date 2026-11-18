@@ -36,13 +36,14 @@ DNS and Traefik Applications Synced/Healthy and observe the DNS Service IP:
 kubectl -n argocd get application tailnet-dns traefik
 kubectl -n tailnet-dns get deployment,service,pod
 kubectl -n tailnet-dns get service tailnet-dns -o json
-python3 -I scripts/tailnet-dns-check.py --server DNS_TAILNET_IPV4
+dig @<DNS_TAILNET_IP> stinkyboi.com A +time=3 +tries=1
+dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +time=3 +tries=1
 python3 -I scripts/tailscale-private-dns-check.py --retire-private --check
 ```
 
-Replace `DNS_TAILNET_IPV4` with the observed Service tailnet IPv4. The direct
-checker verifies the signed proxy and all 29 current approved answers over UDP/TCP;
-the retirement route check verifies current Traefik Service addresses and the
+Replace `<DNS_TAILNET_IP>` with the observed Service tailnet IPv4. Repeat direct
+queries for all current approved A/AAAA names over UDP/TCP and verify the online
+proxy identity. The retirement route check verifies current Traefik Service addresses and the
 original 27 HTTPS paths. Bare `--check` also probes the two staged Enterprise
 backends; their readiness is a separate rollout gate.
 It accepts a backend error for an intentionally stopped app only when reviewed
@@ -134,7 +135,7 @@ scripts/tailscale-private-dns.sh --retire-private --execute \
 
 Replace `REVIEWED_MAIN_SHA` with `git rev-parse HEAD` from that exact merged
 `main` checkout. Execution rechecks live records, the wildcard/CNAME/NS guard,
-signed private DNS, normal client lookups, and HTTPS before any DELETE. It
+private DNS, normal client lookups, and HTTPS before any DELETE. It
 re-reads full record fields after the zone scan immediately before deletion. A
 wrong-owner response, changed target baseline, or failed preflight stops the
 write. If a partial run fails,
@@ -155,9 +156,9 @@ Cloudflare delegation, ExternalSecret, ClusterIssuer, and both Certificate
 checks above; compare the DNS-01 solver and secret references with reviewed
 source.
 
-If private DNS fails, run `scripts/tailnet-dns-check.py` again, inspect Argo,
-resolver Pods, Service status, and the signed proxy, then restore the failed
-repository declaration through Terragrunt/Argo or re-sign the fixed proxy.
+If private DNS fails, repeat direct UDP/TCP queries and inspect Argo,
+resolver Pods, Service status, and the proxy, then restore the failed
+repository declaration through Terragrunt/Argo.
 Retired subdomains must not receive public app addresses during a controlled
 resolver outage check. The apex intentionally retains a public address
 answer; its outage behavior is outside that guarantee. Do not republish retired app

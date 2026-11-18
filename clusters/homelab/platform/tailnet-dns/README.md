@@ -49,35 +49,23 @@ Application. Follow the [render and rollout checks](../../../../specs/004-tailne
 Apply the reviewed `tailnet-dns` stack through Terragrunt/Argo, not a direct
 `kubectl` write. The Service exposes UDP and TCP 53 with the Tailscale
 `homelab-dns` hostname and the existing operator-owned `tag:homelab-ingress`.
-The DNS proxy has its own peer identity and IP. The trusted local signer runs
-`python3 -I scripts/tailscale-ingress-sign.py --dns-only` for preview and
-`--dns-only --execute` for
-the exact fixed proxy identities. Record the Service's **observed** tailnet
-IPv4 and signed peer privately; do not use the Traefik ingress IP as the DNS
-server address.
+The DNS proxy has its own peer identity and IP. Record the Service's observed
+tailnet IPv4 and verify the online device hostname and tag; do not use the
+Traefik ingress IP as the DNS server address.
 
-From the trusted signer Mac with tailnet access and read-only cluster access, run:
-
-```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
-```
-
-It binds the supplied IP to the online signed proxy and live Service, then
-requires authoritative A and AAAA responses over UDP/TCP for all reviewed
-private names, including a concrete Cordium wildcard child. It also checks
-public apex MX/TXT and an unrelated public name. A successful direct query is
-the handoff gate. The owner then adds this IP as a **restricted `stinkyboi.com`
-nameserver** in
-Tailscale DNS. Enable **Use with exit node** for that nameserver if the clients
-use an exit node. Leave unrelated tailnet DNS settings alone. Normal OS lookup
-and HTTPS acceptance follow the owner change, before public record retirement.
+From a connected tailnet client, query all approved private A/AAAA names over
+UDP and TCP, including a concrete Cordium wildcard child. Check public apex
+MX/TXT and an unrelated public name as well. Configure the observed address as
+the restricted `stinkyboi.com` nameserver through the administrator-owned
+provider path. Enable **Use with exit node** when clients use an exit node.
+Preserve unrelated DNS settings and verify ordinary OS resolution and HTTPS.
 
 ## Recovery and later public retirement
 
-For an outage, run the same checker, inspect Argo,
-Pods, Service status and the proxy's Tailnet Lock signature. Restore the failed
-declaration through reviewed Argo/Terragrunt desired state; if only its key
-rotated, use the fixed signer. Re-run direct UDP/TCP and normal client checks.
+For an outage, repeat direct UDP/TCP queries and inspect Argo,
+Pods, Service status and the online proxy identity. Restore the failed
+declaration through reviewed Argo/Terragrunt desired state. Re-run direct UDP/TCP
+and normal client checks.
 After public app subdomain retirement, the 26 retired non-apex names fail
 closed while the resolver is down; do not restore public app A/AAAA/CNAME as
 an outage workaround. The apex remains privately answered while healthy and

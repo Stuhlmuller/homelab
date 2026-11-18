@@ -130,8 +130,6 @@ sources:
     resource: repo://scripts/openclaw-enterprise-startup.py
   - id: openwiki-source-447d6bc69ac6883500089232
     resource: repo://scripts/platform-maintenance-credentials.sh
-  - id: openwiki-source-6f8ea3753bc76b21d99fe402
-    resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
@@ -169,84 +167,44 @@ recovery archive retention.
 
 ## Tailscale provider foundation
 
-The staged ingress migration uses `tailscale/tailscale` 0.29.2 in the operator-only
-[`tailscale-access` module](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
-It adopts the complete existing policy before changing it; applying an additive
-fragment would overwrite unrelated access. The committed policy preserves legacy
-users, tags, SSH and route approvals while giving new CI tags only explicit grants.
-Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
+The operator-only [Tailscale access module](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+owns complete policy, DNS, settings, contacts and scoped CI auth keys through
+provider 0.29.2. Review the complete policy so an apply preserves unrelated
+access. Funnel permission is limited to `tag:homelab-funnel`; CI tags receive
+only explicit grants.
 
-The local provider reads a dedicated administrator OAuth client from private
-`0600` ID and secret files. The Kubernetes operator's SSM-backed OAuth client
-stays separate and has no tailnet administration scopes. Encrypted S3 state and
-private encrypted saved plans retain the existing KMS boundary. The same unit
-adopts existing DNS, tailnet settings, and contact addresses; it does not own
-personal devices or controller-generated Kubernetes device IDs.
-Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
-and Cordium tags and expire after 90 days. The committed generation drives
-rotation every 60 days; generation 2 matches the encrypted state. An invalid key
-is not silently recreated. Tailnet Lock
-requires signatures in addition to enrollment. The unused federated identities
-remain protected until final migration retirement after signed-key acceptance.
+A private administrator OAuth client authenticates the local provider. The
+Kubernetes operator's SSM-backed client remains separate and has no tailnet
+administration scopes. Encrypted state and private saved plans retain their
+existing KMS boundary. Personal devices and controller-generated Kubernetes
+device IDs are not owned by this module.
 
-The fixed publisher reads sensitive encrypted-state outputs privately, verifies
-the trusted Mac's online homelab profile, signs via `file:/dev/stdin`, and
-publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
-repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
-metadata confirmation must be followed by protected CI acceptance. Only after
-all three writes and metadata checks succeed does it delete the corresponding
-three unused client-ID variables. Exact-main and trusted-PR workflow gates still
-matter: these credentials do not encode GitHub OIDC subject claims. Raw signing
-keys stay out of arguments and temporary files; stdin avoids the macOS app
-sandbox refusing access to the private config directory.
-
-Wrapped keys contain a delegated private node-signing key, separate from the
-trusted credential authority's private voting key. The publisher requires exactly
-one new authority with matching auth-key metadata after signing, with every prior
-trust mapping unchanged. Before post-sign readback, it durably saves a private
-pending receipt containing the validated wrapper. Bounded polling tolerates local
-status lag; a timeout retains the receipt so retry verifies the same signature
-before signing another key. File and directory fsync precede receipt retirement.
-Its private `0600` cache records that separate public
-authority identity with the wrapper; reuse and retirement require a unique
-metadata match. Delegated node-signing capability exceeds normal tag enrollment
-permissions. Auth-key expiry or revocation does not remove that authority;
-after replacement CI acceptance, the explicit `--retire-previous` operation
-removes only cached older-generation authorities while preserving unrelated
-signers. Preview and execution validate every cached current signature and all
-previous authority metadata before any removal. Execution rechecks each target;
-an already-absent previous authority remains safe to retry. Preview never signs,
-publishes or changes cache contents. Keep an encrypted private cache backup and use the
-[module runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for rotation and
-recovery. If an older publisher lost the wrapper before saving a receipt, the
-separate orphan-recovery mode requires the exact current provider identity,
-unique authority, this Mac's signer metadata and a timestamp within one day.
-It refuses any pending receipt, matching cache entry or published fixed CI secret,
-and requires the official read-only affected-signature query to return empty.
-Only that authority can be removed, without re-signing; recovery never signs or
-publishes. The query is a snapshot, so pause other signing/join activity through
-recovery. The operator OAuth SSM contract remains separate and unchanged.
+Three reusable, ephemeral, preauthorized auth keys carry separate plan, apply
+and Cordium tags and expire after 90 days. Committed generation changes drive
+60-day rotation; invalid keys are not silently recreated. The protected plan
+and production environments each hold `TAILSCALE_AUTH_KEY`; Cordium uses the
+repository `TAILSCALE_CORDIUM_AUTH_KEY` without Kubernetes RBAC. Keep raw keys
+private. GitHub exposes secret metadata, so actual enrollment must be verified
+by CI. Exact-main and trusted-PR gates remain necessary because auth keys do not
+encode GitHub OIDC subject or workflow claims.
 
 The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
 read resources, including Helm release Secrets, and submit Argo Application
 dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
-Apply retains cluster administration for existing bootstrap and RBAC ownership;
-Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
-until authenticated plan/apply and denial checks succeed over the new proxy.
+Apply retains cluster administration for bootstrap and RBAC ownership;
+Cordium has no Kubernetes binding. Verify authenticated plan/apply and denial
+checks over the declared operator proxy.
 
-Phase 2a removes the old public DNS writer and restoration workflow while
-retaining Tunnel credentials, existing Octelium identities, and native carrier
-recovery. The separate tailnet resolver watches approved Kubernetes Services
-and needs no DNS write token. Only the later guarded retirement helper reads
-the existing scoped cert-manager Cloudflare token. Feature 005 limits its
-public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
-set after owner tailnet DNS handoff and client acceptance. The private resolver
-retains all 29 current approved names. Public apex, mail, DNS-01 validation,
-and unrelated public names stay in the zone; see the
-[cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
-The helper has no record-publication or restoration mode.
-Credential retirement follows application, callback, CI, and Cordium acceptance;
-changing DNS alone does not authorize deleting those credentials.
+The tailnet resolver watches approved Kubernetes Services and needs no DNS write
+token. The guarded public-record retirement helper reads the scoped cert-manager
+Cloudflare token and limits A/AAAA/CNAME deletion to the 26 non-apex names from
+its fixed inventory. Require tailnet DNS configuration and ordinary client
+acceptance first. Preserve public apex, mail, DNS-01 validation and unrelated
+names; see the [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
+The helper has no record-publication or restoration mode. Preserve existing
+Tunnel credentials, Octelium identities and native carrier recovery until their
+independent application, callback, CI and Cordium acceptance is complete.
+Changing DNS alone does not authorize deleting credentials.
 
 ## AWS SSM Pattern
 
@@ -1071,22 +1029,6 @@ existing account. `OnChange` and subPath consumers need declared secret/runtime
 revisions after rotation. Preserve stable keys with the database. Source
 registration and credential storage do not prove deployment, owner login or
 email delivery; see the [workload runbook](../../clusters/homelab/apps/mastodon/README.md).
-
-## Codex Cloud enrollment signer
-
-The [signer](../../clusters/homelab/apps/codex-cloud-signer/README.md) keeps its
-Tailnet Lock private key on a retained local volume. Its public Funnel accepts
-only HMAC-authenticated Tailscale events, then checks exact Codex tag,
-ephemerality, OS, device age and unchanged public keys using a read-only OAuth
-client. This enrolls the dedicated policy class, not independently attested
-OpenAI workloads. The owner adds the signer to trusted keys; the API never
-promotes itself or an agent. The cloud auth key is excluded from the External
-Secrets reader's four runtime SSM grants.
-
-Codex provider provisioning uses a separate short-lived Owner/Admin API-key
-file. The existing administrator OAuth client cannot create another OAuth
-client and lacks webhook write scope. That owner credential stays local to the
-operator and is not published to SSM, CI, or either service container.
 
 ## Uptime Kuma identities
 

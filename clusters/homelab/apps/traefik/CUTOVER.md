@@ -9,7 +9,7 @@ pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 
 The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
 30 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
-routing. Confirm its signed proxy, observed Service IP, and direct UDP/TCP
+routing. Confirm its proxy, observed Service IP, and direct UDP/TCP
 answers:
 
 ```sh
@@ -62,16 +62,12 @@ Cordium child, while public apex, unrelated names, Cloudflare delegation,
 cert-manager DNS-01 readiness, and both Traefik and Istio Certificates remain
 healthy. See the linked quickstart for exact read-only checks. Investigate a
 partial run before retrying through the same helper and evidence. Resolver
-recovery restores the declared Service or signed proxy through the reviewed
+recovery restores the declared Service or proxy through the reviewed
 path; it never republishes retired public app addresses.
 
 ## Before execution
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
-Keep Tailnet Lock enabled. Connect the existing trusted Mac's saved Tailscale
-profile, then preview and execute `scripts/tailscale-ingress-sign.py` as described
-in the [signing runbook](README.md#tailnet-lock). All fixed proxy identities must
-be signed before mesh/Funnel acceptance; Kubernetes readiness alone is insufficient.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
 Ready, and the private ingress Service publishes the unique online
 `homelab-ingress.tail67beb.ts.net` peer. Before DNS changes, reconnect the Mac's
@@ -197,7 +193,7 @@ reviewed main `e0da1da6`; Argo and the certificate were healthy.
 
 The same peer's IPv6 address refused connections. This is the supported boundary
 of the current single-stack IPv4 Service/kernel proxy, not an IPv6 acceptance.
-The signed operator API proxy's IPv6 remained reachable from the same Mac.
+The operator API proxy's IPv6 remained reachable from the same Mac.
 Publish only Service-derived A records, with AAAA empty; see the
 [IP-family contract and primary sources](../../../../docs/networking-tailnet-ingress.md#dns-model).
 

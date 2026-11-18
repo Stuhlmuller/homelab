@@ -80,10 +80,6 @@ sources:
     resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
-  - id: openwiki-source-6f8ea3753bc76b21d99fe402
-    resource: repo://scripts/tailscale-ci-configure.py
-  - id: openwiki-source-81658af78f4007503983579d
-    resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
@@ -111,7 +107,7 @@ phase 2a source and the separate external DNS and later CI cutover gates.
 
 ```mermaid
 flowchart LR
-    Client --> DNS[Separate signed tailnet DNS proxy]
+    Client --> DNS[Separate tailnet DNS proxy]
     DNS -->|Approved A/AAAA| Private
     DNS -->|Other queries| PublicDNS[Public DNS]
     Client[Mesh client] --> Private[Tailscale private proxy]
@@ -225,72 +221,15 @@ private Traefik to its existing Istio web/streaming gateway. Its public tunnel
 retains only the federation/media allowlist; all other paths return 404.
 The obsolete Octelium Service is retired after tailnet login verification.
 
-## Tailnet Lock
+## Device authentication
 
-Keep Tailnet Lock enabled. A new operator proxy can be Ready and authorized yet
-remain invisible to mesh peers because it lacks a node signature. From the
-trusted Mac's existing homelab profile and an authenticated LAN Kubernetes
-context, preview and then execute from clean, signed current `main`:
-
-```sh
-python3 -I scripts/tailscale-ingress-sign.py
-python3 -I scripts/tailscale-ingress-sign.py --execute
-```
-
-The fixed signer checks the private Service, three Funnel Ingresses, and the
-separate `tailnet-dns` Service against
-controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
-local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those five targets. For the DNS handoff, `--dns-only` previews or
-signs only the `homelab-dns` proxy. It never adds a signing authority or disables
-Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
-same guarded process again.
-The [pinned lock peer](https://github.com/tailscale/tailscale/blob/v1.102.3/ipn/ipnstate/ipnstate.go#L92-L100)'s
-numeric `ID`, stable `StableID`, and DNS `Name` must match the
-Pod status `Self.NodeID`, `Self.ID`, and `Self.DNSName`; tags come from the Pod
-status because lock peers do not carry them.
-
-The staged Traefik sidecar uses a separate `--canary-only` preview/execute path;
-the default five targets remain unchanged. Its preview binds the current ready
-StatefulSet and Pod on `acer` to the canary tag, pinned images, state Secret
-UID and public node key. It also checks the signer peer and raw TCP 443 Serve
-to Traefik's loopback TLS listener. Execute requires clean, verified current
-`main` and reads the applied policy with the private Terragrunt OAuth
-client. It compares the complete live JSON policy with committed source and
-rejects destinations outside the ten reviewed legacy selectors. The current
-wildcard grant therefore blocks signing. First apply the reviewed narrow policy
-through Terragrunt, sign while all canary clients are denied, then add a
-reviewed test-client grant and prove TLS/route traffic. The signer verifies the
-TLS Secret mount, not certificate bytes; live TLS acceptance remains required.
-Tailscale v1.102.3 emits the raw ServeConfig from `serve status --json`,
-including the TCP forward target.
-
-CI uses three provider-managed reusable ephemeral keys, signed on the trusted
-Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
-then `--execute`; it accepts no arbitrary key or GitHub target. Preserve its
-private signature cache, which stores each wrapper and its separately verified
-public credential authority identity. Before any post-sign readback, it durably
-saves the validated wrapper in a private pending receipt. Bounded polling handles
-local trust-status lag; timeout retains the receipt and retry verifies it before
-any new signing. Preview and retirement never consume a pending receipt. If an
-older attempt lost its wrapper, use the separate
-[interrupted-signing recovery](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md#interrupted-signing-recovery)
-command: exact provider/Mac/time metadata, absent receipts and fixed secrets, and
-an empty read-only affected-signature query must precede removal of that one
-authority without re-signing. Pause other signing/join activity during recovery;
-normal signing/publication is a separate operation afterward.
-The embedded private key delegates node
-signing; it is not the authority's private voting key. Rotate the committed
-generation every 60 days, before 90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
-`--retire-previous` to preview and `--retire-previous --execute` to remove only
-cached older-generation signing authorities. Both modes validate every current
-signature and all previous authority metadata before any removal. Execute
-rechecks each target and safely handles an already-absent previous authority;
-preview never signs, publishes or changes cache contents. Expired auth keys alone
-do not revoke the delegated signing capability.
-The [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns exact
-secret scopes, private saved-plan commands, recovery, and the accepted signing-key
-tradeoff. Each CI job must supply a private `statedir` to the pinned action.
+The operator enrolls proxies with their declared hostnames and tags. Verify the
+controller-owned resource, online device identity and observed address before
+traffic acceptance. A Ready Pod alone does not prove tailnet reachability.
+CI uses three provider-managed reusable ephemeral auth keys in their scoped
+GitHub secrets. Follow the [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+for credential ownership, policy, lifetime and rotation. Each job uses private
+daemon state and must verify enrollment and cleanup.
 
 ## Security and rollout gates
 
@@ -324,7 +263,7 @@ peer alone does not satisfy the gate. The pending-work check is a snapshot, so
 coordinate against concurrent Fleet changes during the test.
 
 Switch webhook registrations after public reachability and negative-path checks;
-require fresh signed delivery before retiring the former callbacks. Migrate CI to pre-signed ephemeral mesh keys only after its API proxy,
+require fresh signed delivery before retiring the former callbacks. Migrate CI to scoped ephemeral mesh keys only after its API proxy,
 RBAC and admission boundary are deployed. Retire old DNS, Cloudflare Tunnel and
 non-Cordium native Services through their reviewed code paths after all callers
 move. Validate a second retirement run is a no-op. Use reviewed reverts and the
@@ -344,13 +283,12 @@ that Service's hostname annotation and explicit HTTPS routes must match.
 Unmatched address queries and non-address records go to public resolvers;
 Traefik still owns HTTPS and application routing.
 For the initial handoff, publish and verify its pinned Harbor image, reconcile
-the Application, sign the `homelab-dns` proxy, and check its **observed**
-tailnet IP from the trusted signer Mac:
+the Application, verify the `homelab-dns` proxy, and check its **observed**
+tailnet IP from an authorized tailnet client:
 
 ```sh
-python3 -I scripts/tailscale-ingress-sign.py --dns-only
-python3 -I scripts/tailscale-ingress-sign.py --dns-only --execute
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @<DNS_TAILNET_IP> stinkyboi.com A +time=3 +tries=1
+dig @<DNS_TAILNET_IP> stinkyboi.com A +tcp +time=3 +tries=1
 ```
 
 The owner then sets that IP as a restricted `stinkyboi.com` nameserver in
@@ -431,14 +369,10 @@ callback path to be absent on any host and Emergency settings unchanged.
 Non-executing preflights protect live workflows; private local receipts require
 both a newer delivery ID and timestamp after cutover. The separate Policy Bot
 check also requires a fresh signed delivery. Historical success cannot satisfy
-acceptance. The CI publisher captures sensitive provider keys
-privately, signs via `file:/dev/stdin` and publishes only three scoped GitHub
-secrets after checking signed current main, environment protection and the
-trusted homelab signing profile. It removes the old client-ID variables only
-after all three writes and metadata checks succeed. These utilities do not switch
-CI workflows or retire the native catalog by themselves. Raw signing keys never
-enter command arguments or temporary files; stdin avoids the macOS app sandbox's
-private-file read restriction.
+acceptance. CI uses the scoped auth keys in its protected GitHub secrets.
+Credentials remain private, and actual enrollment must pass the protected
+workflow checks. Updating a credential alone does not switch transports or
+retire the native catalog.
 
 PolicyBot's safe GET preflight requires HTTP 404 with exactly one valid backend
 `X-Request-ID` at `/api/github/hook`, and root HTTP 404 without that header.
@@ -504,7 +438,7 @@ The public apex, callback/CI/carrier names, and unrelated records matched all
 references remained intact; the ExternalSecret, ClusterIssuer, and two
 Certificates remained Ready.
 
-The signed resolver still answered all 29 approved names, and normal macOS DNS
+The resolver still answered all 29 approved names, and normal macOS DNS
 and the original 27 HTTPS migration routes passed. Fleet's enrolled iPhone
 checked in after a guarded APNs ping; a Harbor node pulled its reviewed image
 without reboot, and native Octelium and Cordium calls passed. Fresh Emergency
@@ -520,65 +454,18 @@ See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and
 [Workload Inventory](../workloads/inventory.md).
 
-## Codex signer callback
-
-The [Codex signing API](../../clusters/homelab/apps/codex-cloud-signer/README.md)
-adds `codex-signer` through the existing Traefik Funnel. Only POST
-`/webhooks/tailscale` is routed, with buffering/body limits and rate limiting;
-health endpoints and the local daemon API stay private. The fixed proxy helper
-supports `--codex-funnel-only`; signing that proxy does not trust the separate
-API daemon. HMAC authentication and a dedicated ephemeral enrollment tag are
-required before any agent node signature is issued.
-
-The targeted `terragrunt-apply.yml` Codex path checks the existing `automation`
-namespace, `homelab-workloads` destination, ESO namespace scope and retained
-local PV before reconciling shared SSM reader grants and this Application.
-It leaves bootstrap and unrelated Application registration outside that path.
-
 ## AdGuard DNS and private administration
 
-[AdGuard](../../clusters/homelab/apps/adguard/README.md) uses the existing
-`tag:homelab-ingress` policy through a distinct operator-owned DNS-only Service,
-`automation/adguard-dns`, with hostname `homelab-adguard`. Sign it through the
-existing trusted-Mac helper's `--adguard-only` target after deployment. The
-Codex signing webhook does not sign this workload proxy. UDP and TCP 53 are
-exposed; administrator HTTP stays behind the existing private Traefik route at
-`adguard.stinkyboi.com`. No Funnel route or public app DNS record is added.
+[AdGuard](../../clusters/homelab/apps/adguard/README.md) uses a distinct
+operator-owned DNS-only Service, `automation/adguard-dns`, with hostname
+`homelab-adguard` and `tag:homelab-ingress`. UDP/TCP 53 is exposed;
+administration remains behind private Traefik at `adguard.stinkyboi.com`.
+No public administration endpoint is added.
 
-The direct checker verifies the observed Service address, signed peer, current
-source, filtering and authenticated HTTPS administration. Those checks do not
-prove normal client DNS. The separate native macOS client mode checks accepted
-tailnet DNS and flushes caches; exit-node claims require an actual selected
-supported exit node. The saved-plan cutover and rollback commands preserve
-MagicDNS, private split DNS and search paths. Rollback does not depend on AdGuard
-health. See the app runbook for commands, private receipts and pending live gates.
-
-For client settings, browser/application DNS bypasses, cache effects and the
-limits of domain-based ad blocking, follow [client setup and blocking limits](../../clusters/homelab/apps/adguard/README.md#client-setup-and-blocking-limits).
-A passing direct or system-DNS check does not promise removal of same-domain ads
-or prove that every application uses the filtering resolver.
-
-### Operator enrollment failure observed November 16, 2026
-
-During AdGuard prerequisite checks, Traefik remained Synced/Progressing with a
-ready Deployment, but `traefik/codex-signer` had no load-balancer address or
-operator proxy Pod. The running Tailscale operator repeatedly reported OAuth
-`401 Unauthorized` / `API token invalid` while provisioning that ingress.
-Existing proxies being ready does not prove new enrollment works. Use the
-[existing protected operator rotation path](../../clusters/homelab/apps/tailscale/README.md)
-with administrator credentials, then advance the declared ESO/operator revisions
-and verify new proxy enrollment. No manual Secret update or policy widening is
-part of the AdGuard rollout. This prerequisite remains unresolved.
-
-
-### Proxy trust status observed November 17, 2026
-
-Read-only AdGuard prerequisite checks found both existing `homelab-ingress` and
-`homelab-dns` proxies reporting local `tailscale lock status --json` with
-`Enabled=false` and no `NodeKeySigned` field. The ingress proxy was online and
-forwarded to the expected Service ClusterIP. These node-local results do not
-establish the global tailnet lock policy or satisfy the signed-peer checks.
-Reconcile actual trust state through its owning declared path before claiming
-signed AdGuard acceptance; do not disable or relax verification. The distinct
-AdGuard Service design remains unchanged. See the
-[delivery evidence](../../specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md#publication-gate-and-ready-pr).
+Verify the observed Service address, online proxy, both DNS transports, filtering
+and authenticated HTTPS administration. Direct checks do not establish ordinary
+client DNS behavior. Client acceptance must identify DNS settings, caches and
+actual exit-node selection. The administrator-owned DNS policy preserves
+MagicDNS, split DNS and search paths. Recovery requires independent control-plane
+access. Follow [client setup and blocking limits](../../clusters/homelab/apps/adguard/README.md#client-setup-and-blocking-limits)
+for browser DNS bypasses and domain-filtering limits.

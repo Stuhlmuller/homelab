@@ -21,7 +21,7 @@ All8 checker tests pass; git diff --check passes. Logs
 adguard-application-final.log. T041 complete. No runtime behavior changed, so the
 previous pinned runtime6-test result remains applicable. Next separate scoped
 convergence forT041, then resumeUS2 cutover/client andUS4 recovery work. No live
-AdGuard/signing/DNS change, no Notion. Hooks empty.
+AdGuard/DNS change, no Notion. Hooks empty.
 
 Cutover research already read: tailscale-access module README and main.tf;
 operator unit at IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl.

@@ -271,14 +271,6 @@ Rollback decision:
 Follow-up issue or PR:
 ```
 
-## Staged Codex signer
-
-`codex-cloud-signer` registers in `automation` with automatic sync disabled.
-Enable it through a PR only after the administrator-owned Tailscale/SSM
-resources and retained local volume exist. The owner must trust the daemon's
-public lock key before it becomes Ready. See its
-[runbook](../clusters/homelab/apps/codex-cloud-signer/README.md).
-
 ## Uptime Kuma onboarding
 
 The [Kuma stack](../IaC/homelab/us-west-2/apps/uptime-kuma/stack.hcl) declares

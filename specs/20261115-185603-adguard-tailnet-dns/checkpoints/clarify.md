@@ -49,7 +49,7 @@ recorded explicitly as such.
 | Miscellaneous/placeholders | Clear | No unresolved placeholders |
 
 No outstanding behavioral decision requires user input. Implementation method,
-image selection, storage arrangement, secret provisioning, signer integration,
+image selection, storage arrangement, secret provisioning, device enrollment,
 upstream/filter selection and delivery mechanics belong to planning.
 
 ## Verification and remaining limits
@@ -60,14 +60,3 @@ Built-in requirements checklist re-evaluated: 16/16 -> 16/16; no newly passing,
 regressed or unchecked items. Checklist bytes preserved as required.
 Structure, unique identifiers, links, whitespace and preserved checklist hash
 validated. No deployment or runtime tests performed in this requirements stage.
-
-Read-only source finding: scripts/tailscale-ingress-sign.py signs fixed targets
-and requires an existing trusted Mac signer. The Codex webhook signer permits
-only its constrained ephemeral Codex class, not arbitrary workload proxies.
-Planning must preserve that boundary and establish an authorized signing path;
-no trust change, signer reuse, enrollment, or live API action was attempted.
-
-The full Notion spec copy remains rejected by automatic approval review; no
-retry or alternate-route copy was attempted. Existing local artifacts and concise
-tracking remain usable. This does not block independent engineering. No goal-wide
-blocker; zero consecutive turns without meaningful progress.
