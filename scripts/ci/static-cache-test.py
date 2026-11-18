@@ -25,6 +25,18 @@ root = pathlib.Path(__file__).parent
 args = sys.argv[1:]
 cache = pathlib.Path(os.environ["TG_DOWNLOAD_DIR"]).resolve()
 repo = pathlib.Path(os.environ["CACHE_TEST_REPO"]).resolve()
+if args == ["stack", "generate"]:
+    for source_category, generated_category in (("operator", "operator"), ("live", "shared")):
+        source = repo / "IaC/terragrunt-catalog/units" / source_category
+        destination = repo / "IaC/homelab/us-west-2" / generated_category
+        destination.mkdir(parents=True, exist_ok=True)
+        for unit in source.iterdir():
+            target = destination / unit.name
+            if not target.exists() and not target.is_symlink():
+                target.symlink_to(unit, target_is_directory=True)
+                with (root / "generated-symlinks").open("a") as stream:
+                    stream.write(str(target) + "\\n")
+    sys.exit(0)
 assert cache != repo and repo not in cache.parents
 assert cache.stat().st_mode & 0o777 == 0o700
 with (root / "calls.jsonl").open("a") as stream:
@@ -38,7 +50,7 @@ if "init" in args and mode == "init":
 if "init" in args and mode == "term":
     os.kill(os.getppid(), signal.SIGTERM)
 if "render" in args:
-    config = repo / "IaC/homelab/us-west-2/operator/entra-emergency-global-admin/terragrunt.hcl"
+    config = repo / "IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt.hcl"
     import re
     enabled = re.search(r"emergency_global_admin_enabled\\s*=\\s*(true|false)", config.read_text())[1] == "true"
     print(json.dumps({"locals": {"emergency_global_admin_enabled": enabled}, "exclude": {"if": not enabled, "actions": ["apply", "destroy"]}}))
@@ -75,6 +87,17 @@ source "$1" --offline-verified
                      "TG_DOWNLOAD_DIR": str(ROOT / ".must-not-use-this-cache")},
                 text=True, capture_output=True, timeout=30,
             )
+            generated = directory / "generated-symlinks"
+            if generated.exists():
+                for path in generated.read_text().splitlines():
+                    Path(path).unlink()
+                for path in (ROOT / "IaC/homelab/us-west-2/operator",
+                             ROOT / "IaC/homelab/us-west-2/shared",
+                             ROOT / "IaC/homelab/us-west-2", ROOT / "IaC/homelab"):
+                    try:
+                        path.rmdir()
+                    except OSError:
+                        pass
             log = directory / "calls.jsonl"
             calls = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
             self.assertTrue(calls, result.stderr)
