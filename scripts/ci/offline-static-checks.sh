@@ -603,7 +603,7 @@ kubectl kustomize clusters/homelab/apps/cordium |
     $bootstrap_apps[0].spec.syncPolicy == {
       "automated": {
         "allowEmpty": false,
-        "enabled": true,
+        "enabled": false,
         "prune": true,
         "selfHeal": true
       },
