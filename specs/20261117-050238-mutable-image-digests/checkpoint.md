@@ -639,3 +639,38 @@ classification, exact Deployment targeting and preserved health predicates;
 no runtime image-advancement claim. T027 complete. Parent owns publication and
 exact-head CI; no remote writes were made here. T018 remains pending protected
 delivery and the independent Harbor compatibility blocker remains unchanged.
+
+## T028 rollout regression plan/task checkpoint
+
+After original PR 1849 merged, targeted rollout retry 44242844683 failed the
+source parity check because main PR 1865 moved the default Terraform block to
+`versions.tf`. The preceding apply stopped on the current-main source guard.
+Worktree `/workspace/homelab-updater-rollout-fix` isolates this bounded repair.
+T028 compares parsed contracts across files rather than a `main.tf` prefix.
+Provider fixture inspection confirms all `.tf` files are already copied and
+stripped individually, so no provider-fixture modification is planned.
+Relocation and actual configuration-divergence cases preserve the original
+safety intent. Parent owns followup PR and deployment; no runtime mutation here.
+
+
+## T028 validation and convergence checkpoint
+
+The regression now parses Terraform and KMS declarations across all module
+`.tf` files with the pinned HCL parser, ignoring only parser source-line
+annotations. Moving declarations to another filename or adding comments passes;
+provider version, encryption enforcement and KMS default changes fail parity.
+The parser subprocess excludes current-directory and user-site imports while
+retaining the pinned Nix dependency path. Production modules are unchanged.
+
+Native enrollment cases, seven actual shared-unit renders and handoff cases
+passed. Full `scripts/ci/offline-checks.sh` completed exit 0, including the
+integrated apply suite and static tail, after approximately ten minutes.
+Ruff, repository-configured Markdown lint and diff checks passed. Logs:
+`/tmp/updater-layout-offline.log` and `/tmp/updater-layout-lint.log`.
+The actual-provider fixture was not modified: inspection confirmed it already
+copies all `.tf` files and strips test-local encryption from each, so no
+additional provider rerun was needed for this test-only correction.
+
+Coordinator's independent T028 review found the correction clean. T028 complete;
+parent owns protected followup publication and deployment verification. No
+runtime mutation or remote write occurred in this worktree.

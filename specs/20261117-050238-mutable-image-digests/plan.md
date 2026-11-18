@@ -388,3 +388,14 @@ Deployment `argocd-image-updater` in namespace `argocd`. Reuse the existing
 Prometheus source-cadence and query functions; do not weaken exclusion policy.
 The monitor establishes readiness/generation only, not successful image updates.
 Validate catalog identity/coverage and run the full offline suite after the repair.
+
+## Module layout regression correction
+
+Main moved the default module's Terraform settings into `versions.tf`; the parity
+regression incorrectly compares only the prefix of `main.tf`. Parse all module
+`.tf` files and compare Terraform provider/encryption declarations and KMS
+variable contracts independently of filenames and formatting. Use the HCL parser
+already supplied by the pinned Nix environment. Add relocation and meaningful
+provider/encryption divergence cases. The actual-provider installer already
+copies every `.tf` file and removes only test-local encryption from each; no
+provider fixture or production module change is needed.

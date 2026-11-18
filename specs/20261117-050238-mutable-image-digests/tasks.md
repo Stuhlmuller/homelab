@@ -213,3 +213,10 @@ requirements. Keep custom checklist markers reviewer-owned.
   Prometheus deployment-health pattern. Update catalog assertions and operator
   documentation, preserve exclusion/freshness policy, and run the full offline
   suite plus scoped lint. Depends on T026 integration.
+
+- [x] T028 Repair module-contract regression after default Terraform settings
+  moved to `versions.tf`: compare parsed declarations across all module `.tf`
+  files, retain provider/encryption and KMS parity, and prove relocation passes
+  while meaningful divergence fails. Inspect provider-fixture file copying,
+  run native/unit cases and the full offline suite, then checkpoint for
+  parent-owned protected rollout-fix delivery. No production module change.

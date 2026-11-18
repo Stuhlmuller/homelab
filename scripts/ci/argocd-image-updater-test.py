@@ -41,11 +41,57 @@ def evaluate(scratch, values):
     return planned["manifest"]["value"], ""
 
 
+def module_contract(module):
+    # The pinned Nix shell supplies hcl2 via its Checkov Python environment.
+    # Exclude user-site/current-directory imports while retaining that dependency path.
+    parser = """import json, sys
+from pathlib import Path
+import hcl2
+def semantic(value):
+    if isinstance(value, dict):
+        return {key: semantic(item) for key, item in value.items()
+                if key not in {"__start_line__", "__end_line__"}}
+    if isinstance(value, list):
+        return [semantic(item) for item in value]
+    return value
+parsed = [semantic(hcl2.loads(Path(path).read_text())) for path in sys.argv[1:]]
+terraform = [block for file in parsed for block in file.get("terraform", [])]
+kms = [block for file in parsed for block in file.get("variable", [])
+       if any(name.startswith("kms_") for name in block)]
+print(json.dumps({"terraform": sorted(terraform, key=lambda x: json.dumps(x, sort_keys=True)),
+                  "kms": sorted(kms, key=lambda x: json.dumps(x, sort_keys=True))}))
+"""
+    with tempfile.TemporaryDirectory(prefix="module-contract-parser-") as directory:
+        result = subprocess.run(["python3", "-s", "-P", "-c", parser,
+                                 *(str(path.resolve()) for path in sorted(module.glob("*.tf")))],
+                                cwd=directory, text=True, capture_output=True, timeout=30, check=True)
+    contract = json.loads(result.stdout)
+    assert contract["terraform"] and contract["kms"], "provider/encryption or KMS contract missing"
+    return contract
+
+
+def contract_cases(default_module):
+    actual = module_contract(MODULE)
+    assert actual == module_contract(default_module), "provider/encryption or KMS contract diverged"
+    with tempfile.TemporaryDirectory(prefix="module-layout-") as directory:
+        relocated = Path(directory)
+        # Different filename, whitespace and comments must not change the contract.
+        text = "\n".join(path.read_text() for path in sorted(default_module.glob("*.tf")))
+        (relocated / "renamed.tf").write_text("# relocated declarations\n" + text)
+        assert module_contract(relocated) == actual, "relocation changed semantic contract"
+        for before, after in (('version = "3.2.1"', 'version = "3.2.2"'),
+                              ("enforced = true", "enforced = false"),
+                              ('"AES_256"', '"OTHER"')):
+            assert before in text, before
+            (relocated / "renamed.tf").write_text(text.replace(before, after, 1))
+            assert module_contract(relocated) != actual, "meaningful contract divergence was ignored"
+    print("Module contract: filename-independent HCL parity and three divergence cases passed")
+
+
 def hcl_cases():
     source = (MODULE / "main.tf").read_text()
     default_module = ROOT / "IaC/terragrunt-catalog/modules/argocd-application-kubernetes"
-    assert source.split("\nlocals {", 1)[0].strip() == (default_module / "main.tf").read_text().split("\nlocals {", 1)[0].strip(), "provider/encryption settings diverged"
-    assert (MODULE / "variables.tf").read_text().split('variable "manifest"', 1)[0].strip() == (default_module / "variables.tf").read_text().split('variable "manifest"', 1)[0].strip(), "KMS contract diverged"
+    contract_cases(default_module)
     blocks = re.findall(r"(?ms)^locals \{.*?^\}", source)
     assert blocks, "module must expose its actual native CR locals"
     with tempfile.TemporaryDirectory(prefix="image-updater-hcl-") as directory:
