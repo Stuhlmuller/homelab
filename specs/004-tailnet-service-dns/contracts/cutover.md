@@ -7,7 +7,7 @@ The public apex, mail and DNS-01 records, and Cloudflare zone remain.
 
 ## Handoff boundary
 
-Before asking the owner to change tailnet DNS, record read-only evidence that the resolver's LoadBalancer Service IP matches its online, signed `homelab-dns` proxy, and that an ordinary tailnet client
+Before asking the owner to change tailnet DNS, record read-only evidence that the resolver's LoadBalancer Service IP matches its online, `homelab-dns` proxy, and that an ordinary tailnet client
 can query that IP over UDP/TCP 53 for all 27 names. The owner adds **one restricted nameserver for `stinkyboi.com`** with that verified IP. If exit-node clients need the rule, enable Tailscale's
 per-nameserver **Use with exit node** option. Keep global nameservers, MagicDNS, search paths and unrelated DNS rules unchanged.
 
@@ -26,7 +26,6 @@ Cordium child. The apex remains public and privately answered while healthy.
 
 ## Recovery and rollback
 
-Run the repo-owned read-only DNS check from the trusted signer Mac with tailnet and read-only Kubernetes access to query the observed resolver IP over UDP and TCP, then inspect Argo health, resolver
-Pods, Service status and the signed proxy peer to locate a failure. Use Argo/Terragrunt desired state to restore the resolver or its Service declaration, and re-sign only the fixed proxy identity if
-Tailnet Lock rotated it. Re-run the check for all 27 answers and verify normal clients after recovery. After public retirement, do not add a public fallback for resolver faults; recovery never
+Run the repo-owned read-only DNS check from the authorized Mac with tailnet and read-only Kubernetes access to query the observed resolver IP over UDP and TCP, then inspect Argo health, resolver
+Pods, Service status and the proxy peer to locate a failure. Use Argo/Terragrunt desired state to restore the resolver or its Service declaration. Re-run the check for all 27 answers and verify normal clients after recovery. After public retirement, do not add a public fallback for resolver faults; recovery never
 restores the 26 retired subdomains' public A/AAAA/CNAME. A separate owner decision to reverse the private-DNS policy would need a new reviewed change. Never relax Traefik access restrictions or remove unrelated records.

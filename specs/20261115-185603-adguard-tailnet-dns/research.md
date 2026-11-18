@@ -9,7 +9,7 @@ The installed speckit-plan skill and complete upstream plan command at
 `github/spec-kit@a227e38315cd38172b04f2fb8f06ce8b69b38331` were read.
 A bounded research agent inspected AdGuard/ESO upstream behavior and reported
 version, configuration and image evidence; the coordinator inspected the existing
-app, secret, ingress, DNS, signing and apply paths and live prerequisite metadata.
+app, secret, ingress, DNS and apply paths and live prerequisite metadata.
 
 XERJ MCP, CLI and retained local corpus were unavailable. No node was installed
 or corpus indexed. The declared peer manifest pins
@@ -48,12 +48,12 @@ Sources: [release](https://github.com/AdguardTeam/AdGuardHome/releases/tag/v0.10
 **Decision:** Existing `automation` namespace, namespaced `homelab-workloads`
 Application, Kustomize Deployment/Recreate, operator LoadBalancer DNS Service,
 existing private Traefik for admin. Explicit per-pod ambient opt-out follows
-codex signer pattern; preserve other namespace workloads.
+existing targeted-apply pattern; preserve other namespace workloads.
 **Rationale:** Existing AppProject and ESO permit automation; avoids new namespace
 and privileges. Recreate prevents two writers to cache. Peer uses Recreate and
 persistent conf/work, supporting the basic workload shape.
 **Alternatives:** Peer NET_ADMIN/TUN sidecar rejected in favor of installed
-operator; separate Tailscale UI proxy adds unnecessary signed identity; public
+operator; separate Tailscale UI proxy adds unnecessary device identity; public
 Funnel not needed. A new application chart duplicates a small manifest boundary.
 
 ### Configuration/credentials
@@ -97,23 +97,20 @@ Sources: upstream Configuration/defaults above;
 Runtime fixtures must prove conditional failure does not reach general upstreams
 and verify configured blocking responses, including AAAA.
 
-### Cutover/signing
+### DNS cutover
 
 **Decision:** Separate verified deployment from observed-IP DNS commit/application.
 Keep the single existing tailscale_dns_configuration resource, global
 use_with_exit_node=true and override_local_dns=true; preserve split DNS/MagicDNS.
-When Tailnet Lock is enabled, use the existing trusted fixed-target Mac signer
-with the exact AdGuard target. The unlocked amendment below supersedes the
-original unconditional signing assumption.
 Constrain saved-plan apply with code and negative tests, not prose-only claims.
-**Rationale:** Operator-assigned address and peer identity/mode are runtime facts.
+**Rationale:** Operator-assigned address and peer identity are runtime facts.
 Provider supports complete DNS configuration and warns against mixing separate
 DNS resources. Exit-node use flag requires client >=1.88.1.
 **Alternatives:** Guessed IP, competing provider resource, ad hoc API write,
-workload CI administrator privilege, or broadening Codex signing webhook rejected.
+workload CI administrator privilege rejected.
 
 Source: [provider 0.29.2 DNS resource](https://github.com/tailscale/terraform-provider-tailscale/blob/v0.29.2/docs/resources/dns_configuration.md)
-read in full; local tailscale-access runbook, signer and targeted CI apply paths.
+read in full; local tailscale-access runbook and targeted CI apply paths.
 
 ## Observed prerequisites and limitations
 
@@ -127,48 +124,27 @@ read in full; local tailscale-access runbook, signer and targeted CI apply paths
 - Existing private DNS Service publishes 100.71.150.27 and ClusterIP 10.97.225.203.
   These are observed existing values, not the future AdGuard endpoint.
 - ESO ClusterSecretStore Ready and includes automation in its namespace allowlist.
-- Local administrator OAuth files and fixed macOS signer executable are absent.
-  No new signer, credentials, enrollment or access-policy change was attempted.
-- Planning can finish and source work can continue. Signing, administrator DNS
+- Local administrator OAuth files are absent.
+  No credentials, enrollment or access-policy change was attempted.
+- Planning can finish and source work can continue. Administrator DNS
   apply and actual-client acceptance require the existing authorized operator
   path, or a concrete handoff once the artifacts are ready.
 
 All design decisions are resolved. Image execution, secret render, recovery,
 policy enforcement and live rollout are validation tasks, not claimed results.
 
-## Unlocked-tailnet amendment research
 
-Owner confirms disabled Lock. Bounded read-only research inspected official
-Tailscale v1.102.3, commit `53a0d659afa51835dd7a9283873cca44261454f8`.
-XERJ tools/executable were unavailable; no node or corpus was installed. The
-coordinator also read the cited PeerStatus and lock JSON serialization sections.
+### Device identity schema
 
-- [PeerStatus and status map](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/ipn/ipnstate/ipnstate.go):
-  Self and Peer use stable ID, numeric NodeID, node PublicKey, DNSName, Tags,
-  TailscaleIPs, Online, optional Expired and InNetworkMap. Peer map keys are node
-  public keys. DNSName has a trailing dot; HostName is not unique.
-- [Status CLI](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/cmd/tailscale/cli/status.go):
-  status JSON directly marshals ipnstate.Status.
-- [Lock serialization](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/cmd/tailscale/cli/jsonoutput/tailnet-lock-status.go):
-  disabled response includes SchemaVersion=1 and explicit Enabled=false.
-  PublicKey and NodeKey are optional; disabled responses omit signature and
-  trusted/visible/filtered peer fields.
+**Decision:** Match the connected client's actual network-map peer with proxy
+Self status and Kubernetes ownership. Stable device ID, numeric NodeID, public
+key, hostname, tag and addresses must agree. Require online, unexpired identity
+and reject missing, ambiguous or changing observations.
+**Rationale:** The operator assigns the address; hostname-only or IP-only
+matching cannot establish the exact declared endpoint. Device reachability also
+does not prove effective DNS, filtering or administration behavior, so retain
+all functional and normal-client checks.
+**Alternatives:** Skipping identity verification, inventing evidence, reusing
+stale receipts and relaxing resource ownership are rejected.
 
-**Decision:** Verify disabled mode using an exact boolean and independently match
-local Peer to proxy Self plus Kubernetes ownership. Do not use Lock peer lists
-when disabled. Optional NodeKey, when present, must agree with device status.
-**Rationale:** This reflects actual serialized fields without substituting a
-missing signature for successful signing. Online/identity do not prove DNS;
-functional tests remain mandatory.
-**Alternatives rejected:** Enabling Lock, trusting a new signer, a skip-trust flag,
-forcing signed=true, hostname-only matching, or weakening shared signing helpers.
-
-**Compatibility finding:** Enabled v1.102.3 Lock peers use stable ID and DNSName,
-whereas the existing shared helper expects legacy StableID/numeric ID/Name.
-This amendment keeps that path strict and unchanged; it does not claim that
-locked acceptance works against a newly incompatible CLI schema. Record the
-limitation in the affected operator documentation during implementation; a
-future enabled-mode compatibility fix must retain equivalent signature checks.
-
-Constitution gates pass before and after design. Runtime Mac version and actual
-acceptance remain to be verified; schema failures remain explicit failures.
+Source: [Tailscale PeerStatus](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/ipn/ipnstate/ipnstate.go).

@@ -21,7 +21,7 @@ mode. Its private evidence file must be outside the repository.
 
 1. A clean, merged and reviewed `main` revision matches `--expected-sha`, and
    the helper, preflight, and inventory exist in that revision.
-2. The observed DNS Service tailnet IPv4 belongs to the online signed
+2. The observed DNS Service tailnet IPv4 belongs to the online
    `homelab-dns` peer. The owner has enabled the restricted `stinkyboi.com`
    nameserver. Ordinary client OS lookups resolve all 29 current approved names to
    private Traefik, including the apex and a Cordium wildcard child; direct
@@ -91,7 +91,7 @@ and a public recursive resolver for A, AAAA, and CNAME. No public answer of
 those types may remain. Compare public apex A,
 MX, TXT, and any existing CAA, plus representative unrelated names, with the
 recorded pre-cutover baseline. Check that DNS-01 validation capability and
-existing HTTPS certificates remain usable. Re-run the signed direct DNS
+existing HTTPS certificates remain usable. Re-run the direct DNS
 checker, ordinary tailnet OS lookups, HTTPS routes, and critical caller paths.
 
 The fail-closed guarantee applies to the 26 retired subdomains. The apex has
@@ -101,10 +101,9 @@ public app address.
 
 ## Recovery and reversal
 
-Diagnose with the read-only `scripts/tailnet-dns-check.py` against the
-observed resolver IP, Argo health, Pods, Service status, and signed proxy
+Diagnose with direct UDP/TCP queries to the observed resolver IP, Argo health,
+Pods, Service status and proxy
 identity. Restore failed resolver declarations through reviewed
-Terragrunt/Argo desired state, or re-sign only the fixed proxy when its key
-rotates. Re-run direct and normal-client checks. Do not republish the retired
+Terragrunt/Argo desired state. Re-run direct and normal-client checks. Do not republish the retired
 public addresses or relax Traefik restrictions as outage recovery. A policy
 reversal requires a separate reviewed change and explicit owner decision.

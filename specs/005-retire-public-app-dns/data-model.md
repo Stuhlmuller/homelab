@@ -49,7 +49,7 @@ existing fields, with `checked_names` and `baseline_records` narrowed to the
 | Field | Meaning and validation |
 | --- | --- |
 | `reviewed_main_sha` | Exact merged `main` revision used for execution |
-| `resolver_ip` | Observed signed resolver tailnet IPv4 |
+| `resolver_ip` | Observed resolver tailnet IPv4 |
 | `owner_tailnet_dns_confirmed` | Owner's restricted DNS setting confirmed |
 | `normal_client_dns_confirmed` | Ordinary OS lookups for all 29 current names confirmed |
 | `critical_paths_confirmed` | All existing Fleet, Harbor node pull, native API, Cordium reconnect, and public callback checks confirmed |

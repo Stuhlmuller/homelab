@@ -12,8 +12,10 @@ implementation. Follow existing task ownership/protected PR skills for delivery.
 
 ## Phase 1: Setup
 
-- [X] T001 Refresh main, confirm existing issue/branch ownership and inspect available Nix/runtime tools and current prerequisite health; record exact baseline and any unavailable validation in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/implementation.md` without replacing the isolated worktree.
-- [X] T002 Resolve and verify the AdGuard v0.107.80 multi-platform index from research, add only its immutable upstream artifact to `scripts/config/harbor-images.json`, and run the existing inventory/coverage checks.
+- [X] T001 Refresh main, confirm existing issue/branch ownership and inspect available Nix/runtime tools and current prerequisite health; record exact baseline and any unavailable
+  validation in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/implementation.md` without replacing the isolated worktree.
+- [X] T002 Resolve and verify the AdGuard v0.107.80 multi-platform index from research, add only its immutable upstream artifact to `scripts/config/harbor-images.json`, and run the
+  existing inventory/coverage checks.
 
 ## Phase 2: Foundational delivery and contracts
 
@@ -24,26 +26,38 @@ while publication is pending. T003 must pass before marking that PR ready or any
 consuming-source merge at T032. No application registration/apply or DNS change
 is authorized by source-only completion.
 
-- [X] T003 Deliver the T002 prerequisite through its protected PR and exact-main `.github/workflows/harbor-mirror.yml` dispatch; require digest/platform preservation and authenticated full pulls, recording PR/run/SHA evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/image-publication.md` before any consuming manifest merges.
-- [X] T004 Add generated `/homelab/adguard/admin-password` and exact ESO reader grant in `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`; enforce “32 characters, <=72 UTF-8 bytes; exact reader grant; never output values” and cover the declaration with existing SSM module tests.
-- [X] T005 Add shared app registration at `IaC/homelab/us-west-2/apps/adguard/stack.hcl` and `terragrunt.stack.hcl`, using homelab-workloads/automation and the five reviewed dependencies; generate/inspect Application without broadening AppProject or namespace access.
-- [X] T006 Add failing targeted AdGuard prerequisite/SSM-lane cases in `scripts/ci/terragrunt-apply-test.py`, including unavailable upstream health, wrong namespace/store scope, missing NFS and an unrelated app exclusion.
-- [X] T007 Extend `scripts/ci/terragrunt-apply.sh` for exact AdGuard registration and SSM prerequisites using existing bounded app paths; pass T006 without introducing DNS administrator scopes or bypassing current-main guards.
+- [X] T003 Deliver the T002 prerequisite through its protected PR and exact-main `.github/workflows/harbor-mirror.yml` dispatch; require digest/platform preservation and
+  authenticated full pulls, recording PR/run/SHA evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/image-publication.md` before any consuming manifest merges.
+- [X] T004 Add generated `/homelab/adguard/admin-password` and exact ESO reader grant in `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`; enforce “32
+  characters, <=72 UTF-8 bytes; exact reader grant; never output values” and cover the declaration with existing SSM module tests.
+- [X] T005 Add shared app registration at `IaC/homelab/us-west-2/apps/adguard/stack.hcl` and `terragrunt.stack.hcl`, using homelab-workloads/automation and the five reviewed
+  dependencies; generate/inspect Application without broadening AppProject or namespace access.
+- [X] T006 Add failing targeted AdGuard prerequisite/SSM-lane cases in `scripts/ci/terragrunt-apply-test.py`, including unavailable upstream health, wrong namespace/store scope,
+  missing NFS and an unrelated app exclusion.
+- [X] T007 Extend `scripts/ci/terragrunt-apply.sh` for exact AdGuard registration and SSM prerequisites using existing bounded app paths; pass T006 without introducing DNS
+  administrator scopes or bypassing current-main guards.
 
 ## Phase 3: US1 — Direct filtering service (P1)
 
-**Goal**: A correctly configured, signed, directly queryable filtering resolver.
+**Goal**: A correctly configured, directly queryable filtering resolver.
 **Independent evidence**: Runtime fixture first; live direct UDP/TCP acceptance
 at T036. This story alone does not switch global DNS.
 
-- [X] T008 [P] [US1] Add manifest/config boundary cases in `scripts/ci/adguard-test.py` for one replica, DNS-only tailnet Service, non-root capabilities, no public/setup exposure, one valid admin hash, privacy flags and retained storage; show relevant failures before implementation.
-- [X] T009 [P] [US1] Add `scripts/ci/adguard-runtime-test.py` using the pinned image and synthetic credentials/upstreams/filter list; cover both transports, A/AAAA null-IP blocking, permitted/NXDOMAIN/private answers, private failure isolation, failed-refresh retention, empty-cache rejection and exact security-context startup.
-- [X] T010 [US1] Implement `clusters/homelab/apps/adguard/init-config.py` to validate schema 34, “exactly one nonempty bcrypt user; no plaintext password,” resolve the fixed cluster-local private resolver, and atomically write mode-0600 JSON-compatible YAML; fail closed on malformed input, ambiguous address or failed resolution.
-- [X] T011 [US1] Create `clusters/homelab/apps/adguard/externalsecret.yaml` with OnChange/revision-driven bcrypt rendering, guarded password length, default ad filter/daily refresh, explicit general/private upstreams, empty fallback and disabled querylog/statistics/discovery; mount files without runtime credential environment variables.
-- [X] T012 [US1] Create `clusters/homelab/apps/adguard/deployment.yaml`, `pvc.yaml` and `kustomization.yaml` with Recreate/non-root/NET_BIND_SERVICE-only profile, no token mount, ambient opt-out, bounded probes/resources, writable config and 1Gi retained nfs-default work cache; enforce “One writer; retained claim; failed refresh preserves usable cache.”
-- [X] T013 [US1] Create `clusters/homelab/apps/adguard/service.yaml` and `networkpolicy.yaml` for DNS-only operator LoadBalancer and separate ClusterIP admin service; declare intended peers and document actual external enforcement limitations.
-- [X] T014 [US1] Add the exact automation/adguard-dns/homelab-adguard signing target and `--adguard-only` mode to `scripts/tailscale-ingress-sign.py` with corresponding existing signer fixtures; preserve trusted signer/current-main/identity guards and reject unrelated targets.
-- [X] T015 [US1] Implement read-only `scripts/adguard-check.py` plus `scripts/ci/adguard-check-test.py` to bind observed Service/peer identity and config/deployed revisions, verify enabled nonempty filter membership, and check required direct DNS samples with three-second single-attempt deadlines; never invent endpoint IP or treat fixture peers as live proof.
+- [X] T008 [P] [US1] Add manifest/config boundary cases in `scripts/ci/adguard-test.py` for one replica, DNS-only tailnet Service, non-root capabilities, no public/setup exposure,
+  one valid admin hash, privacy flags and retained storage; show relevant failures before implementation.
+- [X] T009 [P] [US1] Add `scripts/ci/adguard-runtime-test.py` using the pinned image and synthetic credentials/upstreams/filter list; cover both transports, A/AAAA null-IP
+  blocking, permitted/NXDOMAIN/private answers, private failure isolation, failed-refresh retention, empty-cache rejection and exact security-context startup.
+- [X] T010 [US1] Implement `clusters/homelab/apps/adguard/init-config.py` to validate schema 34, “exactly one nonempty bcrypt user; no plaintext password,” resolve the fixed
+  cluster-local private resolver, and atomically write mode-0600 JSON-compatible YAML; fail closed on malformed input, ambiguous address or failed resolution.
+- [X] T011 [US1] Create `clusters/homelab/apps/adguard/externalsecret.yaml` with OnChange/revision-driven bcrypt rendering, guarded password length, default ad filter/daily
+  refresh, explicit general/private upstreams, empty fallback and disabled querylog/statistics/discovery; mount files without runtime credential environment variables.
+- [X] T012 [US1] Create `clusters/homelab/apps/adguard/deployment.yaml`, `pvc.yaml` and `kustomization.yaml` with Recreate/non-root/NET_BIND_SERVICE-only profile, no token mount,
+  ambient opt-out, bounded probes/resources, writable config and 1Gi retained nfs-default work cache; enforce “One writer; retained claim; failed refresh preserves usable cache.”
+- [X] T013 [US1] Create `clusters/homelab/apps/adguard/service.yaml` and `networkpolicy.yaml` for DNS-only operator LoadBalancer and separate ClusterIP admin service; declare
+  intended peers and document actual external enforcement limitations.
+- [X] T015 [US1] Implement read-only `scripts/adguard-check.py` plus `scripts/ci/adguard-check-test.py` to bind observed Service/peer identity and config/deployed revisions, verify
+  enabled nonempty filter membership, and check required direct DNS samples with three-second single-attempt deadlines; never invent endpoint IP or treat fixture peers as live
+  proof.
 
 ## Phase 4: US2 — Tailnet DNS adoption support (P1)
 
@@ -52,11 +66,16 @@ at T036. This story alone does not switch global DNS.
 actual tailnet/system-resolver outcome is deliberately delayed to T037–T039 until
 US3/US4 and live direct acceptance are complete.
 
-- [X] T016 [US2] Add `scripts/ci/adguard-dns-cutover-test.py` cases for exact DNS-only plans, unrelated changes/replacement/deletion/unknown values, stale/future evidence, changed source/config/Service/peer/plan bytes/live DNS and uncertain-write recovery; enforce “300-second full-check and 60-second completion-to-apply bounds.”
-- [X] T017 [US2] Implement preview-by-default cutover mode in `scripts/adguard-dns-cutover.py`, rerunning all required checks in the same invocation, binding full before/after policies and plan SHA-256, re-reading guarded state immediately before exact saved-plan apply, preserving native state locks and verifying actual policy after apply.
-- [X] T018 [US2] Extend `scripts/ci/adguard-check-test.py` with real-system-resolver adapter fixtures, cache treatment and OS/client-version/exit-node metadata; reject direct-query receipts presented as client acceptance and missing/unsupported exit-node evidence.
-- [X] T019 [US2] Add client acceptance mode to `scripts/adguard-check.py` and document its actual CLI in `specs/20261115-185603-adguard-tailnet-dns/quickstart.md`; support required fresh blocked/permitted samples, private-name inventory and MagicDNS, with conditional existing-exit-node coverage and no synthetic pass for unavailable access.
-- [X] T020 [US2] Add DNS cutover expectation fixtures under `IaC/terragrunt-catalog/modules/tailscale-access/` for one observed AdGuard global nameserver, override enabled and exit-node use while preserving full split DNS/MagicDNS/search paths; do not put a placeholder address into active `main.tf` before T037.
+- [X] T016 [US2] Add `scripts/ci/adguard-dns-cutover-test.py` cases for exact DNS-only plans, unrelated changes/replacement/deletion/unknown values, stale/future evidence, changed
+  source/config/Service/peer/plan bytes/live DNS and uncertain-write recovery; enforce “300-second full-check and 60-second completion-to-apply bounds.”
+- [X] T017 [US2] Implement preview-by-default cutover mode in `scripts/adguard-dns-cutover.py`, rerunning all required checks in the same invocation, binding full before/after
+  policies and plan SHA-256, re-reading guarded state immediately before exact saved-plan apply, preserving native state locks and verifying actual policy after apply.
+- [X] T018 [US2] Extend `scripts/ci/adguard-check-test.py` with real-system-resolver adapter fixtures, cache treatment and OS/client-version/exit-node metadata; reject direct-query
+  receipts presented as client acceptance and missing/unsupported exit-node evidence.
+- [X] T019 [US2] Add client acceptance mode to `scripts/adguard-check.py` and document its actual CLI in `specs/20261115-185603-adguard-tailnet-dns/quickstart.md`; support required
+  fresh blocked/permitted samples, private-name inventory and MagicDNS, with conditional existing-exit-node coverage and no synthetic pass for unavailable access.
+- [X] T020 [US2] Add DNS cutover expectation fixtures under `IaC/terragrunt-catalog/modules/tailscale-access/` for one observed AdGuard global nameserver, override enabled and
+  exit-node use while preserving full split DNS/MagicDNS/search paths; do not put a placeholder address into active `main.tf` before T037.
 
 ## Phase 5: US3 — Private administration (P2)
 
@@ -64,10 +83,14 @@ US3/US4 and live direct acceptance are complete.
 **Independent evidence**: Route/render/auth fixtures followed by live UI checks at
 T036; no global DNS switch needed to test this story.
 
-- [X] T021 [US3] Extend `scripts/ci/traefik-routes-test.py` and `scripts/ci/tailnet-dns-test.py` for the approved AdGuard name, fixed private backend, TLS coverage and absence from Funnel/setup routes.
-- [X] T022 [US3] Add private AdGuard router/backend in `clusters/homelab/apps/traefik/routes.yaml`, its approved-name annotation in `values.yaml`, and matching private resolver allowlist in `clusters/homelab/platform/tailnet-dns/values.yaml`; keep the route/name/view contract synchronized.
-- [X] T023 [US3] Extend `scripts/ci/adguard-runtime-test.py` with initialized authenticated administration, rejected unauthenticated protected reads/writes, no first-run setup, and no retained query/statistics history; use synthetic credentials only.
-- [X] T024 [US3] Extend `scripts/adguard-check.py` and `clusters/homelab/apps/adguard/README.md` for private TLS/admin acceptance using file-backed credentials without printing secrets; document inspection versus repository-owned persistent changes.
+- [X] T021 [US3] Extend `scripts/ci/traefik-routes-test.py` and `scripts/ci/tailnet-dns-test.py` for the approved AdGuard name, fixed private backend, TLS coverage and absence from
+  Funnel/setup routes.
+- [X] T022 [US3] Add private AdGuard router/backend in `clusters/homelab/apps/traefik/routes.yaml`, its approved-name annotation in `values.yaml`, and matching private resolver
+  allowlist in `clusters/homelab/platform/tailnet-dns/values.yaml`; keep the route/name/view contract synchronized.
+- [X] T023 [US3] Extend `scripts/ci/adguard-runtime-test.py` with initialized authenticated administration, rejected unauthenticated protected reads/writes, no first-run setup, and
+  no retained query/statistics history; use synthetic credentials only.
+- [X] T024 [US3] Extend `scripts/adguard-check.py` and `clusters/homelab/apps/adguard/README.md` for private TLS/admin acceptance using file-backed credentials without printing
+  secrets; document inspection versus repository-owned persistent changes.
 
 ## Phase 6: US4 — Recovery and rollback (P2)
 
@@ -75,28 +98,51 @@ T036; no global DNS switch needed to test this story.
 is unavailable. **Independent evidence**: Isolated restore and rollback eligibility
 fixtures; no destructive live outage is required.
 
-- [X] T025 [US4] Add rollback-mode cases to `scripts/ci/adguard-dns-cutover-test.py`: AdGuard DNS/UI/peer unavailable must not block an otherwise exact restoration, unrelated drift/missing prior record must fail, already-restored must be no-op, and uncertain result must be inspected before retry.
-- [X] T026 [US4] Implement `--mode rollback` in `scripts/adguard-dns-cutover.py` with separate gates; enforce “Prior policy must agree with reviewed source; fresh live policy must match activated or already-restored policy; rollback eligibility excludes AdGuard health,” preserving timing/state locks/storage/secrets and diagnostic-only private resolver availability.
-- [X] T027 [US4] Add a repository-owned isolated recovery mode to `scripts/adguard-check.py` (or an explicitly documented sibling helper if isolation requires it), with synthetic replacement/restore cases in `scripts/ci/adguard-runtime-test.py`; reconstruct Git plus protected credential source versions and prove effective configuration/authentication/filtering without modifying production.
-- [X] T028 [US4] Document state reconstruction, protected credential custody, retained cache, explicit rollback CLI and offline-AdGuard recovery in `clusters/homelab/apps/adguard/README.md`, `docs/storage-nfs.md` and `docs/application-recovery.md`; distinguish recovered behavior from backup existence.
+- [X] T025 [US4] Add rollback-mode cases to `scripts/ci/adguard-dns-cutover-test.py`: AdGuard DNS/UI/peer unavailable must not block an otherwise exact restoration, unrelated
+  drift/missing prior record must fail, already-restored must be no-op, and uncertain result must be inspected before retry.
+- [X] T026 [US4] Implement `--mode rollback` in `scripts/adguard-dns-cutover.py` with separate gates; enforce “Prior policy must agree with reviewed source; fresh live policy must
+  match activated or already-restored policy; rollback eligibility excludes AdGuard health,” preserving timing/state locks/storage/secrets and diagnostic-only private resolver
+  availability.
+- [X] T027 [US4] Add a repository-owned isolated recovery mode to `scripts/adguard-check.py` (or an explicitly documented sibling helper if isolation requires it), with synthetic
+  replacement/restore cases in `scripts/ci/adguard-runtime-test.py`; reconstruct Git plus protected credential source versions and prove effective
+  configuration/authentication/filtering without modifying production.
+- [X] T028 [US4] Document state reconstruction, protected credential custody, retained cache, explicit rollback CLI and offline-AdGuard recovery in
+  `clusters/homelab/apps/adguard/README.md`, `docs/storage-nfs.md` and `docs/application-recovery.md`; distinguish recovered behavior from backup existence.
 
 ## Phase 7: Integration, delivery and functional acceptance
 
 These tasks complete all stories in dependency order. They remain pending when
 source tests pass but live prerequisites or required operator access are absent.
 
-- [X] T029 Update `openwiki/workloads/inventory.md`, `openwiki/runbooks/tailnet-ingress.md`, `openwiki/architecture/storage-and-state.md`, `docs/secrets-aws-ssm.md` and `openwiki/operations/validation-gates.md` with actual app, credential, storage, validation and client limitations; preserve generated wiki artifacts.
-- [X] T030 Run all new fixture/render/runtime checks and affected existing route/DNS/signing/SSM/targeted-apply/OpenWiki checks plus relevant HCL formatting/plans from `docs/validation-runbook.md`; record exact results and material limits in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/validation.md`.
-- [X] T031 Review the complete app diff for FR coverage, secret safety and executable cutover/rollback guards; prepare a bounded draft PR and delivery evidence with image publication explicitly pending until T003 passes in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without claiming unfinished runtime acceptance.
-- [ ] T032 Deliver app/route/secret/helper source through protected PR merge under `.agents/skills/homelab-protected-prs/SKILL.md`, preserving ownership and exact-commit check evidence; record final main SHA in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md`.
-- [ ] T033 Refresh live prerequisite health and diagnose the observed Traefik Application Progressing discrepancy; if a source correction is required, deliver it through its owning code path and tests before AdGuard apply; record evidence and dependency disposition in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without bypassing preflight.
-- [ ] T034 Dispatch the tested exact-main AdGuard path in `.github/workflows/terragrunt-apply.yml`, inspect SSM/ESO/PVC/workload/route results without printing credentials, and verify deployed revision with `scripts/verify-gitops.py`; record actual rollout evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`.
-- [ ] T035 Run the reviewed fixed signing path from `scripts/tailscale-ingress-sign.py` on the existing trusted signer, then record actual online signed AdGuard peer and Service address in private receipts referenced by `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`; if operator access is missing, prepare this exact handoff rather than expanding trust.
-- [ ] T036 Run live direct DNS/admin checks, routine replacement through the declared delivery path and isolated recovery with `scripts/adguard-check.py`; prove US1/US3/US4 acceptance and recheck actual revision, recording only sanitized results in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`.
-- [ ] T037 After T036, replace the global DNS entries with the observed AdGuard IPv4 and override/exit-node flags in `IaC/terragrunt-catalog/modules/tailscale-access/main.tf`; preserve all unrelated DNS fields, run T020 tests and deliver the narrow cutover PR through protected merge with prior-policy capture referenced in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/cutover.md`.
-- [ ] T038 Generate and inspect the existing encrypted administrator saved plan, then preview/execute `scripts/adguard-dns-cutover.py --mode cutover` from reviewed current main with fresh bound checks; inspect effective tailnet policy and retain private exact-plan/prior-policy receipts, recording sanitized outcome in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/cutover.md`.
-- [ ] T039 Perform normal-client blocked/permitted/private/MagicDNS acceptance using `scripts/adguard-check.py`, recording OS/Tailscale version/cache handling/exit-node mode, additional existing-exit-node coverage or explicit unverified limitation, and final deployed revision in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`; use reviewed rollback if acceptance fails.
-- [ ] T040 Run separate speckit-converge against the implemented task list and current spec/plan, resolve any appended work through additional implementation/convergence turns, then update issue #1842 and the existing tracker only after required functional evidence is complete; save final disposition in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/converge.md`.
+- [X] T029 Update `openwiki/workloads/inventory.md`, `openwiki/runbooks/tailnet-ingress.md`, `openwiki/architecture/storage-and-state.md`, `docs/secrets-aws-ssm.md` and
+  `openwiki/operations/validation-gates.md` with actual app, credential, storage, validation and client limitations; preserve generated wiki artifacts.
+- [X] T030 Run all new fixture/render/runtime checks and affected existing route/DNS/SSM/targeted-apply/OpenWiki checks plus relevant HCL formatting/plans from
+  `docs/validation-runbook.md`; record exact results and material limits in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/validation.md`.
+- [X] T031 Review the complete app diff for FR coverage, secret safety and executable cutover/rollback guards; prepare a bounded draft PR and delivery evidence with image
+  publication explicitly pending until T003 passes in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without claiming unfinished runtime acceptance.
+- [ ] T032 Deliver app/route/secret/helper source through protected PR merge under `.agents/skills/homelab-protected-prs/SKILL.md`, preserving ownership and exact-commit check
+  evidence; record final main SHA in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md`.
+- [ ] T033 Refresh live prerequisite health and diagnose the observed Traefik Application Progressing discrepancy; if a source correction is required, deliver it through its owning
+  code path and tests before AdGuard apply; record evidence and dependency disposition in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/delivery.md` without bypassing
+  preflight.
+- [ ] T034 Dispatch the tested exact-main AdGuard path in `.github/workflows/terragrunt-apply.yml`, inspect SSM/ESO/PVC/workload/route results without printing credentials, and
+  verify deployed revision with `scripts/verify-gitops.py`; record actual rollout evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`.
+- [ ] T035 Verify the online AdGuard device identity and Service address, then record private evidence in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`; use
+  the declared operator credential path when access is missing.
+- [ ] T036 Run live direct DNS/admin checks, routine replacement through the declared delivery path and isolated recovery with `scripts/adguard-check.py`; prove US1/US3/US4
+  acceptance and recheck actual revision, recording only sanitized results in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`.
+- [ ] T037 After T036, replace the global DNS entries with the observed AdGuard IPv4 and override/exit-node flags in `IaC/terragrunt-catalog/modules/tailscale-access/main.tf`;
+  preserve all unrelated DNS fields, run T020 tests and deliver the narrow cutover PR through protected merge with prior-policy capture referenced in
+  `specs/20261115-185603-adguard-tailnet-dns/checkpoints/cutover.md`.
+- [ ] T038 Generate and inspect the existing encrypted administrator saved plan, then preview/execute `scripts/adguard-dns-cutover.py --mode cutover` from reviewed current main
+  with fresh bound checks; inspect effective tailnet policy and retain private exact-plan/prior-policy receipts, recording sanitized outcome in
+  `specs/20261115-185603-adguard-tailnet-dns/checkpoints/cutover.md`.
+- [ ] T039 Perform normal-client blocked/permitted/private/MagicDNS acceptance using `scripts/adguard-check.py`, recording OS/Tailscale version/cache handling/exit-node mode,
+  additional existing-exit-node coverage or explicit unverified limitation, and final deployed revision in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`; use
+  reviewed rollback if acceptance fails.
+- [ ] T040 Run separate speckit-converge against the implemented task list and current spec/plan, resolve any appended work through additional implementation/convergence turns,
+  then update issue #1842 and the existing tracker only after required functional evidence is complete; save final disposition in
+  `specs/20261115-185603-adguard-tailnet-dns/checkpoints/converge.md`.
 
 ## Dependencies and implementation strategy
 
@@ -165,7 +211,8 @@ not merely source-file presence or unchecked fixture descriptions.
 
 ## Phase 9: Convergence
 
-- [X] T042 Require the complete declared evidence-key set and nonempty values in `validate_binding` in `scripts/adguard-dns-cutover.py`; add negative cases for two equally empty or equally incomplete snapshots, preserving mismatch rejection, before wiring execution per FR-013/019 and plan: cutover evidence binding (partial, HIGH).
+- [X] T042 Require the complete declared evidence-key set and nonempty values in `validate_binding` in `scripts/adguard-dns-cutover.py`; add negative cases for two equally empty or
+  equally incomplete snapshots, preserving mismatch rejection, before wiring execution per FR-013/019 and plan: cutover evidence binding (partial, HIGH).
 
 ## Phase 10: Convergence
 
@@ -176,147 +223,43 @@ not merely source-file presence or unchecked fixture descriptions.
 
 ## Phase 11: Convergence
 
-- [X] T044 Document practical domain-based blocking limits, same-domain ads/content tradeoffs, and browser/application encrypted-DNS bypass prerequisites in `clusters/homelab/apps/adguard/README.md`, linked from `openwiki/runbooks/tailnet-ingress.md`, per FR-018 (partial); preserve explicit macOS/exit-node verification limits and do not promise all ads are removed.
+- [X] T044 Document practical domain-based blocking limits, same-domain ads/content tradeoffs, and browser/application encrypted-DNS bypass prerequisites in
+  `clusters/homelab/apps/adguard/README.md`, linked from `openwiki/runbooks/tailnet-ingress.md`, per FR-018 (partial); preserve explicit macOS/exit-node verification limits and do
+  not promise all ads are removed.
 
 ## Delivery review corrections
 
-- [X] T045 Disable implicit NodePort allocation on the AdGuard DNS LoadBalancer in `clusters/homelab/apps/adguard/service.yaml` and cover it in `scripts/ci/adguard-test.py`; enforce the existing no-NodePort exposure contract (FR-002/FR-006).
+- [X] T045 Disable implicit NodePort allocation on the AdGuard DNS LoadBalancer in `clusters/homelab/apps/adguard/service.yaml` and cover it in `scripts/ci/adguard-test.py`;
+  enforce the existing no-NodePort exposure contract (FR-002/FR-006).
 
-- [X] T046 Reconcile AdGuard source with the merged Uptime Kuma ownership/catalog and shared route/apply policies; retain both applications, add exact AdGuard readiness coverage to the exhaustive catalog, and validate affected guards before draft delivery.
+- [X] T046 Reconcile AdGuard source with the merged Uptime Kuma ownership/catalog and shared route/apply policies; retain both applications, add exact AdGuard readiness coverage to
+  the exhaustive catalog, and validate affected guards before draft delivery.
 
-- [X] T047 Deliver the `bind.dnsutils` devShell addition as a prerequisite before the final AdGuard publication receipt, preserving the byte-identical publication bundle across consumer delivery; run the exact-main scoped publisher after that toolchain source is merged.
+- [X] T047 Deliver the `bind.dnsutils` devShell addition as a prerequisite before the final AdGuard publication receipt, preserving the byte-identical publication bundle across
+  consumer delivery; run the exact-main scoped publisher after that toolchain source is merged.
 
-## Phase 12: Unlocked amendment — US1 identity verification (P1)
+## Phase 12: Endpoint Identity and Acceptance Evidence
 
-The owner confirms Lock is disabled. Requirements review CHK001–012 passed in
-`checkpoints/unlocked-review.md`. This append preserves T001–T047 and their
-checkboxes as history; it does not assert that unchecked delivery or acceptance
-work has passed. For future execution, FR-020/021 supersede T035's unconditional
-signing instruction: signing applies only to enabled Lock; unlocked acceptance
-must independently observe and verify mode and identity. The historical US1
-“signed” goal now means identity-verified with the applicable signature.
+**Goal**: Match the connected client to the exact Service-owned proxy and bind
+functional acceptance to fresh identity observations. Fixtures do not establish
+normal-client DNS or authorize cutover.
 
-**Goal**: Verify the declared AdGuard peer under explicitly observed disabled Lock
-without weakening enabled-mode signing or any shared signing caller.
-**Independent evidence**: Synthetic positive/negative identity and collector
-fixtures, followed by actual Mac direct acceptance at T055. Fixtures alone do
-not establish DNS availability or authorize cutover.
+- [X] T048 [US1] Add identity/collector cases in `scripts/ci/adguard-check-test.py` for exact device IDs, key, hostname, tag, addresses, Kubernetes ownership and network-map
+  membership; reject missing, malformed, duplicated, offline, expired or changing observations.
+- [X] T049 [US1] Validate the fixed AdGuard Service-owned proxy against the connected Mac peer in `scripts/adguard-check.py`, preserving bounded read-only collection and exact
+  identity matching without operator overrides or policy writes.
+- [X] T050 [US2] Cover before/after snapshot and fresh pre-apply identity drift in `scripts/ci/adguard-check-test.py` and `scripts/ci/adguard-dns-cutover-test.py`; require no DNS
+  apply on drift and retain all functional, revision, client and rollback checks.
+- [X] T051 [US2] Bind the full observed peer to direct snapshots and current pre-apply evidence in `scripts/adguard-check.py` and `scripts/adguard-dns-cutover.py`; keep rollback
+  independent of AdGuard health and preserve timing limits.
+- [X] T052 Keep supported direct/client/cutover/recovery commands and exact device identity requirements in `clusters/homelab/apps/adguard/README.md` and
+  `openwiki/workloads/inventory.md`, distinguishing source validation from actual acceptance.
+- [ ] T053 Run affected identity, cutover, recovery and documentation checks from `docs/validation-runbook.md`, retaining exact outcomes and unavailable-tool limitations.
+- [ ] T054 Complete protected delivery with actual CI/review and source revision evidence under `.agents/skills/homelab-protected-prs/SKILL.md`; source delivery does not complete
+  functional acceptance or change DNS policy.
+- [ ] T055 Track owner-run current-main Mac acceptance in `checkpoints/runtime.md`: verify exact identity, direct UDP/TCP/admin, required replacement/recovery and ordinary
+  system-resolver/private/MagicDNS behavior, with actual exit-node evidence or an explicit limitation. Complete T036 before DNS application and retain T039 client acceptance.
 
-- [X] T048 [US1] Add failing pure-validator cases in `scripts/ci/adguard-check-test.py` for matching
-  unlocked client/proxy identity and exact evidence shape; reject missing/null/string/numeric mode,
-  mode disagreement, wrong tailnet/hostname/tag/key/address/stable ID/NodeID, boolean or nonpositive
-  NodeID, zero-valued node keys, peers that are missing or repeated, mismatched Peer map key,
-  absent/false InNetworkMap, offline/expired state, invalid/duplicate/non-tailnet addresses, missing
-  Pod UID, wrong ownership/Service UID and non-ready/deleting Pod; accept omitted optional disabled
-  signing fields but reject a present mismatched Lock NodeKey. Add failing collector and
-  enabled-mode regression cases in `scripts/ci/adguard-check-test.py` using mocked bounded command
-  reads: require exactly one managed proxy, explicit local/proxy mode agreement and local mode
-  recheck around inspection; retain `SIGNER.local_signer()` and fixed-target inspection with
-  signed=true when enabled, fail their errors closed, and prove unlocked collection never invokes
-  signing or a Lock-policy mutation. Keep `scripts/ci/tailscale-ingress-sign-test.py` unchanged
-  unless an independently justified fixture correction is needed; do not relax its requirements.
-
-- [X] T049 [US1] Implement AdGuard-only pure unlocked identity validation in
-  `scripts/adguard-check.py` against the reviewed local Peer/proxy Self/Service/Pod contract,
-  satisfying T048; emit exactly dns, node_key, pod_uid, device_id, node_id, tags, sorted addresses,
-  lock_enabled=false and signed=false, with no rotation key or fabricated signature. Implement
-  AdGuard-only read-only mode selection and collection in `scripts/adguard-check.py`, satisfying
-  T048: use the existing Mac binary and sanitized bounded wrapper, require Running/Online/expected
-  tailnet and no explicit local expiry, inspect only the fixed Service and managed proxy, reread
-  local mode and Service, and retain shared enabled-mode helpers with lock_enabled=true. Add no
-  override flag/environment input, credentials, policy write, or change to
-  `scripts/tailscale-ingress-sign.py` semantics.
-
-## Phase 13: Unlocked amendment — US2 evidence and cutover binding (P1)
-
-**Goal**: Prevent stale or ambiguous mode/identity evidence from authorizing DNS
-changes while preserving normal-client requirements and independent rollback.
-**Independent evidence**: Direct snapshot failure and cutover no-apply fixtures;
-actual adoption remains T037–T039 after required live gates.
-
-- [X] T050 [US2] Add failing direct/snapshot tests in `scripts/ci/adguard-check-test.py` for
-  explicit boolean lock_enabled and mode-appropriate signed values; reject missing/ambiguous mode,
-  false signatures when locked, claimed signatures when unlocked, and observed mode/identity changes
-  between before/after direct snapshots. Assert unchanged DNS, administration, revision and
-  client-mode gates still run on valid unlocked evidence. Add cutover binding regressions in
-  `scripts/ci/adguard-dns-cutover-test.py` with valid unlocked peer evidence and mode/identity drift
-  in the fresh pre-apply snapshot; assert no apply on drift and no stored receipt substitute.
-  Preserve locked fixtures and rollback eligibility with unavailable AdGuard/peer and missing
-  historical mode evidence, while retaining prior-policy, source, live-policy, saved-plan and timing
-  guards.
-
-- [X] T051 [US2] Integrate mode-aware snapshot validation in `scripts/adguard-check.py`, satisfying
-  T050 through the existing full-peer equality and cutover binding in
-  `scripts/adguard-dns-cutover.py`; avoid changing the cutover helper unless a failing contract test
-  demonstrates a missing binding. Preserve fresh checks, existing timing limits, normal-client
-  behavior and the separate rollback path; do not claim observations are atomic.
-
-## Phase 14: Unlocked amendment — documentation, delivery and live handoff
-
-US3 private administration and US4 recovery retain their existing implementation
-and T036 functional requirements; this amendment adds no alternative acceptance
-criteria for either story.
-
-- [X] T052 Update `clusters/homelab/apps/adguard/README.md` to make signing conditional, direct
-  unlocked users to the normal acceptance command, explain explicit observed mode and unsigned
-  evidence, and disclose the retained enabled v1.102.3 Lock-peer schema incompatibility without
-  suggesting bypasses. Preserve credential custody, TLS/admin, recovery and client instructions;
-  explain that reverting the helper restores refusal without changing live Lock or DNS. Update
-  `openwiki/workloads/inventory.md` with the same conditional signing and retained locked-schema
-  compatibility limitation, source links and actual pending Mac acceptance/cutover status; preserve
-  generated wiki artifacts and do not imply fixture success proves deployment or client behavior.
-
-- [ ] T053 Run the touched `scripts/ci/adguard-check-test.py` and
-  `scripts/ci/adguard-dns-cutover-test.py`, shared `scripts/ci/tailscale-ingress-sign-test.py`,
-  relevant recovery/regression checks and the documentation checks required by
-  `docs/validation-runbook.md`; record exact commands/results, source revision and unavailable
-  checks in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/unlocked-validation.md`. Review
-  the complete amendment for unchanged signing/current-main/credential/rollback boundaries before
-  delivery.
-
-- [ ] T054 Deliver the scoped helper/tests/docs amendment through
-  `.agents/skills/homelab-protected-prs/SKILL.md`, retaining ownership and exact-commit CI/review
-  evidence; record PR, merged main revision and remaining operational gates in
-  `specs/20261115-185603-adguard-tailnet-dns/checkpoints/unlocked-delivery.md`. Do not mark
-  T035–T039 passed from source delivery or change DNS/Lock policy as part of this PR.
-
-- [ ] T055 Prepare and track the owner-run current-main Mac acceptance using
-  `scripts/adguard-check.py` and `scripts/adguard-recovery.py`; record sanitized actual
-  mode/identity, direct UDP/TCP/admin and required replacement/recovery results or explicit blockers
-  in `specs/20261115-185603-adguard-tailnet-dns/checkpoints/runtime.md`. Reconcile T035
-  conditionally without signing when unlocked; complete existing T036 before T037–T038, then require
-  actual system-resolver/private/MagicDNS and conditional exit-node evidence at T039. Keep absent
-  receipts outstanding; the cloud agent cannot run the owner's Mac checks.
-
-### Amendment dependencies and incremental strategy
-
-```text
-requirements review -> T048 -> T049 -> T050 -> T051
-T051 -> T052 -> T053 -> T054 -> T055
-T055 direct/admin/recovery gates + T036 -> existing T037 -> T038 -> T039 -> T040
-```
-
-Tests precede implementation: T048 specifies the validator/collector; T050
-specifies direct/cutover integration before T051. US1 is the smallest useful
-source increment, but the deliverable MVP includes US2 binding regressions,
-documentation and validation before protected delivery. No DNS cutover is part
-of this amendment's source change.
-
-There are no parallel writer tasks: US1 and US2 share helper/test files, and
-T052 groups the coordinated README/wiki update. A possible later parallel
-example is independent read-only review of US1 identity and US2 cutover behavior
-after T051; no task requires additional agents. US3/US4 retain actual acceptance
-at T036/T055 without new implementation scope.
-
-### Amendment requirement coverage
-
-| Requirement | Tasks |
-| --- | --- |
-| FR-020: explicit observed modes, identity, retained signing, no trust mutation | T048–T049, T052–T055 |
-| FR-021: evidence invalidation, unchanged functional/client/rollback gates and unrelated workflows | T048–T055; existing T036–T039 |
-| SC-007: valid unlocked and retained locked checks; negative mode/identity/no-mutation evidence | T048–T051, T053, T055 |
-
-All eight appended tasks T048–T055 start unchecked: US1 two, US2 two,
-cross-cutting four. Historical checkbox state remains unchanged. Next stage is
-separate Spec Kit analysis; no implementation or live acceptance occurred during
-task generation.
+Coverage: FR-020 maps to T048–T049 and T052–T055; FR-021 maps to T048–T055 with
+T036–T039; SC-007 maps to T048–T051, T053 and T055. Preserve one writer and existing
+credential boundaries. Missing private receipts remain outstanding.

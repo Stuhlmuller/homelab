@@ -36,7 +36,7 @@ provider locks and caches remain ignored. No full static rerun for incomplete
 app source; full integration validation remains T030.
 
 Pending: no AdGuard runtime manifests yet (T008+), no consuming PR, no live
-SSM/app apply, no signer or DNS changes. Docs and source checks must be completed
+SSM/app apply, no DNS changes. Docs and source checks must be completed
 in the app PR before merge. Next distinct turn: scoped speckit-converge for this
 foundation increment, then direct-filtering story implementation T008–015.
 Continue monitoring existing publisher via session80837/log image-publisher-watch.log;
