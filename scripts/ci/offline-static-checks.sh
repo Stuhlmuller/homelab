@@ -1107,7 +1107,7 @@ done <<'EOF'
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml 4f1506a4f1cfb0bf8ab85b5c2cbdd59969b5568bad07dc9ba03064b29e363895
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml ffeb8e028695da7d275fbf022fd2affcfbd68a1b67f51d934fc173420d84d04e
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
@@ -1216,9 +1216,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
     [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
-    (.on | keys | sort) == ["pull_request_target", "push"] and
+    (.on | keys | sort) == ["push", "workflow_run"] and
     .on.push == {"branches": ["main"]} and
-	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
+    .on.workflow_run == {"workflows": ["Terragrunt Plan"], "types": ["completed"]} and
     .permissions == {} and
     .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
     .env == null and
@@ -1247,8 +1247,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("jq -r '\''.[].head.sha'\''") and
       contains("$GITHUB_EVENT_NAME") and
       contains("verification_base_sha=\"$base_sha\"") and
-      contains("scripts/ci/harbor-native-chainguard-receipt-import.py event-base") and
-      contains("--event-file \"$GITHUB_EVENT_PATH\" --base-sha \"$base_sha\" --token-file \"$token_file\"") and
+      contains(".workflow_run.event == \"pull_request\"") and
+      contains(".workflow_run.head_sha") and
+      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\"") and
       contains("--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"") and
       contains("native-receipts-unchanged") and
       contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
@@ -1256,6 +1257,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/commits/main") and
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
+python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"
