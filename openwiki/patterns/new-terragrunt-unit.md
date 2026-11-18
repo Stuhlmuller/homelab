@@ -65,3 +65,12 @@ keys. Existing identity and storage units retain explicit legacy mappings in
 `IaC/root.hcl`. Additional app-local units use their full relative path as the
 state identity, so a new sibling cannot inherit the Application's state.
 The stack regression renders both units and checks their distinct backend keys.
+## Module File Organization
+
+Local modules keep input declarations in `variables.tf`, outputs in `outputs.tf`
+and provider requirements or state encryption settings in `versions.tf`.
+Larger modules separate publisher IAM, reader IAM and credential publication
+into responsibility-specific files within the same module directory.
+Module READMEs link the owning Terragrunt callers for complete usage examples.
+These file boundaries preserve resource addresses and the historical backend
+key mappings in `IaC/root.hcl`.

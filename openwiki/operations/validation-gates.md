@@ -2860,6 +2860,16 @@ Reproduce the protected Linux audit privately, identify the package and fixed
 version, then deliver the image correction and rerun the complete audit. Do
 not waive the finding or infer runtime clearance from passing fixtures.
 
+## Runtime image ownership
+
+The offline suite exercises native HCL, real shared-unit rendering, exact
+Renovate/Harbor ownership and protected proposal regressions. The pull-request
+`Argo CD runtime image ownership` workflow tests Kubernetes provider 3.2.1
+against an isolated API fixture and renders the pinned controller chart. It
+checks digest preservation, conflicts, temporary omitted-field handoff and
+permanent removal; it does not prove live managed fields or controller readiness.
+See the [operator guide](../../docs/argocd-image-updater.md) for enrollment and
+the still-pending operator-selected workload acceptance.
 ## Uptime Kuma validation
 
 Run from repository root in the pinned Nix environment (it supplies `promtool`):

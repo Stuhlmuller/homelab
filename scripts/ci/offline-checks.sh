@@ -19,6 +19,9 @@ python3 -I scripts/ci/release-test.py
 python3 -I scripts/ci/static-cache-test.py
 python3 -I scripts/ci/checkov-reviewed-findings-test.py
 python3 -I scripts/ci/argocd-computed-fields-test.py
+python3 -I scripts/ci/argocd-image-updater-test.py --unit
+python3 -I scripts/ci/argocd-image-updater-policy-test.py
+python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
 python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py

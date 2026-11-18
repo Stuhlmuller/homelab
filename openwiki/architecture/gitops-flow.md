@@ -113,9 +113,13 @@ GitHub-hosted runners cannot reach that API through Octelium. The repository
 unit, saved plan, policy check, and normal Terragrunt state remain authoritative;
 no ad hoc Kubernetes mutation or GitHub kubeconfig secret is introduced.
 
-Renovate owns repo-declared workload image updates through reviewed pull
-requests. Static policy requires every committed image to keep a digest pin;
-live-only Argo CD parameter overrides are not steady state.
+Renovate owns unenrolled workload image updates through reviewed pull requests.
+Explicit `image_update` enrollment instead keeps an operator-selected mutable tag
+in Git and lets native ImageUpdater own only runtime image overrides. Exact
+package/file Renovate exceptions and Harbor provenance checks enforce that
+boundary. Terraform preserves those fields with lifecycle and computed-field
+handling. Source edits use the paused `image_update_handoff` procedure without
+copying a hash into code; see the [operator guide](../../docs/argocd-image-updater.md).
 
 Cordium's parent Application owns normal network, secret, and host
 prerequisites. At Sync wave 1 it creates the `cordium-bootstrap` child

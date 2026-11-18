@@ -43,7 +43,7 @@ inputs = {
     info = [
       {
         name  = "purpose"
-        value = "Paused digest updater; GitHub App proposals remain disabled until promotion gates pass"
+        value = "Digest updater with Argo CD write-back; workloads require explicit enrollment"
       }
     ]
   }
