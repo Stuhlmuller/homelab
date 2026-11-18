@@ -3,11 +3,15 @@
 
 import copy
 import importlib.util
+import json
+import os
 from pathlib import Path
+import shutil
+import socket
+import stat
 import sys
 import unittest
 from unittest import mock
-from urllib.error import HTTPError
 
 
 SOURCE = Path(__file__).resolve().parents[1] / "cordium-genesis-recovery.py"
@@ -60,52 +64,70 @@ class RecoveryFenceTest(unittest.TestCase):
         jobs.append({"metadata": {"name": "cordium-genesis"}, "status": {"active": 1}})
         with self.assertRaises(ValueError):
             MODULE.validate_snapshot(app, pods, jobs, resources, UIDS)
+        app, pods, jobs, resources = fixtures()
+        jobs.append({"metadata": {"name": "renamed-job"}, "status": {"active": 1},
+                     "spec": {"template": {"spec": {"serviceAccountName": "cordium-genesis"}}}})
+        with self.assertRaises(ValueError):
+            MODULE.validate_snapshot(app, pods, jobs, resources, UIDS)
 
     def test_incomplete_inventory_is_denied(self):
-        for listing in ({"items": []}, {"metadata": {"continue": "next"}, "items": []}):
+        for listing in ({"items": []},
+                        {"kind": "PodList", "metadata": {"continue": "next", "resourceVersion": "1"}, "items": []},
+                        {"kind": "PodList", "metadata": {}, "items": []},
+                        {"kind": "PodList", "metadata": {"resourceVersion": "0"}, "items": []},
+                        {"kind": "JobList", "metadata": {"resourceVersion": "1"}, "items": []}):
             with self.assertRaises(ValueError):
-                MODULE.complete(listing)
+                MODULE.complete(listing, "PodList")
 
-    def test_delete_uses_exact_uid_precondition_and_no_proxy_environment(self):
-        class Response:
-            status = 200
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_):
-                return None
-
-        opener = mock.Mock()
-        opener.open.return_value = Response()
-        with mock.patch.object(MODULE.urllib.request, "build_opener", return_value=opener) as build:
-            MODULE.delete_with_uid("http://127.0.0.1:1234", MODULE.TARGETS[0][2], UIDS[0])
-        request = opener.open.call_args.args[0]
-        self.assertEqual(request.get_method(), "DELETE")
-        self.assertEqual(request.full_url, "http://127.0.0.1:1234" + MODULE.TARGETS[0][2])
-        self.assertEqual(__import__("json").loads(request.data)["preconditions"], {"uid": UIDS[0]})
-        self.assertEqual(build.call_args.args[0].proxies, {})
+    def test_delete_uses_exact_uid_precondition(self):
+        with mock.patch.object(MODULE, "proxy_request", return_value=200) as request:
+            MODULE.delete_with_uid("/private/kubernetes.sock", MODULE.TARGETS[0][2], UIDS[0])
+        socket_path, method, path, body = request.call_args.args
+        self.assertEqual((socket_path, method, path),
+                         ("/private/kubernetes.sock", "DELETE", MODULE.TARGETS[0][2]))
+        self.assertEqual(json.loads(body)["preconditions"], {"uid": UIDS[0]})
 
     def test_absence_verification_rejects_any_error_except_not_found(self):
-        opener = mock.Mock()
-        opener.open.side_effect = HTTPError("http://127.0.0.1", 404, "not found", {}, None)
-        with mock.patch.object(MODULE.urllib.request, "build_opener", return_value=opener):
-            MODULE.verify_absent("http://127.0.0.1:1234", MODULE.TARGETS[0][2])
-        opener.open.side_effect = HTTPError("http://127.0.0.1", 403, "forbidden", {}, None)
-        with mock.patch.object(MODULE.urllib.request, "build_opener", return_value=opener):
-            with self.assertRaises(HTTPError):
-                MODULE.verify_absent("http://127.0.0.1:1234", MODULE.TARGETS[0][2])
+        with mock.patch.object(MODULE, "proxy_request", return_value=404):
+            MODULE.verify_absent("/private/kubernetes.sock", MODULE.TARGETS[0][2])
+        with mock.patch.object(MODULE, "proxy_request", return_value=403):
+            with self.assertRaises(ValueError):
+                MODULE.verify_absent("/private/kubernetes.sock", MODULE.TARGETS[0][2])
+
+    def test_proxy_uses_socket_inside_private_directory(self):
+        bound = []
+
+        def fake_popen(args, **_):
+            path = args[2].split("=", 1)[1]
+            server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            server.bind(path)
+            bound.append(server)
+            process = mock.Mock()
+            process.poll.return_value = None
+            return process
+
+        with mock.patch.object(MODULE.subprocess, "Popen", side_effect=fake_popen):
+            _, path, directory = MODULE.proxy_start()
+        try:
+            self.assertTrue(path.startswith(directory + os.sep))
+            self.assertEqual(stat.S_IMODE(os.stat(directory).st_mode), 0o700)
+            self.assertTrue(stat.S_ISSOCK(os.stat(path).st_mode))
+        finally:
+            bound[0].close()
+            shutil.rmtree(directory)
 
     def test_default_cli_is_read_only(self):
         app, pods, jobs, resources = fixtures()
 
         def listing(entries):
-            return {"metadata": {"resourceVersion": "1"}, "items": entries}
+            return {"kind": "PodList" if entries is pods else "JobList",
+                    "metadata": {"resourceVersion": "1"}, "items": entries}
 
-        reads = [app, listing(pods), listing(jobs), *resources]
+        reads = [app, *resources]
         with (mock.patch.object(sys, "argv", ["recovery", "a" * 40, *UIDS]),
               mock.patch.object(MODULE, "source_guard"),
               mock.patch.object(MODULE, "kubectl_json", side_effect=reads),
+              mock.patch.object(MODULE, "kubectl_raw_json", side_effect=[listing(pods), listing(jobs)]),
               mock.patch.object(MODULE, "proxy_start") as proxy,
               mock.patch.object(MODULE, "delete_with_uid") as delete):
             MODULE.main()

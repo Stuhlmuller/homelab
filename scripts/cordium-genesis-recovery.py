@@ -6,14 +6,17 @@ from a clean checkout at the exact reviewed main commit.
 """
 
 import argparse
+import http.client
 import json
+import os
 import re
-import select
+import shutil
+import socket
+import stat
 import subprocess
 import sys
+import tempfile
 import time
-import urllib.error
-import urllib.request
 
 
 TARGETS = (
@@ -33,9 +36,20 @@ def kubectl_json(*args):
     return json.loads(command("kubectl", "--request-timeout=20s", *args, "-o", "json"))
 
 
-def complete(items):
+def kubectl_raw_json(path):
+    return json.loads(command("kubectl", "--request-timeout=20s", "get", "--raw", path))
+
+
+PODS_PATH = "/api/v1/namespaces/octelium/pods?limit=500"
+JOBS_PATH = "/apis/batch/v1/namespaces/octelium/jobs?limit=500"
+
+
+def complete(items, kind):
     if (not isinstance(items, dict) or not isinstance(items.get("items"), list) or
-            not isinstance(items.get("metadata"), dict) or items["metadata"].get("continue")):
+            items.get("kind") != kind or not isinstance(items.get("metadata"), dict) or
+            not isinstance(items["metadata"].get("resourceVersion"), str) or
+            items["metadata"]["resourceVersion"] in {"", "0"} or
+            items["metadata"].get("continue")):
         raise ValueError("Kubernetes inventory is incomplete")
     return items["items"]
 
@@ -62,8 +76,10 @@ def validate_quiescent(pods, jobs):
     if any(p.get("spec", {}).get("serviceAccountName") == "cordium-genesis" and
            p.get("status", {}).get("phase") not in {"Succeeded", "Failed"} for p in pods):
         raise ValueError("A Pod still uses the bootstrap identity")
-    if any(j.get("metadata", {}).get("name", "").startswith("cordium-genesis") and
-           j.get("status", {}).get("active", 0) for j in jobs):
+    if any(j.get("status", {}).get("active", 0) and
+           (j.get("metadata", {}).get("name", "").startswith("cordium-genesis") or
+            j.get("spec", {}).get("template", {}).get("spec", {}).get("serviceAccountName") == "cordium-genesis")
+           for j in jobs):
         raise ValueError("A Cordium genesis Job is still active")
 
 
@@ -79,44 +95,67 @@ def source_guard(expected_sha):
         raise ValueError("Main differs from reviewed commit")
 
 
-def delete_with_uid(proxy_url, path, uid):
+class UnixHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, socket_path):
+        super().__init__("localhost", timeout=30)
+        self.socket_path = socket_path
+
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect(self.socket_path)
+
+
+def proxy_request(socket_path, method, path, body=None):
+    connection = UnixHTTPConnection(socket_path)
+    try:
+        headers = {"Content-Type": "application/json"} if body is not None else {}
+        connection.request(method, path, body=body, headers=headers)
+        response = connection.getresponse()
+        response.read()
+        return response.status
+    finally:
+        connection.close()
+
+
+def delete_with_uid(socket_path, path, uid):
     body = json.dumps({"apiVersion": "meta.k8s.io/v1", "kind": "DeleteOptions",
                        "preconditions": {"uid": uid}}).encode()
-    request = urllib.request.Request(proxy_url + path, data=body, method="DELETE",
-                                     headers={"Content-Type": "application/json"})
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with opener.open(request, timeout=30) as response:
-        if response.status not in {200, 202}:
-            raise ValueError("Kubernetes did not accept the guarded deletion")
+    if proxy_request(socket_path, "DELETE", path, body) not in {200, 202}:
+        raise ValueError("Kubernetes did not accept the guarded deletion")
 
 
-def verify_absent(proxy_url, path):
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+def verify_absent(socket_path, path):
     for _ in range(20):
-        try:
-            with opener.open(proxy_url + path, timeout=10):
-                pass
-        except urllib.error.HTTPError as error:
-            if error.code == 404:
-                return
-            raise
+        status = proxy_request(socket_path, "GET", path)
+        if status == 404:
+            return
+        if status != 200:
+            raise ValueError("Kubernetes object verification failed")
         time.sleep(1)
     raise ValueError("A bootstrap identity resource remains after guarded deletion")
 
 
 def proxy_start():
-    process = subprocess.Popen(
-        ["kubectl", "proxy", "--address=127.0.0.1", "--port=0", "--accept-hosts=^127\\.0\\.0\\.1$"],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    if not select.select([process.stdout], [], [], 10)[0]:
-        process.terminate()
-        raise ValueError("Local Kubernetes proxy did not start")
-    line = process.stdout.readline().strip()
-    match = re.fullmatch(r"Starting to serve on 127\.0\.0\.1:([0-9]+)", line)
-    if not match:
-        process.terminate()
-        raise ValueError("Local Kubernetes proxy returned an unexpected address")
-    return process, f"http://127.0.0.1:{match.group(1)}"
+    private_dir = tempfile.mkdtemp(prefix="cordium-recovery-")
+    socket_path = os.path.join(private_dir, "kubernetes.sock")
+    try:
+        process = subprocess.Popen(
+            ["kubectl", "proxy", f"--unix-socket={socket_path}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        shutil.rmtree(private_dir)
+        raise
+    for _ in range(100):
+        if process.poll() is not None:
+            break
+        if os.path.exists(socket_path) and stat.S_ISSOCK(os.stat(socket_path).st_mode):
+            return process, socket_path, private_dir
+        time.sleep(0.1)
+    process.terminate()
+    process.wait(timeout=5)
+    shutil.rmtree(private_dir)
+    raise ValueError("Private Kubernetes proxy did not start")
 
 
 def main():
@@ -132,15 +171,15 @@ def main():
         parser.error("expected main SHA and all three exact resource UIDs are required")
     source_guard(args.expected_main_sha)
     app = kubectl_json("-n", "argocd", "get", "application", "cordium-bootstrap")
-    pods = complete(kubectl_json("-n", "octelium", "get", "pods", "--chunk-size=0"))
-    jobs = complete(kubectl_json("-n", "octelium", "get", "jobs", "--chunk-size=0"))
+    pods = complete(kubectl_raw_json(PODS_PATH), "PodList")
+    jobs = complete(kubectl_raw_json(JOBS_PATH), "JobList")
     resources = [kubectl_json(*(["-n", "octelium"] if kind == "serviceaccount" else []),
                               "get", kind, name) for kind, name, _ in TARGETS]
     validate_snapshot(app, pods, jobs, resources, expected)
     if not args.execute:
         print("Cordium bootstrap identity matches reviewed UIDs; no deletion performed.")
         return
-    process, url = proxy_start()
+    process, socket_path, private_dir = proxy_start()
     try:
         for (_, _, path), uid in zip(TARGETS, expected, strict=True):
             source_guard(args.expected_main_sha)
@@ -150,19 +189,22 @@ def main():
                     not current_app.get("status", {}).get("operationState", {}).get("finishedAt")):
                 raise ValueError("Cordium bootstrap operation changed during recovery")
             validate_quiescent(
-                complete(kubectl_json("-n", "octelium", "get", "pods", "--chunk-size=0")),
-                complete(kubectl_json("-n", "octelium", "get", "jobs", "--chunk-size=0")))
-            delete_with_uid(url, path, uid)
-            verify_absent(url, path)
+                complete(kubectl_raw_json(PODS_PATH), "PodList"),
+                complete(kubectl_raw_json(JOBS_PATH), "JobList"))
+            delete_with_uid(socket_path, path, uid)
+            verify_absent(socket_path, path)
     finally:
-        process.terminate()
-        process.wait(timeout=5)
+        try:
+            process.terminate()
+            process.wait(timeout=5)
+        finally:
+            shutil.rmtree(private_dir)
     print("Cordium bootstrap identity deletion verified; detailed output withheld.")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, subprocess.SubprocessError, OSError, urllib.error.URLError) as error:
+    except (ValueError, subprocess.SubprocessError, OSError, http.client.HTTPException) as error:
         print(f"Cordium bootstrap recovery stopped: {type(error).__name__}; details withheld.", file=sys.stderr)
         sys.exit(1)
