@@ -320,6 +320,21 @@ encryption-method identities, so retirement can read encrypted state and apply
 only the reviewed, policy-checked destroy plan. Retained secret and backup data
 remain protected by their existing ownership and policy gates.
 
+## Pull request plan selection
+
+The [plan selector](../../scripts/ci/terragrunt-plan-units.py) uses native
+`--filter-affected` discovery plus authored app-stack paths, then plans exact
+allowed units in the checkout so saved plans remain available to Conftest.
+Shared IaC/toolchain/policy changes retain full coverage; unrelated apps and
+unchanged bootstrap/storage units are skipped. Secret-bearing units remain
+excluded and deleted units retain their separate checks.
+
+The [plan runner](../../scripts/ci/terragrunt-plan.sh) preserves dependency order
+with eight concurrent Argo CD units and four AzureAD units, reuses local sources,
+and enables partial-parse caching. The workflow persists only OpenTofu provider
+binaries, never state or plans. See [plan performance](../../docs/ci-cd.md#plan-performance)
+for cache behavior, validation, and rollback.
+
 ## Provider Scope
 
 `IaC/root.hcl` owns shared state and inputs, but it does not inject workload

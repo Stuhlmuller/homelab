@@ -855,6 +855,35 @@ identities. It applies nothing and cannot advance the full-apply checkpoint.
 Use it after the [provider bootstrap](entra-terraform-provider.md), then retain
 operator Terraform for changes beyond the CI permission boundary.
 
+## Plan performance
+
+PR plans discover affected components once with `--filter-affected` against the
+prepared PR merge base. The selector supplements native discovery with per-app
+stack/sidecar paths because generated units are ignored by Git. Shared IaC,
+local module sources, toolchain, policy, and planning-script changes retain full
+coverage; dirty local checkouts also plan the full allowed scope. Deleted units
+keep their separate state comparison and destroy-plan policy checks.
+
+Selected units run in the current checkout, where Conftest can inspect every
+saved plan. Direct Git-filtered runs execute in temporary worktrees, so they
+must not replace this two-step selection. Empty selections run no unit command.
+Argo CD plans run up to eight units concurrently and AzureAD up to four, while
+Terragrunt preserves dependency ordering. Bootstrap and backup-storage plans
+run only when selected. Plans still refresh live state.
+
+Terragrunt's automatic OpenTofu provider cache and partial-parse cache avoid
+repeated downloads and include parsing. CI persists only provider binaries at
+`~/.cache/terragrunt/providers`, keyed by runner platform, toolchain and IaC
+provider declarations. Restored providers still go through normal OpenTofu
+initialization/checksum verification. State, generated configuration and plans
+are never stored in this cache. Local module edits are detected automatically;
+normal plans no longer force `--source-update`. Delete the provider cache to
+rebuild it, or revert the workflow/runner change to restore serial planning.
+
+Validate selection with `python3 -I scripts/ci/terragrunt-plan-units-test.py` and
+the existing plan-stage, stack, and apply fixtures. CI timings, including cold
+versus warm cache runs, are the evidence for the actual wall-clock improvement.
+
 ## Local Equivalents
 
 Exact provider versions live in module/template HCL. OpenTofu initialization
