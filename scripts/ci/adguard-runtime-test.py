@@ -188,7 +188,7 @@ class Runtime:
 
 
 class AdGuardRuntimeTests(unittest.TestCase):
-    def test_initialized_admin_rejects_anonymous_access_and_retains_no_history(self):
+    def test_initialized_admin_and_bounded_memory_query_history(self):
         check_spec = importlib.util.spec_from_file_location(
             "adguard_check", Path(__file__).resolve().parents[1] / "adguard-check.py")
         check = importlib.util.module_from_spec(check_spec)
@@ -197,6 +197,20 @@ class AdGuardRuntimeTests(unittest.TestCase):
         # helper has a fixed HTTPS origin and normal certificate validation.
         check.ADMIN_URL = "http://127.0.0.1:" + str(self.runtime.ports["3000/tcp"])
         check.verify_admin(check.Admin(manifest.FIXTURE_PASSWORD))
+        port = self.runtime.ports["53/udp"]
+        self.assertEqual(query(port, "phone.ads.fixture.test"), (0, ["0.0.0.0"]))
+        entries = self.runtime.api("querylog?limit=10")["data"]
+        self.assertTrue(any(e["question"]["name"] == "phone.ads.fixture.test"
+                            and e["reason"].startswith("Filtered") for e in entries))
+        for index in range(self.config["querylog"]["size_memory"] + 1):
+            query(port, f"bounded{index}.ads.fixture.test")
+        entries = self.runtime.api("querylog?limit=5000")["data"]
+        self.assertLessEqual(len(entries), self.config["querylog"]["size_memory"])
+        self.assertFalse(any(e["question"]["name"] == "phone.ads.fixture.test" for e in entries))
+        docker("restart", self.runtime.container)
+        self.runtime.ports = {name: int(docker("port", self.runtime.container, name).rsplit(":", 1)[1])
+                              for name in ("53/udp", "53/tcp", "3000/tcp")}
+        self.runtime.wait_ready()
         self.assertEqual(self.runtime.api("querylog?limit=1")["data"], [])
         self.assertEqual(self.runtime.api("stats")["num_dns_queries"], 0)
         self.assertEqual(docker("exec", self.runtime.container, "find", "/work", "-name", "querylog*.json*"), "")
