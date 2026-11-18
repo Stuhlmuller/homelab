@@ -1,5 +1,5 @@
-# Harbor chart 1.19.2 / Harbor 2.15.2. All bootstrap images stay upstream so
-# recovering the registry never requires pulling an image from that registry.
+# Harbor chart 1.19.2 with the verified Harbor 2.15.4 custom core.
+# Core uses the private registry; recovery requires the retained upstream reference.
 expose:
   type: clusterIP
   tls:
@@ -83,8 +83,8 @@ portal:
     failureThreshold: 3
 core:
   image:
-    repository: docker.io/goharbor/harbor-core
-    tag: v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7
+    repository: harbor.stinkyboi.com/homelab/homelab-harbor-core
+    tag: homelab-7df0e0044c7975c57de8093e827ab83fc3c2928f@sha256:5eebc3907774d3a9edd8731e1e997ff1d1647c4a6f0d614b2166430585914763
   serviceAccountName: harbor
   replicas: 1
   existingSecret: harbor-secrets
