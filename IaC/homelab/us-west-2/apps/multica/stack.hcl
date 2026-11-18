@@ -6,6 +6,7 @@ inputs = {
   defaults     = local.shared.argocd_defaults
   dependencies = ["external-secrets", "cert-manager", "istio", "litellm", "platform-storage"]
   spec = {
+    project = "homelab-workloads"
     destination = {
       namespace = "ai"
     }
