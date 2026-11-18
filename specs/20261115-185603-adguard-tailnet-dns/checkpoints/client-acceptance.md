@@ -3,7 +3,7 @@
 Prior separate rollback convergence confirmed independent eligibility/no AdGuard
 health dependency and no additional findings or writes. Transcribed here.
 
-Added macOS normal-client adapter using existing trusted Mac/Tailscale paths,
+Added macOS normal-client adapter using existing Mac/Tailscale paths,
 status/preferences, daemon version and scutil resolver evidence. Requires the
 intended tailnet, online client and CorpDNS acceptance. Records actual device,
 OS/version, exit-node selection and cache method; rejects unsupported OS,
@@ -45,4 +45,4 @@ run in this Linux workspace. T039 remains pending; fixtures do not satisfy it.
 T018/T019 source complete. Next separate scoped client convergence, then T020
 provider expectations andT027/T028 isolated recovery. All live rollout/delivery
 stillpending. Publisher43777917412 solewatcher80837 stillcopying/verifying at last
-observation. No live AdGuard/signing/DNS changes or Notion writes. Hooks empty.
+observation. No live AdGuard/DNS changes or Notion writes. Hooks empty.

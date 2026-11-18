@@ -65,9 +65,9 @@ the cutover must stop for a separate reviewed decision instead.
 
 ## Decision 4: Restore private DNS on failure
 
-**Decision:** On a private resolver or signed proxy failure, recover the
-repository-owned resolver, Service, or fixed Tailnet Lock signature through
-the declared Argo/Terragrunt and signer paths. Do not republish retired public
+**Decision:** On a private resolver or proxy failure, recover the
+repository-owned resolver or Service through
+the declared Argo/Terragrunt paths. Do not republish retired public
 app addresses as an outage response. A later policy reversal needs a separate
 reviewed change.
 

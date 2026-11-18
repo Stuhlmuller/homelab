@@ -1,6 +1,6 @@
 # kubernetes-node-labels
 
-Selected labels, annotations and taints on existing nodes. State encryption uses the caller’s AWS KMS key.
+Selected labels, annotations and taints on existing nodes. State and plan encryption come from the shared [Terragrunt root](../../../root.hcl); this module has no encryption-only inputs. See the [encryption guide](../../../../docs/state-encryption.md).
 
 ## Interface
 

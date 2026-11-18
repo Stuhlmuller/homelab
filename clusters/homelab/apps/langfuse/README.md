@@ -428,7 +428,7 @@ Before a follow-up activation PR:
    the declared Service through a reviewed PR and rerun the helper; removing
    the helper does not remove the live Service or bypass its human policy.
    The old public DNS writer and restoration workflow are removed. Use the
-   staged DNS helper after Traefik, signed mesh peers and backend readiness pass;
+   staged DNS helper after Traefik, online mesh peers and backend readiness pass;
    preserve legacy runtime routes until replacement acceptance. Never recreate
    public app CNAMEs or edit DNS directly in a provider console.
 3. Verify the Langfuse Application is Synced/Healthy, datastore and retained

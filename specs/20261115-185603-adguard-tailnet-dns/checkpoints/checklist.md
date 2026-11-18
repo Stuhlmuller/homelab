@@ -23,6 +23,6 @@ all question-form and traceable; local Markdown links resolve; whitespace passes
 Spec, plan and built-in requirements checklist hashes unchanged. No requirements
 were approved in this generation stage and no source/runtime changes occurred.
 
-Goal remains active. Signing/admin host and existing ingress readiness are later
+Goal remains active. Administrator host and existing ingress readiness are later
 rollout dependencies; they do not block this review. The rejected full Notion
 snapshot was not retried or sent through another route.

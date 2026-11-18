@@ -26,11 +26,8 @@ success and complete authenticated AdGuard pull before consuming source merges.
 ## Read-only rollout investigation while CI runs
 
 Traefik deployment is 1/1 available and certificate Ready. The private Service
-has its expected assigned endpoint. The existing codex-signer Ingress alone
-among the four callback Ingresses has no loadBalancer status; this is a candidate
-cause of aggregate Progressing, not a proven root cause. No events were present.
-Resource health is stored in appTree, not individual Application resource rows.
-Revisit at T033 through the owning source; no live repair was attempted.
+has its expected assigned endpoint. Resource health is stored in appTree, not
+individual Application resource rows. No live repair was attempted.
 
 ## Corrected catalog synchronization
 
@@ -190,7 +187,7 @@ through normal source delivery before live writes. Do not bypass its guards.
 
 Next: obtain existing administrator/diagnostic custody access, diagnose the
 publisher failure and repair through its declared pipeline, then resume T031.
-No AdGuard deployment, signing, DNS cutover, credential mutation or Notion write
+No AdGuard deployment, DNS cutover, credential mutation or Notion write
 occurred. All earlier implementation validation remains applicable.
 
 

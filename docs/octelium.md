@@ -548,7 +548,7 @@ the carrier does not grant Octelium authorization.
 
 The public DNS-restoration workflow is removed before private DNS cutover.
 Use the [current tailnet DNS cutover](../specs/005-retire-public-app-dns/quickstart.md),
-which requires a signed resolver, direct queries and an owner nameserver handoff
+which requires a resolver, direct queries and an owner nameserver handoff
 before retiring the 26 approved non-apex public app address records. The
 public apex and four legacy public endpoints remain. Keep the
 Tunnel Deployment and old carrier only until replacement acceptance. Reverting

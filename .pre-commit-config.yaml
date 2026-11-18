@@ -77,6 +77,7 @@ repos:
     hooks:
       - id: checkov_diff
         entry: python3 scripts/ci/checkov-reviewed-findings.py diff
+        types: [text]
         # Native Terragrunt validates these two constructs unsupported by Checkov's parser.
         # The Octelium catalog is multi-document YAML, not a CloudFormation template.
         # Secrets and native format validators still cover these exact paths.
@@ -87,6 +88,7 @@ repos:
         files: ^clusters/.*\.ya?ml$
       - id: checkov_secrets
         entry: python3 scripts/ci/checkov-reviewed-findings.py secrets
+        types: [text]
         always_run: false
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit

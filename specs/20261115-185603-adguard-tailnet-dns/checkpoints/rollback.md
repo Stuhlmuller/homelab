@@ -28,7 +28,7 @@ as the red failure before implementation. Logs adguard-rollback-red.log and
 adguard-rollback-final.log. Targeted2-file secret scan0findings in
 adguard-rollback-secrets.log. git diff --check passes.
 
-T025/T026 complete at source/fixture level. No live rollback, deployment, signing
+T025/T026 complete at source/fixture level. No live rollback, deployment
 or DNS change. Next separate scoped rollback convergence, then clientT018/T019,
 provider expectationsT020 and isolated recoveryT027/T028; full integration/delivery
 still pending. Publisher43777917412 sole watcher80837 still copying/verifying.
