@@ -88,7 +88,8 @@ includes both the local catalog and the external repository.
 ## Module File Organization
 
 Local modules keep input declarations in `variables.tf`, outputs in `outputs.tf`
-and provider requirements or state encryption settings in `versions.tf`.
+and provider requirements in `versions.tf`. State encryption belongs to the shared
+Terragrunt root, which generates the compatible backend policy.
 Larger modules separate publisher IAM, reader IAM and credential publication
 into responsibility-specific files within the same module directory.
 Module READMEs link the owning Terragrunt callers for complete usage examples.

@@ -228,6 +228,10 @@ class Boundaries(unittest.TestCase):
             ["yq", "-o=json", ".", str(review.ROOT / ".pre-commit-config.yaml")], text=True))
         hooks = {hook["id"]: hook for repo in config["repos"] for hook in repo["hooks"]}
         diff, secrets = hooks["checkov_diff"], hooks["checkov_secrets"]
+        self.assertEqual(diff["types"], ["text"])
+        self.assertEqual(secrets["types"], ["text"])
+        self.assertIn("pre-commit run checkov_secrets --all-files",
+                      (review.ROOT / "scripts/ci/static-checks.sh").read_text())
         tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=review.ROOT).decode().split("\0")
         compatibility_paths = HCL_COMPATIBILITY_PATHS | {OCTELIUM_CATALOG}
         excluded = {path for path in tracked if re.search(diff["exclude"], path)
@@ -238,7 +242,7 @@ class Boundaries(unittest.TestCase):
                 self.assertIsNotNone(re.search(scope.get("files", ""), path))
                 self.assertNotRegex(path, scope.get("exclude", "^$"))
                 self.assertFalse(scope.get("exclude_types"))
-                self.assertEqual(scope.get("types", ["file"]), ["file"])
+                self.assertEqual(scope.get("types", ["file"]), ["text"] if scope is secrets else ["file"])
             for adjacent in (path + ".backup", "copy/" + path, str(Path(path).with_stem("other"))):
                 self.assertNotRegex(adjacent, diff["exclude"])
         for path in HCL_COMPATIBILITY_PATHS:
@@ -256,6 +260,27 @@ class Boundaries(unittest.TestCase):
         self.assertRegex("clusters/example/config.yaml", diff["exclude"])
         self.assertRegex("clusters/example/config.yml", diff["exclude"])
         self.assertNotRegex("IaC/example.tf", diff["exclude"])
+
+    def test_precommit_text_selection_keeps_malformed_text(self):
+        (self.root / "fixture.tgz").write_bytes(b"\x1f\x8b\x00\xff")
+        (self.root / "malformed.json").write_bytes(b"\xff")
+        (self.root / self.path).write_text('{"value": "ordinary-text-fixture"}\n')
+        (self.root / ".pre-commit-config.yaml").write_text(
+            "repos:\n- repo: local\n  hooks:\n  - id: selected-text\n"
+            "    name: selected-text\n    language: system\n    types: [text]\n"
+            "    entry: python3 -c 'import sys; print(sys.argv[1:])'\n")
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "add", "fixture.tgz", "malformed.json", self.path],
+                       cwd=self.root, check=True)
+        environment = os.environ.copy()
+        environment["PRE_COMMIT_HOME"] = str(self.root / "precommit-cache")
+        result = subprocess.run(
+            ["pre-commit", "run", "selected-text", "--all-files", "--verbose"],
+            cwd=self.root, capture_output=True, text=True, env=environment, check=False)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(self.path, result.stdout)
+        self.assertIn("malformed.json", result.stdout)
+        self.assertNotIn("fixture.tgz", result.stdout)
 
     @unittest.skipUnless(NATIVE, "Run --native with reviewed Checkov and Terragrunt on PATH")
     def test_native_hcl_secret_and_syntax_boundaries(self):

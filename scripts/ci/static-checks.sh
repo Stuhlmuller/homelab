@@ -305,18 +305,8 @@ if command -v checkov >/dev/null 2>&1; then
 
     run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
-    # Match pre-commit's tracked regular files; symlinks are not scan inputs.
-    python3 -I - <<'PYTHON'
-from pathlib import Path
-import subprocess
-import sys
-
-root = Path.cwd().resolve()
-tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
-files = [name for name in tracked if name and (root / name).is_file()
-         and (root / name).resolve() == root / name]
-subprocess.run([sys.executable, "scripts/ci/checkov-reviewed-findings.py", "secrets", "-f", *files], check=True)
-PYTHON
+    # Reuse the pinned hook's text selection and strict reviewed-finding boundary.
+    env -u PYTHONPATH -u PYTHONHOME pre-commit run checkov_secrets --all-files
   )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2

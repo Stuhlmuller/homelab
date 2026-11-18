@@ -5,8 +5,9 @@ This module is a small policy wrapper around the Kubernetes provider's native
 using the same field names as the CRD instead of a second, module-specific
 schema.
 
-The wrapper retains the repository's required OpenTofu state and plan
-encryption, field-manager ownership, and computed-field normalization for
+The shared [Terragrunt root](../../../root.hcl) supplies required OpenTofu
+state and plan encryption; the wrapper retains field-manager ownership and
+computed-field normalization for
 metadata, destinations, and multi-source paths. Repository-owned source fields
 such as `targetRevision` remain declarative.
 

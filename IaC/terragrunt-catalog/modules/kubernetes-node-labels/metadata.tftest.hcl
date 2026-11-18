@@ -1,7 +1,6 @@
 mock_provider "kubernetes" {}
 
 variables {
-  kms_key_id = "alias/test"
   node_labels = {
     test-node = { "octelium.com/node-mode-dataplane" = "" }
   }

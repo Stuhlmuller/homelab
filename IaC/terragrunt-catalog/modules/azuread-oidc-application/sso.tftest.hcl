@@ -11,9 +11,6 @@ mock_provider "azuread" {
 variables {
   display_name                 = "fixture"
   aws_region                   = "us-west-2"
-  kms_key_id                   = "alias/test"
-  kms_region                   = "us-east-1"
-  kms_key_spec                 = "AES_256"
   owner_object_id              = "00000000-0000-0000-0000-000000000001"
   owner_service_principal_name = "fixture"
   credential_display_name      = "fixture-sso"

@@ -1,3 +1,5 @@
+terragrunt_version_constraint = ">= 1.2.2"
+
 locals {
   project_name       = read_terragrunt_config(find_in_parent_folders("account.hcl", "${get_repo_root()}/IaC/homelab/account.hcl")).locals.account_name
   aws_region         = read_terragrunt_config(find_in_parent_folders("region.hcl", "${get_repo_root()}/IaC/homelab/us-west-2/region.hcl")).locals.aws_region
@@ -16,6 +18,15 @@ remote_state {
   generate = {
     path      = "backend.tf"
     if_exists = "overwrite"
+  }
+  # Keep the persisted provider identity used by the former module policies.
+  encryption = {
+    key_provider             = "aws_kms"
+    kms_key_id               = local.kms_key_id
+    region                   = local.kms_region
+    key_spec                 = local.kms_key_spec
+    encrypted_metadata_alias = "key_provider.aws_kms.main"
+    enforced                 = true
   }
   config = {
     bucket = "rstuhlmuller-aws-s3-use1-datalake"
@@ -47,8 +58,4 @@ terraform {
   }
 }
 
-inputs = {
-  kms_key_id   = local.kms_key_id
-  kms_region   = local.kms_region
-  kms_key_spec = local.kms_key_spec
-}
+inputs = {}
