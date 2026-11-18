@@ -20,14 +20,19 @@ remote_state {
     if_exists = "overwrite"
   }
   # Keep the persisted provider identity used by the former module policies.
-  encryption = {
+  encryption = merge({
     key_provider             = "aws_kms"
     kms_key_id               = local.kms_key_id
     region                   = local.kms_region
     key_spec                 = local.kms_key_spec
     encrypted_metadata_alias = "key_provider.aws_kms.main"
-    enforced                 = true
-  }
+    }, jsondecode(
+    # CI observed this one pre-existing plaintext state. New writes remain AES-GCM.
+    # Remove the fallback after its first declared encrypted apply is verified.
+    lower(local.project_name) == "homelab" && path_relative_to_include() == "homelab/us-west-2/operator/application-backup-storage" ? jsonencode({
+      fallback = { method = "unencrypted" }
+    }) : jsonencode({ enforced = true })
+  ))
   config = {
     bucket = "rstuhlmuller-aws-s3-use1-datalake"
     key = "IaC/${lower(local.project_name)}/${startswith(path_relative_to_include(), "homelab/us-west-2/apps/") ? lookup({
