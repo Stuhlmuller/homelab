@@ -37,8 +37,11 @@ def references(value):
             if value.get("digest") or value.get("sha"):
                 image = image.split("@", 1)[0] + "@" + str(value.get("digest") or value["sha"])
             result.append(image)
-        if isinstance(value.get("newName"), str):
-            result.append(value["newName"] + ("@" + str(value["digest"]) if value.get("digest")
+        repository = value.get("newName")
+        if "newName" not in value and value.get("newTag"):
+            repository = value.get("name")
+        if isinstance(repository, str):
+            result.append(repository + ("@" + str(value["digest"]) if value.get("digest")
                           else ":" + str(value["newTag"]) if value.get("newTag") else ""))
         for child in value.values():
             if isinstance(child, (dict, list)):

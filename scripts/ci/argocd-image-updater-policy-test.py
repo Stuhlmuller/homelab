@@ -32,6 +32,8 @@ def main():
                                    root, docs if docs is not None else documents)
         allowed = validate()
         assert allowed == {(path, image)}
+        tag_only = {"images": [{"name": package, "newTag": "stable"}]}
+        assert validate(docs={path: [tag_only]}) == allowed
         assert validate(rules=[rule, {"enabled": True, "matchPackageNames": ["unrelated/package"]}]) == allowed
         assert policy.permits(allowed, path, image, {"docker.io/library/example:stable"})
         for wrong_path, wrong_image, known in (
