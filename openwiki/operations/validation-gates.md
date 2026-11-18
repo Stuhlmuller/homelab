@@ -2870,3 +2870,64 @@ checks digest preservation, conflicts, temporary omitted-field handoff and
 permanent removal; it does not prove live managed fields or controller readiness.
 See the [operator guide](../../docs/argocd-image-updater.md) for enrollment and
 the still-pending operator-selected workload acceptance.
+## Uptime Kuma validation
+
+Run from repository root in the pinned Nix environment (it supplies `promtool`):
+
+```sh
+python3 -I scripts/ci/uptime-kuma-check.py
+python3 -I scripts/ci/uptime-kuma-check-test.py
+node --test scripts/ci/uptime-kuma-test.js
+python3 -I scripts/ci/uptime-kuma-backup-test.py
+```
+
+Catalog checks reconcile app ownership/lifecycle and reject missing coverage,
+unsafe targets and cadence claims that disagree with committed scrape sources.
+Real Prometheus evaluation tests the 15-second source boundary: age 30 is
+eligible, age 31 is stale. Native adapter tests cover ownership, duplicate
+preflight, uncertain adds, settings retention and serialized repeatability.
+
+Disposable pinned-image integrations require Docker:
+
+```sh
+bash scripts/ci/uptime-kuma-integration.sh
+bash scripts/ci/uptime-kuma-backup-integration.sh
+```
+
+They exercise real native login/configuration, three observations, controlled
+failure/recovery, rejected 401/302 and malformed health data, plus read-only WAL
+backup and native restored identity/history. The restore fixture keeps network
+access enabled: an unfenced healthy-to-down control must emit probes/webhooks;
+the fenced clone must emit none for at least two configured intervals. Actual
+pinned updater/tunnel guards have positive/negative counters. Schema, settings,
+activation, environment, archive, cleanup and bounded-memory failures are tested.
+A network-none restore alone does not prove deployment execution fencing.
+
+Publication must establish the exact fixed `uptime-kuma` image scope before
+consumer delivery. Targeted Terragrunt tests check prerequisites and SSM-before-
+Application ordering; chart/overlay renders and policy checks cover mounts,
+identity and private routes. Local successes do not establish live uptime.
+Follow [the runbook](../../clusters/homelab/apps/uptime-kuma/README.md) and
+[feature acceptance guide](../../specs/20261116-210437-uptime-kuma/quickstart.md)
+for exact-revision private login, catalog observations, controlled recovery,
+repeat reconciliation, replacement continuity and actual backup/restore jobs.
+Record unhealthy targets as findings rather than weakening predicates.
+
+## AdGuard rollout and DNS activation
+
+The [AdGuard runbook](../../clusters/homelab/apps/adguard/README.md) separates
+source validation, rollout, direct acceptance and normal-client acceptance.
+Offline checks cover manifests/init, live-evidence validation, exact saved-plan
+cutover/rollback, protected recovery boundaries, routes, signing and targeted
+Terragrunt apply. The required repository job also runs the pinned AdGuard Docker
+fixture against synthetic DNS/filter servers, including cache failure, privacy,
+replacement and fresh restore. `bind.dnsutils` supplies the same `dig` used by the
+operator checker. Synthetic tests do not prove Harbor publication or live access.
+
+Live acceptance requires the published pinned image, current GitOps resources,
+trusted-Mac signed proxy, both DNS transports, private names, authenticated HTTPS
+administration and protected-source recovery. The DNS cutover helper binds a
+fresh administrator saved plan to observed service/peer/source/configuration and
+live policy. Rollback excludes AdGuard health dependencies. Native client mode
+currently supports macOS and records daemon/exit-node metadata; direct queries
+cannot count as normal-client or exit-node proof. These live gates remain pending.

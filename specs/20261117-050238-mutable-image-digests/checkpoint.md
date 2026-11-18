@@ -572,3 +572,36 @@ current main `8b37fe41c9a1f0cf54ac0e4486232dac7f24eafe` also fails Harbor
 `validation:remediation` in run 44064699631, job 133975234921; PR head 41c891fa
 fails the same check in run 44030526568, job 133861087298. No unrelated Harbor
 version or check changes were made. T018 remains pending protected delivery.
+
+
+## T025 convergence and T026 integration checkpoint
+
+Coordinator's independent source review found T025 clean: only the unused token
+was removed; explicit loopback host and environment isolation remain intact,
+with no scanner suppression. Full-scan outcome remains parent-owned evidence.
+
+Started an uncommitted merge of origin/main 8b37fe41 into head 57f05c3.
+Resolved three conflicts by retaining this feature pointer, both runtime-image
+and Uptime Kuma/AdGuard validation sections, and both fixture configuration
+additions. Other merge changes are preserved. T026 tracks integrated checks;
+no commit or remote write is performed by this stage.
+
+
+## T026 integrated validation and convergence
+
+Integrated apply tests passed all 43 cases after adding upstream's newly
+generated AdGuard unit to the default synthetic live-app list. The initial
+failure occurred in test filter matching before the real registration guard;
+no production guard was relaxed. Explicit missing-app cases remain unchanged.
+Full offline static checks, OpenWiki, both Spec Kit backends, repository Markdown
+lint and staged/unstaged diff checks passed. Targeted Checkov secrets scan,
+Ruff and shellcheck also passed in the integrated pinned environment. Logs:
+`/tmp/image-updater-main-integration.log` and
+`/tmp/image-updater-main-integration-lint.log`.
+
+Coordinator reported independent T026 convergence clean. All three conflicts
+are resolved; both upstream and image ownership changes remain in the merged
+worktree. T026 complete. The uncommitted merged index is ready for parent-owned
+signed publication and ancestry verification. No local commit, remote write or
+branch-protection change was performed. T018 and runtime acceptance remain
+pending; the unrelated Harbor validation blocker is unchanged.

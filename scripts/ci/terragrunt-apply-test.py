@@ -20,6 +20,7 @@ OIDC_ENVIRONMENT = {
 }
 APPS = ["external-secrets", "cert-manager", "istio", "platform-storage"]
 TRAEFIK_APPS = ["cert-manager", "istio", "tailscale"]
+ADGUARD_APPS = ["external-secrets", "tailscale", "traefik", "tailnet-dns", "platform-storage"]
 CRDS = ["externalsecrets.external-secrets.io", "clustersecretstores.external-secrets.io",
         "authorizationpolicies.security.istio.io", "virtualservices.networking.istio.io"]
 PROJECT = {"spec": {
@@ -64,6 +65,7 @@ units = {
     "IaC/homelab/us-west-2/apps/fleet/argocd": "repair",
     "IaC/homelab/us-west-2/apps/mastodon/argocd": "repair",
     "IaC/homelab/us-west-2/apps/traefik/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/uptime-kuma/argocd": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -145,7 +147,7 @@ if tool == "git":
         unexpected()
 elif tool == "kubectl":
     if args == ["-n", "argocd", "get", "appproject",
-                "homelab-workloads" if config["target"] == "codex-cloud-signer" else "homelab", "-o", "json"]:
+                "homelab-workloads" if config["target"] in ("codex-cloud-signer", "adguard") else "homelab", "-o", "json"]:
         event("preflight.project")
         print(json.dumps(config["project"]))
     elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
@@ -166,6 +168,17 @@ elif tool == "kubectl":
         print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
+    elif args == ["-n", "traefik", "get", "deployment", "traefik", "-o", "json"]:
+        event("preflight.traefik_deployment")
+        print(json.dumps(config["traefik_deployment"]))
+    elif args == ["-n", "traefik", "get", "certificate", "traefik", "-o", "json"]:
+        event("preflight.traefik_certificate")
+        print(json.dumps(config["traefik_certificate"]))
+    elif args == ["get", "node", "acer", "-o", "json"]:
+        event("preflight.node")
+        print(json.dumps(config["node"]))
+    elif args == ["get", "namespace", "monitoring", "-o", "name"]:
+        event("preflight.namespace")
     elif args == ["get", "namespace", "automation", "-o", "name"]:
         event("preflight.namespace")
     elif args == ["get", "storageclass", "codex-cloud-signer-local", "-o", "name"]:
@@ -196,7 +209,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard", *(["uptime-kuma"] if config["target"] == "uptime-kuma" else [])):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -279,11 +292,20 @@ class TerragruntApplyTest(unittest.TestCase):
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
                 ]
-        elif target == "codex-cloud-signer":
+        elif target == "uptime-kuma":
+            project["spec"]["destinations"][0]["namespace"] = "monitoring"
+            project["spec"]["sourceRepos"].append("https://bjw-s-labs.github.io/helm-charts")
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            app_names = [*APPS, "prometheus", "traefik"]
+        elif target in ("codex-cloud-signer", "adguard"):
             project["spec"]["destinations"][0]["namespace"] = "automation"
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
             project["spec"]["clusterResourceWhitelist"] = []
-            app_names = ["external-secrets", "tailscale", "traefik", "platform-storage"]
+            app_names = ADGUARD_APPS if target == "adguard" else [
+                "external-secrets", "tailscale", "traefik", "platform-storage"]
             crds = CRDS[:2]
         elif target == "traefik":
             project = json.loads(json.dumps(TRAEFIK_PROJECT))
@@ -291,9 +313,16 @@ class TerragruntApplyTest(unittest.TestCase):
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
-                  "live_apps": ["langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer"],
+                  "live_apps": ["langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard"],
+                  "traefik_deployment": {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}},
+                  "traefik_certificate": {"metadata": {"generation": 2},
+                      "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                      "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}},
                   "app_names": app_names, "crds": crds,
-                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target == "codex-cloud-signer" else target]}]}},
+                  "node": {"status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target in ("codex-cloud-signer", "adguard") else "monitoring" if target == "uptime-kuma" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -656,6 +685,49 @@ else:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
 
+    def test_adguard_checks_namespaced_prerequisites_before_ssm_and_registration(self):
+        result, events = self.run_apply(target="adguard", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events[:7], [
+            "generate", "preflight.namespace", "preflight.project", "preflight.apps",
+            "preflight.crds", "preflight.store", "preflight.store_scope",
+        ])
+        self.assertLess(events.index("preflight.storage"), events.index("ssm.init"))
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+        self.assertEqual(events[-3:], ["apps.plan", "apps.policy", "apps.apply"])
+        self.assertFalse(any(event.startswith(("s3.", "secrets.", "bootstrap.")) for event in events))
+        self.assertNotIn("preflight.local_volume", events)
+
+    def test_adguard_rejects_unhealthy_dependencies_and_wrong_scope_before_writes(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["adguard"]}]}}},
+                    {"store": {"spec": {"conditions": []}}}]
+        for name in ADGUARD_APPS:
+            for field, value in (("sync", "OutOfSync"), ("health", "Progressing")):
+                apps = [{"metadata": {"name": app}, "status": {
+                    "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
+                }} for app in ADGUARD_APPS]
+                next(app for app in apps if app["metadata"]["name"] == name)["status"][field]["status"] = value
+                variants.append({"apps": apps})
+        variants.extend({"fail": "preflight." + name}
+                        for name in ("namespace", "project", "apps", "crds", "store", "store_scope", "storage"))
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="adguard", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
+
+    def test_adguard_preserves_current_main_guard_and_unrelated_target_exclusion(self):
+        result, events = self.run_apply(target="adguard", github_actions=True, stale_at=1)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("ssm.apply", events)
+        self.assertNotIn("apps.apply", events)
+        result, events = self.run_apply(target="nofx")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
     def test_codex_signer_uses_automation_project_store_and_local_volume(self):
         result, events = self.run_apply(target="codex-cloud-signer", without_azuread=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -775,6 +847,113 @@ else:
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(events, ["generate", "preflight.project"])
 
+    def test_uptime_kuma_checks_monitoring_then_saved_ssm_and_application(self):
+        result, events = self.run_apply(target="uptime-kuma", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.node", events)
+        self.assertIn("preflight.namespace", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertEqual([e for e in events if e.endswith(".apply")],
+                         ["ssm.apply", "apps.apply"])
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+
+    def test_uptime_kuma_preflight_denies_before_any_mutation(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["uptime-kuma"]}]}}},
+                    {"node": {"spec": {"unschedulable": True}, "status": {
+                        "conditions": [{"type": "Ready", "status": "True"}]}}},
+                    {"node": {"status": {"conditions": [{"type": "Ready", "status": "False"}]}}},
+                    {"fail": "preflight.namespace"}, {"fail": "preflight.storage"}]
+        project = json.loads(json.dumps(TRAEFIK_PROJECT))
+        project["spec"]["destinations"][0]["namespace"] = "monitoring"
+        project["spec"]["clusterResourceWhitelist"] += [
+            {"group": "", "kind": "PersistentVolume"},
+            {"group": "storage.k8s.io", "kind": "StorageClass"},
+        ]
+        for missing in ("PersistentVolume", "StorageClass"):
+            altered = json.loads(json.dumps(project))
+            altered["spec"]["clusterResourceWhitelist"] = [
+                item for item in altered["spec"]["clusterResourceWhitelist"]
+                if item["kind"] != missing]
+            variants.append({"project": altered})
+        project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+        variants.append({"project": project})
+        for unhealthy in ("prometheus", "external-secrets"):
+            variants.append({"apps": [{"metadata": {"name": name}, "status": {
+                "sync": {"status": "Synced"},
+                "health": {"status": "Degraded" if name == unhealthy else "Healthy"},
+            }} for name in [*APPS, "prometheus", "traefik"]]})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.")
+                                    for e in events), events)
+
+    def test_uptime_kuma_uses_routing_readiness_despite_unrelated_ingress_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "prometheus", "traefik"]]
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(events.index("preflight.traefik_certificate"), events.index("ssm.plan"))
+        apps[-1]["status"]["sync"]["status"] = "OutOfSync"
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("ssm.plan", events)
+
+    def test_uptime_kuma_routing_dependency_failures_precede_all_mutations(self):
+        deployment = {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}}
+        certificate = {"metadata": {"generation": 2},
+                       "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                       "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}}
+        variants = [{"fail": "preflight.traefik_deployment"},
+                    {"fail": "preflight.traefik_certificate"},
+                    {"traefik_deployment": {}}, {"traefik_certificate": {}}]
+        for key, value in (("observedGeneration", 3), ("updatedReplicas", 0),
+                           ("readyReplicas", 0), ("availableReplicas", 0)):
+            item = json.loads(json.dumps(deployment))
+            item["status"][key] = value
+            variants.append({"traefik_deployment": item})
+        item = json.loads(json.dumps(deployment))
+        item["spec"]["replicas"] = 0
+        variants.append({"traefik_deployment": item})
+        for key, value in (("status", "False"), ("observedGeneration", 1)):
+            item = json.loads(json.dumps(certificate))
+            item["status"]["conditions"][0][key] = value
+            variants.append({"traefik_certificate": item})
+        for key, value in (("secretName", "unrelated"), ("dnsNames", ["unrelated.invalid"])):
+            item = json.loads(json.dumps(certificate))
+            item["spec"][key] = value
+            variants.append({"traefik_certificate": item})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.") for e in events), events)
+
+    def test_other_targets_still_require_aggregate_traefik_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "traefik"]]
+        result, events = self.run_apply(target="fleet", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("preflight.traefik_deployment", events)
+        self.assertNotIn("ssm.plan", events)
+
+    def test_uptime_kuma_failed_secret_plan_cannot_register_application(self):
+        for failure in ("ssm.plan", "ssm.policy", "ssm.apply"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="uptime-kuma", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("apps.plan", events)
+                self.assertNotIn("apps.apply", events)
+
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)
         self.assertNotEqual(result.returncode, 0)
@@ -811,16 +990,17 @@ else:
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
             live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !adguard/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
         self.assertIn("Skipping absent Argo CD Application nofx", result.stdout)
+        self.assertIn("Skipping absent Argo CD Application adguard", result.stdout)
 
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !adguard/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

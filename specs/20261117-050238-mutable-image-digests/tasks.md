@@ -200,3 +200,10 @@ requirements. Keep custom checklist markers reviewer-owned.
   Loopback fixture credential correction. Run all actual-provider cases and the
   pinned Checkov secret scan; preserve scanner policy and record evidence before
   parent-owned delivery. Depends on completed T023/T024.
+
+
+- [x] T026 Integrate origin/main 8b37fe41 without losing native updater or
+  Uptime Kuma/AdGuard changes. Resolve the feature pointer to this feature,
+  retain both validation sections and fixture inputs, and run affected apply,
+  offline static, secret and documentation checks. Leave the uncommitted merge
+  ready for parent-owned signing and protected delivery.
