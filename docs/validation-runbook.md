@@ -19,16 +19,14 @@ inspection; the static gate does not delete or exempt them.
 
 ```sh
 nix run .#validate
-cd IaC
-cd live/aws-ssm-parameters
-terragrunt plan
-cd ../..
-terragrunt stack run --filter-affected --parallelism 1 --source-update plan -no-color
+nix develop --command bash scripts/ci/terragrunt-plan.sh
 ```
 
-Expected result: the Argo CD Application units affected by `main...HEAD` are
-planned, their dependencies remain ordered by Terragrunt `dependencies` blocks,
-and unaffected units are skipped by the run queue.
+Expected result: affected allowed units are planned and policy-checked, their
+dependencies remain ordered, and unrelated units are skipped. Shared IaC changes
+and dirty local checkouts retain full coverage. See [plan performance](ci-cd.md#plan-performance)
+for generated-stack selection and provider caching. Secret-bearing units use
+the separate protected apply validation path.
 
 Render or dry-run GitOps sources:
 
