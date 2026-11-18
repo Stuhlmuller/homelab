@@ -30,7 +30,7 @@ remote_state {
       "homelab/us-west-2/apps/grafana/azuread"       = "live/azuread-applications/grafana"
       "homelab/us-west-2/apps/octelium/azuread"      = "live/azuread-applications/octelium"
       "homelab/us-west-2/apps/langfuse/blob-storage" = "live/langfuse-blob-storage"
-    }, path_relative_to_include(), "live/argocd-apps/${split("/", path_relative_to_include())[3]}") : startswith(path_relative_to_include(), "homelab/us-west-2/shared/") ? "live/${replace(path_relative_to_include(), "homelab/us-west-2/shared/", "")}" : replace(path_relative_to_include(), "homelab/us-west-2/", "")}/terraform.tfstate"
+    }, path_relative_to_include(), endswith(path_relative_to_include(), "/argocd") ? "live/argocd-apps/${split("/", path_relative_to_include())[3]}" : path_relative_to_include()) : startswith(path_relative_to_include(), "homelab/us-west-2/shared/") ? "live/${replace(path_relative_to_include(), "homelab/us-west-2/shared/", "")}" : replace(path_relative_to_include(), "homelab/us-west-2/", "")}/terraform.tfstate"
     region       = local.state_region
     encrypt      = true
     kms_key_id   = local.kms_key_id

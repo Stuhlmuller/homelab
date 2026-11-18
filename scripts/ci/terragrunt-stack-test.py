@@ -490,6 +490,18 @@ inputs = {
                          "IaC/homelab/live/argocd-apps/sparse-app/terraform.tfstate")
         self.assertFalse((self.root / "homelab/us-west-2/apps/sparse-app/.terragrunt-stack").exists())
 
+    def test_new_app_unit_cannot_share_application_state(self):
+        path = self.root / "homelab/us-west-2/apps/sparse-app/extra"
+        path.mkdir(exist_ok=True)
+        (path / "terragrunt.hcl").write_text(
+            'include "root" { path = find_in_parent_folders("root.hcl") }\n')
+        rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
+                                  "--write=false", "--no-color", cwd=path))
+        self.assertEqual(rendered["remote_state"]["config"]["key"],
+                         "IaC/homelab/homelab/us-west-2/apps/sparse-app/extra/terraform.tfstate")
+        self.assertNotEqual(rendered["remote_state"]["config"]["key"],
+                            self.render("sparse-app")["remote_state"]["config"]["key"])
+
     def test_overrides_preserve_siblings_and_replace_lists(self):
         rendered = self.render("override-app")
         manifest = rendered["inputs"]["manifest"]
