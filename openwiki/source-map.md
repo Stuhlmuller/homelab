@@ -158,7 +158,7 @@ desired state.
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
 | `clusters/homelab/apps/bulldozer/README.md`, `.github/workflows/bulldozer-credential.yml`, and `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl` | [Staged Bulldozer workload](workloads/inventory.md), [GitHub App secret contract](runbooks/secrets-aws-ssm.md#bulldozer-github-app), and [Funnel callback](runbooks/tailnet-ingress.md#route-boundaries) |
 | `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
-| `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
+| `scripts/ci/tailnet-dns-test.py` | [DNS declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and scoped CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |

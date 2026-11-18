@@ -38,10 +38,12 @@ network change supports it. The resolver has a distinct Tailscale IP and a
 `homelab-dns` proxy; never use the ingress IP as the nameserver.
 
 After the DNS image is present in Harbor and the resolver is deployed, inspect
-its Service IP and run the direct UDP/TCP handoff check:
+its Service IP and use the [direct resolver verification](#direct-resolver-verification)
+procedure below. These representative queries do not cover the full inventory:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 ```
 
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
@@ -51,7 +53,9 @@ answers for all 30 current approved names, including the apex. The separate
 [public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
 retires A/AAAA/CNAME records for only the 26 approved non-apex names after
 ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks
-pass. Intentionally stopped apps need matching zero-replica source and live
+pass. Current public-retirement procedures are limited to read-only preparation
+and verification because the execution path cannot complete required private-DNS
+validation; no alternative record-write procedure is provided. Intentionally stopped apps need matching zero-replica source and live
 checks in place of a serving HTTP response. Public apex A/MX/TXT and any CAA,
 the Cloudflare zone and DNS-01
 validation, four legacy public endpoints (`octelium-transport`,
@@ -64,6 +68,53 @@ Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 retain their original TLS hostname and SNI. Talos node image pulls use the
 separate host-only `10.96.0.50` registry Service; verify pulls on every node
 before changing Harbor's global DNS.
+
+## Direct resolver verification
+
+Use a connected, authorized tailnet client with read-only Kubernetes access.
+Keep raw device status and private operator evidence outside the repository.
+Inspect the `tailnet-dns/tailnet-dns` Service and its ready operator-owned proxy.
+Check its `homelab-dns` hostname, `tag:homelab-ingress`, Service/Pod ownership and
+published address against the proxy's actual device status and the connected
+client's network-map peer. Match stable device ID, numeric NodeID, public key,
+name, tag and addresses; require online, unexpired identity. Read-only
+`tailscale status --json` on the client and proxy supplies device observations.
+Recheck the Service and peer after queries; changed or missing identity invalidates
+these results. Do not substitute an ingress address for the DNS Service address.
+
+Read the approved names and expected private A address from the live
+`traefik/traefik-private` Service, and compare its annotation/routes with reviewed
+source. The resolver IP is the separate DNS Service's observed tailnet IPv4.
+Replace the placeholder below with that observed address:
+
+```sh
+dns_server="<OBSERVED_DNS_TAILNET_IP>"
+approved_names="$(kubectl -n traefik get service traefik-private -o jsonpath='{.metadata.annotations.coredns\.io/hostname}')" || exit 1
+test -n "$approved_names" || exit 1
+printf '%s\n' "$approved_names" | tr ',' '\n' |
+while IFS= read -r name; do
+  case "$name" in
+    \*.*) name="dns-preflight.${name#*.}" ;;
+  esac
+  for record_type in A AAAA; do
+    dig @"$dns_server" "$name" "$record_type" +notcp +ignore +time=3 +tries=1 +noall +comments +question +answer
+    dig @"$dns_server" "$name" "$record_type" +tcp +time=3 +tries=1 +noall +comments +question +answer
+  done
+done
+```
+
+Each query has one attempt and a three-second timeout. Inspect every response:
+require `NOERROR`, authoritative `aa`, no recursive `ra` or truncation flag, and
+exactly the observed private Traefik IPv4 for A. Current private AAAA responses
+must be authoritative NODATA. Wildcard entries use a concrete child. Empty names,
+query failure, public fallthrough or an unexpected answer fails verification;
+printing output or a successful shell exit alone is not acceptance.
+
+Compare apex MX/TXT and an unrelated public name against an independent public
+resolver using the same timeout/retry bounds and both transports. Require matching
+status and record sets; public forwarding must retain `ra`. Then verify ordinary
+client OS resolution and canonical HTTPS separately. Direct queries do not prove
+client DNS adoption, application authentication or service availability.
 
 ## Route Inventory
 

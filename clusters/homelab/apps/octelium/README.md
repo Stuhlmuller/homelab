@@ -279,11 +279,14 @@ kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
 ```
+
+Use the full [direct resolver verification](../../../../docs/networking-tailnet-ingress.md#direct-resolver-verification) procedure for approved-name, identity and answer checks.
 
 Use the private Kubernetes Service from a dedicated operator client environment.
 First configure the [local TCP carrier and scoped API resolver mapping](../octelium-public/README.md#routing).

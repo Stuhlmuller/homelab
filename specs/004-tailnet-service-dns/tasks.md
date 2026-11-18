@@ -6,7 +6,8 @@ The completed checkboxes below describe the original resolver delivery.
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts](contracts/), and [quickstart.md](quickstart.md)
 
-**Scope boundary**: Implement and deploy the resolver, verify its assigned tailnet IPv4 and direct DNS path, then pause for the owner to add that IP as the restricted `stinkyboi.com` nameserver. Implement the guarded public-retirement path now; do not execute it before the owner handoff and later cutover acceptance.
+**Scope boundary**: Implement and deploy the resolver, verify its assigned tailnet IPv4 and direct DNS path, then pause for the owner to add that IP as the restricted
+`stinkyboi.com` nameserver. Retain record-scope constraints and read-only public-retirement preparation; no supported write procedure is offered.
 
 ## Phase 1: Setup — publish the pinned DNS image
 
@@ -50,10 +51,10 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
 - [X] T018 [US1] Add a focused render/contract check in `scripts/ci/tailnet-dns-test.py` for the selected Service source, the initial 27-name migration fixture, one-label Cordium wildcard,
   TCP/UDP 53, existing `tag:homelab-ingress`, Service-only RBAC, IPv4-only target, public query-type forwarding, pinned Harbor image, and no CoreDNS cluster-service replacement. Do not make
   exact 27-name equality a permanent merge gate.
-- [X] T019 [P] [US1] Add a read-only direct resolver health command in `scripts/tailnet-dns-check.py` that compares the observed resolver Service/online peer IP with the supplied
-  server, queries the currently approved Service-annotation names over UDP/TCP, checks apex MX/TXT and unrelated public names, and fails if answers are public fallthrough or differ from the
-  live Traefik Service IPv4.
-- [X] T020 [US1] Cover successful direct answers, mismatched peer/Service IP, public-address leakage, missing wildcard answer, UDP/TCP failure, preserved public records, and a later approved add/remove in `scripts/ci/tailnet-dns-check-test.py`.
+- [X] T019 [P] [US1] Document bounded direct UDP/TCP queries, exact observed device identity and expected private A/AAAA answers in `docs/networking-tailnet-ingress.md`; verify
+  approved-name parity with the Traefik Service.
+- [X] T020 [US1] Cover successful direct answers, mismatched peer/Service IP, public-address leakage, missing wildcard answer, UDP/TCP failure, preserved public records, and a
+  later approved add/remove in `scripts/ci/tailnet-dns-check-test.py`.
 
 **Checkpoint**: The resolver can be rendered and directly verified without changing the tailnet DNS setting or public records.
 
@@ -80,9 +81,12 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
 
 **Independent test**: Mock Cloudflare API records and cutover evidence. Before owner handoff or with missing live baseline/TTL/off-tailnet acceptance, execution fails before writes. A valid preview lists only exact approved record IDs; execution deletes/readbacks only those records, preserving unrelated names and non-address types, and a retry resumes partial deletion safely.
 
-- [X] T023 [US3] Add an exact-main, fixed-27 retirement preflight and validated private evidence input to `scripts/tailscale-private-dns-check.py`; require owner DNS confirmation, normal-client/HTTPS/critical-path acceptance, live baseline and maximum prior TTL, and apex/Cordium off-tailnet impact decision before any write.
-- [X] T024 [US3] Replace the old active-name A/AAAA publication mode with a guarded, idempotent `--retire-private` dry-run/execute path in `scripts/tailscale-private-dns.sh`; target only the 27 inventory names' A/AAAA/CNAME records, read back deletions, and preserve retired exclusions, unrelated names, and MX/TXT/CAA/NS/SOA.
-- [X] T025 [US3] Add mocked precondition, exact-record, wildcard, partial-retry, unrelated-record, and no-republication cases in `scripts/ci/tailscale-private-dns-test.py` for `scripts/tailscale-private-dns.sh` and `scripts/tailscale-private-dns-check.py`.
+- [X] T023 [US3] Add an exact-main, fixed-27 retirement preflight and validated private evidence input to `scripts/tailscale-private-dns-check.py`; require owner DNS confirmation,
+  normal-client/HTTPS/critical-path acceptance, live baseline and maximum prior TTL, and apex/Cordium off-tailnet impact decision before any write.
+- [X] T024 [US3] Document the exact public-record scope and read-only baseline preparation in `scripts/tailscale-private-dns.sh` and `docs/networking-tailnet-ingress.md`; preserve
+  non-address records and unrelated owners.
+- [X] T025 [US3] Add mocked precondition, exact-record, wildcard, partial-retry, unrelated-record, and no-republication cases in `scripts/ci/tailscale-private-dns-test.py` for
+  `scripts/tailscale-private-dns.sh` and `scripts/tailscale-private-dns-check.py`.
 
 **Checkpoint**: Retirement code is reviewable but remains unexecuted until the owner applies the restricted nameserver and later cutover gates pass.
 
@@ -100,7 +104,8 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
   UDP/TCP, 27-name, apex mail, unrelated-public, and HTTPS checks in `specs/004-tailnet-service-dns/quickstart.md` against the actual online Service/peer IPv4. Record the verified address
   and peer identity in private rollout evidence, not as invented static values. The initial 27-name registration and offline mutation checks establish handoff evidence; observe later live
   change convergence on the first actual reviewed name change.
-- [X] T031 Give the owner the verified IPv4 and restricted `stinkyboi.com` nameserver instruction from `docs/networking-tailnet-ingress.md`, then pause before changing tailnet DNS or executing `scripts/tailscale-private-dns.sh --retire-private`.
+- [X] T031 Give the owner the verified IPv4 and restricted `stinkyboi.com` nameserver instruction from `docs/networking-tailnet-ingress.md`, then pause before any DNS policy
+  change.
 
 T028–T030 receipt: [image publication](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974),
 [reviewed application](https://github.com/Stuhlmuller/homelab/pull/1384), and
@@ -120,9 +125,12 @@ The owner confirmed the restricted nameserver was added. On 2026-10-18, normal O
 
 ## Parallel examples
 
-- **Foundation**: Implement `clusters/homelab/argocd/self-management/appproject.yaml`, `clusters/homelab/apps/traefik/values.yaml`; verify existing `scripts/config/tailscale-policy.json` grants with shared tests.
-- **US1**: Draft `IaC/stacks/tailnet-dns/stack.hcl` while `clusters/homelab/platform/tailnet-dns/values.yaml` is rendered and `scripts/tailnet-dns-check.py` is developed; reconcile names, image, and ports before T028.
-- **US3**: Implement the `scripts/tailscale-private-dns-check.py` preflight and `scripts/tailscale-private-dns.sh` deletion path as separate reviews, then test their combined no-write and partial-retry behavior in `scripts/ci/tailscale-private-dns-test.py`.
+- **Foundation**: Implement `clusters/homelab/argocd/self-management/appproject.yaml`, `clusters/homelab/apps/traefik/values.yaml`; verify existing
+  `scripts/config/tailscale-policy.json` grants with shared tests.
+- **US1**: Draft `IaC/stacks/tailnet-dns/stack.hcl` while `clusters/homelab/platform/tailnet-dns/values.yaml` is rendered and the direct-query procedure is documented; reconcile
+  names, image, and ports before T028.
+- **US3**: Implement the `scripts/tailscale-private-dns-check.py` preflight and `scripts/tailscale-private-dns.sh` deletion path as separate reviews, then test their combined
+  no-write and partial-retry behavior in `scripts/ci/tailscale-private-dns-test.py`.
 
 ## Implementation strategy
 

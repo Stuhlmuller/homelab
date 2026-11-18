@@ -176,7 +176,8 @@ The exact-main read-only execution preflight passed before deletion. The
 completed evidence is
 `~/.local/state/homelab/app-subdomain-retirement-e10199f2-completed.json`.
 
-- [X] T021 Execute `scripts/tailscale-private-dns.sh --retire-private --execute` from clean reviewed `main` with its exact `--expected-sha` and `~/.local/state/homelab/app-subdomain-retirement.json`; if a partial run occurs, investigate and retry only through the same guard after rechecking live state.
+- [X] T021 Record the confirmed 26-owner public absence and post-change TTL/client evidence in this task record; current procedures offer read-only preparation and verification
+  only.
 
 **T021 execution (2026-10-25 06:34 UTC):** The guarded helper completed from
 clean `main` `e10199f2` and read back all 26 approved owners without public
