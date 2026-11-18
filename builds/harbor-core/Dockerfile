@@ -25,10 +25,13 @@ RUN --network=none cp pkg/artifact/manager.go /src/patched-manager.go \
 
 FROM docker.io/goharbor/harbor-core:v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112
 USER 0
-# The upstream snapshot predates these fixed Photon packages.
-RUN sed -i '/^snapshot/d' /etc/yum.repos.d/photon-snapshot.repo \
-    && tdnf clean all \
-    && tdnf install -y openssl-3.5.9-0.2.ph5 openssl-libs-3.5.9-0.2.ph5 pcre2-libs-10.40-11.ph5 && tdnf clean all
+# Use signed current Photon updates because the upstream snapshot predates these fixes.
+RUN printf '%s\n' '[homelab-security]' 'name=Photon security updates' \
+    'baseurl=https://packages.broadcom.com/photon/5.0/photon_updates_5.0_x86_64' \
+    'gpgkey=file:///etc/pki/rpm-gpg/VMWARE-RPM-GPG-KEY-4096' 'gpgcheck=1' 'enabled=1' \
+    > /etc/yum.repos.d/homelab-security.repo \
+    && tdnf install -y openssl-3.5.9-3.ph5 openssl-libs-3.5.9-3.ph5 pcre2-libs-10.40-12.ph5 \
+    && tdnf clean all
 USER 10000
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="Apache-2.0" \
