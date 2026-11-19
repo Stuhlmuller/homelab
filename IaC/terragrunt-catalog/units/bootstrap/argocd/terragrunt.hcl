@@ -115,7 +115,8 @@ inputs = {
         }
 
         params = {
-          "server.insecure" = "true"
+          "controller.sync.timeout.seconds" = "900"
+          "server.insecure"                 = "true"
         }
 
         rbac = {
