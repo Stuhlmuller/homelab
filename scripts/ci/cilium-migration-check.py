@@ -216,7 +216,14 @@ def main():
                 qualify(kubectl, chart, flannel)
         except Exception:
             if kubeconfig.exists():
-                for args in (("get", "pods", "-A", "-o", "wide"), ("get", "events", "-A")):
+                for args in (
+                    ("get", "pods", "-A", "-o", "wide"),
+                    ("get", "events", "-A"),
+                    ("-n", "kube-flannel", "logs", "-l", "app=flannel",
+                     "-c", "kube-flannel", "--prefix", "--tail=80"),
+                    ("-n", "kube-system", "logs", "-l", "k8s-app=cilium",
+                     "-c", "cilium-agent", "--prefix", "--tail=80"),
+                ):
                     result = subprocess.run((*kubectl, *args), capture_output=True, text=True, timeout=30)
                     print(result.stdout or result.stderr, flush=True)
             raise
