@@ -150,10 +150,8 @@ three matching hashes. The proof command itself retrieves a fresh set from S3
 through the publisher, then records the marker and object version IDs and
 rehashes files restored into a separate directory. A locally fabricated
 `complete.json` or `retrieval.json` cannot start a proof.
-The publisher and reader policy examples include only the new rscstore prefix;
-their attachment and the operator profile's actual rights remain a separate
-activation check. A failed S3 upload or retrieval leaves the writer fenced.
-Immediately before publication and any recovery decision, recheck current
+Verify the operator profiles cover the rscstore prefix. A failed S3 upload or
+retrieval leaves the writer fenced. Immediately before publication and any recovery decision, recheck current
 `main` against the capture receipt's fence SHA, Argo Synced at that revision,
 and zero live resource-store writers; drift requires a new capture and review.
 Only that published, retrieved, extracted set qualifies as the off-NAS archive

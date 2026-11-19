@@ -1002,11 +1002,9 @@ keys independently. See [Harbor Private OCI Registry](../operations/harbor-oci.m
 
 ## Independent application recovery credentials
 
-The staged [application recovery contract](../../docs/application-recovery.md) keeps
-publication and read-only verification profiles outside the cluster/NAS. Proposed
-IAM policies in `recovery/application-backups` are unattached and scoped to a
-dedicated bucket; delete/versioning/lifecycle mutations are denied. No new secret
-values, identities or permissions were created. Preserve app encryption/signing
+Use scoped file-backed AWS profiles for manual [application publication and
+retrieval](../../docs/application-recovery.md#manual-publication-and-retrieval).
+Preserve app encryption/signing
 keys and password-free-dump role credentials through the existing private vault.
 Archive restore has no cloud credentials or production access and remains gated
 on enforced containment.
