@@ -5,3 +5,5 @@ resources:
   - resources.yaml
   - capture-stage/inspector.yaml
   - capture-stage/inspector-networkpolicy.yaml
+components:
+  - capture-stage

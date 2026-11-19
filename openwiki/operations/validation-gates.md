@@ -1173,9 +1173,8 @@ single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must still show
-one `octeliumee-rscstore` replica, the inspector Pod, and its exact-label
-NetworkPolicy. The fence component renders only when added to the app
-Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+zero `octeliumee-rscstore` replicas, the inspector Pod, and its exact-label
+NetworkPolicy. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
 ```sh
 python3 -I scripts/ci/octelium-rscstore-capture-test.py

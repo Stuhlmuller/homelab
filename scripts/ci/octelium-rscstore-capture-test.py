@@ -157,18 +157,12 @@ class RscstoreCaptureTest(unittest.TestCase):
             CAPTURE.argo_guard("homelab", SHA)
 
     def test_fenced_kustomization_requires_inspector_policy(self):
-        current = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        future = ("apiVersion: kustomize.config.k8s.io/v1beta1\n"
-                  "kind: Kustomization\nresources:\n"
-                  "  - emergency-dataplane.yaml\n  - resources.yaml\n"
-                  "  - capture-stage/inspector.yaml\n"
-                  "  - capture-stage/inspector-networkpolicy.yaml\n"
-                  "components:\n  - capture-stage\n")
+        future = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "kustomization.yaml"
             path.write_text(future)
             CAPTURE.fenced_kustomization_guard(path)
-            for invalid in (current, future.replace(
+            for invalid in (future.replace("components:\n  - capture-stage\n", ""), future.replace(
                     "  - capture-stage/inspector-networkpolicy.yaml\n", "")):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                     path.write_text(invalid)
@@ -186,11 +180,9 @@ class RscstoreCaptureTest(unittest.TestCase):
                               ["StringLike"]["s3:prefix"])
                 self.assertIn(bucket + prefix, statements[required]["Resource"])
 
-    def test_inspector_stage_keeps_writer_fence_inactive(self):
-        source = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        self.assertIn("  - capture-stage/inspector.yaml", source)
-        self.assertIn("  - capture-stage/inspector-networkpolicy.yaml", source)
-        self.assertNotIn("components:", source)
+    def test_active_kustomization_keeps_inspector_and_writer_fence(self):
+        source = ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
+        CAPTURE.fenced_kustomization_guard(source)
 
     def test_pod_list_requires_unpaginated_resource_version(self):
         deployment, pvc, pv, pods = cluster_fixture()

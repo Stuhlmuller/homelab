@@ -62,8 +62,8 @@ The Terragrunt-owned Application uses `ApplyOutOfSyncOnly=true` so adding
 only the inspector and its policy does not replace the in-sync store Deployment.
 
 The active app declares the read-only inspector Pod and its exact-label
-NetworkPolicy while the resource-store Deployment remains at one replica.
-The fence component remains excluded. Verify the pinned Harbor mirror image
+NetworkPolicy. The fence component scales the resource-store Deployment to zero
+for capture. Verify the pinned Harbor mirror image
 pulls, the Pod schedules and reaches Ready, and both read-only mount fields are
 live.
 The liveness probe checks the mounted directory; readiness checks that
@@ -72,8 +72,8 @@ store's root behavior, but source PVC ownership and modes must be checked before
 activation. Retain root only if complete file access requires it; otherwise
 revise the inspector and capture guard to a proven nonroot UID. A successful
 readiness probe covers `store.db`; the full tar capture must still read every
-PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
-Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
+PVC entry. The `capture-stage` Kustomize component sets only `octeliumee-rscstore`
+to zero replicas. The inspector mounts
 the exact `octelium-rscstore` claim read-only at the volume and container mount,
 has no API token, credentials, or writable image root, and is not selected by
 the resource-store Service. This image digest is declared in
