@@ -56,6 +56,13 @@ Verify node and API access, DNS, storage, mesh traffic and Multus attachments
 before retiring the Flannel resources. Confirm that new Pod sandboxes still
 use Cilium after each node configuration change.
 
+Use contemporaneous, private all-namespace Pod and CiliumEndpoint JSON
+snapshots with `scripts/cilium-cutover-check.py --pods <pods.json> --endpoints
+<endpoints.json> --cidr 10.245.0.0/16`. The check rejects stale endpoint
+ownership, unready endpoints and legacy primary IP addresses. Repeat it
+around the cutover and verify host-network and Multus traffic separately.
+
+
 The [rollback patch](../../../../.talos/patches/cilium-cni-rollback.yaml)
 restores the Flannel selection. Use it as part of a coordinated rollback
 that restores Flannel routing and Multus delegation before recreating
