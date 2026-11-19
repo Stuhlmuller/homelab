@@ -1,0 +1,29 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: adguard-filter-egress
+  namespace: automation
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: adguard
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - {port: "53", protocol: UDP}
+            - {port: "53", protocol: TCP}
+          rules:
+            dns:
+              - matchName: tailnet-dns.tailnet-dns.svc.cluster.local
+              - matchName: adguardteam.github.io
+    - toFQDNs:
+        - matchName: adguardteam.github.io
+      toPorts:
+        - ports:
+            - {port: "443", protocol: TCP}
+          serverNames:
+            - adguardteam.github.io
