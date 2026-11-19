@@ -1,8 +1,34 @@
 # Homelab
 
-A Talos Linux and Kubernetes homelab managed through Git. This repository
-operates the cluster and documents how to build, maintain, and recover a
-similar setup. Changes should be reviewable and repeatable.
+**One Acer, three ZimaBoards, and a NAS walk into a Kubernetes cluster.**
+
+This is my Talos Linux homelab and a field guide for building your own.
+The lab doubles as a place to self-host, try out infrastructure ideas,
+and practice getting services back online when things break.
+
+[![Latest homelab commit][last-commit]][history]
+[![Monthly homelab commit activity][commit-activity]][activity]
+
+## Meet the hardware
+
+| Node | Hardware | Role | Logical CPUs | RAM visible to Kubernetes |
+| --- | --- | --- | ---: | ---: |
+| `acer` | Acer PC | Talos control plane | 8 | 15.5 GiB |
+| `zimaboard-0` | ZimaBoard | Talos worker | 4 | 7.6 GiB |
+| `zimaboard-1` | ZimaBoard | Talos worker | 4 | 7.6 GiB |
+| `zimaboard-2` | ZimaBoard | Talos worker | 2 | 1.8 GiB |
+
+**Storage sidekick.** A QNAP TS-451+ serves Kubernetes persistent volumes
+over NFS. Its storage pool uses four 2 TB disks in RAID 5.
+See the [storage guide](docs/storage-nfs.md).
+
+## Lab notebook
+
+Green squares mark GitHub contributions by [@rstuhlmuller][profile]
+across repositories. For homelab-specific changes, see the repository's
+[commit activity chart][activity] and [contributor graphs][contributors].
+
+[![GitHub contribution heatmap for rstuhlmuller][heatmap]][profile]
 
 ## How it works
 
@@ -44,3 +70,11 @@ nix run .#validate
 
 Use the [validation runbook](docs/validation-runbook.md) to pick focused checks
 for your change and find the relevant plan, render, or rollout verification.
+
+[last-commit]: https://img.shields.io/github/last-commit/Stuhlmuller/homelab?style=flat-square
+[commit-activity]: https://img.shields.io/github/commit-activity/m/Stuhlmuller/homelab?style=flat-square
+[history]: https://github.com/Stuhlmuller/homelab/commits/main/
+[activity]: https://github.com/Stuhlmuller/homelab/graphs/commit-activity
+[contributors]: https://github.com/Stuhlmuller/homelab/graphs/contributors
+[heatmap]: https://ghchart.rshah.org/22a06b/rstuhlmuller
+[profile]: https://github.com/rstuhlmuller#contribution-graph
