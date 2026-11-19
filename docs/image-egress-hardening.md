@@ -151,6 +151,10 @@ NET_ADMIN/NET_RAW/SYS_ADMIN and init-container workloads that require a
 separate control-path review. The utility never calls Kubernetes and snapshot
 files must remain private.
 
+Pods requesting Multus secondary networks are also flagged for separate review.
+Test allowed and denied traffic on each attached interface before claiming
+egress enforcement for those workloads.
+
 Candidate containers must explicitly drop `ALL` Linux capabilities before
 adding only reviewed capabilities. Otherwise runtime-default capabilities are
 reported as a separate-control-path finding.

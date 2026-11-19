@@ -548,6 +548,9 @@ def active_pods(items, namespaces):
             "labels": dict(sorted(labels.items())),
             "serviceAccount": spec.get("serviceAccountName", "default"),
             "hostNetwork": spec.get("hostNetwork") is True,
+            "secondaryNetwork": bool(
+                metadata_value.get("annotations", {}).get("k8s.v1.cni.cncf.io/networks", "").strip()
+            ),
             "ips": sorted(ips),
             "containers": containers,
         })
@@ -667,6 +670,8 @@ def audit(pod_items, policy_items, render_items, review_path=None, namespaces=()
         exceptions = []
         if pod["hostNetwork"]:
             exceptions.append("host-network")
+        if pod["secondaryNetwork"]:
+            exceptions.append("secondary-network")
         for container in pod["containers"]:
             if container["privileged"]:
                 exceptions.append("privileged-" + container["kind"] + ":" + str(container["name"]))
