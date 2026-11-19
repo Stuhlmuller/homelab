@@ -1,0 +1,33 @@
+---
+name: Cilium migration trial
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/cilium-migration-check.yml
+      - clusters/homelab/platform/cilium/**
+      - scripts/ci/cilium-migration-check.py
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cilium-migration-check.yml
+      - clusters/homelab/platform/cilium/**
+      - scripts/ci/cilium-migration-check.py
+
+permissions:
+  contents: read
+
+jobs:
+  coexistence:
+    name: Flannel and Cilium coexistence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Verify mixed-overlay pod and Service connectivity
+        run: nix develop --command python3 -I scripts/ci/cilium-migration-check.py
