@@ -311,16 +311,17 @@ Langfuse Application; it does not widen the Terragrunt filter or advance the
 full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
 [deployment and readiness gates](../../clusters/homelab/apps/langfuse/README.md#validation).
 
-Deleted workflow-owned units use temporary configurations at their original backend paths and inherit the shared
-AES-GCM state and saved-plan policy from [`IaC/root.hcl`](../../IaC/root.hcl). Terragrunt generates provider and
-method blocks named `default`; `encrypted_metadata_alias = "key_provider.aws_kms.main"` preserves the former
-key-provider metadata identity, not the former encryption-method label. For production retirement, the [apply runner](../../scripts/ci/terragrunt-apply.sh)
-uses `--filter-allow-destroy` to plan from the last successful full apply revision.
-It checks the saved plan's JSON against current Conftest policy before applying
-the same binary plan. Previously unencrypted
-records require the separately scoped adoption described in the
-[state encryption guide](../../docs/state-encryption.md).
-Retained secret and backup data remain protected by their existing ownership and policy gates.
+Pull request previews for deleted units use temporary configurations at the
+original backend paths. They inherit AES-GCM state and saved-plan encryption
+from [`IaC/root.hcl`](../../IaC/root.hcl) and preserve the original KMS
+key-provider metadata identity with `encrypted_metadata_alias`.
+
+For production retirement, the [apply runner](../../scripts/ci/terragrunt-apply.sh)
+uses `--filter-allow-destroy` to plan from the last successful full apply
+revision. It checks the saved plan's JSON against current Conftest policy
+before applying the same binary plan. Previously unencrypted records require
+the adoption described in the [state encryption guide](../../docs/state-encryption.md).
+Existing policy gates protect retained secret and backup data.
 
 ## Pull request plan selection
 
