@@ -18,7 +18,7 @@ inputs = {
           releaseName = "cilium"
           valueFiles = [
             "$values/clusters/homelab/platform/cilium/values-migration.yaml",
-            "$values/clusters/homelab/platform/cilium/values-homelab-images.yaml",
+            "$values/clusters/homelab/platform/cilium/values-homelab.yaml",
           ]
         }
       },

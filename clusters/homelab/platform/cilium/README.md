@@ -15,6 +15,11 @@ helm template cilium cilium --repo https://helm.cilium.io --version 1.20.5 \
 The trial uses `10.245.0.0/16` as a second Pod CIDR and UDP 8473 for its VXLAN
 overlay. Verify that the CIDR is unused by cluster, LAN and tailnet routes and
 that the port is available across nodes before registering the chart.
+The Homelab values keep operator replicas off the smallest worker,
+`zimaboard-2`. The hosted lab measured 170 MiB for its worker agent and
+12 MiB for Envoy. Measure host headroom and Cilium working sets under live
+load before advancing node cutover.
+
 
 ## Rollout checkpoints
 
