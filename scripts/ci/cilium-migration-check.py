@@ -43,11 +43,14 @@ def apply(kubectl, obj):
     run(*kubectl, "apply", "-f", "-", input=json.dumps(obj))
 
 
-def endpoint(kubectl, name, node):
+def endpoint(kubectl, name, node, attachment=False):
+    metadata = {"name": name, "labels": {"fixture": name}}
+    if attachment:
+        metadata["annotations"] = {"k8s.v1.cni.cncf.io/networks": "secondary"}
     apply(kubectl, {
         "apiVersion": "v1",
         "kind": "Pod",
-        "metadata": {"name": name, "labels": {"fixture": name}},
+        "metadata": metadata,
         "spec": {
             "nodeName": node,
             "automountServiceAccountToken": False,
@@ -60,7 +63,16 @@ def endpoint(kubectl, name, node):
         },
     })
     run(*kubectl, "wait", f"pod/{name}", "--for=condition=Ready", "--timeout=180s")
-    return ipaddress.ip_address(run(*kubectl, "get", f"pod/{name}", "-o", "jsonpath={.status.podIP}"))
+    pod = json.loads(run(*kubectl, "get", f"pod/{name}", "-o", "json"))
+    if attachment:
+        networks = json.loads(pod["metadata"]["annotations"]["k8s.v1.cni.cncf.io/network-status"])
+        secondary = [entry for entry in networks if entry["name"] == "default/secondary"]
+        if len(secondary) != 1 or secondary[0].get("default") or not secondary[0].get("ips"):
+            raise AssertionError(f"{name} has no non-default Multus attachment")
+        run(*kubectl, "exec", name, "--", "/usr/bin/python3", "-c",
+            "import socket,sys; assert sys.argv[1] in dict(socket.if_nameindex()).values()",
+            secondary[0]["interface"])
+    return ipaddress.ip_address(pod["status"]["podIP"])
 
 
 def probe(kubectl, source, address, port):
@@ -97,12 +109,37 @@ def install_flannel_plugins(directory):
                 run("docker", "cp", str(path), f"{node}:/opt/cni/bin/{name}")
 
 
+def install_multus(kubectl):
+    manifest = (ROOT / "clusters/homelab/platform/multus/multus.yaml").read_text()
+    manifest = manifest.replace(
+        "harbor.stinkyboi.com/mirror/ghcr.io/k8snetworkplumbingwg/",
+        "ghcr.io/k8snetworkplumbingwg/",
+    )
+    run(*kubectl, "apply", "-f", "-", input=manifest)
+    run(*kubectl, "wait", "--for=condition=Established",
+        "crd/network-attachment-definitions.k8s.cni.cncf.io", "--timeout=60s")
+    run(*kubectl, "-n", "kube-system", "rollout", "status", "ds/kube-multus-ds", "--timeout=180s")
+    apply(kubectl, {
+        "apiVersion": "k8s.cni.cncf.io/v1",
+        "kind": "NetworkAttachmentDefinition",
+        "metadata": {"name": "secondary", "namespace": "default"},
+        "spec": {"config": json.dumps({
+            "cniVersion": "0.3.1",
+            "type": "bridge",
+            "name": "secondary",
+            "bridge": "fixture-net1",
+            "ipam": {"type": "host-local", "subnet": "192.0.2.0/24"},
+        })},
+    })
+
+
 def qualify(kubectl, chart, flannel):
     run(*kubectl, "apply", "-f", str(flannel))
     run(*kubectl, "-n", "kube-flannel", "rollout", "status", "ds/kube-flannel-ds", "--timeout=180s")
     run(*kubectl, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=180s")
     flannel_ip = endpoint(kubectl, "legacy", CONTROL)
-    worker_ip = endpoint(kubectl, "worker", WORKER)
+    install_multus(kubectl)
+    worker_ip = endpoint(kubectl, "worker", WORKER, attachment=True)
     probe(kubectl, "legacy", worker_ip, 8080)
 
     install_cilium(kubectl, chart)
@@ -134,7 +171,7 @@ def qualify(kubectl, chart, flannel):
     run("docker", "restart", WORKER, timeout=120)
     run(*kubectl, "wait", "--for=condition=Ready", "node/" + WORKER, "--timeout=180s")
     run(*kubectl, "-n", "kube-system", "rollout", "status", "ds/cilium", "--timeout=240s")
-    cilium_ip = endpoint(kubectl, "migrated", WORKER)
+    cilium_ip = endpoint(kubectl, "migrated", WORKER, attachment=True)
     if flannel_ip not in ipaddress.ip_network("10.244.0.0/16") or cilium_ip not in ipaddress.ip_network("10.245.0.0/16"):
         raise AssertionError(f"Expected one pod on each overlay, found {flannel_ip} and {cilium_ip}")
     run(*kubectl, "get", "ciliumendpoint/migrated")
@@ -142,7 +179,7 @@ def qualify(kubectl, chart, flannel):
     probe(kubectl, "legacy", cilium_ip, 8080)
     probe(kubectl, "migrated", flannel_ip, 8080)
     probe(kubectl, "migrated", "legacy.default.svc.cluster.local", 80)
-    print("Passed bidirectional mixed-overlay pod traffic and DNS-backed Service access", flush=True)
+    print("Passed mixed-overlay pod traffic, DNS-backed Service access and Multus attachments", flush=True)
 
 
 def qualify_egress(kubectl, chart):
@@ -238,6 +275,8 @@ def main():
                     ("get", "events", "-A"),
                     ("-n", "kube-flannel", "logs", "-l", "app=flannel",
                      "-c", "kube-flannel", "--prefix", "--tail=80"),
+                    ("-n", "kube-system", "logs", "-l", "name=multus",
+                     "-c", "kube-multus", "--prefix", "--tail=80"),
                     ("-n", "kube-system", "logs", "-l", "k8s-app=cilium",
                      "-c", "cilium-agent", "--prefix", "--tail=80"),
                 ):

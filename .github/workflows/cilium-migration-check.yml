@@ -6,12 +6,14 @@ on:
     paths:
       - .github/workflows/cilium-migration-check.yml
       - clusters/homelab/platform/cilium/**
+      - clusters/homelab/platform/multus/multus.yaml
       - scripts/ci/cilium-migration-check.py
   push:
     branches: [main]
     paths:
       - .github/workflows/cilium-migration-check.yml
       - clusters/homelab/platform/cilium/**
+      - clusters/homelab/platform/multus/multus.yaml
       - scripts/ci/cilium-migration-check.py
 
 permissions:
