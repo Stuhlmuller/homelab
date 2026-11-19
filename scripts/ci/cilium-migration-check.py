@@ -242,17 +242,30 @@ def qualify_egress(kubectl, chart):
 
 
 def report_cilium_working_set():
-    for node in (CONTROL, WORKER):
-        sample = json.loads(run("docker", "exec", node, "crictl", "stats", "-o", "json"))
-        for entry in sample["stats"]:
-            attributes = entry["attributes"]
-            name = attributes["metadata"]["name"]
-            pod = attributes.get("labels", {}).get("io.kubernetes.pod.name", "")
-            if pod.startswith("cilium-") and name in {"cilium-agent", "cilium-envoy", "cilium-operator"}:
-                size = int(entry["memory"]["workingSetBytes"]["value"])
-                print(f"{node} {pod} {name}: {size // (1024 * 1024)} MiB working set",
-                      flush=True)
-
+    required = {(node, name) for node in (CONTROL, WORKER)
+                for name in ("cilium-agent", "cilium-envoy")}
+    recorded = set()
+    deadline = time.monotonic() + 30
+    while required - recorded and time.monotonic() < deadline:
+        for node in (CONTROL, WORKER):
+            sample = json.loads(run("docker", "exec", node, "crictl", "stats", "-o", "json"))
+            for entry in sample["stats"]:
+                attributes = entry["attributes"]
+                name = attributes["metadata"]["name"]
+                pod = attributes.get("labels", {}).get("io.kubernetes.pod.name", "")
+                key = node, name
+                if not pod.startswith("cilium-") or key not in required or key in recorded:
+                    continue
+                memory = entry.get("memory") or {}
+                size = (memory.get("workingSetBytes") or {}).get("value")
+                if size is not None:
+                    print(f"{node} {pod} {name}: {int(size) // (1024 * 1024)} MiB working set",
+                          flush=True)
+                    recorded.add(key)
+        if required - recorded:
+            time.sleep(2)
+    for node, name in sorted(required - recorded):
+        print(f"{node} {name}: working-set sample unavailable", flush=True)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
