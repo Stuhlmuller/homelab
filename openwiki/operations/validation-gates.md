@@ -710,6 +710,8 @@ Drift labels consider both live and rendered policy types, so a transition
 between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
+Pods that request Multus secondary networks require interface-specific
+qualification even when their primary-network policy denies all egress.
 
 The read-only [Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
 joins complete namespace Service, Pod, and EndpointSlice snapshots to the 25
