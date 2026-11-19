@@ -11,8 +11,6 @@ import tempfile
 import time
 import urllib.request
 
-import yaml
-
 
 ROOT = Path(__file__).resolve().parents[2]
 CLUSTER = "cilium-migration-check"
@@ -140,7 +138,7 @@ def qualify_egress(kubectl, chart):
         probe(kubectl, "source", target, 8080)
 
     policy_path = ROOT / "clusters/homelab/platform/cilium/egress-default-deny.yaml"
-    baseline = yaml.safe_load(policy_path.read_text())
+    baseline = json.loads(run("yq", "-o=json", ".", str(policy_path)))
     if baseline["spec"]["endpointSelector"] != {}:
         raise AssertionError("Expected a cluster-wide workload selector")
     # Limit the test to the fixture client so DNS and system pods keep working.
