@@ -58,6 +58,9 @@ is context, not authorization to repeat it unchanged.
 
 ## Dormant resource-store capture stage
 
+The Terragrunt-owned Application uses `ApplyOutOfSyncOnly=true` so adding
+only the inspector and its policy does not replace the in-sync store Deployment.
+
 `capture-stage/` is excluded from the active app. First, a separate reviewed
 GitOps stage adds the inspector Pod and its exact-label NetworkPolicy while
 the Deployment remains at one replica. Verify the pinned Harbor mirror image
