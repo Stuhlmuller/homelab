@@ -1,0 +1,8 @@
+image:
+  repository: harbor.stinkyboi.com/mirror/quay.io/cilium/cilium
+envoy:
+  image:
+    repository: harbor.stinkyboi.com/mirror/quay.io/cilium/cilium-envoy
+operator:
+  image:
+    repository: harbor.stinkyboi.com/mirror/quay.io/cilium/operator

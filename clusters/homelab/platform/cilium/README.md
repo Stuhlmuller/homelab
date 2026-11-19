@@ -1,7 +1,7 @@
 # Cilium migration trial
 
 `values-migration.yaml` renders the initial overlay for chart 1.20.5.
-This directory has no Argo CD registration. The values keep kube-proxy,
+The `platform-cilium` registration has automatic sync disabled. The trial values keep kube-proxy,
 disable Cilium policy enforcement during coexistence, and let Flannel and
 Multus own the active CNI configuration. Talos supplies cgroup v2 and agents
 run without the kernel-module loading capability.
@@ -23,9 +23,16 @@ that the port is available across nodes before registering the chart.
    attachment as nodes switch over. Confirm Multus delegates primary network
    setup to the correct plugin, and rehearse restoring its Flannel delegation.
 2. Publish and admit the exact chart images through the Harbor image pipeline.
-   Register the initial overlay through GitOps, then implement the protected
+   Register the suspended Application through GitOps, then implement the protected
    node-by-node cutover and rollback. Include eviction feasibility and retain
    a working route to the Talos and Kubernetes APIs throughout the cutover.
+   The standalone `node-migration.yaml` selector is for the cutover stage
+   after the chart installs its CRD. It allows Cilium to write its primary
+   CNI configuration on a selected node while retaining the Multus and
+   Flannel configuration files. The staged Helm Application does not include
+   this manifest. Validate Multus delegation and rollback on the trial node
+   before introducing the first selector label in the live cluster.
+
 3. Inventory effective egress and install explicit workload grants for DNS,
    API access, internal peers and approved external destinations. Verify
    host-network and Multus traffic on their actual interfaces. Account for
