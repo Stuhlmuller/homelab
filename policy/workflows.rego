@@ -1047,11 +1047,14 @@ case "$IMAGE_SCOPE" in
   adguard)
     bash scripts/ci/harbor-publish.sh mirror-adguard --tailscale
     ;;
+  cilium)
+    bash scripts/ci/harbor-publish.sh mirror-cilium --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'acd364eeca57af100f9ef135644a1c906c07a54e0bb9261c2cf012b3ac402bd4  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'71685d813eb61ee51daf9c70bfd5eeb518b87cc73e795b58a08a3f1420879661  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1168,7 +1171,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "d5d813836fc61c2c51ee44cc169f5b69bc478660552654862142a3afa47cf5c3"
+	crypto.sha256(json.marshal(canonical)) == "c0d32afd7612e129216d3284e02232e730706a28ae784a964a913fcf6a8f4178"
 }
 
 tailnet_workflow_requested if {

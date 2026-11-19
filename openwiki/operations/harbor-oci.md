@@ -1395,3 +1395,11 @@ including the zero-match runtime audit and authenticated pull/signature checks.
 Harbor values pin its private digest. The harbor ServiceAccount references the
 existing harbor-pull Secret, and the core Deployment retains RollingUpdate.
 The [app runbook](../../clusters/homelab/apps/harbor/README.md) records recovery.
+
+## Cilium image prerequisite
+
+The [Cilium migration inventory](../../scripts/config/harbor-cilium-images.json)
+pins the agent, Envoy, and generic operator from chart 1.20.5. The protected
+mirror workflow uses the fixed `cilium` scope and verifies the complete
+authenticated Harbor pulls before the chart can be registered. Image publication
+does not change the active CNI.
