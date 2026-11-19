@@ -43,7 +43,7 @@ def apply(kubectl, obj):
     run(*kubectl, "apply", "-f", "-", input=json.dumps(obj))
 
 
-def endpoint(kubectl, name, node, attachment=False):
+def endpoint(kubectl, name, node, attachment=False, ports=(8080,)):
     metadata = {"name": name, "labels": {"fixture": name}}
     if attachment:
         metadata["annotations"] = {"k8s.v1.cni.cncf.io/networks": "secondary"}
@@ -55,11 +55,11 @@ def endpoint(kubectl, name, node, attachment=False):
             "nodeName": node,
             "automountServiceAccountToken": False,
             "containers": [{
-                "name": "http",
+                "name": f"http-{port}",
                 "image": PYTHON,
-                "command": ["/usr/bin/python3", "-m", "http.server", "8080"],
-                "readinessProbe": {"httpGet": {"port": 8080, "path": "/"}},
-            }],
+                "command": ["/usr/bin/python3", "-m", "http.server", str(port)],
+                "readinessProbe": {"httpGet": {"port": port, "path": "/"}},
+            } for port in ports],
         },
     })
     run(*kubectl, "wait", f"pod/{name}", "--for=condition=Ready", "--timeout=180s")
@@ -187,10 +187,11 @@ def qualify_egress(kubectl, chart):
                    "--set", "policyEnforcementMode=default")
     run(*kubectl, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=180s")
     endpoint(kubectl, "source", WORKER)
-    allowed = endpoint(kubectl, "allowed", CONTROL)
+    allowed = endpoint(kubectl, "allowed", CONTROL, ports=(8080, 8081))
     blocked = endpoint(kubectl, "blocked", CONTROL)
     for target in (allowed, blocked):
         probe(kubectl, "source", target, 8080)
+    probe(kubectl, "source", allowed, 8081)
 
     policy_path = ROOT / "clusters/homelab/platform/cilium/egress-default-deny.yaml"
     baseline = json.loads(run("yq", "-o=json", ".", str(policy_path)))
@@ -200,18 +201,18 @@ def qualify_egress(kubectl, chart):
     baseline["spec"]["endpointSelector"] = {"matchLabels": {"fixture": "source"}}
     apply(kubectl, baseline)
 
-    def wait_for_denial(address):
+    def wait_for_denial(address, port=8080):
         deadline = time.monotonic() + 60
         while True:
             result = subprocess.run((*kubectl, "exec", "source", "--", "/usr/bin/python3", "-c",
                                      "import socket,sys\n"
-                                     "try: socket.create_connection((sys.argv[1],8080),timeout=2).close()\n"
+                                     "try: socket.create_connection((sys.argv[1],int(sys.argv[2])),timeout=2).close()\n"
                                      "except TimeoutError: sys.exit(7)",
-                                     str(address)), capture_output=True, text=True, timeout=15)
+                                     str(address), str(port)), capture_output=True, text=True, timeout=15)
             if result.returncode == 7:
                 return
             if result.returncode or time.monotonic() >= deadline:
-                raise RuntimeError(f"Egress denial not observed for {address}: {result.stderr}")
+                raise RuntimeError(f"Egress denial not observed for {address}:{port}: {result.stderr}")
             time.sleep(1)
 
     for target in (allowed, blocked):
@@ -236,7 +237,21 @@ def qualify_egress(kubectl, chart):
                 raise
             time.sleep(1)
     wait_for_denial(blocked)
-    print("Passed workload default deny and destination-specific Cilium allowlist", flush=True)
+    wait_for_denial(allowed, 8081)
+    print("Passed Cilium default deny, destination and port allowlisting", flush=True)
+
+
+def report_cilium_working_set():
+    for node in (CONTROL, WORKER):
+        sample = json.loads(run("docker", "exec", node, "crictl", "stats", "-o", "json"))
+        for entry in sample["stats"]:
+            attributes = entry["attributes"]
+            name = attributes["metadata"]["name"]
+            pod = attributes.get("labels", {}).get("io.kubernetes.pod.name", "")
+            if pod.startswith("cilium-") and name in {"cilium-agent", "cilium-envoy", "cilium-operator"}:
+                size = int(entry["memory"]["workingSetBytes"]["value"])
+                print(f"{node} {pod} {name}: {size // (1024 * 1024)} MiB working set",
+                      flush=True)
 
 
 def main():
@@ -268,6 +283,7 @@ def main():
             else:
                 install_flannel_plugins(path)
                 qualify(kubectl, chart, flannel)
+            report_cilium_working_set()
         except Exception:
             if kubeconfig.exists():
                 for args in (
