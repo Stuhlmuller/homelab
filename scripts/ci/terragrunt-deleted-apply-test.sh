@@ -45,8 +45,8 @@ git commit -qm 'test: remove generated unit'
 REAL_TOFU="$(command -v tofu)"
 REAL_CONFTEST="$(command -v conftest)"
 export fixture REAL_TOFU REAL_CONFTEST
-cat >bin/conftest <<'SH'
-#!/usr/bin/env bash
+printf '#!%s\n' "$BASH" >bin/conftest
+cat >>bin/conftest <<'SH'
 set -euo pipefail
 json="${@: -1}"
 plan="${json%/tfplan.json}/tfplan.tfplan"
@@ -57,8 +57,8 @@ jq -e '.resource_changes[] | select(.address == "terraform_data.retired" and .ch
 cp "$plan" "$fixture/checked.tfplan"
 exec "$REAL_CONFTEST" "$@"
 SH
-cat >bin/tofu <<'SH'
-#!/usr/bin/env bash
+printf '#!%s\n' "$BASH" >bin/tofu
+cat >>bin/tofu <<'SH'
 set -euo pipefail
 if [[ "$1" == apply ]]; then
   touch "$fixture/apply-invoked"
