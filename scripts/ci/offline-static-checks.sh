@@ -16,11 +16,16 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
-terragrunt hcl validate
+terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
 expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
+discovered_units="$(terragrunt --working-dir IaC/homelab/us-west-2 find --filter 'type=unit' --json | jq length)"
+if [[ "$discovered_units" -ne "$expected_units" ]]; then
+  echo "Discovered ${discovered_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
 if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
