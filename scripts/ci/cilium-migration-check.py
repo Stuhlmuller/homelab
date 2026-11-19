@@ -7,6 +7,7 @@ import ipaddress
 import json
 from pathlib import Path
 import subprocess
+import tarfile
 import tempfile
 import time
 import urllib.request
@@ -77,6 +78,23 @@ def install_cilium(kubectl, chart, *settings):
                    *settings)
     run(*kubectl, "apply", "-f", "-", input=rendered)
     run(*kubectl, "-n", "kube-system", "rollout", "status", "ds/cilium", "--timeout=240s")
+
+
+def install_flannel_plugins(directory):
+    archive = directory / "cni-plugins.tgz"
+    download(
+        "https://github.com/containernetworking/plugins/releases/download/v1.8.0/cni-plugins-linux-amd64-v1.8.0.tgz",
+        archive,
+        "ab3bda535f9d90766cccc90d3dddb5482003dd744d7f22bcf98186bf8eea8be6",
+    )
+    with tarfile.open(archive) as plugins:
+        for name in ("bridge", "host-local", "portmap"):
+            path = directory / name
+            with plugins.extractfile("./" + name) as source:
+                path.write_bytes(source.read())
+            path.chmod(0o755)
+            for node in (CONTROL, WORKER):
+                run("docker", "cp", str(path), f"{node}:/opt/cni/bin/{name}")
 
 
 def qualify(kubectl, chart, flannel):
@@ -211,6 +229,7 @@ def main():
             if args.egress:
                 qualify_egress(kubectl, chart)
             else:
+                install_flannel_plugins(path)
                 qualify(kubectl, chart, flannel)
         except Exception:
             if kubeconfig.exists():
