@@ -31,3 +31,5 @@ jobs:
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
       - name: Verify mixed-overlay pod and Service connectivity
         run: nix develop --command python3 -I scripts/ci/cilium-migration-check.py
+      - name: Verify Cilium default deny and explicit allowlist
+        run: nix develop --command python3 -I scripts/ci/cilium-migration-check.py --egress
