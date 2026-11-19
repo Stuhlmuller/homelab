@@ -57,6 +57,9 @@ flowchart LR
 
 Reviewed source separates infrastructure registration from runtime reconciliation.
 
+The [monorepo layout review](../../docs/kubernetes-monorepo-layout-review.md)
+proposes folder boundaries and lists the paths a future move would affect.
+
 The trusted pull-request Terragrunt plan streams its human-readable output in
 Actions. Secret values are marked sensitive in Terraform, while saved plans and
 JSON policy inputs remain temporary and are deleted after the run. See the
