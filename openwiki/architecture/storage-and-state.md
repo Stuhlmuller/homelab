@@ -533,9 +533,9 @@ and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/com
 The Enterprise Application uses selective sync so an inspector-only change
 can leave the in-sync store Deployment untouched.
 
-The November 1 resource-store capture candidate is dormant under
-`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
-activated and observed Ready before a separate GitOps fence reduces only
+The resource-store capture inspector is declared from
+`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Observe it Ready
+before a separate GitOps fence reduces only
 `octeliumee-rscstore` to zero replicas. The source-owned capture helper requires
 Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
 namespaced PodList without another claim mount, and stable whole-PVC tar hashes

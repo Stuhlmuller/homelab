@@ -61,9 +61,9 @@ is context, not authorization to repeat it unchanged.
 The Terragrunt-owned Application uses `ApplyOutOfSyncOnly=true` so adding
 only the inspector and its policy does not replace the in-sync store Deployment.
 
-`capture-stage/` is excluded from the active app. First, a separate reviewed
-GitOps stage adds the inspector Pod and its exact-label NetworkPolicy while
-the Deployment remains at one replica. Verify the pinned Harbor mirror image
+The active app declares the read-only inspector Pod and its exact-label
+NetworkPolicy while the resource-store Deployment remains at one replica.
+The fence component remains excluded. Verify the pinned Harbor mirror image
 pulls, the Pod schedules and reaches Ready, and both read-only mount fields are
 live.
 The liveness probe checks the mounted directory; readiness checks that
