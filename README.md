@@ -40,6 +40,18 @@ across repositories. For homelab-specific changes, see the repository's
   through pull requests. Executable checks and protections govern merge and
   rollout. See the [CI/CD guide](docs/ci-cd.md).
 
+## Agents in the lab
+
+I use Codex to work on the lab. [OpenWiki](openwiki/quickstart.md) helps it
+find the relevant source and runbooks, and repository skills give it
+repeatable workflows for jobs like adding an app or repairing a PR.
+
+For larger changes, Spec Kit turns an idea into a spec, plan, and task list.
+Agents work in isolated Git worktrees, run focused checks, and follow signed
+PRs through protected merge. When a change rolls out, they verify the deployed
+revision and exercise the service. See the
+[agent workflows](openwiki/operations/agent-workflows.md).
+
 ## Get started
 
 Open the Nix development shell from the repository root:
