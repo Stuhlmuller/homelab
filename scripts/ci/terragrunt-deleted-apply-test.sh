@@ -32,7 +32,8 @@ unit "retired" {
 HCL
 git add catalog IaC
 git commit -qm 'test: add generated unit'
-export APPLY_BASE_SHA="$(git rev-parse HEAD)"
+APPLY_BASE_SHA="$(git rev-parse HEAD)"
+export APPLY_BASE_SHA
 terragrunt stack run --working-dir "$stack_dir" --non-interactive -- apply -auto-approve >setup.log 2>&1 ||
   { cat setup.log >&2; exit 1; }
 sed 's/path   = "retired"/path   = "kept"/' "$stack_dir/terragrunt.stack.hcl" >kept.hcl
@@ -41,7 +42,9 @@ git add "$stack_dir/terragrunt.stack.hcl"
 git commit -qm 'test: remove generated unit'
 
 # Capture the binary at policy evaluation and require byte-for-byte replay.
-export fixture REAL_TOFU="$(command -v tofu)" REAL_CONFTEST="$(command -v conftest)"
+REAL_TOFU="$(command -v tofu)"
+REAL_CONFTEST="$(command -v conftest)"
+export fixture REAL_TOFU REAL_CONFTEST
 cat >bin/conftest <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
