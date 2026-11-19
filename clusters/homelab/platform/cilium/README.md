@@ -45,3 +45,18 @@ that the port is available across nodes before registering the chart.
 
 See the [Cilium migration guide](https://docs.cilium.io/en/stable/installation/k8s-install-migration/)
 and the [Talos Cilium guide](https://docs.siderolabs.com/kubernetes-guides/cni/deploying-cilium).
+
+## Retire Talos-managed Flannel
+
+The [cutover patch](../../../../.talos/patches/cilium-cni.yaml) disables the
+Talos-managed CNI configuration. Apply it through the protected Talos
+delivery path only after Cilium has taken over primary CNI setup on all nodes
+and every non-host-network Pod has been recreated on the Cilium overlay.
+Verify node and API access, DNS, storage, mesh traffic and Multus attachments
+before retiring the Flannel resources. Confirm that new Pod sandboxes still
+use Cilium after each node configuration change.
+
+The [rollback patch](../../../../.talos/patches/cilium-cni-rollback.yaml)
+restores the Flannel selection. Use it as part of a coordinated rollback
+that restores Flannel routing and Multus delegation before recreating
+affected workloads. Preserve kube-proxy throughout both changes.
