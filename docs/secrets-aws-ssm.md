@@ -278,6 +278,11 @@ to the in-cluster gateway; none grants direct provider access. Do not read,
 copy or place any of these values in Git, workflow exports or application
 configuration.
 
+The operator `litellm-bedrock` Terragrunt unit generates
+`/homelab/litellm/bedrock-credentials` as a SecureString. External Secrets
+projects it to `ai/litellm-bedrock`. Only LiteLLM mounts the file, and its AWS
+identity can invoke the two declared US Bedrock profiles.
+
 LiteLLM's database-key migration adds generated
 `/homelab/litellm/postgres-{admin,app}-password` parameters.
 `ai/litellm-postgres-auth` supplies both only to PostgreSQL;
