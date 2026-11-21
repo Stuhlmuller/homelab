@@ -25,10 +25,12 @@ Run from the repository root after changing templates or live inputs.
 
 ```sh
 terragrunt --working-dir IaC stack generate
-terragrunt hcl validate
+terragrunt --working-dir IaC/homelab/us-west-2 find --filter 'type=unit'
+terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
 python3 scripts/ci/terragrunt-stack-test.py
 ```
 
+Scope live-unit discovery to the deployment tree to exclude catalog templates.
 Generated units live under `IaC/homelab/us-west-2/`. Their historical backend
 keys are preserved by `IaC/root.hcl`. Catalog `terragrunt.values.hcl` files are
 validation fixtures; generation replaces them with live inputs.
