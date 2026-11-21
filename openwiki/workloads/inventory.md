@@ -911,6 +911,9 @@ local executable proof from exact-revision live acceptance.
 
 
 ## AdGuard tailnet filtering
+AdGuard requests 512 MiB of memory and can use up to 1 GiB. The request
+reserves scheduler capacity for routine use, with extra room for filter
+processing spikes that can interrupt DNS.
 
 [AdGuard Home](../../clusters/homelab/apps/adguard/README.md) declares one
 nonroot replica, a DNS-only `homelab-adguard` Tailscale proxy and private

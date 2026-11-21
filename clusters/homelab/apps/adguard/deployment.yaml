@@ -55,8 +55,8 @@ spec:
             - {name: dns-tcp, containerPort: 53, protocol: TCP}
             - {name: http, containerPort: 3000, protocol: TCP}
           resources:
-            requests: {cpu: 100m, memory: 128Mi}
-            limits: {cpu: 500m, memory: 512Mi}
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: 500m, memory: 1Gi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
