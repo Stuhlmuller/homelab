@@ -22,7 +22,7 @@
       "source": "ghcr.io/linuxserver/bazarr@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n:2.48.7@sha256:fabce3e9678a07d2dde83bd8f5124017f3ec457d0a3fc6b63bb4cec465d63861"
+      "source": "ghcr.io/n8n-io/n8n:3.3.0@sha256:e06707c78ef5adb302b47909f8fee5caf8d389a7e5f3f0e03165214f6178565e"
     }
   ]
 }
