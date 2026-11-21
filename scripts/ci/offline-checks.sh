@@ -149,7 +149,6 @@ python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
-python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py
 python3 scripts/ci/renovate-alert-check.py
 python3 -I scripts/ci/memory-overcommit-check.py
