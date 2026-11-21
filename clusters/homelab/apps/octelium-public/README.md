@@ -121,6 +121,13 @@ Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
 the Octelium client calls `octelium-api.stinkyboi.com`; the
 `octelium.stinkyboi.com` hostname is only an alias.
 
+Cloudflared egress permits TCP and UDP 7844 to the published global IPv4
+Tunnel edges. The policy also permits CoreDNS and the configured cluster
+origins. Auto-update is disabled. Before activating enforcement, verify that
+both tunnel replicas register connections and the public HTTP and native
+Octelium paths reach their configured origins. The address list comes from
+the [Cloudflare Tunnel firewall reference](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/).
+
 ## Validation
 
 Inspect this retained deployment read-only. Its legacy carrier probe is useful
