@@ -712,6 +712,9 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   key, preshared key, and first IPv4 interface address, while Gluetun's native
   AirVPN provider selects the server. The profile's endpoint and server key are
   not used, avoiding custom-provider DNS resolution during sidecar recovery.
+- kagent reads a dedicated LiteLLM caller key and PostgreSQL password from
+  ExternalSecrets in `kagent`. The controller reads its database URL from a
+  mounted Secret file. See the [kagent runbook](../../clusters/homelab/apps/kagent/README.md).
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
   Its dedicated `/homelab/n8n/litellm-token` is rendered only as an OpenAI

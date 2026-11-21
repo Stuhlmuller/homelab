@@ -28,6 +28,8 @@ spec:
     - https://prometheus-community.github.io/helm-charts
     - ghcr.io/adinhodovic/charts
     - ghcr.io/berriai
+    - oci://ghcr.io/kagent-dev/kagent/helm/kagent
+    - oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
     - ghcr.io/langfuse/langfuse-k8s/charts
     - ghcr.io/multica-ai/charts
     - codeberg.org/k8s-gateway/charts
@@ -65,6 +67,8 @@ spec:
       namespace: istio-egress
     - server: https://kubernetes.default.svc
       namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: kagent
     - server: https://kubernetes.default.svc
       namespace: langfuse
     - server: https://kubernetes.default.svc

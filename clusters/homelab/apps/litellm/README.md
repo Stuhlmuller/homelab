@@ -179,7 +179,7 @@ The dedicated `litellm-postgres` StatefulSet stores UI-visible virtual keys.
 The gateway reads its nonsuperuser database password from a mounted file and
 creates a private temporary native config before CLI initialization. Native
 LiteLLM applies its pinned schema migrations. Before accepting HTTP traffic,
-`native_keys.py` imports the four existing SSM caller values as hashed native
+`native_keys.py` imports the configured SSM caller values as hashed native
 keys and creates their internal-user records in one locked transaction.
 Clients need no key rotation. Each key permits only model discovery and free
 chat completions, including both versioned and unversioned paths.
