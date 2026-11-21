@@ -42,10 +42,9 @@ verify_current_main_commit() {
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
   local deleted_unit_paths
-  local snapshot_dir
-  local unit_dir
-  local snapshot_unit_dir
-  local state_list_file
+  local base_sha head_sha unit_dir source_dir plan_dir plan_file json_file
+  local filter index
+  local filters=() plan_dirs=()
 
   if ! deleted_unit_paths="$(terragrunt_deleted_unit_paths)"; then
     echo "Unable to determine deleted Terragrunt units; refusing to apply." >&2
@@ -60,38 +59,45 @@ destroy_deleted_terragrunt_units() {
     return 0
   fi
 
+  base_sha="$(git rev-parse --verify "${APPLY_BASE_SHA:?Missing last successful apply SHA}^{commit}")"
+  head_sha="$(git rev-parse --verify "${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF}^{commit}")"
   for unit_dir in "${deleted_units[@]}"; do
-    snapshot_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-apply.XXXXXX")"
-    cleanup_dirs+=("$snapshot_dir")
-    terragrunt_create_deleted_unit_destroy_stack "$snapshot_dir" "$unit_dir"
-    snapshot_unit_dir="${snapshot_dir}/${unit_dir}"
-    state_list_file="${snapshot_unit_dir}/state-resources.txt"
-
-    if [[ ! -f "${snapshot_unit_dir}/terragrunt.hcl" ]]; then
-      echo "Deleted Terragrunt unit ${unit_dir} fake stack was not generated." >&2
-      exit 1
+    plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-apply.XXXXXX")"
+    cleanup_dirs+=("$plan_dir")
+    source_dir="$unit_dir"
+    if ! git cat-file -e "${base_sha}:${unit_dir}/terragrunt.hcl" 2>/dev/null &&
+       ! git cat-file -e "${base_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+      case "$unit_dir" in
+        IaC/live/argocd-apps/*) source_dir="IaC/homelab/us-west-2/apps/${unit_dir##*/}/argocd" ;;
+        IaC/live/azuread-applications/fleet-pilot-user) source_dir="IaC/homelab/us-west-2/apps/fleet/pilot-user" ;;
+        IaC/live/azuread-applications/*) source_dir="IaC/homelab/us-west-2/apps/${unit_dir##*/}/azuread" ;;
+        IaC/live/langfuse-blob-storage) source_dir="IaC/homelab/us-west-2/apps/langfuse/blob-storage" ;;
+        IaC/live/*) source_dir="IaC/homelab/us-west-2/shared/${unit_dir#IaC/live/}" ;;
+        IaC/bootstrap/*) source_dir="IaC/homelab/us-west-2/bootstrap/${unit_dir#IaC/bootstrap/}" ;;
+      esac
     fi
+    filter="[${base_sha}...${head_sha}] | ./${source_dir}"
+    filters+=("$filter")
+    plan_dirs+=("$plan_dir")
+    plan_file="${plan_dir}/binary/@${base_sha}/${source_dir}/tfplan.tfplan"
+    json_file="${plan_dir}/json/@${base_sha}/${source_dir}/tfplan.json"
 
     echo "::group::Deleted Terragrunt unit state destroy: ${unit_dir}"
-    (
-      cd "$snapshot_unit_dir"
-      terragrunt --log-disable init -no-color
-      if ! terragrunt --log-disable state list >"$state_list_file"; then
-        echo "Unable to list state for deleted Terragrunt unit ${unit_dir}; inspect the backend or credentials before applying." >&2
-        exit 1
-      fi
-      if [[ -s "$state_list_file" ]]; then
-        echo "Resources in deleted Terragrunt unit state:"
-        cat "$state_list_file"
-        terragrunt plan -destroy -refresh=false -out plan.out -no-color >/dev/null
-        terragrunt --log-disable show -json plan.out >plan.json
-        conftest test --policy "${snapshot_dir}/policy" --output github plan.json
-        verify_current_main_commit
-        terragrunt apply -no-color plan.out
-      else
-        echo "Deleted Terragrunt unit ${unit_dir} has no resources in remote state."
-      fi
-    )
+    terragrunt run --all --non-interactive --filter "$filter" --filter-allow-destroy \
+      --out-dir "$plan_dir/binary" --json-out-dir "$plan_dir/json" -- plan -refresh=false -no-color >/dev/null
+    if [[ ! -s "$plan_file" || ! -s "$json_file" ]]; then
+      echo "Missing saved destroy plan for deleted Terragrunt unit ${unit_dir}." >&2
+      return 1
+    fi
+    conftest test --policy "${repo_root}/policy" --output github "$json_file" || return 1
+    echo "::endgroup::"
+  done
+
+  for index in "${!filters[@]}"; do
+    echo "::group::Deleted Terragrunt unit state destroy: ${deleted_units[index]}"
+    verify_current_main_commit
+    terragrunt run --all --non-interactive --filter "${filters[index]}" --filter-allow-destroy \
+      --out-dir "${plan_dirs[index]}/binary" -- apply -no-color
     echo "::endgroup::"
   done
 }

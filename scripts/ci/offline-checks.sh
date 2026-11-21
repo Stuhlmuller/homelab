@@ -157,6 +157,7 @@ python3 -I scripts/ci/talos-filesystem-check.py
 python3 -I scripts/ci/state-encryption-test.py
 python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
+bash scripts/ci/terragrunt-deleted-apply-test.sh
 python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
 python3 -I scripts/ci/n8n-runtime-check.py

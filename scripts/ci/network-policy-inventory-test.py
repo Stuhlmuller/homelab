@@ -48,6 +48,21 @@ def policy(namespace, name, selector, egress=None, policy_types=None, ingress=No
 
 
 class NetworkPolicyInventoryTests(unittest.TestCase):
+    def test_secondary_network_requires_review_even_with_primary_egress_denied(self):
+        workload = pod("apps", "multus", {})
+        workload["metadata"]["annotations"] = {
+            "k8s.v1.cni.cncf.io/networks": '[{"name":"secondary"}]',
+        }
+        deny = policy("apps", "default-deny", {}, [], ["Egress"])
+        result = inventory.audit([workload], [deny], [[deny]])
+        self.assertEqual(result["pods"][0]["egressMode"], "deny-all")
+        self.assertEqual(result["pods"][0]["exceptions"], ["secondary-network"])
+        self.assertIn({
+            "kind": "pod-requires-separate-review",
+            "pod": "apps/multus",
+            "exception": "secondary-network",
+        }, result["findings"])
+
     def test_pinned_octelium_generated_policy_shapes(self):
         bootstrap = (ROOT / "scripts/octelium-cluster-bootstrap.sh").read_text()
         self.assertIn('version="0.35.0"', bootstrap)
