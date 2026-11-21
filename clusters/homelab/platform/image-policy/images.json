@@ -406,6 +406,9 @@
       "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
     },
     {
+      "source": "ghcr.io/n8n-io/n8n:2.48.7@sha256:fabce3e9678a07d2dde83bd8f5124017f3ec457d0a3fc6b63bb4cec465d63861"
+    },
+    {
       "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
     },
     {
