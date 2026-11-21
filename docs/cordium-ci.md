@@ -40,7 +40,7 @@ The fixed `runner-probe` mode tests the pinned Actions runner image and nested
 Docker inside a separate disposable Workspace. It uses the same exact-main
 checkout guard, dedicated CI identity, time budget, and verified deletion.
 It cannot register runners or receive GitHub App credentials. See the
-[runner probe](../builds/cordium-runner/README.md) for its capabilities,
+[runner probe](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) for its capabilities,
 image prerequisite, command, acceptance, and rollback.
 
 `.cordium/workspace.yaml` pins the Nix image and public repository, with

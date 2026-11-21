@@ -81,7 +81,7 @@ Application dependency entries are paths relative to the generated unit, such as
 `../../cert-manager/argocd`, `../../../shared/aws-ssm-parameters`, or
 `../blob-storage`. The template joins these paths without interpreting app names.
 
-The [local catalog guide](../../IaC/terragrunt-catalog/README.md) maps module,
+The [local catalog guide](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/README.md) maps module,
 template and live-input ownership with existing examples. Catalog discovery
 includes both the local catalog and the external repository.
 
@@ -92,6 +92,6 @@ and provider requirements in `versions.tf`. State encryption belongs to the shar
 Terragrunt root, which generates the compatible backend policy.
 Larger modules separate publisher IAM, reader IAM and credential publication
 into responsibility-specific files within the same module directory.
-Module READMEs link the owning Terragrunt callers for complete usage examples.
+The owning Terragrunt stacks show how each module is used.
 These file boundaries preserve resource addresses and the historical backend
 key mappings in `IaC/root.hcl`.

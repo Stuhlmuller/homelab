@@ -51,7 +51,7 @@ is now 900 seconds instead of six minutes; readiness and liveness are unchanged.
 This removes that premature termination boundary, not the native timeout.
 Require actual gateway responsiveness and Pod readiness after deployment.
 
-Source: [OpenClaw runbook](../../clusters/homelab/apps/openclaw/README.md).
+Source: [OpenClaw runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md).
 See [OpenClaw bootstrap batching](openclaw-bootstrap-batching.md) for startup timing and configuration gates,
 [OpenClaw personal assistant](openclaw-personal-assistant.md) for assistant behavior, and
 [Storage And State](../architecture/storage-and-state.md) for backup limits.

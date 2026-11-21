@@ -9,7 +9,7 @@ Compatibility and stateful migration decisions happen during normal pull-request
 review.
 
 The in-cluster runner is declared at
-[`clusters/homelab/apps/renovate`](../clusters/homelab/apps/renovate/README.md)
+[`clusters/homelab/apps/renovate`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md)
 and registered through Terragrunt. It discovers Stuhlmuller-owned repositories
 hourly and retains Renovate's replaceable package cache on a protected claim.
 The [hourly UTC CronJob](../clusters/homelab/apps/renovate/cronjob.yaml) is now

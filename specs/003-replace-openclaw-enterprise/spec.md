@@ -193,6 +193,6 @@ isolation, and verify that a failed upgrade does not start incompatible writers.
 
 - [Enterprise source](https://github.com/openclaw/openclaw-enterprise/tree/33bb74590a749f37934da4502fca6035cd234a55),
   including its stock channel, egress, and upgrade constraints.
-- [Current OpenClaw runbook](../../clusters/homelab/apps/openclaw/README.md) and
+- [Current OpenClaw runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md) and
   [storage](../../clusters/homelab/platform/storage/openclaw-runtime.yaml).
 - [Research and dated evidence](research.md) records prerequisites and decisions.

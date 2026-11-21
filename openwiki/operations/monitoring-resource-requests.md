@@ -164,7 +164,7 @@ solely to clear the alert would conceal demand. Per-Pod observation windows
 can be shorter than seven days and are not proven peak bounds.
 
 For read-only verification, use the temporary local Prometheus port-forward
-described in `clusters/homelab/apps/prometheus/README.md`, then query
+described in [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md), then query
 `/api/v1/alerts` and `/api/v1/rules?type=alert`. Require exactly one healthy
 `KubeMemoryOvercommit` rule in `homelab.memory`, with no duplicate chart rule
 and no pending/firing instance at the measured or projected requests. The
