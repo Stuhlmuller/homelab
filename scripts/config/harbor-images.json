@@ -49,13 +49,13 @@
       "source": "docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c"
     },
     {
-      "source": "docker.io/adinhodovic/compass:0.13.0@sha256:f1f4a6bc529eb8a424b6125c39e839d108b06e975cf314181f8398bbc55fd498"
-    },
-    {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
     },
     {
       "source": "docker.io/adinhodovic/compass:0.9.0@sha256:f8f99955b60d3b5d0f2747d5a911d1b03c8ca1aff8f6aa592d1cc7fa2d8020c0"
+    },
+    {
+      "source": "docker.io/adinhodovic/compass:0.13.0@sha256:f1f4a6bc529eb8a424b6125c39e839d108b06e975cf314181f8398bbc55fd498"
     },
     {
       "source": "docker.io/clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd"
@@ -238,6 +238,9 @@
       "source": "docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
     },
     {
+      "source": "docker.io/library/postgres@sha256:7d3852670a11f0cb9cb1cd50916dc02a0021143fb22d96b78eeef26348abe55c"
+    },
+    {
       "source": "docker.io/library/postgres@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af"
     },
     {
@@ -245,9 +248,6 @@
     },
     {
       "source": "docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa"
-    },
-    {
-      "source": "docker.io/library/postgres@sha256:7d3852670a11f0cb9cb1cd50916dc02a0021143fb22d96b78eeef26348abe55c"
     },
     {
       "source": "docker.io/library/postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
@@ -262,10 +262,10 @@
       "source": "docker.io/library/python@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea"
     },
     {
-      "source": "docker.io/library/python@sha256:a3799099b64fd333f262768c7a64733f6e4edb7bc569813710a100214bdcf278"
+      "source": "docker.io/library/python@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
     },
     {
-      "source": "docker.io/library/python@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
+      "source": "docker.io/library/python@sha256:a3799099b64fd333f262768c7a64733f6e4edb7bc569813710a100214bdcf278"
     },
     {
       "source": "docker.io/library/redis:7.2.16-alpine@sha256:29e8589c3f9ba699b5f7aa4b3c7733c58852a3626439e619aa0ee78de08c6ca0"
@@ -283,13 +283,13 @@
       "source": "docker.io/library/redis@sha256:520775a41a63e77e06c73e35d2fd9cc15921a609516818796b4ecbb813078bc7"
     },
     {
-      "source": "docker.io/library/redis@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541"
-    },
-    {
       "source": "docker.io/library/redis@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff"
     },
     {
       "source": "docker.io/library/redis@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576"
+    },
+    {
+      "source": "docker.io/library/redis@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541"
     },
     {
       "source": "docker.io/library/traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c"
@@ -427,10 +427,10 @@
       "source": "ghcr.io/n8n-io/n8n@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb"
+      "source": "ghcr.io/n8n-io/n8n@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
+      "source": "ghcr.io/n8n-io/n8n@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb"
     },
     {
       "source": "ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7"
