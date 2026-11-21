@@ -1656,6 +1656,10 @@ yq -o=json '.' "$cert_manager_values" \
 python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
+echo "::group::Multica Argo project boundary"
+python3 -I scripts/ci/multica-project-boundary-test.py
+echo "::endgroup::"
+
 echo "::group::OpenClaw Discord plugin"
 node scripts/ci/openclaw-github-check.cjs
 python3 -I scripts/ci/openclaw-credential-containment-test.py

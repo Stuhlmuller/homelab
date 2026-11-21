@@ -4,6 +4,20 @@ Multica runs in the shared `ai` namespace with its upstream OCI Helm chart,
 frontend/backend services, and dedicated pgvector PostgreSQL instance. Human
 access is through Octelium at `https://multica.stinkyboi.com`.
 
+## Argo project boundary
+
+Multica uses `homelab-workloads`, whose cluster-resource allowlist is empty.
+The repository-owned overlay renders only resources in `ai`; LiteLLM owns
+that namespace. The project admits the exact Multica chart repository rather
+than a registry wildcard. The current live Argo resource tree also lists only
+`ai` resources. Offline checks validate the overlay and project; the hosted
+static gate anonymously pulls the pinned OCI chart, verifies its reviewed
+package SHA-256, and rejects rendered cluster-scoped objects. Before applying
+the project change, verify that its source has synced and the protected plan
+contains only the reviewed Application project update. After apply, require
+Multica Synced/Healthy; any new chart cluster object must fail under the empty
+cluster-resource allowlist.
+
 ## Server agent runtime
 
 `runtime.yaml` runs a one-replica Multica daemon on `acer`. `Recreate`
