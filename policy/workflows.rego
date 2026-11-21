@@ -1050,11 +1050,14 @@ case "$IMAGE_SCOPE" in
   cilium)
     bash scripts/ci/harbor-publish.sh mirror-cilium --tailscale
     ;;
+  kagent)
+    bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'71685d813eb61ee51daf9c70bfd5eeb518b87cc73e795b58a08a3f1420879661  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1171,7 +1174,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "c0d32afd7612e129216d3284e02232e730706a28ae784a964a913fcf6a8f4178"
+	crypto.sha256(json.marshal(canonical)) == "c7d9bea880c36e9c29963e75a24007c110784c3071070a881e586670d60c3b2d"
 }
 
 tailnet_workflow_requested if {
