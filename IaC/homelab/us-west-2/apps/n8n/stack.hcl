@@ -17,7 +17,10 @@ inputs = {
         targetRevision = "4.4.0"
         helm = {
           releaseName = "n8n"
-          valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml"]
+          valueFiles = [
+            "$values/clusters/homelab/apps/n8n/values.yaml",
+            "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml",
+          ]
         }
       },
       {
