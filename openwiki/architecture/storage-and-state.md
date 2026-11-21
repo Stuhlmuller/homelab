@@ -143,6 +143,11 @@ Unmounted claims are outside that metric inventory. Grafana's current PVC rule
 state remains unverified because its admin API returned HTTP 401, although the
 unchanged alert query returned real data below its threshold.
 
+The application and etcd backup destinations live beside the
+[operator stack](../../IaC/homelab/us-west-2/operator/terragrunt.stack.hcl).
+Langfuse's [blob destination](../../IaC/homelab/us-west-2/apps/langfuse/langfuse-blob-storage.hcl)
+lives beside its workload stack.
+
 The dedicated [etcd offsite storage](../operations/etcd-offsite-storage.md) operator
 unit declares a private, versioned S3 bucket with independently owned retention.
 Its reviewed saved plan applied on 2026-09-07 with seven additions and no
