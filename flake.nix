@@ -13,18 +13,22 @@
       terragruntBinaries = {
         aarch64-darwin = {
           target = "darwin_arm64";
+          assetId = "735921814";
           hash = "sha256-cGnuxRJ/AHUlsReKeC6AEhg0LPIjYzxuhQh2LeGRZtY=";
         };
         x86_64-darwin = {
           target = "darwin_amd64";
+          assetId = "735921509";
           hash = "sha256-vzrEexx3OrZ/Sk52Ho2xaqh6JFThJwjDUHAm3Dv2zfk=";
         };
         aarch64-linux = {
           target = "linux_arm64";
+          assetId = "735922884";
           hash = "sha256-pzDH2vL7fdE+bnsBazqJ/U9Ua8gaMfj/GUdIZsVmt1U=";
         };
         x86_64-linux = {
           target = "linux_amd64";
+          assetId = "735922533";
           hash = "sha256-G6StEc9qwnfoulmj/c64V2d44i9qJL7dVC6RutnzZJE=";
         };
       };
@@ -90,7 +94,12 @@
             pname = "terragrunt";
             version = terragruntVersion;
             src = pkgs.fetchurl {
-              url = "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${terragruntBinaries.${system}.target}";
+              urls = [
+                "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${terragruntBinaries.${system}.target}"
+                "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/${terragruntBinaries.${system}.assetId}"
+              ];
+              # The API asset route serves bytes only with this media type.
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
               inherit (terragruntBinaries.${system}) hash;
             };
             dontUnpack = true;
