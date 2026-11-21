@@ -386,28 +386,22 @@ aws ssm put-parameter \
 ### Entra owner conversion
 
 Octelium binds privileged access to immutable Entra `oid` and has
-`disableEmailAsIdentity: true`. That binding must remain unchanged when the
-owner's external sign-in is converted in place to the internal
-`rodman@stuhlmuller.net` UPN: the Entra object ID remains the same, while email
-and `preferred_username` may change. Do not bind privileged access to the new
-UPN or a new pilot user.
-
-Before conversion, retain an independent working Octelium session and create,
-then test, an independent cloud-only Entra Global Administrator. The complete
-live mapping inventory must bind only the original owner `oid` to owner access,
-show no email fallback, and contain no target-pilot binding. Do not close the
-working session until a fresh owner browser login with the converted internal
-identity renders the Services page.
+`disableEmailAsIdentity: true`. Preserve that binding across any future owner
+identity change: email and `preferred_username` are not privilege identifiers.
+Do not bind privileged access to a UPN or a new pilot user. The complete live
+mapping inventory must bind only the original owner `oid` to owner access,
+show no email fallback, and contain no target-pilot binding. Preserve a working
+session while validating a fresh owner browser login and the Services page.
 
 On October 7, 2026 UTC, the reviewed migration applied the original owner's
 `oid` binding and disabled email fallback. Fresh owner sessions through Entra
 callbacks rendered the Services page before and after the separate directory-mail
 attempt. That proves the `oid` binding only. The mail attempt left the old SMTP
 alias reserved, so its alias-release and pilot-rename route is retired. The
-supported continuation is the in-place Entra conversion documented in the
-[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md), followed by fresh
-Octelium and Fleet-console SAML sign-ins. No support case, Exchange
-license, or email-based identity workaround is needed.
+blocked one-off conversion procedure has been removed. The federated target
+remains unresolved in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+Future identity changes must preserve the owner `oid` and validate fresh
+Octelium and Fleet console SAML sign-ins.
 
 ## Cutover Gate
 

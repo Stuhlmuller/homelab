@@ -2,19 +2,9 @@
 
 Microsoft Entra resources are managed by OpenTofu through Terragrunt. The
 existing Azure CLI operator login can bootstrap the provider identities, so no
-manual application creation or new subscription is required. The supported
-external-to-internal owner conversion is an Entra admin-center transition, not a
-Terraform resource; Terraform declares the immutable object-ID references that
-must survive it. The narrowly approved portal exception is bounded by
-`scripts/entra-owner-conversion.py`: its private receipt performs only Graph
-v1.0 reads before and after the conversion and never makes a Graph write. Its
-post-conversion attestation requires an explicit `externalUserState: null`, one
-local `userPrincipalName` identity issued by the tenant default domain,
-`onPremisesSyncEnabled: null` (never directory-synced), a password timestamp
-strictly after receipt preparation,
-and a target-account `/me` response from the same Graph token. `userType:
-Member` and the historical `creationType: Invitation` alone do not prove
-local-tenant authentication.
+manual application creation or new subscription is required. The one-off
+owner-conversion helper and manual portal exception have been removed.
+Immutable owner object-ID references remain unchanged.
 
 `IaC/homelab/us-west-2/operator/azuread-ci-identities` owns two applications, their service
 principals, exact GitHub federation subjects, requested Microsoft Graph
@@ -152,14 +142,11 @@ public PRs or logs. Keep live acceptance details in a private operator report.
 
 ## Recovery and limits
 
-The owner conversion is blocked while `stuhlmuller.net` remains federated with
-Google Workspace. Microsoft requires a nonfederated UPN domain for
-[cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user),
-and `prepare` rejects the current domain state. Reconcile the protected
-federation through a separate reviewed code change, or choose a managed target
-and revise the conversion transaction and dependent SAML mapping before running
-this procedure. Do not attempt the Entra admin-center conversion while this
-gate fails.
+The proposed owner conversion remains unresolved while `stuhlmuller.net` is
+federated with Google Workspace. Microsoft requires a nonfederated UPN domain
+for [cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
+A future implementation must reconcile that constraint and dependent SAML
+mappings; the removed one-off procedure is no longer an execution path.
 
 Before converting the existing external owner, create and successfully test an
 independent cloud-only Global Administrator. This is the tenant recovery path;
@@ -171,16 +158,10 @@ permanent role assignment. Its source-controlled
 run --all apply/destroy operations. After explicit authorization, set it true
 only through a separate signed, reviewed change and apply its reviewed saved
 plan; then test its independent login and restore the literal to false in a
-separate signed change. The private conversion `prepare` transaction must use
-Azure CLI authenticated as that exact recovery account; it read-validates its
-cloud-only identity and direct tenant-root Global Administrator assignment before
-it creates a receipt, then rereads that same recovery path during attestation.
-The read needs delegated `RoleManagement.Read.Directory` (or `Directory.Read.All`),
-never a Graph write permission. After the authorized admin-center conversion,
-clear the recovery Azure CLI session and sign in as the converted owner before
-running `attest`; its Graph `/me` check rejects the recovery account. Follow
-the exact commands and Fleet ordering in the [Fleet
-runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+separate signed change. The retired conversion helper is not needed for
+provider authentication or routine recovery-account validation. See the
+[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md) for the preserved
+console SAML and local recovery account boundaries.
 
 A federation or CI permission failure does not require recreating applications,
 resetting family passwords or changing Fleet authentication. Correct trust or
