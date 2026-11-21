@@ -248,6 +248,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    platform and complete authenticated pull verification. A successful scoped
    run proves this bundle only; the earlier full-catalog failure remains separate.
 
+   For kagent onboarding, use `image_scope=kagent`. The fixed
+   `scripts/config/harbor-kagent-images.json` bundle includes the controller,
+   UI, Go and Python agent runtimes, skills initializer, and PostgreSQL.
+   The publisher checks the complete bundle against the reviewed catalog.
+
    For the Cilium migration, use `image_scope=cilium`. The fixed
    `scripts/config/harbor-cilium-images.json` bundle selects the agent,
    Envoy and generic operator rendered by chart 1.20.5. Require successful
@@ -255,7 +260,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    registering the consuming chart.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.

@@ -1050,11 +1050,14 @@ case "$IMAGE_SCOPE" in
   cilium)
     bash scripts/ci/harbor-publish.sh mirror-cilium --tailscale
     ;;
+  kagent)
+    bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'71685d813eb61ee51daf9c70bfd5eeb518b87cc73e795b58a08a3f1420879661  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
