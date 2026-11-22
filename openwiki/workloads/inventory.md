@@ -774,7 +774,7 @@ and any later `Deny` promotion require separate acceptance.
 data, proposed loss/time budgets and remaining capture/secret gaps. Publication
 adapters cover complete Octelium/media logical sets and fenced AFFiNE/Multica
 DB/blob bundles, but only the existing Octelium/media jobs currently declare
-automatic capture. Candidate off-NAS publication and checks are not active.
+automatic capture. The off-NAS publisher is a manual recovery tool.
 No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
 n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
 application behavior, not only a checksum or successful backup Job.
