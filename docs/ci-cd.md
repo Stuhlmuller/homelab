@@ -40,7 +40,7 @@ prose does not change pipeline behavior.
   commit statuses, so pull-request code cannot forge the protected native
   Chainguard receipt provenance status. Repository-specific blocking checks
   remain in `Terragrunt Gate` and `validate`.
-- `Terragrunt Plan` runs on every pull request. Its unprivileged static job
+- `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
@@ -50,8 +50,8 @@ prose does not change pipeline behavior.
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
-- `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
-  older request check, and prints the exact current-SHA dispatch command.
+- `Terragrunt Apply Request` runs after every change lands on `main` and prints
+  the exact dispatch command for that push.
   It has no production environment, stored secrets, or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
@@ -76,13 +76,32 @@ prose does not change pipeline behavior.
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
+## Superseded pull request runs
+
+Repository PR workflows run only when the PR targets `main`. Editing a PR
+triggers eligible checks on `main`, including when a stacked PR is retargeted.
+Existing path filters still apply. Push, scheduled and manual triggers keep
+their own conditions.
+
+PR checks use a concurrency group for each pull request. When an update
+triggers the same check workflow, GitHub cancels its older queued or running
+run because the results apply to an earlier revision. Branch and path filters
+still decide which workflows start. Push, scheduled and manually dispatched
+runs use separate groups where they share a workflow with these PR checks.
+
+Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
+queues runs per PR, and Terragrunt Apply and release publication queue jobs
+behind their existing locks. GitHub allows up to 100 pending entries per
+concurrency group with `queue: max`. Terragrunt Apply Request and release
+previews run independently. GitHub manages scheduling for Code Quality scans.
+
 ## Release publication
 
 The release publisher takes one non-canceling `semantic-release-main` lock,
-then checks out current `main`. Pending runs may coalesce; the surviving run
-analyzes every commit since the last tag, including intervening pushes. Repeated
-runs with no new releasable commits create no tag. Publishers and independent,
-cancelable PR previews time out after 15 minutes.
+then checks out current `main`. Each publisher analyzes every commit since the
+last tag, including intervening pushes. Repeated runs with no new releasable
+commits create no tag. Publishers and independent PR previews time out after
+15 minutes.
 
 The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
 with package integrity hashes. `npm ci --ignore-scripts` installs without a
@@ -92,7 +111,7 @@ maintenance propose updates through PRs. No npm package is published.
 
 After `npm ci --ignore-scripts`, run
 `nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
-preview isolation, coalesced commit inclusion, and repeat-publication behavior
+preview isolation, inclusion of intervening commits, and repeat-publication behavior
 against a disposable local remote. Confirm the first merged GitHub release run
 separately. Roll back by reverting the workflow and toolchain together.
 
