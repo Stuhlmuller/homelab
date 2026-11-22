@@ -682,7 +682,8 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `.github/workflows/litellm-provider-credential.yml`: a temporary production
   GitHub secret, scoped AWS OIDC write, then a separate GitOps `OnChange`
   revision bump. See the [SSM runbook](../../docs/secrets-aws-ssm.md#ai-gateway-contract).
-- LiteLLM's Bedrock IAM identity can invoke only the two declared US profiles.
+- LiteLLM's Bedrock IAM identity can invoke only the declared US profiles
+  and Oregon's DeepSeek V3.2 foundation model.
   The operator Terragrunt unit writes its AWS credentials to
   `/homelab/litellm/bedrock-credentials`. External Secrets projects the profile
   into a read-only file mounted only by LiteLLM.
@@ -988,11 +989,9 @@ keys independently. See [Harbor Private OCI Registry](../operations/harbor-oci.m
 
 ## Independent application recovery credentials
 
-The staged [application recovery contract](../../docs/application-recovery.md) keeps
-publication and read-only verification profiles outside the cluster/NAS. Proposed
-IAM policies in `recovery/application-backups` are unattached and scoped to a
-dedicated bucket; delete/versioning/lifecycle mutations are denied. No new secret
-values, identities or permissions were created. Preserve app encryption/signing
+Use scoped file-backed AWS profiles for manual [application publication and
+retrieval](../../docs/application-recovery.md#manual-publication-and-retrieval).
+Preserve app encryption/signing
 keys and password-free-dump role credentials through the existing private vault.
 Archive restore has no cloud credentials or production access and remains gated
 on enforced containment.
