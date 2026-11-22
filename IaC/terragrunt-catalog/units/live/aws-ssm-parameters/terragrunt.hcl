@@ -43,6 +43,7 @@ inputs = {
     "/homelab/grafana/azuread/allowed-organizations",
     "/homelab/langfuse/s3-access-key-id",
     "/homelab/langfuse/s3-secret-access-key",
+    "/homelab/litellm/bedrock-credentials",
   ]
 
   parameters = {

@@ -19,7 +19,9 @@ assert litellm["proxy_config"]["litellm_settings"]["callbacks"] == [
     "/etc/litellm-hooks/app_identity.attribution",
     "/etc/litellm-hooks/app_identity.langfuse",
 ]
-assert [item["model_name"] for item in litellm["proxy_config"]["model_list"]] == ["openrouter/free"]
+assert [item["model_name"] for item in litellm["proxy_config"]["model_list"]] == [
+    "openrouter/free", "bedrock/claude-sonnet-4-5", "bedrock/nova-lite",
+]
 assert (ROOT / "clusters/homelab/apps/litellm/app_identity.py").exists()
 assert (ROOT / "clusters/homelab/apps/litellm/gateway.py").exists()
 secret = (ROOT / "clusters/homelab/apps/litellm/externalsecret.yaml").read_text()

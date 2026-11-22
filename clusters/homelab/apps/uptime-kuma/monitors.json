@@ -403,6 +403,13 @@
       ]
     },
     {
+      "id": "platform-cilium",
+      "lifecycle": "staged",
+      "source": "IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl",
+      "reason": "Automatic sync is disabled while the initial Cilium overlay awaits qualified activation.",
+      "monitorIds": []
+    },
+    {
       "id": "platform-istio-egress",
       "lifecycle": "staged",
       "source": "IaC/homelab/us-west-2/apps/platform-istio-egress/stack.hcl",
