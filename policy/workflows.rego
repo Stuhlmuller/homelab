@@ -243,7 +243,7 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 7
-	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "cilium-route-preflight", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'ee994058c05213e979497d81e7c949c335c27722fecc42a44f8e9fa5ea004d40  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -1070,11 +1070,14 @@ case "$IMAGE_SCOPE" in
   kagent)
     bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
     ;;
+  image-updater-canary)
+    bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'c3d8cea5d63cb921d4a46c2ef197ad28f288a406a989dd4d46de047d893e00fe  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5b741465a823256d3b722b30aa2f2bc7d005d17ba3d6c5d51366957e4a1ebcf7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1178,7 +1181,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "b7119c935141f03aa42d1ade138e8cdd8ca1612bb40583b0f1581df5a797e827"
+	crypto.sha256(json.marshal(canonical)) == "41e23fc6f1a9c7199442730bb1fdc4c322d53350eeaa4bcd61e3ff2a18d00f41"
 }
 
 tailnet_workflow_requested if {

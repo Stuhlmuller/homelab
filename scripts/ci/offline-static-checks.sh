@@ -698,6 +698,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.activeDeadlineSeconds == 120 and
     $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
     $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
     ($cluster_config_jobs | length) == 1 and
@@ -706,6 +707,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     ($cluster_configs | length) == 1 and
     $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
+    ($cleanup_jobs[0].spec.template.spec.containers[0] | has("command") | not) and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
       "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
@@ -714,7 +716,6 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
       "--namespace=octelium",
       "--ignore-not-found=true",
       "--wait=false",
-      "--request-timeout=30s",
       "--cache-dir=/tmp/kubectl-cache"
     ]
   ' >/dev/null
@@ -993,6 +994,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/codex-review-gate.yml:verify' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1091,6 +1093,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/codex-review-gate.yml 0595db0f3360266d1da816855660f4bac5925b6b1142677c5d07163bd9f5e371
 .github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
@@ -1101,7 +1104,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml b89e2487c50c84e0de24674543375205c61e33e5d083b2e5b0bcc7456919108d
+.github/workflows/harbor-mirror.yml 0e8f15226a4ace9420d3bc32ef2220a053c5172265952f1b7bc7445fd3464eb1
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
@@ -1113,7 +1116,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml b5793e22a26609aa74ced9fcbb64e2dbc71760ab74dab11f0b34df6ad2198cec
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/platform-maintenance.yml fff492bc7e64e1b337dd0dba9eecd7472a4bb9834266ceda37848a5fc71bc647
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e
@@ -1262,6 +1265,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
 python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
+python3 -I scripts/ci/codex-review-gate-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"

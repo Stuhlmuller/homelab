@@ -858,6 +858,13 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
+The [Codex code review publisher](../../.github/workflows/codex-review-gate.yml)
+checks the GitHub App's summary against the current head SHA of a PR into
+`main`. Only a completed code review with zero findings passes. The
+[fixtures](../../scripts/ci/codex-review-gate-test.py) reject stale, incomplete,
+and spoofed reviews. See [the CI runbook](../../docs/ci-cd.md#security-model)
+for rechecks and ruleset ownership.
+
 ### Chainguard Actions
 
 GitHub workflows pin their Chainguard Actions references by full commit SHA.
@@ -926,8 +933,16 @@ paired with a custom shell; either could bypass the reviewed manual workflow
 boundary. A shared rule also rejects workflow and job run defaults or extra
 environment, step shell and working-directory overrides, and `BASH_ENV` or
 `ENV` on any step. The repository also hashes the credentialed workflow and
-inventories both jobs. These are source checks; private recovery and capacity
-receipts still gate any live maintenance stage.
+inventories both jobs. Private recovery and capacity receipts gate live
+activation. The read-only `cilium-route-preflight` stage can run before
+activation using the protected Kubernetes and Talos connections. Dispatch
+Platform Maintenance from `main` with `stage=cilium-route-preflight` and its
+current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
+and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
+and the four reviewed Talos nodes' routes. The encrypted, versioned
+`openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
+receipt records the failed phase or route-check result, including any overlapping
+prefix. A successful result requires the checksum-verified receipt.
 
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting

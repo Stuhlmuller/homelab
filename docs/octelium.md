@@ -211,10 +211,13 @@ cleanup Job runs at PostSync wave 1 after success and as a SyncFail hook after
 failure, deleting only the named genesis ServiceAccount, ClusterRole, and
 ClusterRoleBinding. Its persistent cleanup RBAC has `delete` on
 `resourceNames: [cordium-genesis]` and cannot create, bind, or escalate
-arbitrary RBAC. An ordinary failed child sync runs cleanup and removes the
-identity. In-operation retries are disabled because they share the original
-timeout start; the next new full `cordium-bootstrap` sync gets a fresh budget
-and recreates the identity immediately before genesis.
+arbitrary RBAC. The cleanup uses kubectl's default in-cluster token and CA
+and a 120-second Job deadline. Keep the request-timeout override out of the
+Job so kubectl can select the mounted identity. After a reviewed child sync,
+verify the three genesis resources are absent. In-operation retries are
+disabled because they share the original timeout start. Each new full
+`cordium-bootstrap` sync gets a fresh budget and recreates the identity
+immediately before genesis.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
 identity with access restricted to the package-managed Cordium
