@@ -270,7 +270,7 @@ checks remain fresh.
   policy-checked saved-plan path. It requires the existing platform to be ready
   before any state repair/import/apply; review the shared SSM plan for unrelated
   updates before production approval. See the
-  [Langfuse dispatch contract](../clusters/homelab/apps/langfuse/README.md#validation).
+  [Langfuse dispatch contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#validation).
   When that exact unit is
   confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
@@ -284,25 +284,16 @@ checks remain fresh.
   Argo CD Applications already registered live. The saved-plan gate rejects
   any creation in that selection; new registrations still require their
   separately reviewed targeted dispatch and prerequisites.
-- Deleted Terragrunt units are handled separately because the current checkout
-  no longer contains the directory that owns their state. The plan and apply
-  scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`
-  and `IaC/live` state paths, including units removed from the explicit stack. Catalog
-  templates and administrator-owned `IaC/homelab/us-west-2/operator` units are excluded. They
-  create temporary empty Terragrunt units at the deleted deployment paths and
-  reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
-  the original backend key. Synthetic Kubernetes and Helm providers reuse the
-  canonical root kubeconfig instead of relying on implicit local defaults.
-  The synthetic configuration uses the owning modules' `aws_kms.main` and
-  `aes_gcm.main` encryption identities with the root state key and region,
-  enforcing encryption for both state and saved plans. Backend SSE alone cannot
-  decrypt OpenTofu client-encrypted state.
-  Pull request plans list the remote-state resources
-  and save a destroy plan without rendering potentially sensitive values.
-  Production apply lists the same state resources, checks the destroy plan
-  against the existing Conftest policy, applies that saved plan only if policy
-  passes, and then continues with the current checkout. Protected SSM, KMS,
-  backend, and Kubernetes Secret deletions remain denied during retirement.
+- Deleted-unit detection compares the last successful full apply SHA with the
+  verified head. It covers the historical `IaC/bootstrap` and `IaC/live` state
+  paths, including generated units, and excludes catalog templates and
+  operator-owned units. PR plans use a temporary empty unit with the original
+  backend key and OpenTofu encryption settings.
+  Production apply uses Terragrunt's Git filter with `--filter-allow-destroy`
+  and runs the deleted unit from the base revision's configuration. For each
+  retiree it saves the binary destroy plan and JSON, checks the JSON against
+  current Conftest policy, verifies the current main commit, and replays the
+  same saved plan. Missing plans or policy rejections stop the apply.
 - The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
@@ -960,7 +951,7 @@ bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
 reviewed images with `harbor-mirror.yml` first and verify private DNS through
 the tailnet resolver in the ordered cutover, following the
-[Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet rollout runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC
 

@@ -83,4 +83,4 @@ spec:
               Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete.
               No newer successful run of its owning CronJob has been proven after
               the observed failure. Investigate the Job; preserve failure evidence.
-            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/prometheus/README.md#job-failure-recovery
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md#job-failure-recovery

@@ -10,8 +10,6 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-9824f110ded8ce152ef180f9
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1ce4e7c935caaec6b4eb2529
@@ -24,8 +22,6 @@ sources:
     resource: repo://IaC/root.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
-  - id: openwiki-source-13b48922f1b929b52f4a0233
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
@@ -171,7 +167,7 @@ authenticates this unit; the Kubernetes operator client remains limited to its
 runtime scopes, and CI cannot administer its own tailnet grants.
 Committed generation changes drive 60-day rotation of the scoped auth keys,
 which expire after 90 days.
-Follow its [private saved-plan runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+Follow its [private saved-plan runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
@@ -288,7 +284,7 @@ existing hostname to private mesh addresses through the guarded
 [DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
 route. The app's internal PostSync bootstrap creates its first administrator,
 followed by a verified database backup; both setup API aliases remain blocked. See the
-[Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet rollout](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not
 prove runtime readiness. A dependency is ready only when Argo CD reports the
@@ -309,16 +305,19 @@ Synced/Healthy platform dependencies, established CRDs, Ready secret store and
 storage class before any repair/import/apply. It selects only the exact
 Langfuse Application; it does not widen the Terragrunt filter or advance the
 full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
-[deployment and readiness gates](../../clusters/homelab/apps/langfuse/README.md#validation).
+[deployment and readiness gates](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#validation).
 
-Deleted workflow-owned units use temporary configurations at their original backend paths and inherit the shared
-AES-GCM state and saved-plan policy from [`IaC/root.hcl`](../../IaC/root.hcl). Terragrunt generates provider and
-method blocks named `default`; `encrypted_metadata_alias = "key_provider.aws_kms.main"` preserves the former
-key-provider metadata identity, not the former encryption-method label. Retirement can therefore read records
-encrypted under the old policy and apply only the reviewed, policy-checked destroy plan. Previously unencrypted
-records require the separately scoped adoption described in the
-[state encryption guide](../../docs/state-encryption.md).
-Retained secret and backup data remain protected by their existing ownership and policy gates.
+Pull request previews for deleted units use temporary configurations at the
+original backend paths. They inherit AES-GCM state and saved-plan encryption
+from [`IaC/root.hcl`](../../IaC/root.hcl) and preserve the original KMS
+key-provider metadata identity with `encrypted_metadata_alias`.
+
+For production retirement, the [apply runner](../../scripts/ci/terragrunt-apply.sh)
+uses `--filter-allow-destroy` to plan from the last successful full apply
+revision. It checks the saved plan's JSON against current Conftest policy
+before applying the same binary plan. Previously unencrypted records require
+the adoption described in the [state encryption guide](../../docs/state-encryption.md).
+Existing policy gates protect retained secret and backup data.
 
 ## Pull request plan selection
 

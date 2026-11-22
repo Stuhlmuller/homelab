@@ -21,7 +21,7 @@ spec:
           annotations:
             summary: Prometheus is not receiving Argo CD application metrics.
             description: The argocd_app_info metric has been absent for at least 10 minutes, so Argo CD application health and sync alerts may be blind.
-            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/prometheus/README.md
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md
         - alert: ArgoCDApplicationUnhealthy
           expr: argocd_app_info{health_status=~"Degraded|Missing|Unknown"} == 1
           for: 10m

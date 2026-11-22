@@ -136,7 +136,7 @@ configuration and revert only new scrape/rule references; preserve local partial
 completed remote versions, bucket, old NFS jobs and claims. Do not destroy the
 bucket, prune retained data or remove it from state as rollback.
 
-Sources: [Octelium storage runbook](../../clusters/homelab/apps/octelium-storage/README.md),
+Sources: [Octelium storage runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-storage/README.md),
 [Storage And State](../architecture/storage-and-state.md), [Secrets And Identity](../architecture/secrets-and-identity.md),
 [Validation Gates](validation-gates.md), and `docs/application-recovery.md` at the
 HOME-2 revision above (not yet on main).

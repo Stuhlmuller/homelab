@@ -143,7 +143,7 @@ exceptions are:
   `/var/lib/renovate-cache`. This retained, rebuildable cache uses Talos
   `EPHEMERAL`; its advertised 20 GiB is not a quota or reservation. Keep the
   original NFS claim for rollback and never run a capacity-fill drill on the
-  local filesystem. See `clusters/homelab/apps/renovate/README.md`.
+  local filesystem. See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md).
 - Renovate's proposed `renovate-cache-dedicated` static claim on a separate
   20 GiB QTS thick volume and `/renovate-cache` NFS export. The PV, PVC, and
   read-only claim probe remain outside their live Kustomizations. The owner
@@ -151,7 +151,7 @@ exceptions are:
   volume and exact export before activating the PV, then the PVC and probe,
   through separate reviewed GitOps changes. The retained `renovate-cache`
   continues to use `nfs-default` but is no longer the active runner cache. See
-  `clusters/homelab/apps/renovate/README.md`.
+  [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md).
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
 - `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,
@@ -286,7 +286,7 @@ app has acceptable backup and restore coverage.
 
 Harbor stores registry blobs and logical PostgreSQL backups on retained NFS
 claims; active PostgreSQL data uses a retained node-local volume on `acer`.
-See [`clusters/homelab/apps/harbor/README.md`](../clusters/homelab/apps/harbor/README.md)
+See [`clusters/homelab/apps/harbor/README.md`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md)
 for backup and coordinated database/blob recovery. A same-NAS backup is not
 independent disaster recovery; retain GHCR migration sources until the registry
 restore contract has been proven.
@@ -306,6 +306,6 @@ The work directory retains downloaded filters across replacement; initialized
 configuration is rebuilt in memory from Git and the protected SSM administrator
 credential. UI edits are not durable configuration. Loss of the claim requires a
 fresh filter download before filtering readiness can pass. This claim is not a
-configuration backup. See the [isolated recovery procedure](../clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+configuration backup. See the [isolated recovery procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
 for replacement and fresh-cache checks and their limits; independently preserve
 AWS administrator access and encrypted state recovery material.
