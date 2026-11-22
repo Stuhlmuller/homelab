@@ -924,3 +924,7 @@ in local scratch containers, recording source and credential versions privately.
 It never mounts production claims. Preserve independent AWS/encrypted-state
 recovery access; a retained PVC alone is not proof of recoverable credentials.
 Live private routing and normal-client acceptance are separate checks.
+
+The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
+limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
+PostgreSQL and Redis serve inbound clients without initiating egress.
