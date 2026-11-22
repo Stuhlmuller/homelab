@@ -108,7 +108,7 @@ They create:
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
   Octelium human authentication and forwards directly to
   `http://bazarr.media.svc.cluster.local:6767`. See the
-  [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for the guarded
+  [Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) for the guarded
   single-Service reconciliation and public tunnel DNS commands.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,

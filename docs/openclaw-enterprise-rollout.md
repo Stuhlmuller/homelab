@@ -193,7 +193,7 @@ read-only-root container. A failed detached archive is not a receipt: retain
 its partial bundle for diagnosis, verify the reader rollout, and retry the
 protected archive stage on a fresh exact `main` SHA. Publish only the new
 verified result. The fixed inventory/archive/verify dispatches and compatible
-old-service recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
+old-service recovery order are in the [OpenClaw runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
 
 ## Fixed stages and stop gates
 

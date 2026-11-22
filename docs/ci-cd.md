@@ -270,7 +270,7 @@ checks remain fresh.
   policy-checked saved-plan path. It requires the existing platform to be ready
   before any state repair/import/apply; review the shared SSM plan for unrelated
   updates before production approval. See the
-  [Langfuse dispatch contract](../clusters/homelab/apps/langfuse/README.md#validation).
+  [Langfuse dispatch contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#validation).
   When that exact unit is
   confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
@@ -951,7 +951,7 @@ bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
 reviewed images with `harbor-mirror.yml` first and verify private DNS through
 the tailnet resolver in the ordered cutover, following the
-[Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet rollout runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC
 

@@ -7,7 +7,7 @@ pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 
 ## Current tailnet DNS cutover
 
-The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
+The separate [tailnet resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md) serves all
 30 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
 routing. Confirm its proxy, observed Service IP, and direct UDP/TCP
 answers:
@@ -158,7 +158,7 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    Policy Bot's safe GET preflight requires the POST-only hook's `404` plus one
    valid backend `X-Request-ID`; the unrouted root must return `404` without that
    header. This proves routing only, not HMAC acceptance. See the
-   [pinned application behavior](../policy-bot/README.md#validation).
+   [pinned application behavior](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#validation).
    After naturally occurring deliveries, require fresh success:
 
    ```sh
@@ -233,7 +233,7 @@ bypass readiness or issue an ad hoc reboot.
 ## Final retirement
 
 Require all private app checks, an off-LAN Fleet device check-in (use the
-[one-shot iPhone verifier](../fleet/README.md#rollout-and-validation)), Harbor
+[one-shot iPhone verifier](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation)), Harbor
 pulls, migrated CI,
 fresh signed callback deliveries, and Cordium execution/reconnection before a
 separate retirement change. That change removes old application/native catalog
