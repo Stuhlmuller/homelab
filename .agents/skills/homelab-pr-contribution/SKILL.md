@@ -5,7 +5,7 @@ description: Prepare a homelab fix, upgrade, or app change as a reviewable pull 
 
 # Homelab PR Contribution
 
-Inspect the owning source, callers, tests, and affected workload README. Consult
+Inspect the owning source, callers, tests, and affected runbook. Consult
 [the task route](../../../openwiki/quickstart.md) when the user asks for wiki
 context or source inspection leaves an important architecture or dependency
 uncertainty. Keep desired state
@@ -27,7 +27,7 @@ plan for IaC, strict validation for Talos, and the relevant script fixture for
 code. Run the repository static gate when available; record any unavailable
 gate. Check `git diff --check` and inspect the final diff for secret material.
 
-Update the workload README or runbook and affected OpenWiki context when the
+Update the workload runbook and affected OpenWiki context when the
 change alters operations, contracts, or topology. Follow
 [wiki maintenance](../../../openwiki/operations/wiki-maintenance.md) and the
 repository's authored-page policy. Do not hand-edit generated Claims, indexes,
