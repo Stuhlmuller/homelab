@@ -2,6 +2,8 @@ name: Argo CD runtime image ownership
 
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'IaC/**'
       - 'clusters/homelab/apps/argocd-image-updater/**'
@@ -25,6 +27,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: argocd-image-updater-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   provider-ownership:
