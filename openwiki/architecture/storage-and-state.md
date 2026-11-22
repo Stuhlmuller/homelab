@@ -525,6 +525,9 @@ candidate validation first; do not edit the live PVC manually. See the
 [Enterprise README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md)
 and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
 
+The Enterprise Application uses selective sync so an inspector-only change
+can leave the in-sync store Deployment untouched.
+
 The November 1 resource-store capture candidate is dormant under
 `clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
 activated and observed Ready before a separate GitOps fence reduces only

@@ -698,6 +698,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.activeDeadlineSeconds == 120 and
     $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
     $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
     ($cluster_config_jobs | length) == 1 and
@@ -706,6 +707,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     ($cluster_configs | length) == 1 and
     $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
+    ($cleanup_jobs[0].spec.template.spec.containers[0] | has("command") | not) and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
       "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
@@ -714,7 +716,6 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
       "--namespace=octelium",
       "--ignore-not-found=true",
       "--wait=false",
-      "--request-timeout=30s",
       "--cache-dir=/tmp/kubectl-cache"
     ]
   ' >/dev/null
@@ -990,7 +991,6 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
-    '.github/workflows/argocd-image-updater.yml:provider-ownership' \
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
@@ -1014,10 +1014,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
-    '.github/workflows/image-automation.yml:image-update-gate' \
-    '.github/workflows/image-automation.yml:observe' \
-    '.github/workflows/image-automation.yml:promote-pr' \
-    '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
@@ -1090,24 +1086,6 @@ for workflow in .github/workflows/*.yml; do
   }
 done
 
-yq -o=json '.' .github/workflows/argocd-image-updater.yml | jq -e '
-  [.on.pull_request.paths, .on.push.paths] | all(
-    index("scripts/ci/argocd-registration-plan-check.py") != null and
-    index("scripts/ci/terragrunt-apply.sh") != null
-  )
-' >/dev/null || {
-  echo "Native provider regression must run for registration guard changes." >&2
-  exit 1
-}
-
-for promotion_job in image-update-gate promote-pr; do
-  yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
-    .github/workflows/image-automation.yml >/dev/null || {
-    echo "Image automation promotion job $promotion_job lost its activation gate." >&2
-    exit 1
-  }
-done
-
 while read -r workflow expected_hash; do
   [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
     echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
@@ -1136,7 +1114,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml 7dbee4f31068b8106cc290b2d1b98ed92ef7a23046f8d7c3332419388bd5a229
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml c827021c2e3d6b4832e071a20a177666ec7efede29a37565809c24607225aff0
+.github/workflows/platform-maintenance.yml 36557df9b492269bc67a95e130bda6032e069f091f490357f92eff769a76435e
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e

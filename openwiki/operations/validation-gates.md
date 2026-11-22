@@ -926,8 +926,16 @@ paired with a custom shell; either could bypass the reviewed manual workflow
 boundary. A shared rule also rejects workflow and job run defaults or extra
 environment, step shell and working-directory overrides, and `BASH_ENV` or
 `ENV` on any step. The repository also hashes the credentialed workflow and
-inventories both jobs. These are source checks; private recovery and capacity
-receipts still gate any live maintenance stage.
+inventories both jobs. Private recovery and capacity receipts gate live
+activation. The read-only `cilium-route-preflight` stage can run before
+activation using the protected Kubernetes and Talos connections. Dispatch
+Platform Maintenance from `main` with `stage=cilium-route-preflight` and its
+current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
+and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
+and the four reviewed Talos nodes' routes. The encrypted, versioned
+`openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
+receipt records the failed phase or route-check result, including any overlapping
+prefix. A successful result requires the checksum-verified receipt.
 
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
@@ -2815,14 +2823,12 @@ not waive the finding or infer runtime clearance from passing fixtures.
 
 ## Runtime image ownership
 
-The offline suite exercises native HCL, real shared-unit rendering, exact
-Renovate/Harbor ownership and protected proposal regressions. The pull-request
-`Argo CD runtime image ownership` workflow tests Kubernetes provider 3.2.1
-against an isolated API fixture and renders the pinned controller chart. It
-checks digest preservation, conflicts, temporary omitted-field handoff and
-permanent removal; it does not prove live managed fields or controller readiness.
+The offline suite exercises native HCL, shared-unit rendering, and
+Renovate/Harbor ownership policy. The
+[manual provider fixture and chart render](../../specs/20261117-050238-mutable-image-digests/quickstart.md)
+cover digest preservation, conflicts, temporary handoff, and permanent removal.
 See the [operator guide](../../docs/argocd-image-updater.md) for enrollment and
-the still-pending operator-selected workload acceptance.
+live workload acceptance.
 ## Uptime Kuma validation
 
 Run from repository root in the pinned Nix environment (it supplies `promtool`):
