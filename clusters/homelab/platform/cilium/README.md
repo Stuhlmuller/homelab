@@ -66,6 +66,13 @@ snapshots with `scripts/cilium-cutover-check.py --pods <pods.json> --endpoints
 <endpoints.json> --cidr 10.245.0.0/16`. The check rejects stale endpoint
 ownership, unready endpoints and legacy primary IP addresses. Repeat it
 around the cutover and verify host-network and Multus traffic separately.
+Before uncordoning `zimaboard-2`, run the same check against private Pod and
+CiliumEndpoint snapshots containing the Cilium probe. Supply
+`--worker zimaboard-2 --nodes <nodes.json> --previous-boot-id <boot-id>`
+to require a changed boot ID, a Ready node and a current Cilium endpoint
+while the worker remains cordoned. Verify the probe's DNS, Service and
+Multus attachment paths before restoring scheduling.
+
 
 
 The [rollback patch](../../../../.talos/patches/cilium-cni-rollback.yaml)
