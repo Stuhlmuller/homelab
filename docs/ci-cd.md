@@ -42,7 +42,9 @@ prose does not change pipeline behavior.
   remain in `Terragrunt Gate` and `validate`.
 - `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
-  policies. Only trusted same-repository changes to the plan workflow,
+  policies. This job also owns the PR's signed offline Nix checks. The
+  `validate` workflow verifies those same outputs on pushes to `main`.
+  Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
   Octelium, and stream the live Terragrunt plan to the Actions log. Other
