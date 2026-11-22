@@ -174,6 +174,12 @@ remains upstream for a cold-cluster restore.
 
 ## Ownership And Access
 
+The Harbor bootstrap declares private pull-through projects for Docker Hub,
+GitHub Container Registry, and Quay. An authenticated pull through a `proxy-*`
+project fetches a missing image from that project's public upstream without
+the publication catalog. Workload migration requires a scoped pull identity
+and release verification. See the [pull-through cache runbook](../../docs/harbor-image-mirroring.md#pull-through-cache-projects).
+
 Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`

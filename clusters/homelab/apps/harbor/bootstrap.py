@@ -30,6 +30,12 @@ PROJECTS = {
                "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
+PROXY_CACHES = {
+    "proxy-dockerhub": ("https://hub.docker.com", "docker-hub"),
+    "proxy-ghcr": ("https://ghcr.io", "github-ghcr"),
+    "proxy-quay": ("https://quay.io", "quay"),
+}
+PROXY_METADATA = {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"}
 CHAINGUARD_REPLICATION = {
     "schedule": "0 0 * * * *",
     "source_registry": "cgr.dev",
@@ -168,23 +174,34 @@ def registry_matches(actual, desired):
     return True
 
 
-def reconcile_registry(client, name):
-    desired = desired_registry(name)
+def find_registry(client, name):
     query = urllib.parse.urlencode({"name": name})
     registries, _ = client.request("GET", "/registries?" + query)
     if not isinstance(registries, list) or len(registries) > 1:
-        raise BootstrapError("Chainguard source registry is ambiguous")
-    if not registries:
-        _, headers = client.request("POST", "/registries", desired, expected=(201,), json_response=False)
-        registry = {"id": created_id(headers, "/registries")}
-    else:
+        raise BootstrapError("Harbor upstream registry is ambiguous")
+    if registries:
         registry = registries[0]
         if not isinstance(registry, dict) or registry.get("name") != name:
             raise BootstrapError("Harbor returned the wrong source registry")
-        identifier = positive_id(registry.get("id"))
+        positive_id(registry.get("id"))
+        return registry
+    return None
+
+
+def create_registry(client, desired):
+    _, headers = client.request("POST", "/registries", desired, expected=(201,), json_response=False)
+    return created_id(headers, "/registries")
+
+
+def reconcile_registry(client, name):
+    desired = desired_registry(name)
+    registry = find_registry(client, name)
+    if registry is None:
+        identifier = create_registry(client, desired)
+    else:
+        identifier = registry["id"]
         if not registry_matches(registry, desired):
             client.request("PUT", f"/registries/{identifier}", desired, json_response=False)
-    identifier = positive_id(registry.get("id"))
     verified, _ = client.request("GET", f"/registries/{identifier}")
     if not isinstance(verified, dict) or not registry_matches(verified, desired):
         raise BootstrapError("Harbor source registry verification failed")
@@ -301,19 +318,62 @@ def config_values(document):
     return values
 
 
-def read_project(client, project_name):
+def read_project(client, project_name, *, proxy=False):
     project, _ = client.request("GET", f"/projects/{project_name}", expected=(200, 404))
     if project is None:
         return None
     if not isinstance(project, dict) or project.get("name") != project_name:
         raise BootstrapError("Harbor returned the wrong project")
     positive_id(project.get("project_id"))
-    if project.get("registry_id") not in (None, 0):
+    if proxy:
+        positive_id(project.get("registry_id"))
+    elif project.get("registry_id") not in (None, 0):
         raise BootstrapError("Harbor project must not be a proxy cache")
     metadata = project.get("metadata")
     if not isinstance(metadata, dict) or metadata.get("public") not in ("true", "false"):
         raise BootstrapError("Harbor project lacks a valid privacy setting")
     return project
+
+
+def verify_proxy_registry(registry, desired, identifier):
+    if (not isinstance(registry, dict) or registry.get("id") != identifier
+            or not registry_matches(registry, desired)):
+        raise BootstrapError("Harbor proxy endpoint does not match its declared upstream")
+    credential = registry.get("credential") or {}
+    if (not isinstance(credential, dict) or credential.get("access_key")
+            or credential.get("access_secret") or registry.get("ca_certificate")):
+        raise BootstrapError("Harbor proxy endpoint must use anonymous upstream TLS")
+
+
+def reconcile_proxy_caches(client):
+    caches = []
+    for name, (url, provider) in PROXY_CACHES.items():
+        desired = {"name": name, "url": url, "type": provider, "insecure": False}
+        registry = find_registry(client, name)
+        project = read_project(client, name, proxy=True)
+        identifier = registry["id"] if registry else None
+        if identifier is not None:
+            registry, _ = client.request("GET", f"/registries/{identifier}")
+            verify_proxy_registry(registry, desired, identifier)
+        if project and project["registry_id"] != identifier:
+            raise BootstrapError("Harbor proxy project is linked to a different upstream")
+        caches.append((name, desired, identifier, project))
+
+    for name, desired, identifier, project in caches:
+        if identifier is None:
+            identifier = create_registry(client, desired)
+            registry, _ = client.request("GET", f"/registries/{identifier}")
+            verify_proxy_registry(registry, desired, identifier)
+        if project is None:
+            client.request("POST", "/projects", {"project_name": name, "registry_id": identifier,
+                                                   "metadata": PROXY_METADATA},
+                           expected=(201,), json_response=False)
+        elif any(project["metadata"].get(key) != value for key, value in PROXY_METADATA.items()):
+            client.request("PUT", f"/projects/{name}", {"metadata": PROXY_METADATA}, json_response=False)
+        verified = read_project(client, name, proxy=True)
+        if (verified is None or verified["registry_id"] != identifier
+                or any(verified["metadata"].get(key) != value for key, value in PROXY_METADATA.items())):
+            raise BootstrapError("Harbor proxy project verification failed")
 
 
 def kubernetes_tag_artifact(client, repository, expected_digest, immutable=False):
@@ -595,6 +655,7 @@ def reconcile(client, robot_passwords, replication_policy=None):
     reconcile_kubernetes_tag_lock(client, projects["mirror"]["project_id"])
     if replication_policy is not None:
         reconcile_replication(client, replication_policy)
+    reconcile_proxy_caches(client)
     backfill_scans(client)
     print("Harbor homelab is private, mirror is public; project-scoped robots reconciled.")
 

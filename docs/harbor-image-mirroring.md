@@ -5,6 +5,30 @@
 Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
 Source publication does not authorize key installation or a live dispatch.
 
+## Pull-through cache projects
+
+Harbor's PostSync bootstrap reconciles three private cache projects for public
+upstream images. Authenticate to Harbor with a principal that has pull access to
+the cache project, then use the project's repository prefix.
+
+| Upstream | Example Harbor reference |
+| --- | --- |
+| Docker Hub | `harbor.stinkyboi.com/proxy-dockerhub/library/nginx:1.28` |
+| GitHub Container Registry | `harbor.stinkyboi.com/proxy-ghcr/cli/cli:latest` |
+| Quay | `harbor.stinkyboi.com/proxy-quay/prometheus/prometheus:latest` |
+
+Harbor fetches uncached references on the first pull without a catalog entry or
+publication workflow. For Kubernetes, use the workload's approved digest and a
+namespace-scoped pull secret. The caches connect to the upstreams anonymously
+with TLS verification. New projects inherit Harbor's seven-day retention
+policy. Automatic scanning is enabled. Check the scan and SBOM separately from
+pull verification.
+
+After Harbor syncs, verify each project's privacy and endpoint. Make a complete
+authenticated pull of a digest absent from that cache, verify the manifest and
+blobs, then confirm the artifact is listed in Harbor. Migrate workloads using
+the current `mirror` prefix once the workload has pull authorization and the
+cache path has been verified.
 
 ## Helm charts
 
