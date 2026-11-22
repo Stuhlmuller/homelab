@@ -869,13 +869,13 @@ and seven-day migration acceptance remain separate.
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
 proposed RPO/RTO, private secret dependencies, version-specific S3 publication,
-paired capture contract, synthetic fixtures, retention and rollout/rollback.
-Octelium/media source dumps remain on QNAP; the new dedicated application bucket,
-IAM profiles, operator schedule and freshness rules are candidates only. The
+paired capture contract, synthetic fixtures, and retention.
+Octelium/media source dumps remain on QNAP. The shared S3 destination and manual
+publication commands support independent recovery. The
 publisher never expires retained data. AFFiNE/Multica adapters require a reviewed
 writer fence; they do not automate capture. Other workload gaps remain explicit.
 Operator-managed independent backups are unverified. Real-data drills require
-HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
+HOME-3 containment and separate approval.
 No operational RPO/RTO or application recovery is proven by synthetic tests.
 
 ## Uptime Kuma state
