@@ -1104,7 +1104,7 @@ done <<'EOF'
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
+.github/workflows/codeql.yml 157c77607c1e73f4f9017129fe0d532ef64fdc6bf79242928bba6d28e81928bf
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml cfd1f72a079a7142f2676b747f7f80acd3cb27ac794b0b86b17608ed2cc9361f
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
@@ -1125,11 +1125,11 @@ done <<'EOF'
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
 .github/workflows/octelium-private-kubernetes-apply.yml 62ee2b99bad348536702022713a113ab07830a4515431623a35cd6869cf88b91
-.github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
-.github/workflows/terragrunt-apply-request.yml c0b4c9818976dcff3ee89c05463946c64fbdf3bcdadfbd1597ab475fd90c4c9c
-.github/workflows/terragrunt-apply.yml bedb7863b410960b173ac9c862077cb460b58c1a44701bbeb8ebc2e8b80c5083
-.github/workflows/terragrunt-plan.yml ea06666d43dc3e734f79c4897959ade291279f363b115d51d1e3a6a46dc985fd
-.github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
+.github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
+.github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
+.github/workflows/terragrunt-apply.yml d69111c2a2a4730d0a075a22eb4054cec6f76e229784de939c501e7c52b95536
+.github/workflows/terragrunt-plan.yml 325a2f07b7da11dc4ec0f5031db6172fd264b5c9e96741559708fd1ce882694a
+.github/workflows/validate.yml 15039c1fe4c3124189b733250c1c182742c22228244a8a2cf09843dfd5d85c91
 EOF
 echo "::endgroup::"
 
@@ -1288,10 +1288,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
     .permissions == {} and
     .env == null and
     (.jobs | keys) == ["request"] and
-    .concurrency == {
-      "group": "terragrunt-apply-request",
-      "cancel-in-progress": true
-    } and
+    .concurrency == null and
+    .jobs.request.concurrency == null and
     .jobs.request.environment == null and
     .jobs.request.env == null and
     .jobs.request.permissions == null and
@@ -1357,7 +1355,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
-      "cancel-in-progress": false
+      "cancel-in-progress": false,
+      "queue": "max"
     } and
     .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
