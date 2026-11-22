@@ -359,6 +359,8 @@ def check_launcher():
                     for alias, profile in (
                         ("bedrock/nova-lite", "us.amazon.nova-lite-v1:0"),
                         ("bedrock/claude-sonnet-4-5", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"),
+                        ("bedrock/gpt-6.2-sol", "us.openai.gpt-6.2-sol"),
+                        ("bedrock/deepseek-v3.2", "deepseek.v3.2"),
                     ):
                         result = await http.post("/v1/chat/completions",
                                                  headers={"Authorization": f"Bearer {operator}"},

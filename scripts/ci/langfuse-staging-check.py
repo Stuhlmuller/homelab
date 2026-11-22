@@ -21,6 +21,7 @@ assert litellm["proxy_config"]["litellm_settings"]["callbacks"] == [
 ]
 assert [item["model_name"] for item in litellm["proxy_config"]["model_list"]] == [
     "openrouter/free", "bedrock/claude-sonnet-4-5", "bedrock/nova-lite",
+    "bedrock/gpt-6.2-sol", "bedrock/deepseek-v3.2",
 ]
 assert (ROOT / "clusters/homelab/apps/litellm/app_identity.py").exists()
 assert (ROOT / "clusters/homelab/apps/litellm/gateway.py").exists()
