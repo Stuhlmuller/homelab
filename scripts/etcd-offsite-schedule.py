@@ -32,6 +32,7 @@ STATE = "attempt-state.json"
 WRITE_HEADROOM_BYTES = 65536
 POLICY = "scripts/config/etcd-offsite-schedule.json"
 DESTINATION = "IaC/homelab/us-west-2/operator/etcd-backup-storage.hcl"
+LEGACY_DESTINATION = "IaC/etcd-backup-storage.hcl"
 SOURCES = ("scripts/etcd-offsite-schedule.py", "scripts/etcd-offsite-backup.py",
            "scripts/talos-etcd-backup.py", "scripts/talos-etcd-schedule.py", POLICY, DESTINATION)
 FAILURES = (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError)
@@ -255,12 +256,24 @@ def installed(runtime):
     if (settings["format"] != 1 or settings["runtime_directory"] != str(runtime)
             or not re.fullmatch(r"[0-9a-f]{40}", settings["revision"])):
         raise ValueError("invalid offsite installation record")
+    source_sha256 = settings["source_sha256"]
+    if not isinstance(source_sha256, dict):
+        raise ValueError("invalid offsite installation source paths")
+    current_sources = {*SOURCES, LEGACY_DESTINATION}
+    legacy_sources = current_sources - {DESTINATION}
+    if source_sha256.keys() == legacy_sources:
+        destination = LEGACY_DESTINATION
+    elif (source_sha256.keys() == current_sources
+          and source_sha256[DESTINATION] == source_sha256[LEGACY_DESTINATION]):
+        destination = DESTINATION
+    else:
+        raise ValueError("invalid offsite installation source paths")
     release = runtime / "releases" / settings["revision"]
-    for name in SOURCES:
-        if hashlib.sha256((release / name).read_bytes()).hexdigest() != settings["source_sha256"][name]:
+    for name, expected in source_sha256.items():
+        if hashlib.sha256((release / name).read_bytes()).hexdigest() != expected:
             raise ValueError("offsite installed source differs from its reviewed release")
     offsite.backup.private_directory(runtime / "attempts")
-    return settings, read_policy(release / POLICY), offsite.destination(release / DESTINATION)
+    return settings, read_policy(release / POLICY), offsite.destination(release / destination)
 
 
 def render_plist(settings, policy):
@@ -278,6 +291,8 @@ def install(args):
     if sys.platform != "darwin":
         raise ValueError("installation requires a logged-in macOS GUI user")
     files = reviewed_sources(args.revision)
+    # A pre-move installer validates the active release at this path before rollback.
+    files = {**files, LEGACY_DESTINATION: files[DESTINATION]}
     policy = read_policy(HERE.parent / POLICY)
     target = offsite.destination()
     python = local.executable(args.python)
@@ -321,7 +336,7 @@ def install(args):
                 raise ValueError("installed release differs from reviewed source")
             local.write_file(path, data)
         parents = {runtime, release.parent, release}
-        for name in SOURCES:
+        for name in files:
             parents.update(parent for parent in (release / name).parents if release in parent.parents)
         for parent in sorted(parents, key=lambda path: len(path.parts), reverse=True):
             offsite.backup.sync_directory(parent)
