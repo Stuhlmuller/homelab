@@ -28,12 +28,9 @@ prose does not change pipeline behavior.
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
   validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
   Their required status names stay unchanged, so eligible PRs can still merge.
-- NOFX image builds, OpenClaw native configuration checks, and Image automation
-  verification run after matching changes land on `main`, or through their
-  reviewed manual dispatch paths. They no longer start optional PR runs.
-  Image automation no longer runs its five-minute observer schedule; the
-  weekly CodeQL security schedule remains active. Dispatch Image automation
-  with `operation=verify` from `main` to check and alert on its journal.
+- NOFX image builds and OpenClaw native configuration checks run after matching
+  changes land on `main` or through manual dispatch. The weekly CodeQL schedule
+  remains active.
 
 - `Lint` runs on pull requests and invokes Super-Linter against changed files.
   Its job conclusion is the shared lightweight lint signal; it cannot write
@@ -54,7 +51,8 @@ prose does not change pipeline behavior.
   the exact dispatch command for that push.
   It has no production environment, stored secrets, or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
-  current `main` SHA. It repeats static checks and Conftest, enters the
+  current `main` SHA. It runs [Deployment Checks](../.github/workflows/deployment-checks.yml)
+  before it enters the
   main-only `homelab-production` environment, then
   verifies `main` again before referencing environment credentials and before
   each state import or apply. The root Terragrunt `before_hook` repeats the
@@ -68,8 +66,8 @@ prose does not change pipeline behavior.
   Production jobs enter the environment automatically without reviewer approval;
   `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
-  Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production branch gates, rechecks current `main` immediately before both
+  Kubernetes and Talos Policies and Services. It uses the same Deployment Checks
+  and production branch gates, rechecks current `main` immediately before both
   catalog writes, never prunes, and proves a second apply has no live diff.
   An unresolved or advanced `main` stops the next write.
 
@@ -161,11 +159,16 @@ checks remain fresh.
   static and Terragrunt gates. It runs the upstream Super-Linter action with
   `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
   lint runs for the same pull request.
-- Policy Bot reads this repository's `.policy.yml` and automatically approves
-  PRs with `requires.count: 0`, so merging does not depend on a human review,
-  Codex review, or thumbs-up comment. Required GitHub checks still gate merges.
-  Policy Bot reads the policy from the target branch, so this behavior takes
-  effect after the policy change lands on `main`.
+- Policy Bot reads `.policy.yml` from the target branch and passes its
+  status with `requires.count: 0`. GitHub branch rules enforce required checks.
+- [Verify Codex Code Review](../.github/workflows/codex-review-gate.yml)
+  publishes `Codex Code Review` for the exact PR head. It passes only when the
+  Codex GitHub App reports a completed code review with zero findings for that
+  SHA. Findings fail the status. Missing, stale, or incomplete reviews keep it
+  pending. Push fixes and request `@codex review` if automatic review has not
+  run. Dispatch the verification workflow with the PR number to re-read an
+  existing review. `github-iac` owns enforcement of the status on `main`.
+  Remove the requirement there before retiring the publisher.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
 - The protected OpenClaw Enterprise startup and operations policies accept only
