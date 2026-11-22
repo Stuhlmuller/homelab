@@ -46,13 +46,9 @@ The declared Talos minor-version and Kubernetes upgrade ladder is wired in
 source but inactive. Keep the historical patch audits separate from the
 unpassed placement, recovery, publication, and live upgrade gates below.
 
-The [November 2 worker incident procedure](../../docs/talos-control-plane-maintenance.md#held-november-2-zimaboard-2-incident-recovery)
-adds a narrowly bound, one-shot recovery helper. Its offline tests cover identity,
-private metadata transport, writer inventory, recurring-job capacity, freshness
-and durable attempt receipts. Source availability does not authorize execution:
-prevention convergence, sustainable headroom, a fresh verified snapshot and the
-exact owner-approved private plan remain required. It performs no automatic
-reboot, cleanup, credential change or retry.
+The incident-specific November 2 worker helper and its fixtures have been
+removed. That cleanup does not establish incident recovery; current incidents
+need fresh evidence and the maintained [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
 The [routine etcd backup runbook](../../docs/talos-etcd-backup.md) owns
 `scripts/talos-etcd-backup.py`: authenticated snapshot download to a private

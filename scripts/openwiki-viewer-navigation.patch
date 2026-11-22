@@ -1,0 +1,105 @@
+diff --git client-lib.js client-lib.js
+index b346da3..c42680f 100644
+--- client-lib.js
++++ client-lib.js
+@@ -108,15 +108,17 @@ export function stripFrontmatter(body) {
+-/**
+- * Resolve a relative link (`rel`) against a page's directory (`baseDir`) into a
+- * normalized wiki path, collapsing `.` and `..` segments. Used to turn in-page
+- * markdown links into node ids for in-app navigation.
+- */
+-export function normalize(baseDir, rel) {
+-    const parts = (baseDir ? baseDir.split("/") : []).concat(rel.split("/"));
+-    const out = [];
+-    for (const part of parts) {
+-        if (part === "" || part === ".")
+-            continue;
+-        if (part === "..")
+-            out.pop();
+-        else
+-            out.push(part);
++const REPOSITORY_FILES = "https://github.com/Stuhlmuller/homelab/blob/main/";
++const WIKI_FILES = REPOSITORY_FILES + "openwiki/";
++
++export function readerLink(page, href) {
++    // Preserve explicit external links and existing host-root paths.
++    if (!href || /^(?:[a-z][a-z0-9+.-]*:|[\\/])/i.test(href))
++        return null;
++    const source = page.split("/").map(encodeURIComponent).join("/");
++    const url = new URL(href, WIKI_FILES + source + ".md");
++    if (!url.href.startsWith(REPOSITORY_FILES))
++        return null;
++    const isWikiPage = url.href.startsWith(WIKI_FILES) && url.pathname.endsWith(".md");
++    try {
++        const id = isWikiPage ? decodeURIComponent(url.href.slice(WIKI_FILES.length).split(/[?#]/, 1)[0].slice(0, -3)) : null;
++        return { url: url.href, id, fragment: decodeURIComponent(url.hash.slice(1)) };
++    } catch {
++        return null;
+@@ -124 +126,13 @@ export function normalize(baseDir, rel) {
+-    return out.join("/");
++}
++
++export function findHeading(headings, fragment) {
++    const seen = new Set();
++    return Array.from(headings).find((heading) => {
++        const base = heading.textContent.trim().toLowerCase()
++            .replace(/[^\p{L}\p{N}_\s-]/gu, "").replace(/\s/g, "-");
++        let slug = base;
++        for (let number = 1; seen.has(slug); number++)
++            slug = `${base}-${number}`;
++        seen.add(slug);
++        return slug === fragment;
++    });
+diff --git client.js client.js
+index bf71f2c..8a2d503 100644
+--- client.js
++++ client.js
+@@ -1 +1 @@
+-import { colorsForTypes, escapeHtml, hexA, matchesFilter, nodeRadius, normalize, shouldShowNodeLabel, signature, stripFrontmatter, } from "./client-lib.js";
++import { colorsForTypes, escapeHtml, hexA, findHeading, matchesFilter, nodeRadius, readerLink, shouldShowNodeLabel, signature, stripFrontmatter, } from "./client-lib.js";
+@@ -332 +332 @@ function hoverHighlight(node) {
+-function selectNode(id) {
++function selectNode(id, fragment = "") {
+@@ -336 +336 @@ function selectNode(id) {
+-    renderReader(id);
++    renderReader(id, fragment);
+@@ -341 +341 @@ function selectNode(id) {
+-function renderReader(id) {
++function renderReader(id, fragment = "") {
+@@ -377,0 +378,7 @@ function renderReader(id) {
++    if (fragment) {
++        const body = $("#detail .md");
++        const explicitAnchor = Array.from(body.querySelectorAll("a[id], a[name]"))
++            .find((anchor) => anchor.id === fragment || anchor.getAttribute("name") === fragment);
++        const target = explicitAnchor ?? findHeading(body.querySelectorAll("h1, h2, h3, h4, h5, h6"), fragment);
++        target?.scrollIntoView();
++    }
+@@ -388 +395 @@ function renderReader(id) {
+- * Turn in-page markdown links that resolve to a node into in-app navigation.
++ * Open exported wiki pages in the reader and link other repository files to GitHub.
+@@ -391,8 +398,3 @@ function rewriteLinks(node) {
+-    const dir = node.id.includes("/")
+-        ? node.id.slice(0, node.id.lastIndexOf("/"))
+-        : "";
+-    $("#detail")
+-        .querySelectorAll(".md a")
+-        .forEach((a) => {
+-        const href = a.getAttribute("href") ?? "";
+-        if (!href.endsWith(".md") && !href.includes(".md#"))
++    $("#detail").querySelectorAll(".md a").forEach((anchor) => {
++        const target = readerLink(node.id, anchor.getAttribute("href") ?? "");
++        if (!target)
+@@ -400,7 +402,6 @@ function rewriteLinks(node) {
+-        const clean = href.split("#")[0];
+-        const target = normalize(dir, clean).replace(/\.md$/, "");
+-        if (byId(target)) {
+-            a.classList.add("wikilink");
+-            a.addEventListener("click", (e) => {
+-                e.preventDefault();
+-                selectNode(target);
++        anchor.href = target.url;
++        if (target.id && byId(target.id)) {
++            anchor.classList.add("wikilink");
++            anchor.addEventListener("click", (event) => {
++                event.preventDefault();
++                selectNode(target.id, target.fragment);

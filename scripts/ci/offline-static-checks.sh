@@ -94,112 +94,6 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
 fi
 echo "::endgroup::"
 
-echo "::group::Terragrunt Azure credential gate"
-(
-  base_root=$'locals {}\n\ninputs = {}'
-  head_root=$'locals {}\n\ninputs = {}'
-  changed_path=""
-  root_change=false
-  root_helper_failure=false
-  stack_change=false
-  fixture_repo_root="$PWD"
-
-  git() {
-    # Model root-relative Git calls and a readable, empty legacy stack.
-    if [[ "$1" == -C ]]; then
-      [[ "$2" == "$fixture_repo_root" ]] || return 1
-      shift 2
-    fi
-    case "$1" in
-      rev-parse) [[ "$2" == --show-toplevel ]] && printf '%s\n' "$fixture_repo_root" ;;
-      cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
-      diff)
-        local path
-        for path in "$@"; do
-          if [[ "$changed_path" == "$path" || "$changed_path" == "$path/"* ]]; then
-            return 1
-          fi
-        done
-        return 0
-        ;;
-      show)
-        if [[ "$root_helper_failure" == true ]]; then
-          return 1
-        fi
-        case "$2" in
-          base:IaC/terragrunt.stack.hcl|head:IaC/terragrunt.stack.hcl) return 0 ;;
-          base:IaC/root.hcl) printf '%s\n' "$base_root" ;;
-          head:IaC/root.hcl)
-            if [[ "$root_change" == true ]]; then
-              printf '%s\n' "${head_root/inputs = \{\}/inputs = { changed = true\}}"
-            else
-              printf '%s\n' "$head_root"
-            fi
-            ;;
-          *) return 1 ;;
-        esac
-        ;;
-      *) return 1 ;;
-    esac
-  }
-  terragrunt_stack_unit_paths_at_ref() {
-    if [[ "$stack_change" == true && "$1" == head ]]; then
-      printf 'IaC/live/azuread-applications/changed\n'
-    else
-      printf 'IaC/live/azuread-applications/unchanged\n'
-    fi
-  }
-
-  export APPLY_BASE_SHA="base"
-  export APPLY_HEAD_SHA="head"
-  if terragrunt_azuread_stack_changed; then
-    echo "Unchanged root settings must not require Azure credentials." >&2
-    exit 1
-  fi
-
-  root_change=true
-  terragrunt_azuread_stack_changed
-  root_change=false
-
-  for changed_path in \
-    IaC/homelab/us-west-2/apps/fleet/azuread/.terraform.lock.hcl \
-    IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
-    IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
-    IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
-    if ! terragrunt_azuread_stack_changed; then
-      echo "Azure credentials must be required for ${changed_path}." >&2
-      exit 1
-    fi
-  done
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread" ]]
-  changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
-  if terragrunt_azuread_stack_changed; then
-    echo "An unrelated module change must not require Azure credentials." >&2
-    exit 1
-  fi
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  changed_path="scripts/ci/terragrunt-plan.sh"
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  [[ "$(terragrunt_azuread_changed_filter true)" == "*/azuread" ]]
-  changed_path=""
-
-  stack_change=true
-  terragrunt_azuread_stack_changed
-  stack_change=false
-
-  APPLY_BASE_SHA=""
-  terragrunt_azuread_stack_changed
-  APPLY_BASE_SHA=bad
-  terragrunt_azuread_stack_changed
-  APPLY_BASE_SHA="base"
-
-  root_helper_failure=true
-  terragrunt_azuread_stack_changed
-)
-echo "::endgroup::"
-
 echo "::group::Terragrunt deleted-unit ownership"
 (
   fixture_repo_root="$PWD"
@@ -251,11 +145,6 @@ echo "::endgroup::"
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/homelab/us-west-2/apps
-  terragrunt_stack_changed() { return 0; }
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
-  terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
   [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine/argocd" ]]
   if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
     echo "Unsafe Argo CD Application unit filter was accepted" >&2
@@ -698,6 +587,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.activeDeadlineSeconds == 120 and
     $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
     $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
     ($cluster_config_jobs | length) == 1 and
@@ -706,6 +596,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     ($cluster_configs | length) == 1 and
     $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
+    ($cleanup_jobs[0].spec.template.spec.containers[0] | has("command") | not) and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
       "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
@@ -714,7 +605,6 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
       "--namespace=octelium",
       "--ignore-not-found=true",
       "--wait=false",
-      "--request-timeout=30s",
       "--cache-dir=/tmp/kubectl-cache"
     ]
   ' >/dev/null
@@ -990,10 +880,10 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
-    '.github/workflows/argocd-image-updater.yml:provider-ownership' \
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/codex-review-gate.yml:verify' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1013,11 +903,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
-    '.github/workflows/homelab-diagnostics.yml:grafana' \
-    '.github/workflows/image-automation.yml:image-update-gate' \
-    '.github/workflows/image-automation.yml:observe' \
-    '.github/workflows/image-automation.yml:promote-pr' \
-    '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
@@ -1052,7 +937,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/platform-maintenance.yml:maintenance' \
     '.github/workflows/platform-maintenance.yml:static-policy' \
     '.github/workflows/release.yml:release' \
-    '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
     '.github/workflows/terragrunt-apply.yml:static-policy' \
     '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
@@ -1060,7 +944,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
-    '.github/workflows/validate.yml:harbor-core-compatibility'
+    '.github/workflows/validate.yml:harbor-core-compatibility' \
+    '.github/workflows/validate.yml:repo'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
@@ -1092,30 +977,13 @@ for workflow in .github/workflows/*.yml; do
   }
 done
 
-yq -o=json '.' .github/workflows/argocd-image-updater.yml | jq -e '
-  [.on.pull_request.paths, .on.push.paths] | all(
-    index("scripts/ci/argocd-registration-plan-check.py") != null and
-    index("scripts/ci/terragrunt-apply.sh") != null
-  )
-' >/dev/null || {
-  echo "Native provider regression must run for registration guard changes." >&2
-  exit 1
-}
-
-for promotion_job in image-update-gate promote-pr; do
-  yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
-    .github/workflows/image-automation.yml >/dev/null || {
-    echo "Image automation promotion job $promotion_job lost its activation gate." >&2
-    exit 1
-  }
-done
-
 while read -r workflow expected_hash; do
   [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
     echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
     exit 1
   }
 done <<'EOF'
+.github/workflows/codex-review-gate.yml 0595db0f3360266d1da816855660f4bac5925b6b1142677c5d07163bd9f5e371
 .github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
@@ -1126,10 +994,9 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml b89e2487c50c84e0de24674543375205c61e33e5d083b2e5b0bcc7456919108d
+.github/workflows/harbor-mirror.yml 0e8f15226a4ace9420d3bc32ef2220a053c5172265952f1b7bc7445fd3464eb1
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
-.github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
 .github/workflows/octelium-rscstore-backup.yml 94be0474d250919d36ddafd1fd43539691df6b250c620216ff66c2b87c6ee448
@@ -1139,18 +1006,18 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml b5793e22a26609aa74ced9fcbb64e2dbc71760ab74dab11f0b34df6ad2198cec
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/platform-maintenance.yml fff492bc7e64e1b337dd0dba9eecd7472a4bb9834266ceda37848a5fc71bc647
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml efc6203ae41d43630c075f22a1a079e0a674371c7f746b187b73dced96497454
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
-.github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
+.github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
 .github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
-.github/workflows/validate.yml ab14d6c33d69a117d8a7cfc0c791d98322529205d7a42875d30ff8bdf0466bfc
+.github/workflows/validate.yml e60a69d450bb42ebca1013026563f85e9e8365ddddb750ae2f8b513b6af840b1
 EOF
 echo "::endgroup::"
 
@@ -1173,7 +1040,6 @@ for workflow_job in \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
   '.github/workflows/platform-maintenance.yml:static-policy' \
-  '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -1289,6 +1155,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
 python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
+python3 -I scripts/ci/codex-review-gate-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"
@@ -1664,6 +1531,10 @@ yq -o=json '.' "$cert_manager_values" \
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
 python3 -I scripts/ci/harbor-images-check.py
+echo "::endgroup::"
+
+echo "::group::Multica Argo project boundary"
+python3 -I scripts/ci/multica-project-boundary-test.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

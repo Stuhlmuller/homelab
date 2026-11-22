@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Negative fixtures for DNS-only saved-plan and freshness guards."""
 import copy
+import contextlib
+import io
 import importlib.util
 from pathlib import Path
 import unittest
@@ -139,6 +141,90 @@ class CutoverContracts(unittest.TestCase):
             changed[field] = 'changed'
             with self.subTest(field=field), self.assertRaises(CUTOVER.Failure):
                 CUTOVER.validate_binding(value, changed)
+
+
+class SplitExitNodePreview(unittest.TestCase):
+    def fixture(self, with_refresh_drift):
+        baseline, desired = policies()
+        live = copy.deepcopy(desired)
+        live['split_dns'][0]['nameservers'][0]['use_with_exit_node'] = False
+        saved_plan = plan()
+        item = saved_plan['resource_changes'][0]
+        item['change']['before'] = dict(copy.deepcopy(live), id='dns_configuration')
+        saved_plan['timestamp'] = CUTOVER.iso_time(time.time())
+        if with_refresh_drift:
+            drift = copy.deepcopy(item)
+            drift['change']['before'], drift['change']['after'] = drift['change']['after'], drift['change']['before']
+            saved_plan['resource_drift'] = [drift]
+        adapter = Mock(spec=CUTOVER.Adapter)
+        adapter.current_source.return_value = ('a' * 40, desired)
+        adapter.baseline_policy.return_value = baseline
+        adapter.live_policy.return_value = live
+        adapter.read_plan.return_value = ('1' * 64, saved_plan)
+        adapter.plan_hash.return_value = '1' * 64
+        return adapter, saved_plan, live
+
+    def test_exact_split_flag_repair_with_or_without_refresh_drift(self):
+        for with_drift in (False, True):
+            with self.subTest(refresh_drift=with_drift):
+                adapter, saved_plan, live = self.fixture(with_drift)
+                CUTOVER.preview_split_exit_node(adapter)
+                self.assertEqual(adapter.live_policy.call_count, 2)
+                self.assertEqual(adapter.current_source.call_count, 2)
+                adapter.apply.assert_not_called()
+                adapter.save.assert_not_called()
+                if with_drift:
+                    _, desired = policies()
+                    with self.assertRaises(CUTOVER.Failure):
+                        CUTOVER.validate_plan(saved_plan, live, desired)
+
+    def test_rejects_unrelated_saved_plan_or_live_changes(self):
+        mutations = (
+            lambda p: p['resource_changes'].append({'address': 'tailscale_acl.homelab',
+                                                    'change': {'actions': ['update']}}),
+            lambda p: p['resource_changes'][0]['change']['after'].update(override_local_dns=False),
+            lambda p: p['resource_drift'][0].update(address='tailscale_acl.homelab'),
+            lambda p: p['resource_drift'][0]['change']['after'].update(magic_dns=False),
+            lambda p: p['resource_drift'][0]['change']['before'].update(id='other'),
+            lambda p: p['resource_drift'].append(copy.deepcopy(p['resource_drift'][0])),
+            lambda p: p.update(output_changes={'unexpected': {'actions': ['update']}}),
+        )
+        for index, mutate in enumerate(mutations):
+            adapter, saved_plan, _ = self.fixture(True)
+            mutate(saved_plan)
+            with self.subTest(index=index), self.assertRaises(CUTOVER.Failure):
+                CUTOVER.preview_split_exit_node(adapter)
+        adapter, _, live = self.fixture(False)
+        adapter.live_policy.return_value = dict(live, search_paths=['other.test'])
+        with self.assertRaises(CUTOVER.Failure):
+            CUTOVER.preview_split_exit_node(adapter)
+
+    def test_rechecks_exact_source_live_policy_and_plan_digest(self):
+        for changed in ('live', 'source', 'plan'):
+            adapter, _, live = self.fixture(False)
+            revision, desired = adapter.current_source.return_value
+            if changed == 'live':
+                adapter.live_policy.side_effect = [live, dict(live, magic_dns=False)]
+            elif changed == 'source':
+                adapter.current_source.side_effect = [(revision, desired), ('b' * 40, desired)]
+            else:
+                adapter.plan_hash.return_value = '2' * 64
+            with self.subTest(changed=changed), self.assertRaises(CUTOVER.Failure):
+                CUTOVER.preview_split_exit_node(adapter)
+            adapter.apply.assert_not_called()
+            adapter.save.assert_not_called()
+
+    def test_cli_cannot_execute_or_create_a_receipt(self):
+        args = ['--mode', 'split-exit-node-preview', '--plan', '/private/saved.tfplan']
+        with patch.object(CUTOVER, 'Adapter') as adapter_class, contextlib.redirect_stderr(io.StringIO()):
+            for extra in (['--execute'], ['--receipt', '/private/receipt.json']):
+                self.assertEqual(CUTOVER.main([*args, *extra]), 1)
+            adapter_class.assert_not_called()
+        adapter, _, _ = self.fixture(True)
+        with patch.object(CUTOVER, 'Adapter', return_value=adapter), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(CUTOVER.main(args), 0)
+        adapter.apply.assert_not_called()
+        adapter.save.assert_not_called()
 
 
 class FakeAdapter:

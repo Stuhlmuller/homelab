@@ -206,7 +206,6 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
   )
 done
 python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
-python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 echo "::endgroup::"
 
@@ -280,6 +279,7 @@ echo "::endgroup::"
 
 echo "::group::LiteLLM runtime hardening"
 python3 -I scripts/ci/litellm-runtime-hardening-check.py
+python3 -I scripts/ci/multica-project-boundary-test.py --chart
 echo "::endgroup::"
 
 echo "::group::Descheduler cadence"

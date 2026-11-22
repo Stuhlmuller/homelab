@@ -1,8 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
+- Version change: 1.1.0 → 1.2.0
 - Modified principles: none
-- Added principles: VI. Consistent Formatting
+- Added principles: VII. Root-Cause Fixes and Reusable Design
+- Added sections: none
 - Removed sections: none
 - Follow-up TODOs: none
 -->
@@ -69,6 +70,22 @@ with `terragrunt hcl fmt`, as configured in [pre-commit](../../.pre-commit-confi
 Run the applicable checks before submitting changes and keep formatting edits within the
 scope of the change. The repository's required CI checks determine merge readiness.
 
+### VII. Root-Cause Fixes and Reusable Design
+
+Changes MUST address the underlying failure in the component that owns it. Solutions
+MUST cover the supported use cases through reusable components and shared interfaces.
+Prefer the upstream project's documented, supported patterns and extend existing
+mechanisms where they fit. Agents MUST NOT apply symptom-only patches, pin a known-good
+version or revision to sidestep a failure, substitute hand-picked file paths for the
+declared workflow, or skip or weaken CI or deployment tests to get a passing result.
+
+When an issue surfaces, agents MUST pause the current work in its originating thread.
+Use read-only diagnosis to gather the evidence needed for design feedback. Present the
+failure, the known or suspected root cause, the recommended reusable design, and the
+trade-offs and remaining risks of any existing workaround. Wait for the human to decide
+whether to accept the existing workaround or proceed with a root-cause fix or redesign.
+Human acceptance of a workaround leaves all executable checks and protections in force.
+
 ## Technology and Ownership
 
 Talos Linux, Kubernetes, OpenTofu, Terragrunt, Argo CD, Helm/Kustomize-compatible sources,
@@ -101,4 +118,4 @@ Constitution versions follow semantic versioning: MAJOR for incompatible princip
 removals or redefinitions, MINOR for new principles or materially expanded guidance, and
 PATCH for non-semantic clarification.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-11-21
+**Version**: 1.2.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-11-21

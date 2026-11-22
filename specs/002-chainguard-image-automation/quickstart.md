@@ -1,5 +1,8 @@
 # Validation guide: Chainguard image automation
 
+This guide records the historical Git proposal design. The dedicated GitHub
+workflow has been removed. See the [current Image Updater guide](../../docs/argocd-image-updater.md).
+
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
 
 This guide covers staged repository implementation. Contract/render commands
@@ -145,7 +148,6 @@ After implementation, these existing commands inspect declared state:
 ```bash
 kubectl -n argocd get applications
 kubectl -n argocd get imageupdaters
-gh run list --repo Stuhlmuller/homelab --workflow image-automation.yml
 gh api repos/Stuhlmuller/homelab/commits/main --jq '.sha'
 ```
 
