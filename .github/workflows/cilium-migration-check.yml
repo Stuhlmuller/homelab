@@ -1,0 +1,48 @@
+---
+name: Cilium migration trial
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+    paths:
+      - .github/workflows/cilium-migration-check.yml
+      - clusters/homelab/platform/cilium/**
+      - clusters/homelab/platform/multus/multus.yaml
+      - scripts/ci/cilium-migration-check.py
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cilium-migration-check.yml
+      - clusters/homelab/platform/cilium/**
+      - clusters/homelab/platform/multus/multus.yaml
+      - scripts/ci/cilium-migration-check.py
+
+permissions:
+  contents: read
+
+jobs:
+  coexistence:
+    name: Cilium ${{ matrix.trial }}
+    strategy:
+      fail-fast: false
+      matrix:
+        trial: [coexistence, egress]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Load Flannel bridge netfilter support
+        if: matrix.trial == 'coexistence'
+        run: sudo modprobe br_netfilter
+      - name: Verify mixed-overlay pod and Service connectivity
+        if: matrix.trial == 'coexistence'
+        run: nix develop --command python3 -I scripts/ci/cilium-migration-check.py
+      - name: Verify Cilium default deny and explicit allowlist
+        if: matrix.trial == 'egress'
+        run: nix develop --command python3 -I scripts/ci/cilium-migration-check.py --egress
