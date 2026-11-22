@@ -7,10 +7,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: terragrunt-apply-request
-  cancel-in-progress: true
-
 jobs:
   request:
     name: Request Latest Main Apply

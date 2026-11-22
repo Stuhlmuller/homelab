@@ -1,13 +1,21 @@
 name: Mastodon Public DNS
 
-# checkov:skip=CKV_GHA_7: expected_sha only pins reviewed current main; hostname, SSM reads, and DNS target are fixed.
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main and site selects one of two fixed hostnames.
 on:
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact current main commit to publish the fixed Mastodon DNS record
+        description: Exact current main commit to publish the selected DNS record
         required: true
         type: string
+      site:
+        description: Reviewed site to publish
+        required: false
+        type: choice
+        default: mastodon
+        options:
+          - mastodon
+          - openwiki
 
 permissions: {}
 
@@ -61,7 +69,7 @@ jobs:
           nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 
   credential:
-    name: Publish Reviewed Mastodon DNS
+    name: Publish Reviewed Tunnel DNS
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
@@ -130,4 +138,6 @@ jobs:
           echo "Readiness kubeconfig installed; private details withheld."
 
       - name: Publish Fixed DNS Record
-        run: nix develop --command python3 -I scripts/mastodon-public-dns.py
+        env:
+          SITE: ${{ inputs.site || 'mastodon' }}
+        run: nix develop --command python3 -I scripts/mastodon-public-dns.py "$SITE"
