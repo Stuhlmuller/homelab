@@ -22,6 +22,15 @@ spec:
         homelab.stuhlmuller.dev/config-revision: "v2"
     spec:
       automountServiceAccountToken: false
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - zimaboard-2
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
