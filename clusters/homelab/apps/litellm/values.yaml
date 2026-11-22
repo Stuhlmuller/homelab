@@ -93,6 +93,16 @@ proxy_config:
         model: bedrock/converse/us.amazon.nova-lite-v1:0
         aws_region_name: us-west-2
         aws_profile_name: litellm-bedrock
+    - model_name: bedrock/gpt-6.2-sol
+      litellm_params:
+        model: bedrock/converse/us.openai.gpt-6.2-sol
+        aws_region_name: us-west-2
+        aws_profile_name: litellm-bedrock
+    - model_name: bedrock/deepseek-v3.2
+      litellm_params:
+        model: bedrock/converse/deepseek.v3.2
+        aws_region_name: us-west-2
+        aws_profile_name: litellm-bedrock
 db:
   deployStandalone: false
 migrationJob:

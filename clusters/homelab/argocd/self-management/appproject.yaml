@@ -95,6 +95,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: octelium-storage
     - server: https://kubernetes.default.svc
+      namespace: openwiki
+    - server: https://kubernetes.default.svc
       namespace: storage
     - server: https://kubernetes.default.svc
       namespace: tailscale

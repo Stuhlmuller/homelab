@@ -28,7 +28,9 @@ PROVIDER_OVERRIDES = {
     "litellm_credential_name",
 }
 FREE_MODEL = "openrouter/free"
-BEDROCK_MODELS = ("bedrock/claude-sonnet-4-5", "bedrock/nova-lite")
+BEDROCK_MODELS = (
+    "bedrock/claude-sonnet-4-5", "bedrock/nova-lite", "bedrock/gpt-6.2-sol", "bedrock/deepseek-v3.2",
+)
 MAX_BODY_BYTES = 32 * 1024 * 1024  # Bounded text/image JSON admission, including chunked uploads.
 HOST_AUTHORITY = re.compile(rb"(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::[0-9]{1,5})?")
 
