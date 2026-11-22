@@ -19,6 +19,7 @@ SPEC.loader.exec_module(CHECK)
 class CatalogTests(unittest.TestCase):
     def setUp(self):
         self.catalog = json.loads(CHECK.CATALOG.read_text())
+        self.original_counts = (len(self.catalog["apps"]), len(self.catalog["monitors"]))
 
     def rejects(self, mutate, pattern):
         mutate(self.catalog)
@@ -26,7 +27,7 @@ class CatalogTests(unittest.TestCase):
             CHECK.validate(self.catalog)
 
     def test_current_catalog_and_live_addition(self):
-        self.assertEqual(CHECK.validate(self.catalog), (64, 58))
+        self.assertEqual(CHECK.validate(self.catalog), self.original_counts)
         with self.assertRaisesRegex(ValueError, "unclassified"):
             CHECK.validate(self.catalog, live_names=["newly-added-live-app"])
 
@@ -124,11 +125,12 @@ class CatalogTests(unittest.TestCase):
     def test_retired_app_retains_disabled_owned_records(self):
         root, app, _ = self.retirement_fixture()
         self.assertTrue(app["monitorIds"])
-        self.assertEqual(CHECK.validate(self.catalog, root=root), (64, 58))
+        self.assertEqual(CHECK.validate(self.catalog, root=root), self.original_counts)
 
     def test_historical_retirement_has_durable_identity_evidence(self):
         root, _, evidence = self.retirement_fixture("former-service", historical=True)
-        self.assertEqual(CHECK.validate(self.catalog, root=root), (65, 59))
+        apps, monitors = self.original_counts
+        self.assertEqual(CHECK.validate(self.catalog, root=root), (apps + 1, monitors + 1))
         evidence.write_text("An unrelated existing document does not prove retirement.\n")
         with self.assertRaisesRegex(ValueError, "retirement lacks"):
             CHECK.validate(self.catalog, root=root)
@@ -153,7 +155,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_active_app_can_keep_disabled_old_monitor_with_enabled_coverage(self):
         next(m for m in self.catalog["monitors"] if m["key"] == "n8n-http")["enabled"] = False
-        self.assertEqual(CHECK.validate(self.catalog), (64, 58))
+        self.assertEqual(CHECK.validate(self.catalog), self.original_counts)
 
     def test_active_app_cannot_have_only_disabled_monitors(self):
         for monitor in self.catalog["monitors"]:
@@ -168,7 +170,7 @@ class CatalogTests(unittest.TestCase):
         monitor["ownerAppIds"].append("n8n-postgres")
         monitor["enabled"] = True
         next(a for a in self.catalog["apps"] if a["id"] == "n8n-postgres")["monitorIds"].append("n8n-http")
-        self.assertEqual(CHECK.validate(self.catalog, root=root), (64, 58))
+        self.assertEqual(CHECK.validate(self.catalog, root=root), self.original_counts)
         monitor["enabled"] = False
         with self.assertRaisesRegex(ValueError, "shared monitor with active owner"):
             CHECK.validate(self.catalog, root=root)
