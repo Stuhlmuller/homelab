@@ -1,0 +1,45 @@
+{
+  "issue": "https://github.com/Stuhlmuller/homelab/issues/920",
+  "observed_at_utc": "2026-11-22",
+  "source": "cgr.dev/chainguard/wolfi-base",
+  "harbor_mirror": "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/wolfi-base",
+  "index_digest": "sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73",
+  "scanner": {
+    "name": "Trivy",
+    "version": "0.72.0",
+    "official_archive_sha256": "88f208680dc05da2b459e19b4f5aa2b4dc7c2117892ba4aab2ae63baba330016",
+    "database_updated_at_utc": "2026-11-21T18:38:32.889609542Z",
+    "policy": "Scan immutable Harbor children with all package records and no vulnerability exclusions."
+  },
+  "children": [
+    {
+      "platform": "linux/amd64",
+      "manifest_digest": "sha256:73f2cab0f11208427595d4bdd784046bc4116ef7cc52f0c1b48b6b7f820288d5",
+      "package_count": 19,
+      "busybox_version": "1.38.0-r3",
+      "fixable_findings": {
+        "HIGH": 0,
+        "CRITICAL": 0,
+        "MEDIUM": 4
+      },
+      "trivy_json_sha256": "a0fc21f9e72072ff4fb9d0c0963a8cf98ad54b9194713caa9cfde0d1c5d95aba"
+    },
+    {
+      "platform": "linux/arm64",
+      "manifest_digest": "sha256:742cb89fddcad855188f892183ded0b4dcb48d83fdb41ed4463bbab2fe3f7801",
+      "package_count": 19,
+      "busybox_version": "1.38.0-r3",
+      "fixable_findings": {
+        "HIGH": 0,
+        "CRITICAL": 0,
+        "MEDIUM": 4
+      },
+      "trivy_json_sha256": "5dc8bd712b369ff399799ec0820aaaa43033405f6fd6c583db3944e2ac0b1a29"
+    }
+  ],
+  "remaining": [
+    "Protected mirror publication and authenticated pull verification.",
+    "Fresh native Harbor scan and child-bound, package-bearing SBOM receipts.",
+    "GitOps reconciliation and a disposable PVC create, write, delete, and recreate check."
+  ]
+}
