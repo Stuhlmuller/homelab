@@ -18,7 +18,7 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 100
+        runAsUser: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -30,7 +30,14 @@ spec:
               cpu: 5m
               memory: 8Mi
             limits:
+              cpu: 25m
               memory: 32Mi
+          livenessProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "kill -0 1"]
+          readinessProbe:
+            exec:
+              command: ["curl", "-q", "--version"]
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
