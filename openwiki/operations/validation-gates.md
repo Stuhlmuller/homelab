@@ -743,13 +743,11 @@ until replacement acceptance.
 
 `static-checks.sh` runs the full pinned Helm render and route/annotation parity
 gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
-read-only handoff fixtures. The public chart fetch retries four times with
-bounded delays and per-attempt timeouts, and requires the exact OCI digest.
-Only a classified fetch failure can use the local package; template errors fail.
-If Codeberg is unavailable, the test renders the upstream release package
-vendored from its immutable
-GitHub mirror, after matching its reviewed SHA-256. It applies the same resource
-contract and never prints raw Helm output. Route additions, renames and
+read-only handoff fixtures. The static gate and isolated runtime fixture render
+the reviewed upstream release package from the checkout after verifying its
+SHA-256 against the Harbor chart catalog. The protected Helm chart publisher
+verifies the same hash with a separate authenticated Harbor reader pull. The
+static gate checks the resource contract and withholds raw Helm errors. Route additions, renames and
 removals must retain parity with the resolver allowlist. The one-time initial
 inventory mode has been removed after the completed cutover. The fixed
 `image_scope=dns` Harbor
