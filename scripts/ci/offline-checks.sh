@@ -40,6 +40,7 @@ python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
+python3 -I scripts/ci/cilium-egress-audit-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/octelium-ci-credential-test.py
