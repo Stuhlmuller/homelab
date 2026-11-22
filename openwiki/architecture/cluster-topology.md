@@ -387,6 +387,7 @@ public app address records stay until a later guarded retirement.
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
+- [Cilium migration trial](../../clusters/homelab/platform/cilium/README.md)
 
 ## Maintenance Notes
 
