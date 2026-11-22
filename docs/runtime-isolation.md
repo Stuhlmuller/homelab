@@ -169,10 +169,10 @@ existing node safely admits the isolated canary.
 
 ### Private ingress on an existing worker (candidate, 2026-11-01)
 
-Traefik is currently Ready on `zimaboard-1`; its operator-managed
-`traefik-private` Tailscale proxy is a separate Pod on that node. The November 1
-read-only recheck found 6,612 MiB requested against 7,282 MiB allocatable on
-that worker. A sampled 24-hour Pod peak plus current host overhead leaves only
+On November 1, Traefik and its separate operator-managed `traefik-private`
+Tailscale proxy Pod were Ready on `zimaboard-1`. The read-only recheck found
+6,612 MiB requested against 7,282 MiB allocatable on that worker. A sampled
+24-hour Pod peak plus current host overhead leaves only
 about 580 MiB, below the canary's 768 MiB memory limit; the live controller
 also allows one surge Pod. Stage the separate canary on `acer` instead. It has
 13,390 MiB requested against 15,261 MiB allocatable; the same sampled estimate
