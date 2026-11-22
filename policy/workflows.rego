@@ -876,6 +876,20 @@ private_live_output(run) if {
 	private_live_tail(tail)
 }
 
+# Deployment steps propagate their exit status and discard both output streams.
+private_live_output(run) if {
+	trim(run, "\n") in quiet_deploy_runs
+}
+
+quiet_deploy_runs := {
+	`umask 077
+nix develop --command bash scripts/ci/install-kubeconfig.sh >/dev/null 2>&1
+nix develop --command kubectl --request-timeout=15s version >/dev/null 2>&1`,
+	`nix develop --command bash scripts/ci/terragrunt-apply.sh >/dev/null 2>&1`,
+	`umask 077
+nix develop --command bash scripts/ci/octelium-private-kubernetes-apply.sh >/dev/null 2>&1`,
+}
+
 # The AzureAD plan report can contain provider diagnostics, so keep it and the
 # plan log inside the same private directory and expose only the verified helper.
 private_live_output(run) if {
@@ -1111,19 +1125,6 @@ private_live_tail(tail) if {
 	lines[0] == "then"
 	lines[1] == `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 	lines[2] == `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
-	lines[3] == "fi"
-	safe_withheld_echo(lines[4])
-	lines[5] == "exit 1"
-	lines[6] == "fi"
-	safe_withheld_echo(lines[7])
-}
-
-private_live_tail(tail) if {
-	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
-	count(lines) == 8
-	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-	lines[2] == `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
 	lines[5] == "exit 1"
