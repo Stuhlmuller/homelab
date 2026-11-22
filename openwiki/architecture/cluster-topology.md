@@ -329,6 +329,16 @@ and addresses the version-independent condition in
 It cannot revive an unreachable kubelet; the NotReady workers still require an
 operator reboot or physical recovery before GitOps can roll out this hardening.
 
+## Staged Cilium Migration
+
+The [platform-cilium Terragrunt stack](../../IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl)
+declares the Cilium 1.20.5 Argo CD Application in `kube-system`, after
+`platform-dns`. Automatic sync is disabled. The coexistence values
+preserve Flannel, Multus, and kube-proxy and leave Cilium policy enforcement
+off. The standalone node migration manifest is outside the Application's
+sources. Use the [Cilium rollout checkpoints](../../clusters/homelab/platform/cilium/README.md#rollout-checkpoints)
+to qualify live activation and node cutover separately.
+
 ## Canonical Endpoints
 
 - Talos endpoint: `10.1.0.199`
