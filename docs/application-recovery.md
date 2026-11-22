@@ -123,96 +123,20 @@ the existing AWS account; a second account/region is a separate owner decision.
 **Actual retention is indefinite.** The reused bucket module never expires
 completed objects, has versioning/public-access blocking/TLS enforcement,
 `prevent_destroy`, and `force_destroy=false`; its only lifecycle cleanup aborts
-incomplete multipart uploads. The publisher policy explicitly denies deletion
-and lifecycle/versioning changes. `retention-plan` merely suggests complete sets
-older than 30 days while protecting the newest seven. It never issues deletion;
-that list does not invoke pruning. The publisher has no deletion operation;
-its IAM policy denies object deletion and retention changes. A future pruning
-implementation can encode protected sets, verified restores, version inventory
-and retention policy as executable checks rather than a prose approval gate.
-Partial uploads and failed local scratch are also retained. No automatic local
-pruning is implemented: provision capacity, monitor it, and arrange reviewed
-cleanup of disposable verification copies. The hourly runner refuses to start
-below 20 GiB free. Large datasets need a reviewed streaming/multipart design.
-Metrics use unique temporary files and atomic replacement, so an interrupted
-write cannot block later checks. The offline tests exercise the hourly runner
-for both initial applications; the runner remains a candidate until the
-activation gates below are satisfied.
+incomplete multipart uploads. The manual publisher has no deletion operation.
+`retention-plan` lists candidates older than 30 days while protecting the newest
+seven sets. It does not prune. Manage disposable local verification copies
+separately from retained S3 versions.
 
-## Exact proposed resources and authorization gates
+## Manual publication and retrieval
 
-1. First obtain operator confirmation of existing independent copies and a
-   private recovery-secret inventory. An existing suitable destination may avoid
-   a new bucket; change the committed destination and validations in review if
-   selected. No speculative credential discovery is required.
-2. Proposed new bucket: `homelab-application-backups-716182248480-us-east-1`,
-   account `716182248480`, `us-east-1`, AWS-managed `alias/aws/s3`, versioned,
-   no completed-object expiry. Reuse `IaC/terragrunt-catalog/modules/aws-backup-bucket`; the staged
-   catalog unit is `IaC/terragrunt-catalog/units/operator/application-backup-storage`.
-   The unit is staged in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` for the measured OpenClaw
-   Enterprise legacy archive; the protected apply must still pass its scoped
-   plan before the bucket exists. It does not activate the separate application
-   backup host or timer. Review storage, request and KMS costs after measuring
-   dump sizes. For daily compressed input D GiB,
-   retained storage grows roughly D GiB/day plus failed objects; hourly
-   full-byte checks read roughly 24D GiB/day. No dollar quote or budget approval
-   is inferred.
-3. Approve a named existing off-cluster Linux operator host, private local
-   scratch, and read-only access to completed backup directories only. Proposed
-   repository location `/opt/homelab`, user/profile `application-backup`, and
-   mount targets are in `recovery/application-backups/schedule.json`. Actual
-   QNAP per-PVC directory names and mount configuration must be verified and
-   committed through the operator host's configuration before activation; do
-   not mount the full production export to make the example work.
-4. Review `publisher-policy.json` for attachment to one dedicated identity with
-   no broader inherited AWS rights. No identity or attachment is created here.
-   `reader-policy.json` is the separate read-only checker proposal. Restrict
-   initial grants to Octelium/media; the dormant rscstore prefix is now an
-   additional source-declared candidate, not an attached permission. AFFiNE/Multica
-   publication requires a later reviewed prefix grant and capture pipeline.
-   File-backed credentials must be
-   available outside the NAS/cluster and recoverable without Octelium. AWS
-   managed S3 key use is same-account and bucket-key scoped; validate the IAM
-   conditions with real read-only checks and synthetic objects before rollout.
-5. HOME-3 owns enforced real-data containment. Required contract: a disposable
-   VM or proven network namespace with **no external network**, independent
-   scratch, no production PVCs, no AWS/Kubernetes credentials, no host or shared
-   PID namespace, no inherited public log descriptors, no writable termination
-   log, and bounded CPU/memory/disk. Downloader runs outside this boundary;
-   transfer only the verified selected set into it, then disconnect it. An
-   unenforced NetworkPolicy is insufficient. Restore SQL can execute programs;
-   never run real archives on the publisher host. This gate is unresolved here.
-6. HOME-4 owns scraper/alert delivery and the independent dead-man receiver.
-   Candidate `prometheusrule.yaml` consumes the three textfile metrics. Enable
-   an authenticated scrape of the operator checker and validate receiver
-   delivery. Metrics files are mode 0600; use a same-user exporter or approve a
-   narrowly scoped access contract. A missing metric, failed check, source
-   older than 30h, or checker older than 2h alerts after 15m. The independent
-   receiver must detect total host/cluster/NAS loss; in-cluster rules cannot.
+The shared S3 destination is defined in
+[`IaC/application-backup-storage.hcl`](../IaC/application-backup-storage.hcl).
+Use a scoped file-backed AWS profile and read-only access to completed dumps.
+For Octelium resource-store captures, follow the
+[resource-store capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
+and verify that the operator profiles cover the resource-store S3 prefix.
 
-## Rollout after approval of the concrete changes
-
-Keep changes in reviewed commits; no commands in this section were executed
-against live resources. Do not approve a blanket apply based on this runbook.
-
-From `IaC`, generate the stack and plan only the new unit through the repository's
-normal Terragrunt path; review the exact saved plan before authorizing apply.
-
-```sh
-terragrunt stack generate
-terragrunt --working-dir operator/application-backup-storage init -backend=false
-terragrunt --working-dir operator/application-backup-storage validate
-# Initialize the normal backend before the real plan under existing access.
-terragrunt --working-dir operator/application-backup-storage init
-terragrunt --working-dir operator/application-backup-storage plan
-# The operator unit applies through Terragrunt:
-terragrunt --working-dir operator/application-backup-storage apply
-```
-
-Apply the exact reviewed IAM attachment and host mount/user/service declarations
-through their repository-owned configuration path. Those host/identity mappings
-are still required integration work; these templates alone cannot safely install
-a service on an unidentified machine. Leave the timer disabled initially.
 Prepare one newly completed source with private scratch directories pre-created
 mode 0700 and the selected read-only source mounted:
 
@@ -239,15 +163,6 @@ Expected: only a fully verified set has `complete.json`; `check` exits zero and
 reports the capture timestamp, not now. Keep IDs/version metadata in a private
 recovery index outside the NAS. A `retention-plan` command is advisory only.
 
-Before enabling the hourly candidate systemd timer, validate one manual service
-execution on the approved host, disk capacity, file permissions, read-only
-mounts, AWS expiry/re-auth behavior, metrics scrape, and alert delivery. Systemd
-prevents overlapping runs of the same service; do not run the CLI concurrently
-against that workspace. Retries occur on the next hourly tick, with no destructive
-cleanup or unbounded in-process retry. Enable through the reviewed host
-configuration. A host reboot requires durable mounts/scheduling/profile access;
-these are explicit operational gates, not assumed from a unit file.
-
 ## Isolated restore and acceptance record
 
 Run only authored synthetic fixtures first:
@@ -255,7 +170,6 @@ Run only authored synthetic fixtures first:
 ```sh
 python3 -I scripts/ci/application-backup-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
-python3 -I scripts/ci/application-backup-rules-test.py
 # If PostgreSQL binaries are outside PATH:
 python3 -I scripts/ci/application-backup-restore-test.py --pg-bin /absolute/postgres/bin
 ```
@@ -266,6 +180,13 @@ retrieval logic with mocked S3, then restores records and checks a paired upload
 against its database hash. It takes no production input, mounts or credentials.
 The synthetic test is not a containment launcher for real archives. It validates
 the data path, not an Octelium server or Multica application startup.
+
+Use a disposable VM or proven network namespace for real archives. Restore SQL
+can execute programs. Give the isolated restore private scratch and bounded
+CPU, memory, and disk. Exclude external network access, production PVCs, AWS
+and Kubernetes credentials, host or shared PID namespaces, public log
+descriptors, and writable termination logs. Run the downloader outside that
+boundary and transfer only the verified selected set.
 
 After HOME-3 containment proof and explicit real-data approval, retrieve a
 **specific** independently stored ID on the downloader, verify all versions and
@@ -293,32 +214,6 @@ roles from recovered private material before enabling clients. Test AWS/SSM,
 Talos, DNS and identity access with the cluster/NAS unavailable. The publisher
 checks its committed S3 destination and uses KMS encryption for production
 archives; private credential material stays out of public logs.
-
-## Rollback
-
-Disable future timer executions via the approved host configuration and revert
-only the new scrape/rule references if needed. An active service may finish up
-to its 50-minute deadline. Keep local partials, completed S3 versions, the new
-bucket and old NFS jobs/claims. Do not remove a generated IaC unit from state or
-attempt bucket destruction. Restore the prior scheduler/config commit only;
-publication does not alter production DBs, PVCs or applications. Any eventual
-production cutover has a separate fenced rollback plan; this PR authorizes none.
-
-## Evidence and remaining work
-
-Offline fault injection covers incomplete source/upload/marker, lost PUT
-response, corrupted download, wrong version, checksum/path rejection, stale and
-future capture, all-six-media requirements, paired fence attestation, failure
-metrics and non-destructive retention. The synthetic DB/blob round trip passed
-locally on PostgreSQL 15.19 (test tooling only); production PostgreSQL 14 and
-application startup remain untested. Existing etcd publication tests still pass.
-Five freshness alert scenarios passed with Prometheus 2.42.0 test tooling
-(absent, healthy, failed, stale capture and stopped checker). JSON/YAML/HCL
-syntax checks passed. Full Nix checks, Terragrunt/OpenTofu validation/plan,
-real AWS checks and Kubernetes render/live checks are unavailable in this runtime.
-Run those gates before approving activation. Source checks cannot confirm live
-operator backups or recoverability. Keep HOME-2 in review until the operational
-acceptance record exists; merging a PR does not close the finding.
 
 ## AdGuard configuration reconstruction
 
