@@ -265,6 +265,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/proxy-dockerhub-pull-password" = {
+      description = "Read-only Harbor robot credential for the private Docker Hub proxy cache."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/nofx/harbor-pull-password" = {
       description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential."
       generated = {

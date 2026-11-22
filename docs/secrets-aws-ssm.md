@@ -819,6 +819,11 @@ the cluster remains stopped. Retire that key again before cluster writes resume.
 
 ## Harbor private registry
 
+`/homelab/harbor/proxy-dockerhub-pull-password` declares a dedicated generated
+password for the Docker Hub proxy cache's pull-only robot. Apply the shared SSM
+plan before adding its ExternalSecret and Harbor project-scoped robot. The
+parameter is independent of the mirror and private-image credentials.
+
 The generated `/homelab/harbor/` contract owns administrator, encryption,
 internal-service, PostgreSQL and project-robot passwords. External Secrets
 materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
