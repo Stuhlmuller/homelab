@@ -41,6 +41,9 @@ def check(objects):
     containers = pod["containers"]
     assert len(containers) == 1 and containers[0]["name"] == "litellm"
     assert containers[0]["resources"] == {"requests": {"memory": "1Gi"}}
+    bedrock = next(volume for volume in pod["volumes"] if volume["name"] == "bedrock")
+    assert bedrock["secret"] == {"secretName": "litellm-bedrock", "optional": True, "defaultMode": 0o400}
+    assert {"name": "bedrock", "mountPath": "/root/.aws", "readOnly": True} in containers[0]["volumeMounts"]
     security = containers[0]["securityContext"]
     assert security.get("privileged") is not True
     assert security["allowPrivilegeEscalation"] is False

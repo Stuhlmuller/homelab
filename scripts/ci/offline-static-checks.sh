@@ -1124,10 +1124,10 @@ done <<'EOF'
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
-.github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
+.github/workflows/octelium-private-kubernetes-apply.yml 62ee2b99bad348536702022713a113ab07830a4515431623a35cd6869cf88b91
 .github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
-.github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
+.github/workflows/terragrunt-apply-request.yml c0b4c9818976dcff3ee89c05463946c64fbdf3bcdadfbd1597ab475fd90c4c9c
+.github/workflows/terragrunt-apply.yml bedb7863b410960b173ac9c862077cb460b58c1a44701bbeb8ebc2e8b80c5083
 .github/workflows/terragrunt-plan.yml ea06666d43dc3e734f79c4897959ade291279f363b115d51d1e3a6a46dc985fd
 .github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
 EOF
@@ -1294,7 +1294,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
     } and
     .jobs.request.environment == null and
     .jobs.request.env == null and
-    .jobs.request.permissions == {"actions": "read"} and
+    .jobs.request.permissions == null and
     (.jobs.request | tostring | contains("secrets") | not) and
     (.jobs.request.permissions["id-token"] == null) and
     (.jobs.request.steps | length) == 1 and
@@ -1302,8 +1302,6 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
     .jobs.request.steps[0].env.REQUEST_SHA == "${{ github.sha }}" and
     (.jobs.request.steps[0].run |
       contains("gh workflow run terragrunt-apply.yml --repo ${GH_REPO} --ref main -f expected_sha=${REQUEST_SHA}") and
-      contains("terragrunt-apply.yml/runs?per_page=100") and
-      contains("select(.status != \"completed\")") and
       contains("${GITHUB_STEP_SUMMARY}"))
   ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
@@ -1335,14 +1333,14 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
     ($live_apply | length) == 1 and
+    ([.jobs["terragrunt-apply"].steps[] | select(.name == "Configure Kubernetes Credentials").env] ==
+      [{"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}]) and
     $live_apply[0].env == {
       "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
-      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
-      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}"
     } and
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
@@ -1459,7 +1457,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     } and
     ($catalog_steps[0].run |
       contains("bash scripts/ci/octelium-private-kubernetes-apply.sh") and
-      contains("details withheld")) and
+      endswith(" >/dev/null 2>&1\n")) and
     ([.jobs.reconcile.steps[] |
       select(.name != "Reconcile Private Kubernetes Catalog") |
       .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and

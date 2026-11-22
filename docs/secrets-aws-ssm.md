@@ -77,7 +77,7 @@ local Fleet recovery-administrator password. It signs in
 account is SSO-only. Separate ExternalSecrets keep the root and administrator
 credentials out of Fleet server Pods. Preserve the encryption key with MySQL
 backups. Platform APNs/WSTEP identities are additional enrollment prerequisites;
-see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+see the [Fleet secret contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
 `/homelab/fleet/google-oauth` is a separate operator-only SecureString for the
 dedicated Google Workspace XCreds Web client JSON. It is excluded from External
@@ -108,7 +108,7 @@ Same-repository PR plans use `homelab-plan`; production is restricted to `main`.
 Cordium's separate tag has no Kubernetes RBAC. No private kubeconfig or Tailscale
 administrator credential belongs in GitHub. Protect auth keys as credentials,
 rotate every 60 days before their 90-day expiry, and verify actual CI enrollment.
-The [module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+The [module runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md)
 owns the provider, scope and rotation contract.
 
 ## Mastodon secret contract
@@ -135,7 +135,7 @@ withholds CLI errors and does not validate SMTP authentication. Never pass the
 password as a workflow input or argument. After transfer, remove the temporary
 GitHub secret and advance the committed runtime ExternalSecret/Deployment
 revisions. Verify actual email receipt before accepting the new credential.
-See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
+See the [Mastodon runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md) for provider
 settings, activation, and rollback. This preparation is not live-secret proof.
 
 ## OpenClaw Enterprise credential contract
@@ -268,7 +268,7 @@ deleted credential. Enter a complete replacement key in the pinned UI edit
 form, not its prefilled mask. Verify one gateway generation and the attributed
 Langfuse trace. Restore the database for rollback; never revert to file-backed
 inference, which would bypass UI changes. See the
-[gateway recovery contract](../clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
+[gateway recovery contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
 
 `/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
 provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
@@ -277,6 +277,11 @@ keys at `/homelab/openclaw/litellm-app-token` and
 to the in-cluster gateway; none grants direct provider access. Do not read,
 copy or place any of these values in Git, workflow exports or application
 configuration.
+
+The operator `litellm-bedrock` Terragrunt unit generates
+`/homelab/litellm/bedrock-credentials` as a SecureString. External Secrets
+projects it to `ai/litellm-bedrock`. Only LiteLLM mounts the file, and its AWS
+identity can invoke the two declared US Bedrock profiles.
 
 LiteLLM's database-key migration adds generated
 `/homelab/litellm/postgres-{admin,app}-password` parameters.
@@ -529,7 +534,7 @@ The pinned native logout can hide server logout failure; allow the one-hour
 session to expire or verify its revocation before starting the manager. Stop
 manager authentication before rotating the native credential because the User
 allows one session. Controller deployment and mounted-file refresh acceptance
-remain pending. See [runner bootstrap](../builds/cordium-runner/README.md).
+remain pending. See [runner bootstrap](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md).
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/homelab/us-west-2/apps/octelium/azuread`, which writes generated
@@ -686,7 +691,7 @@ is now declared unsuspended in [full dry-run mode](../clusters/homelab/apps/reno
 the legacy Action remains the only writer until cutover. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
-See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+See the [Renovate runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md).
 
 The temporary acceptance observer uses a separate, read-only GitHub App. Its
 two Standard SecureString placeholders must first be created by a reviewed
@@ -856,7 +861,7 @@ The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
 vulnerability exporter references it only for kubelet pulls; the credential is
 not mounted in app containers. The held
-[private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+[private-core candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/private-core-candidate/README.md)
 uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
 rotation. Native-image activation still waits for reviewed publication, scans,
 recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
@@ -896,5 +901,5 @@ Changes to credential/configuration revisions need a declared rollout marker.
 The [AdGuard recovery helper](../scripts/adguard-recovery.py) reads the exact
 protected parameter privately after checking the homelab AWS account and records
 only ARN/version metadata. Administrator recovery requires independent access to
-SSM and encrypted IaC state. The [app runbook](../clusters/homelab/apps/adguard/README.md)
+SSM and encrypted IaC state. The [app runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md)
 describes private password files, isolated recovery and retention limits.

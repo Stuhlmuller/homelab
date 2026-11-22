@@ -24,7 +24,7 @@ Existing [issue #815](https://github.com/Stuhlmuller/homelab/issues/815) tracks
 applying reviewed plan artifacts; [issue #889](https://github.com/Stuhlmuller/homelab/issues/889)
 tracks runtime dependency health. Their historical details need current source
 verification before repair; open issues alone do not prove every finding remains.
-The [Enterprise candidate](../clusters/homelab/apps/openclaw-enterprise/README.md)
+The [Enterprise candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise/README.md)
 has explicit activation/recovery gates. Preserve those gates and deferred work.
 
 ## Research evidence

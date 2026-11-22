@@ -19,15 +19,34 @@ verified:
 # AI observability
 
 Langfuse is the operator UI for prompts, outputs, errors and token usage.
-LiteLLM is the sole in-cluster inference gateway: it accepts only
-`openrouter/free`, authenticates named callers with dedicated keys and emits
-trusted application attribution to Langfuse. The provider credential is mounted
-only by LiteLLM from `/homelab/litellm/openai-api-key`; it is an OpenRouter
-credential despite the legacy SSM parameter name.
+LiteLLM is the in-cluster inference gateway. It authenticates named callers
+with dedicated keys scoped to `openrouter/free` and emits trusted application
+attribution to Langfuse. Gateway administrators can also use the US Bedrock
+profiles behind `bedrock/claude-sonnet-4-5` and `bedrock/nova-lite`. LiteLLM
+signs those requests with a mounted AWS credentials profile. Its OpenRouter
+credential originates from the legacy `/homelab/litellm/openai-api-key`.
 
 The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
-by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/README.md).
+by callers. See the [gateway contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
+
+## Bedrock chat
+
+| LiteLLM model | Amazon Bedrock US inference profile |
+| --- | --- |
+| `bedrock/claude-sonnet-4-5` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `bedrock/nova-lite` | `us.amazon.nova-lite-v1:0` |
+
+Use `/v1/chat/completions` with an authenticated gateway administrator. Both
+paid routes use Converse in `us-west-2` with processing within the US.
+The gateway enforces the administrator requirement even if a virtual key
+has a broad model allowlist.
+
+The [operator runbook](../../docs/operator-infrastructure.md#litellm-bedrock)
+covers provisioning. Check the `ai/litellm-bedrock` ExternalSecret Ready
+condition before testing the routes. Missing Bedrock credentials leave
+OpenRouter available. After credential rotation and ExternalSecret refresh,
+roll the gateway through GitOps to clear its cached AWS credentials.
 
 ## Gateway capacity and protected rollout check
 
@@ -38,7 +57,7 @@ capacity check requires fresh requested and actual memory evidence for sustainab
 surge capacity; the first replacement fitting does not prove future rollouts.
 The November 2 snapshot was short by at least 241.3 MiB of reservations for
 two reserved gateway Pods. This is not a failure-capacity acceptance receipt.
-See the [capacity preflight and recovery separation](../../clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-and-executable-rollout-gate).
+See the [capacity preflight and recovery separation](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-and-executable-rollout-gate).
 Coordinate PR #1656's separate PostgreSQL/Cordium capacity assumptions. Existing
 worker recovery and #775/#793/#785 remain separate, open gates. Budget the
 full inventory of unsuspended Acer-eligible CronJobs, including unpinned
@@ -63,7 +82,7 @@ so restarts do not undo UI revocations. It uses database authentication, preserv
 inference-only/free-model restrictions and Langfuse attribution. Still prove UI
 listing plus revocation enforcement. Copying rows into the UI while retaining
 file-based authentication is not completion. See the
-[gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+[gateway runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
 
 October 10 security gate: the pinned LiteLLM 1.80.8 is within the affected
 range (`<1.84.0`) of
@@ -155,7 +174,7 @@ tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
 The authorized capture stage stops web/worker/Valkey through GitOps and mounts
 the queue read-only in a credential-free inspector. The helper verifies all
 writers exited before capture to private off-NAS storage. No live replacement
-path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+path is activated; see the [recovery runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 [PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
 `fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
@@ -182,7 +201,7 @@ removed the inspector first, with writers still stopped. Argo observed merged
 its PVC. This separate reviewed revision restores writers. Runtime loading
 and fresh ingestion remain unverified until live checks pass.
 LiteLLM's later native-key rollout is now recorded in its
-[owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
+[owning runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
 Native-key cutover inspection confirmed all four mounted caller credentials
 already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
@@ -291,7 +310,7 @@ container. The excluded one-time AI and GitHub Trigger conversion overlays
 have been removed, so GitOps syncs do not edit workflow data. The
 [runtime check](../../scripts/ci/n8n-runtime-check.py) preserves startup and
 LiteLLM authorization coverage. Future conversions must use a fresh workflow
-inventory and the [paired recovery procedure](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence).
+inventory and the [paired recovery procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence).
 The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
