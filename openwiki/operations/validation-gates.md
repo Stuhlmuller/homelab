@@ -929,15 +929,10 @@ working-directory overrides, and shell-prelude environment variables. The
 credentialed legacy operation has an exact eight-variable environment map. These
 are source checks, not evidence that either workflow has run.
 
-The live-plan and protected-apply diagnostic exceptions check a classifier's
-SHA-256 inside the hashed workflow before reading private output. A changed or
-missing helper is not executed; only the fixed withheld error remains. The
-live-plan classifier reports a fixed last-recognized-stage label and the first
-recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
-`policy`, or `unknown`); the apply classifier reports only its fixed phase
-label. These are not verified causes: misleading private text can change a
-label but cannot expose its text. Raw output, plans, and credentials remain
-withheld and deleted.
+The live-plan diagnostic exception checks the classifier's SHA-256 before it
+reads private output. It reports only a fixed stage label and error hint.
+Protected apply reports the command's exit status and discards both output
+streams. Saved plans and credentials remain private.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;

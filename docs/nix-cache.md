@@ -188,8 +188,8 @@ signature or content corruption fails verification.
 
 Static jobs no longer restore the entire Nix store from an Actions cache:
 existing unsigned store objects could bypass binary-cache signature checks.
-Live jobs retain their development-shell dependency cache; live plans and
-cluster checks do not consume cached test receipts.
+The live Terragrunt plan job retains its development-shell dependency cache.
+Live plans and cluster checks do not consume cached test receipts.
 
 ## Key lifecycle and rollback
 
