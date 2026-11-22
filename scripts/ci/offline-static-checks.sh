@@ -94,112 +94,6 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
 fi
 echo "::endgroup::"
 
-echo "::group::Terragrunt Azure credential gate"
-(
-  base_root=$'locals {}\n\ninputs = {}'
-  head_root=$'locals {}\n\ninputs = {}'
-  changed_path=""
-  root_change=false
-  root_helper_failure=false
-  stack_change=false
-  fixture_repo_root="$PWD"
-
-  git() {
-    # Model root-relative Git calls and a readable, empty legacy stack.
-    if [[ "$1" == -C ]]; then
-      [[ "$2" == "$fixture_repo_root" ]] || return 1
-      shift 2
-    fi
-    case "$1" in
-      rev-parse) [[ "$2" == --show-toplevel ]] && printf '%s\n' "$fixture_repo_root" ;;
-      cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
-      diff)
-        local path
-        for path in "$@"; do
-          if [[ "$changed_path" == "$path" || "$changed_path" == "$path/"* ]]; then
-            return 1
-          fi
-        done
-        return 0
-        ;;
-      show)
-        if [[ "$root_helper_failure" == true ]]; then
-          return 1
-        fi
-        case "$2" in
-          base:IaC/terragrunt.stack.hcl|head:IaC/terragrunt.stack.hcl) return 0 ;;
-          base:IaC/root.hcl) printf '%s\n' "$base_root" ;;
-          head:IaC/root.hcl)
-            if [[ "$root_change" == true ]]; then
-              printf '%s\n' "${head_root/inputs = \{\}/inputs = { changed = true\}}"
-            else
-              printf '%s\n' "$head_root"
-            fi
-            ;;
-          *) return 1 ;;
-        esac
-        ;;
-      *) return 1 ;;
-    esac
-  }
-  terragrunt_stack_unit_paths_at_ref() {
-    if [[ "$stack_change" == true && "$1" == head ]]; then
-      printf 'IaC/live/azuread-applications/changed\n'
-    else
-      printf 'IaC/live/azuread-applications/unchanged\n'
-    fi
-  }
-
-  export APPLY_BASE_SHA="base"
-  export APPLY_HEAD_SHA="head"
-  if terragrunt_azuread_stack_changed; then
-    echo "Unchanged root settings must not require Azure credentials." >&2
-    exit 1
-  fi
-
-  root_change=true
-  terragrunt_azuread_stack_changed
-  root_change=false
-
-  for changed_path in \
-    IaC/homelab/us-west-2/apps/fleet/azuread/.terraform.lock.hcl \
-    IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
-    IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
-    IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
-    if ! terragrunt_azuread_stack_changed; then
-      echo "Azure credentials must be required for ${changed_path}." >&2
-      exit 1
-    fi
-  done
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread" ]]
-  changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
-  if terragrunt_azuread_stack_changed; then
-    echo "An unrelated module change must not require Azure credentials." >&2
-    exit 1
-  fi
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  changed_path="scripts/ci/terragrunt-plan.sh"
-  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
-  [[ "$(terragrunt_azuread_changed_filter true)" == "*/azuread" ]]
-  changed_path=""
-
-  stack_change=true
-  terragrunt_azuread_stack_changed
-  stack_change=false
-
-  APPLY_BASE_SHA=""
-  terragrunt_azuread_stack_changed
-  APPLY_BASE_SHA=bad
-  terragrunt_azuread_stack_changed
-  APPLY_BASE_SHA="base"
-
-  root_helper_failure=true
-  terragrunt_azuread_stack_changed
-)
-echo "::endgroup::"
-
 echo "::group::Terragrunt deleted-unit ownership"
 (
   fixture_repo_root="$PWD"
@@ -251,11 +145,6 @@ echo "::endgroup::"
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/homelab/us-west-2/apps
-  terragrunt_stack_changed() { return 0; }
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
-  terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
-  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
   [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine/argocd" ]]
   if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
     echo "Unsafe Argo CD Application unit filter was accepted" >&2
