@@ -10,21 +10,38 @@ from pathlib import Path
 KINDS = {"CiliumNetworkPolicy", "CiliumClusterwideNetworkPolicy"}
 PEERS = {"toEndpoints", "toEntities", "toCIDR", "toCIDRSet", "toFQDNs",
          "toServices", "toNodes", "toGroups"}
-BROAD_ENTITIES = {"all", "world", "world-ipv4", "world-ipv6", "cluster", "unmanaged"}
+BROAD_ENTITIES = {"all", "world", "world-ipv4", "world-ipv6", "cluster", "cluster-mesh",
+                  "unmanaged"}
+BROAD_RESERVED_LABELS = {
+    "reserved:world", "reserved:world-ipv4", "reserved:world-ipv6", "reserved:unmanaged",
+    "reserved:cluster", "reserved:cluster-mesh", "reserved:aggregate-world",
+    "reserved:aggregate-cluster", "reserved:aggregate-cluster-mesh",
+}
+POSITIVE_SELECTOR_OPERATORS = {"In", "Exists"}
 
 
 def findings(rule):
+    if rule == {}:
+        return  # Cilium's empty egress rule enables default deny without a grant.
     if not any(rule.get(peer) for peer in PEERS):
         yield "rule has no explicit destination"
     for entity in sorted(set(rule.get("toEntities", [])) & BROAD_ENTITIES):
         yield f"broad destination entity {entity}"
     for field in ("toEndpoints", "toNodes"):
         for selector in rule.get(field, []):
-            if not selector.get("matchLabels") and not any(
-                expression.get("operator") in {"In", "Exists"}
-                for expression in selector.get("matchExpressions", [])
-            ):
+            labels = selector.get("matchLabels") or {}
+            positive_expressions = [expression for expression in selector.get("matchExpressions", [])
+                                    if expression.get("operator") in POSITIVE_SELECTOR_OPERATORS]
+            if not labels and not positive_expressions:
                 yield f"{field} contains an empty or negative-only selector"
+            if field == "toEndpoints":
+                reserved = {label for label, value in labels.items() if value == ""}
+                reserved.update(
+                    expression.get("key") for expression in positive_expressions
+                    if expression["operator"] == "Exists" or "" in (expression.get("values") or [])
+                )
+                for label in sorted(reserved & BROAD_RESERVED_LABELS):
+                    yield f"{field} selects broad reserved identity {label}"
     for prefix in [*rule.get("toCIDR", []),
                    *(entry["cidr"] for entry in rule.get("toCIDRSet", []) if entry.get("cidr"))]:
         if ipaddress.ip_network(prefix, strict=False).prefixlen == 0:
