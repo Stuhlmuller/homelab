@@ -504,8 +504,7 @@ class HarborPublicationGates(unittest.TestCase):
                     reference = args[-1].removeprefix("docker://")
                     path = root / "published-images.json"
                     published = json.loads(path.read_text()) if path.exists() else {}
-                    selected = args[-2].removeprefix("docker://") if reference.endswith(":issue-1846-canary") else reference
-                    published[reference] = FIXTURE["manifests"][selected]
+                    published[reference] = FIXTURE["manifests"][reference]
                     path.write_text(json.dumps(published))
                 elif args[0] != "copy":
                     raise SystemExit(95)
@@ -557,7 +556,8 @@ class HarborPublicationGates(unittest.TestCase):
                         reference = target
                         path = root / "published-images.json"
                         published = json.loads(path.read_text()) if path.exists() else {}
-                        published[reference] = FIXTURE["manifests"][reference]
+                        selected = source if reference.endswith(":issue-1846-canary") else reference
+                        published[reference] = FIXTURE["manifests"][selected]
                         path.write_text(json.dumps(published))
                 elif args[:2] == ["image", "digest"]:
                     assert json.loads(config.read_text()) == {"username": "robot$mirror+pull"}
@@ -652,6 +652,7 @@ class HarborPublicationGates(unittest.TestCase):
             {"images": [valid, valid]},
             {"images": [valid], "destination": "other"},
             {"images": [{**valid, "destination": "other"}]},
+            {"images": [{"source": "docker.io/library/busybox:issue-1846-canary@sha256:" + "a" * 64}]},
             {"images": [{"source": "docker.io/library/busybox:latest"}]},
             {"images": [{"source": "localhost/internal@sha256:" + "a" * 64}]},
             {"images": [{"source": "codeberg.org.evil/k8s-gateway/k8s_gateway:1.9.0@sha256:" + "a" * 64}]},
@@ -709,18 +710,60 @@ class HarborPublicationGates(unittest.TestCase):
                     self.calls.write_text("")
                     published.write_text(prior_publication)
                 helper.write_text(code)
+                if not previous:
+                    checked_main = self.root / "checked-main"
+                    self.executable("git", f"""if [ "$1" = ls-remote ]; then
+  if [ -e {str(checked_main)!r} ]; then printf '%s\n' {'0' * 40}; exit 0; fi
+  touch {str(checked_main)!r}
+fi
+printf '%s\n' {SHA}
+""")
+                    result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                    self.assertNotEqual(result.returncode, 0, "main advanced before the alias write")
+                    self.assertIn("phase=alias-copy", self.public_status)
+                    self.assertFalse(published.exists())
+                    self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+                    self.calls.write_text("")
+                    self.executable("git", f"printf '%s\n' {SHA}\n")
                 result = self.run_helper("mirror-image-updater-canary", tailnet=True)
                 self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
                 copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-                self.assertEqual(len(copies), 2)
+                self.assertEqual(len(copies), 1)
                 self.assertTrue(copies[0][-1].startswith("dir:"))
-                self.assertEqual(copies[1][-1], f"docker://{destination}:issue-1846-canary")
-                for args in copies:
-                    self.assertEqual(args[-2], f"docker://{destination}@{digest}")
+                self.assertEqual(copies[0][-2], f"docker://{destination}@{digest}")
                 self.assert_mirror_copy_credentials(copies)
+                self.assertEqual([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]],
+                                 [["image", "copy", f"{destination}@{digest}", f"{destination}:issue-1846-canary"]])
+                calls = map(json.loads, self.calls.read_text().splitlines())
+                copy_order = [call["command"] for call in calls if
+                              (call["command"] == "skopeo" and call["args"][0] == "copy") or
+                              (call["command"] == "regctl" and call["args"][:2] == ["image", "copy"])]
+                self.assertEqual(copy_order, ["skopeo", "regctl"])
+
                 self.assertIn(f"{destination}:issue-1846-canary@{digest}\n",
                               (self.root / "summary").read_text())
-                previous = (digest, published.read_text())
+
+                publication = published.read_text()
+                self.calls.write_text("")
+                result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+                self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+                self.assertFalse(any(args[0] == "copy" and args[-1].startswith("docker://")
+                                     for args in self.calls_for("skopeo")))
+                self.assertEqual(published.read_text(), publication)
+                previous = (digest, publication)
+
+        self.tailnet_mocks(resume=True, canary="A")
+        self.calls.write_text("")
+        published.write_text(publication)
+        self.canary_mirror_manifest = {"images": [{"source": f"docker.io/library/busybox@{prior_digest}"}]}
+        result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+        self.assertNotEqual(result.returncode, 0, "A must not overwrite B")
+        self.assertIn("phase=alias-lookup", self.public_status)
+        self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+        self.assertFalse(any(args[0] == "copy" and args[-1].startswith("docker://")
+                             for args in self.calls_for("skopeo")))
+        self.assertEqual(published.read_text(), publication)
 
     def test_dns_scope_declares_one_fixed_reviewed_image(self):
         source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
@@ -2350,14 +2393,18 @@ class MirrorProjectQueue(unittest.TestCase):
                 "yq", "-o=json", ".", str(ROOT / ".github/workflows" / name),
             ], text=True))
         mirror = workflow("harbor-mirror.yml")["jobs"]["mirror"]
+        canary_group = "harbor-mirror-image-updater-canary-production"
+        ordinary_group = "harbor-mirror-production"
         self.assertEqual(mirror["concurrency"], {
-            "group": "harbor-mirror-production", "cancel-in-progress": False,
+            "group": "${{ inputs.image_scope == 'image-updater-canary' && "
+                     f"'{canary_group}' || '{ordinary_group}' }}}}",
+            "cancel-in-progress": False,
         })
         for name in ("nofx-images.yml", "harbor-core-images.yml"):
             jobs = workflow(name)["jobs"]
             private = [job["concurrency"]["group"] for job in jobs.values() if "concurrency" in job]
             self.assertIn("harbor-packages-production", private)
-            self.assertNotIn(mirror["concurrency"]["group"], private)
+            self.assertTrue({canary_group, ordinary_group}.isdisjoint(private))
 
 
 class TailnetMirrorWorkflow(unittest.TestCase):

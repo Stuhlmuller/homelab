@@ -128,7 +128,8 @@ if [[ "$mode" == mirror ]]; then
       (unique | length) == length) and
     all(.images[];
       keys == ["source"] and
-      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|codeberg[.]org|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+      (.source | type == "string" and
+        (startswith("docker.io/library/busybox:issue-1846-canary@") | not) and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|codeberg[.]org|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
   if [[ "$manifest" == scripts/config/harbor-dns-images.json ]]; then
     jq --exit-status '.images == [{"source":"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}]' "$manifest" >/dev/null
@@ -417,7 +418,8 @@ if [[ "$mode" == mirror ]]; then
         observed_digest="sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)"
         if "$canary_publication"; then
           mirror_category="digest-mismatch"
-          [[ "$observed_digest" == "$canary_digest_a" || "$observed_digest" == "$canary_digest_b" ]]
+          [[ "$observed_digest" == "$source_digest" ||
+             ( "$source_digest" == "$canary_digest_b" && "$observed_digest" == "$canary_digest_a" ) ]]
           mirror_category="command-failed"
         fi
         if [[ "$observed_digest" == "$source_digest" ]]; then
@@ -446,7 +448,7 @@ if [[ "$mode" == mirror ]]; then
       if "$canary_publication"; then
         [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
       fi
-      if "$oci_index_copy"; then
+      if "$canary_publication" || "$oci_index_copy"; then
         REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
           regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
           2>"$scratch/mirror-error"

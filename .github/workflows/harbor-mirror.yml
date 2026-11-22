@@ -71,8 +71,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
-      # Mirror runs share mutable aliases only within the public mirror project.
-      group: harbor-mirror-production
+      # The dedicated canary tag never shares a writer with normal mirrors.
+      group: ${{ inputs.image_scope == 'image-updater-canary' && 'harbor-mirror-image-updater-canary-production' || 'harbor-mirror-production' }}
       cancel-in-progress: false
     environment:
       name: homelab-production
@@ -226,7 +226,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b6e1190fad504f97f6fc9ace146d41eeb4c27e6129bd59d1f5a4664bc13e71b7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'72f431c67abab37e7c47c4e949d65bd602b3e3b768addeea143584e2e5034ae3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

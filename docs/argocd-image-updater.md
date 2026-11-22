@@ -121,8 +121,9 @@ workflow retags an already-mirrored Docker Hub BusyBox artifact as
 The dedicated [inventory](../scripts/config/harbor-image-updater-canary.json)
 selects artifact A initially. Before each alias write, the publisher completes
 an authenticated pull, verifies the digest, and rechecks current `main`.
-Artifact B requires an established A or an idempotent B retry. An unexpected
-existing digest fails closed.
+A creates an absent alias or verifies an existing A. B advances A or verifies
+an existing B. The publisher rejects all other transitions and uses a separate
+concurrency group for canary runs.
 
 After a protected merge, publish A by dispatching the selected scope on exact
 `main`. Require its successful alias and digest receipt before enrolling the
