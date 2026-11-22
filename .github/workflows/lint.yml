@@ -2,6 +2,8 @@
 name: Lint
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
 permissions: {}
 concurrency:
   group: super-linter-${{ github.event.pull_request.number || github.ref }}
