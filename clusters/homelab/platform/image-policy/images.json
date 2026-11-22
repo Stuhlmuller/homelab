@@ -379,6 +379,21 @@
       "source": "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9"
     },
     {
+      "source": "ghcr.io/kagent-dev/kagent/app:0.10.6@sha256:d8e8d6a53a35884c4889acf64483fd151efb17be79ace3ce5463a72379e4b5ef"
+    },
+    {
+      "source": "ghcr.io/kagent-dev/kagent/controller:0.10.6@sha256:7f99ef6e0c75dd9cebc322ad62792c712f952c7f89efea6b6d6be02a2edd4b92"
+    },
+    {
+      "source": "ghcr.io/kagent-dev/kagent/golang-adk:0.10.6@sha256:8afb90938d01ab0b2d222d77a2e94136237286f7a0eb06acace6d2fe8626ad29"
+    },
+    {
+      "source": "ghcr.io/kagent-dev/kagent/skills-init:0.10.6@sha256:aa687d91e2e55095307524674f6ba093ade04ee5b335700fd106642a93e786b9"
+    },
+    {
+      "source": "ghcr.io/kagent-dev/kagent/ui:0.10.6@sha256:a7ad7d95021a04a44bef9c76d273002f0359f8e30a5ff97bd2be8e8d76e8df69"
+    },
+    {
       "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:fb0437897eaa7f96cf6ac42f795f8dcc208d34ec969eac5d366454e767304eb9"
     },
     {
@@ -404,6 +419,9 @@
     },
     {
       "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n:3.3.0@sha256:e06707c78ef5adb302b47909f8fee5caf8d389a7e5f3f0e03165214f6178565e"
     },
     {
       "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
@@ -590,6 +608,15 @@
     },
     {
       "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
+    },
+    {
+      "source": "quay.io/cilium/cilium-envoy:v1.39.6-1794557904-dee711ff0e84b106edd0abcdd71961af1b870359@sha256:bdef13043ebaa7b9dcd8e3a86be41080bb5369e017cd759a12daf89e2b8fafe7"
+    },
+    {
+      "source": "quay.io/cilium/cilium:v1.20.5@sha256:aa72499f075ad729947ea91b026218aceba24f1a8e4534bf36b8368c7c561526"
+    },
+    {
+      "source": "quay.io/cilium/operator-generic:v1.20.5@sha256:c6e7de6665aa9701db86c4fe46828a75a0d167afe084a9ffb5bce34b2c4fa8c4"
     },
     {
       "source": "quay.io/jetstack/cert-manager-acmesolver@sha256:d8d948a9fa0fb9eeb9fd2432dee4945cc202c840ee25a733f0b238fd89fe5cbb"
