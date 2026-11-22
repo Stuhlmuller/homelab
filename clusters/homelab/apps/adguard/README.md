@@ -51,16 +51,10 @@ The remote-reference conversion, decoding and metadata defaults are explicit so
 External Secrets admission does not leave the Application OutOfSync.
 
 The retained 1Gi `nfs-default` claim stores replaceable filter/work cache. Recreate
-keeps one writer; Argo prune/delete protection preserves the claim.
-Failed filter
+keeps one writer; Argo prune/delete protection preserves the claim. Failed filter
 refreshes must preserve usable cache. Recovery and DNS rollback acceptance are
 required before switching client DNS; never delete the claim or credential to
 undo a DNS change.
-
-AdGuard runs on a larger node to leave room for the Cilium agent and Envoy
-on `zimaboard-2`. Moving the single replica briefly interrupts its DNS
-listener. Verify the NFS mount, filter readiness, and DNS queries through
-the tailnet listener after rescheduling.
 
 Local synthetic checks (no production credentials or DNS policy changes):
 
