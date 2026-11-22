@@ -181,6 +181,25 @@ def qualify(kubectl, chart, flannel):
     probe(kubectl, "migrated", "legacy.default.svc.cluster.local", 80)
     print("Passed mixed-overlay pod traffic, DNS-backed Service access and Multus attachments", flush=True)
 
+    run(*kubectl, "delete", "pod/migrated", "--wait=true", "--timeout=90s")
+    run(*kubectl, "label", "node", WORKER, SELECTOR + "-")
+    primary_config = "/etc/cni/net.d/05-cilium.conflist"
+    payload = json.loads(run("docker", "exec", WORKER, "cat", primary_config))
+    if not any(plugin.get("type") == "cilium-cni" for plugin in payload.get("plugins", [])):
+        raise AssertionError("Rollback refused to move an unexpected CNI file")
+    run("docker", "exec", WORKER, "mv", primary_config, "/var/tmp/05-cilium.cutover-backup")
+    run("docker", "restart", WORKER, timeout=120)
+    run(*kubectl, "wait", "--for=condition=Ready", "node/" + WORKER, "--timeout=180s")
+    run(*kubectl, "-n", "kube-system", "rollout", "status", "ds/kube-multus-ds", "--timeout=180s")
+    run(*kubectl, "-n", "kube-flannel", "rollout", "status", "ds/kube-flannel-ds", "--timeout=180s")
+    restored = endpoint(kubectl, "restored", WORKER, attachment=True)
+    if restored not in ipaddress.ip_network("10.244.0.0/16"):
+        raise AssertionError(f"Restored Pod did not receive a Flannel address: {restored}")
+    probe(kubectl, "legacy", restored, 8080)
+    probe(kubectl, "restored", flannel_ip, 8080)
+    probe(kubectl, "restored", "legacy.default.svc.cluster.local", 80)
+    print("Passed rollback to Flannel with Multus and restored connectivity", flush=True)
+
 
 def qualify_egress(kubectl, chart):
     install_cilium(kubectl, chart, "--set", "cni.customConf=false",
