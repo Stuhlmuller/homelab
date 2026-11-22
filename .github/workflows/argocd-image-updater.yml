@@ -2,6 +2,8 @@ name: Argo CD runtime image ownership
 
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'IaC/**'
       - 'clusters/homelab/apps/argocd-image-updater/**'
