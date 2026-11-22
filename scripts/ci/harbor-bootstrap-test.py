@@ -464,6 +464,8 @@ class BootstrapTest(unittest.TestCase):
         original = copy.deepcopy(self.api.robots)
         self.assertEqual(len(original), 5)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
+        self.assertEqual(bootstrap.PROXY_CACHES["proxy-quay"],
+                         ("https://quay.io", "docker-registry"))
         for name, (url, provider) in bootstrap.PROXY_CACHES.items():
             registry = self.api.registries[name]
             self.assertEqual((registry["url"], registry["type"], registry["insecure"]), (url, provider, False))

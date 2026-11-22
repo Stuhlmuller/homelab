@@ -33,7 +33,7 @@ SETTINGS = {"self_registration": False, "project_creation_restriction": "adminon
 PROXY_CACHES = {
     "proxy-dockerhub": ("https://hub.docker.com", "docker-hub"),
     "proxy-ghcr": ("https://ghcr.io", "github-ghcr"),
-    "proxy-quay": ("https://quay.io", "quay"),
+    "proxy-quay": ("https://quay.io", "docker-registry"),
 }
 PROXY_METADATA = {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"}
 CHAINGUARD_REPLICATION = {
