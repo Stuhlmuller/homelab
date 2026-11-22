@@ -692,9 +692,11 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
-  is the only Deluge VPN parameter readable by External Secrets; the six
-  retired split-profile parameters remain non-readable state tombstones. It
-  refreshes on ExternalSecret changes; after replacing the SSM profile value,
+  is the live Gluetun profile. Six retired split-profile parameters remain
+  non-readable state tombstones. The active-active overlay declares six
+  additional exact reader paths for the AirVPN and transit keys. See
+  [Deluge VPN contracts](../../docs/secrets-aws-ssm.md#deluge-vpn). The live
+  profile refreshes on ExternalSecret changes. After replacing its SSM value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
   ExternalSecret and Deluge pod template so the Secret is rerendered and
   Gluetun starts with the new profile. Its startup wrapper extracts the private

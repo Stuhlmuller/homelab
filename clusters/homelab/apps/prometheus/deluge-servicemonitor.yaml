@@ -15,10 +15,21 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: deluge
       app.kubernetes.io/name: deluge
-      app.kubernetes.io/service: deluge
+    matchExpressions:
+      - key: app.kubernetes.io/service
+        operator: In
+        values: [deluge, deluge-metrics]
   endpoints:
     - port: metrics
       path: /metrics
       interval: 45s
       scrapeTimeout: 30s
+      honorLabels: false
+      relabelings:
+        - targetLabel: service
+          replacement: deluge
+    - port: vpn-metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 5s
       honorLabels: false

@@ -8,6 +8,7 @@ resources:
   - talos-filesystem-prometheusrules.yaml
   - argocd-servicemonitors.yaml
   - deluge-servicemonitor.yaml
+  - deluge-vpn-prometheusrules.yaml
   - istio-podmonitors.yaml
   - externalsecret.yaml
   - namespace.yaml

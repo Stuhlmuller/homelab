@@ -1003,8 +1003,12 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-runner-publish.yml:publish' \
     '.github/workflows/cordium-runner-publish.yml:published-digests' \
     '.github/workflows/cordium-runner-publish.yml:test-build' \
+    '.github/workflows/deluge-vpn-image.yml:published-digest' \
+    '.github/workflows/deluge-vpn-image.yml:publish' \
+    '.github/workflows/deluge-vpn-image.yml:test-build' \
     '.github/workflows/deployment-checks.yml:validate' \
-    '.github/workflows/entra-oidc-verify.yml:verify' \
+    '.github/workflows/deluge-vpn-image.yml:publish' \
+  '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-helm-charts.yml:publish' \
@@ -1100,11 +1104,12 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/deluge-vpn-image.yml e9e9ea65f93071fcb790389af3edd5b8d89069eb495b82aa8b15dd3f0cef408e
 .github/workflows/deployment-checks.yml 2cfeeda43c50b922216f047a7eb7cdeb65d76a1f3a8ad0f73d1333db956c14da
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 0e8f15226a4ace9420d3bc32ef2220a053c5172265952f1b7bc7445fd3464eb1
+.github/workflows/harbor-mirror.yml 6e174c043486c91261c6c723ec8657cac110adb0abf3e6313bd2d191b275eec0
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3

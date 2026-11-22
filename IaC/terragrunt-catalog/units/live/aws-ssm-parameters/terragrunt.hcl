@@ -560,6 +560,36 @@ inputs = {
       description   = "Deluge AirVPN WireGuard wg0.conf profile."
       initial_value = local.placeholder
     }
+    "/homelab/deluge/harbor-pull-password" = {
+      description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential for Deluge VPN."
+      generated = {
+        source_parameter = "/homelab/harbor/robot-pull-password"
+      }
+    }
+    "/homelab/deluge/vpn/a/airvpn-profile" = {
+      description   = "Deluge AirVPN WireGuard profile for active path A."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/a/gateway-transit" = {
+      description   = "Deluge WireGuard transit gateway keys for active path A."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/a/client-transit" = {
+      description   = "Deluge WireGuard transit client keys for active path A."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/b/airvpn-profile" = {
+      description   = "Deluge AirVPN WireGuard profile for active path B."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/b/gateway-transit" = {
+      description   = "Deluge WireGuard transit gateway keys for active path B."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/b/client-transit" = {
+      description   = "Deluge WireGuard transit client keys for active path B."
+      initial_value = local.placeholder
+    }
     "/homelab/deluge/vpn/wireguard-preshared-key" = {
       description   = "Deluge AirVPN WireGuard pre-shared key."
       initial_value = local.placeholder
