@@ -37,17 +37,25 @@ kubelet:
       - sourceLabels: [__name__]
         action: drop
         regex: 'container_spec.*'
-      # Only this mapping may set the volume label used by the rules.
+      # Only the reviewed mappings below may set these labels.
       - action: labeldrop
-        regex: homelab_talos_volume
+        regex: 'homelab_talos_volume|__tmp_homelab_io_pressure'
       - action: replace
         sourceLabels: [id, pod, __name__, node, device]
         regex: '/;;container_fs_(limit_bytes|usage_bytes|inodes_free|inodes_total);(acer;/dev/sda4|zimaboard-[0-2];/dev/mmcblk0p4)'
         targetLabel: homelab_talos_volume
         replacement: EPHEMERAL
+      # Preserve only I/O PSI from the root cgroup on eligible Talos nodes.
+      - action: replace
+        sourceLabels: [id, pod, __name__, node]
+        regex: '/;;container_pressure_io_(waiting|stalled)_seconds_total;(acer|zimaboard-[0-2])'
+        targetLabel: __tmp_homelab_io_pressure
+        replacement: '1'
       - action: drop
-        sourceLabels: [id, pod, homelab_talos_volume]
-        regex: '.+;;'
+        sourceLabels: [id, pod, homelab_talos_volume, __tmp_homelab_io_pressure]
+        regex: '.+;;;'
+      - action: labeldrop
+        regex: __tmp_homelab_io_pressure
 kube-state-metrics:
   image:
     registry: harbor.stinkyboi.com
