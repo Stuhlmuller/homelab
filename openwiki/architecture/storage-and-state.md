@@ -548,8 +548,10 @@ each successful conditional creation before verifying that version.
 The [Octelium Resource Store Backup workflow](../../.github/workflows/octelium-rscstore-backup.yml)
 uses a clean exact-`main` checkout. Its dedicated environment supplies
 `OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN` and scoped Kubernetes, native Talos relay,
-and Talos mTLS credentials. `preflight` runs while the writer and read-only
-inspector are active. It discovers and verifies the bound storage UIDs inside
+and Talos mTLS credentials. `preflight` runs with one desired writer replica
+and a ready read-only inspector. Its API, kubelet, and Talos checks must agree
+on the writer identity and report either a ready container or a verified
+crash loop. It discovers and verifies the bound storage UIDs inside
 the protected job, then retains them in its versioned private S3 receipt. It
 also checks live transport, private runner disk, and encrypted readback.
 Preserve a working rollback route and verify successful preflight with current

@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       stage:
-        description: Preflight with the writer running, or backup after the fence reconciles
+        description: Preflight before the writer is fenced, or backup after the fence reconciles
         required: true
         type: choice
         options: [preflight, backup]
@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           printf '%s  %s\n' \
             '7cdb7c8efd5324a8136150ee7c56439bcd86cda99b8044c0d39c4d66dfef8ec6' scripts/ci/octelium-rscstore-backup.sh \
-            'cb052cdba346319057e38612abbc0a7ade2de18fa83fea5af38eb61ed65e4f4c' scripts/octelium-rscstore-capture.py \
+            '21df44d23675683179056636bb5d2d5e3b04bb34a2f4eddb2666a62e5d0e511d' scripts/octelium-rscstore-capture.py \
             'bef7063dfb90bef89f17f8fe26fc82e1c79a54b03115667ab5c427f2922d3924' scripts/application-backup.py \
             'e0ce092527c9fa165c36c744f55a6e31eb35610591ec7dd74bc752c9935e366f' scripts/ci/octelium-rscstore-backup-receipt.py \
             | sha256sum --check --status

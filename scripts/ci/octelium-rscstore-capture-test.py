@@ -131,7 +131,12 @@ def argo_application_fixture():
         "status": {"sync": {"status": "Synced", "revisions": [SHA]}}}
 
 
-def writer_fixture():
+def writer_fixture(*, crashed=False):
+    container_id = "containerd://" + WRITER_CONTAINER_ID
+    container = {"name": "rscstore", "ready": not crashed, "containerID": container_id}
+    if crashed:
+        container["state"] = {"waiting": {"reason": "CrashLoopBackOff"}}
+        container["lastState"] = {"terminated": {"containerID": container_id, "exitCode": 1}}
     return {"metadata": {"name": WRITER_NAME, "namespace": CAPTURE.NAMESPACE, "uid": WRITER_UID,
                          "ownerReferences": [{"controller": True, "kind": "ReplicaSet",
                                               "name": f"{CAPTURE.DEPLOYMENT}-12345", "uid": REPLICA_SET_UID}]},
@@ -139,9 +144,8 @@ def writer_fixture():
                      "volumes": [{"name": "octelium", "persistentVolumeClaim": {"claimName": CAPTURE.CLAIM}}],
                      "containers": [{"name": "rscstore", "volumeMounts": [
                          {"name": "octelium", "mountPath": "/octelium-data"}]}]},
-            "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": "True"}],
-                       "containerStatuses": [{"name": "rscstore", "ready": True,
-                                              "containerID": "containerd://" + WRITER_CONTAINER_ID}]}}
+            "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": str(not crashed)}],
+                       "containerStatuses": [container]}}
 
 
 class RscstoreCaptureTest(unittest.TestCase):
@@ -204,6 +208,25 @@ class RscstoreCaptureTest(unittest.TestCase):
         deployment["status"]["readyReplicas"] = 0
         with self.assertRaisesRegex(ValueError, "one current resource-store writer"):
             CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID, writer=writer)
+
+    def test_preflight_accepts_only_the_current_verified_crash_loop_writer(self):
+        deployment, pvc, pv, pods = cluster_fixture()
+        deployment["spec"]["replicas"] = 1
+        deployment["status"].update(replicas=1, readyReplicas=0, availableReplicas=0)
+        writer = writer_fixture(crashed=True)
+        pods.append(writer)
+        replica_set = {"metadata": {"uid": REPLICA_SET_UID, "ownerReferences": [
+            {"controller": True, "kind": "Deployment", "name": CAPTURE.DEPLOYMENT, "uid": DEPLOY_UID}]}}
+        with mock.patch.object(CAPTURE, "json_output", return_value=replica_set):
+            self.assertIs(CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods), writer)
+            source = CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID, writer=writer)
+            self.assertEqual(source["pv_uid"], PV_UID)
+            status = writer["status"]["containerStatuses"][0]
+            status["state"]["waiting"]["reason"] = "ContainerCreating"
+            with self.assertRaisesRegex(ValueError, "verified crash-loop state"):
+                CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods)
+        with self.assertRaisesRegex(ValueError, "not fenced"):
+            CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID)
 
     def test_preflight_reads_full_archive_and_rejects_inadequate_workspace(self):
         workspace = Path("/unused/private-scratch")
@@ -353,10 +376,11 @@ class RscstoreCaptureTest(unittest.TestCase):
             if state["talos_writer"] is True:
                 row += (f"{address} k8s.io octelium/octeliumee-rscstore-old "
                         "store:0.22.0 1 CONTAINER_RUNNING\n")
-            elif state["talos_writer"] == "current" and address == CAPTURE.NODES["zimaboard-1"]:
+            elif state["talos_writer"] in ("current", "exited") and address == CAPTURE.NODES["zimaboard-1"]:
+                status = "CONTAINER_RUNNING" if state["talos_writer"] == "current" else "CONTAINER_EXITED"
                 row += (f"{address} k8s.io octelium/{WRITER_NAME} pause:3.10 13 SANDBOX_READY\n"
                         f"{address} k8s.io └─ octelium/{WRITER_NAME}:rscstore:{WRITER_CONTAINER_ID[:12]} "
-                        "store:0.22.0 14 CONTAINER_RUNNING\n")
+                        f"store:0.22.0 14 {status}\n")
             if state["talos_old_reader"] and address == CAPTURE.NODES["zimaboard-1"]:
                 row += (f"{address} k8s.io octelium/old-reader "
                         "busybox:1.38.0 458 SANDBOX_READY\n")
@@ -449,6 +473,19 @@ class RscstoreCaptureTest(unittest.TestCase):
                     CAPTURE.node_runtime_guard(
                         CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, current_writer], POD_UID,
                         actions=True, writer=current_writer)
+
+                crashed_writer = writer_fixture(crashed=True)
+                state["views"]["zimaboard-1"]["pods"]["items"] = [inspector, crashed_writer]
+                state["views"]["zimaboard-1"]["runningpods/"]["items"] = [inspector]
+                state["talos_writer"] = "exited"
+                self.assertEqual(CAPTURE.node_runtime_guard(
+                    CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, crashed_writer], POD_UID,
+                    actions=True, writer=crashed_writer), dict.fromkeys(CAPTURE.NODES, BOOT_ID))
+                state["talos_writer"] = "current"
+                with self.assertRaisesRegex(ValueError, "Talos CRI resource-store writer container identity differs"):
+                    CAPTURE.node_runtime_guard(
+                        CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, crashed_writer], POD_UID,
+                        actions=True, writer=crashed_writer)
 
     def test_inspector_requires_exact_identity_and_zero_other_mounts(self):
         deployment, pvc, pv, pods = cluster_fixture()

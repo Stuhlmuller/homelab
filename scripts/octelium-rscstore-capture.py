@@ -191,6 +191,31 @@ def argo_guard(context, expected_sha, *, require_selective_sync=False):
                 "Octelium Enterprise selective sync is not active")
 
 
+def writer_runtime(writer):
+    status = writer["status"]
+    containers = status.get("containerStatuses", [])
+    require(len(containers) == 1 and containers[0].get("name") == "rscstore",
+            "resource-store writer container identity is unavailable")
+    container = containers[0]
+    ready = container.get("ready")
+    conditions = [item.get("status") for item in status.get("conditions", []) if item.get("type") == "Ready"]
+    if ready is True:
+        require(conditions == ["True"], "resource-store writer readiness views disagree")
+        container_id = container.get("containerID", "")
+    else:
+        state = container.get("state", {})
+        last_exit = container.get("lastState", {}).get("terminated", {})
+        container_id = last_exit.get("containerID", "")
+        require(ready is False and conditions == ["False"] and set(state) == {"waiting"}
+                and state["waiting"].get("reason") == "CrashLoopBackOff"
+                and type(last_exit.get("exitCode")) is int and last_exit["exitCode"] > 0
+                and container.get("containerID") in (None, "", container_id),
+                "resource-store writer has no verified crash-loop state")
+    require(re.fullmatch(r"containerd://[0-9a-f]{64}", container_id),
+            "resource-store writer container identity is unavailable")
+    return container_id, ready
+
+
 def writer_guard(context, deployment, pods):
     writers = [pod for pod in pods if pod["metadata"]["name"].startswith(DEPLOYMENT + "-")
                and pod["status"]["phase"] not in ("Succeeded", "Failed")]
@@ -198,10 +223,9 @@ def writer_guard(context, deployment, pods):
     writer = writers[0]
     metadata, spec, status = writer["metadata"], writer["spec"], writer["status"]
     require(metadata["namespace"] == NAMESPACE and not metadata.get("deletionTimestamp")
-            and UID.fullmatch(metadata.get("uid", "")) and status["phase"] == "Running"
-            and any(condition.get("type") == "Ready" and condition.get("status") == "True"
-                    for condition in status.get("conditions", [])),
-            "resource-store writer is not ready")
+            and UID.fullmatch(metadata.get("uid", "")) and status["phase"] == "Running",
+            "resource-store writer Pod identity is unavailable")
+    writer_runtime(writer)
     controllers = [owner for owner in metadata.get("ownerReferences", []) if owner.get("controller") is True]
     require(len(controllers) == 1 and controllers[0].get("kind") == "ReplicaSet"
             and re.fullmatch(rf"{DEPLOYMENT}-[a-z0-9]+", controllers[0].get("name", ""))
@@ -230,10 +254,11 @@ def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid
             and deployment["metadata"]["name"] == DEPLOYMENT,
             "wrong resource-store Deployment")
     replicas = 0 if writer is None else 1
+    ready = 0 if writer is None else int(writer_runtime(writer)[1])
     require(deployment["spec"].get("replicas") == replicas
             and deployment["status"].get("observedGeneration", 0) >= deployment["metadata"]["generation"]
-            and all(deployment["status"].get(field, 0) == replicas for field in
-                    ("replicas", "readyReplicas", "availableReplicas")),
+            and deployment["status"].get("replicas", 0) == replicas
+            and all(deployment["status"].get(field, 0) == ready for field in ("readyReplicas", "availableReplicas")),
             "resource-store writer is not fenced" if writer is None
             else "exactly one current resource-store writer must remain before fencing")
     require(UID.fullmatch(expected_pvc_uid or "") and UID.fullmatch(expected_pv_uid or ""),
@@ -363,15 +388,12 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid, *, actions=Fal
     inspector_cri_id = (f"{NAMESPACE}/{INSPECTOR}:inspection:"
                         f"{inspector_container_id.removeprefix('containerd://')[:12]}")
     writer_identity = writer_node = writer_container_id = None
+    writer_ready = False
     if writer is not None:
         writer_identity = (writer["metadata"]["name"], writer["metadata"]["uid"])
         writer_node = writer["spec"].get("nodeName")
-        writer_statuses = writer["status"].get("containerStatuses", [])
-        require(writer_node == inspector_node and len(writer_statuses) == 1
-                and writer_statuses[0].get("name") == "rscstore" and writer_statuses[0].get("ready") is True
-                and re.fullmatch(r"containerd://[0-9a-f]{64}", writer_statuses[0].get("containerID", "")),
-                "current resource-store writer container identity or placement is unverified")
-        writer_container_id = writer_statuses[0]["containerID"]
+        require(writer_node == inspector_node, "resource-store writer placement is unverified")
+        writer_container_id, writer_ready = writer_runtime(writer)
     boot_ids = {}
     for node in nodes["items"]:
         name = node["metadata"]["name"]
@@ -410,9 +432,7 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid, *, actions=Fal
                     writer_count += 1
                     require(name == writer_node, "resource-store writer runs on another node")
                     if not running:
-                        kubelet_statuses = pod.get("status", {}).get("containerStatuses", [])
-                        require(len(kubelet_statuses) == 1
-                                and kubelet_statuses[0].get("containerID") == writer_container_id,
+                        require(writer_runtime(pod) == (writer_container_id, writer_ready),
                                 "kubelet resource-store writer container identity differs")
                 api_pod = api_pods[identity]
                 api_mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
@@ -428,7 +448,8 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid, *, actions=Fal
                             "kubelet retains another PVC mount user")
             require(inspector_count == (1 if name == inspector_node else 0),
                     "kubelet inspector Pod is missing or duplicated")
-            require(writer_count == (1 if name == writer_node else 0),
+            expected_writer_count = 1 if name == writer_node else 0
+            require(writer_count == expected_writer_count or (running and not writer_ready and writer_count == 0),
                     "kubelet resource-store writer Pod is missing or duplicated")
         inventory = output("talosctl", "--talosconfig", str(talosconfig),
                            "--endpoints", ACTIONS_TALOS_ENDPOINT if actions else NODES["acer"], "--nodes", address,
@@ -468,8 +489,9 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid, *, actions=Fal
                     require(name == writer_node, "Talos CRI resource-store writer runs on another node")
                     if fields[0] in ("└─", "├─"):
                         writer_id = writer_container_id.removeprefix("containerd://")[:12]
+                        cri_state = "CONTAINER_RUNNING" if writer_ready else "CONTAINER_EXITED"
                         require(container_id == f"{NAMESPACE}/{pod_name}:rscstore:{writer_id}"
-                                and fields[-1] == "CONTAINER_RUNNING",
+                                and fields[-1] == cri_state,
                                 "Talos CRI resource-store writer container identity differs")
                         writer_containers += 1
                     else:
