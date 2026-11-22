@@ -607,6 +607,9 @@
       "source": "quay.io/argoproj/argocd:v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
     },
     {
+      "source": "quay.io/argoproj/argocd:v3.4.14@sha256:487168f017d1d969e0378e665156633e517be6a86bfb139a935fa3d43f627560"
+    },
+    {
       "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
     },
     {
