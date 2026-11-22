@@ -146,6 +146,16 @@ rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/terragr
 rg -Fq 'verify_domain = true' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
 rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+rg -Fq '/modules/entra-retained-mac-pilot"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+if rg -q '^[[:space:]]*(resource|import)[[:space:]]' IaC/terragrunt-catalog/modules/entra-retained-mac-pilot/*.tf; then
+  echo "The retained Mac pilot must only read directory objects and forget legacy state." >&2
+  exit 1
+fi
+(
+  cd IaC/terragrunt-catalog/modules/entra-retained-mac-pilot
+  tofu init -backend=false -no-color
+  tofu test -no-color
+)
 rg -Fq 'homelab-emergency-admin' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq 'azuread_directory_role_assignment' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf

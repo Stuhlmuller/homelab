@@ -855,15 +855,13 @@ the sole Graph verification action. That action intentionally uses the
 standard bodyless Graph request, retaining the service default of no domain
 takeover; its private saved plan must confirm the domain remains managed and
 non-default. The companion
-`operator/entra-stuhlmuller-pilot-user` unit could then create only
-`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
-non-default state, so it cannot plan against the current federation. The
-account receives no role, group, license, mailbox or
-Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
-email address alone is not an Entra password identity. Its guarded module is
-separate from the legacy AzureAD user module, and the AzureAD workflow selects
-that collection only when its own source or plan inputs change; an operator-only
-pilot change cannot trigger legacy-user reconciliation.
+`operator/entra-stuhlmuller-pilot-user` unit attests the retained
+`rodman.mac@stuhlmuller.net` account by immutable object ID on the verified
+Federated domain. The steady-state module has only directory reads and
+non-destructive retirement of the former state bindings. It exports no
+credential. The older bootstrap module retains its Managed-only verification
+guard outside the active stack. The independent `stinkyboi.com` account stays
+in its existing Fleet unit.
 
 ## Google Workspace federation boundary
 
