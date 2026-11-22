@@ -161,11 +161,16 @@ checks remain fresh.
   static and Terragrunt gates. It runs the upstream Super-Linter action with
   `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
   lint runs for the same pull request.
-- Policy Bot reads this repository's `.policy.yml` and automatically approves
-  PRs with `requires.count: 0`, so merging does not depend on a human review,
-  Codex review, or thumbs-up comment. Required GitHub checks still gate merges.
-  Policy Bot reads the policy from the target branch, so this behavior takes
-  effect after the policy change lands on `main`.
+- Policy Bot reads `.policy.yml` from the target branch and passes its
+  status with `requires.count: 0`. GitHub branch rules enforce required checks.
+- [Verify Codex Code Review](../.github/workflows/codex-review-gate.yml)
+  publishes `Codex Code Review` for the exact PR head. It passes only when the
+  Codex GitHub App reports a completed code review with zero findings for that
+  SHA. Findings fail the status. Missing, stale, or incomplete reviews keep it
+  pending. Push fixes and request `@codex review` if automatic review has not
+  run. Dispatch the verification workflow with the PR number to re-read an
+  existing review. `github-iac` owns enforcement of the status on `main`.
+  Remove the requirement there before retiring the publisher.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
 - The protected OpenClaw Enterprise startup and operations policies accept only

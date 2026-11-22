@@ -858,6 +858,13 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
+The [Codex code review publisher](../../.github/workflows/codex-review-gate.yml)
+checks the GitHub App's summary against the current head SHA of a PR into
+`main`. Only a completed code review with zero findings passes. The
+[fixtures](../../scripts/ci/codex-review-gate-test.py) reject stale, incomplete,
+and spoofed reviews. See [the CI runbook](../../docs/ci-cd.md#security-model)
+for rechecks and ruleset ownership.
+
 ### Chainguard Actions
 
 GitHub workflows pin their Chainguard Actions references by full commit SHA.
