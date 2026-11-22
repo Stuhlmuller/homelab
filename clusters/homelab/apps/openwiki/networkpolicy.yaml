@@ -1,0 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openwiki
+  namespace: openwiki
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openwiki
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octelium-public
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cloudflared
+              app.kubernetes.io/part-of: octelium-public
+      ports:
+        - port: 8080
+          protocol: TCP

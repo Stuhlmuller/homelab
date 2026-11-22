@@ -210,6 +210,14 @@ python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 echo "::endgroup::"
 
+echo "::group::LiteLLM Bedrock IAM policy"
+(
+  cd IaC/homelab/us-west-2/operator/litellm-bedrock
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
 echo "::group::Etcd offsite bucket offline guards"
 (
   cd IaC/homelab/us-west-2/operator/etcd-backup-storage
