@@ -1058,7 +1058,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
-    '.github/workflows/validate.yml:harbor-core-compatibility'
+    '.github/workflows/validate.yml:harbor-core-compatibility' \
+    '.github/workflows/validate.yml:repo'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
