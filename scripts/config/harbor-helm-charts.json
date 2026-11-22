@@ -116,6 +116,18 @@
       "sha256": "716733f473fcfd00380cb9317c004aeb7cc8a49be311d2c28dce9f900e124491"
     },
     {
+      "chart": "kagent",
+      "version": "0.10.6",
+      "repository": "ghcr.io/kagent-dev/kagent/helm",
+      "sha256": "59787ac0199a75a1357541cef4a3d2443ea9a05ca24536c84671e793dab1bad6"
+    },
+    {
+      "chart": "kagent-crds",
+      "version": "0.10.6",
+      "repository": "ghcr.io/kagent-dev/kagent/helm",
+      "sha256": "8cf7aa29a0d001e111fa2444cb5347423898acb18226f2ae330ca59e74084a9f"
+    },
+    {
       "chart": "langfuse",
       "version": "2.1.1",
       "repository": "ghcr.io/langfuse/langfuse-k8s/charts",
