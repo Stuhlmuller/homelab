@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deluge-gluetun
+  namespace: media
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deluge-gluetun
+  namespace: media
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    resourceNames: [deluge-gluetun]
+    verbs: [get, update]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    resourceNames: [deluge-gluetun]
+    verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deluge-gluetun
+  namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deluge-gluetun
+subjects:
+  - kind: ServiceAccount
+    name: deluge-gluetun
+    namespace: media
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: deluge-vpn-harbor-pull
+  namespace: media
+  annotations:
+    homelab.stuhlmuller.dev/generated-secret-revision: "v1"
+spec:
+  refreshPolicy: OnChange
+  secretStoreRef: {kind: ClusterSecretStore, name: aws-ssm}
+  target:
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      type: kubernetes.io/dockerconfigjson
+      data:
+        .dockerconfigjson: >-
+          {"auths":{"harbor.stinkyboi.com":{"username":"robot$homelab+pull","password":{{ .password | toJson }},"auth":"{{ printf "robot$homelab+pull:%s" .password | b64enc }}"}}}
+  data:
+    - secretKey: password
+      remoteRef: {key: /homelab/deluge/harbor-pull-password}

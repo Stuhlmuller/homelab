@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: media
+resources:
+  - gateway.yaml
+  - election-access.yaml
+configMapGenerator:
+  - name: deluge-gluetun-wrapper
+    files:
+      - gluetun-wrapper.sh
+    options:
+      disableNameSuffixHash: true
+images:
+  # Pin the protected publisher's source tag and digest before registering this source.
+  - name: harbor.stinkyboi.com/homelab/homelab-deluge-vpn
+    newTag: staged

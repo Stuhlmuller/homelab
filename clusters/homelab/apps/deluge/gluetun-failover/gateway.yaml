@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deluge-gluetun
+  namespace: media
+  annotations:
+    checkov.io/skip1: CKV_K8S_23=The bounded WireGuard and nftables helpers need root to retain NET_ADMIN across subprocesses.
+    checkov.io/skip2: CKV_K8S_25=Each networking process adds only NET_ADMIN in its own pod namespace.
+    checkov.io/skip3: CKV_K8S_40=The WireGuard and nftables helpers need UID 0.
+    checkov.io/skip4: CKV_K8S_43=The staged helper image is pinned by digest in the Kustomize image override before GitOps registration.
+    checkov.io/skip5: CKV2_K8S_6=The gateway guard installs its default-deny nftables firewall before Gluetun can start.
+    checkov.io/skip6: CKV_K8S_15=Immutable images can restart from the node cache during a Harbor outage.
+    checkov.io/skip7: CKV_K8S_22=The stock Gluetun image needs a writable runtime filesystem; custom helpers have read-only roots.
+    checkov.io/skip8: CKV_K8S_8=Kubelet restarts exited processes and the Lease watchdog stops a stale Gluetun child.
+    checkov.io/skip9: CKV_K8S_9=Controller probe gates Pod readiness; runtime Lease separately gates publication to the selectorless Service.
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: deluge-gluetun}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: deluge-gluetun}
+      annotations:
+        homelab.rst.io/wireguard-profile-ssm-version: "4"
+    spec:
+      serviceAccountName: deluge-gluetun
+      automountServiceAccountToken: false
+      dnsPolicy: None
+      dnsConfig: {nameservers: [127.0.0.1]}
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [zimaboard-0, zimaboard-1, zimaboard-2]
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [zimaboard-1, zimaboard-2]
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {app.kubernetes.io/name: deluge-gluetun}
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: gateway-guard
+          image: &helperImage harbor.stinkyboi.com/homelab/homelab-deluge-vpn:staged
+          imagePullPolicy: IfNotPresent
+          command: [python3, -B, /opt/deluge-gluetun/network.py, gateway-init]
+          securityContext: &helperSecurity
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsUser: 0
+            capabilities: {drop: [ALL], add: [NET_ADMIN]}
+          resources:
+            requests: {cpu: 40m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          volumeMounts:
+            - {name: profile, mountPath: /vpn-source, readOnly: true}
+      containers:
+        - name: leader
+          image: *helperImage
+          imagePullPolicy: IfNotPresent
+          command: [python3, -B, /opt/deluge-gluetun/lease.py]
+          securityContext: *helperSecurity
+          env:
+            - name: POD_UID
+              valueFrom: {fieldRef: {fieldPath: metadata.uid}}
+            - name: POD_NAME
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
+            - name: POD_NAMESPACE
+              valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+            - name: POD_IP
+              valueFrom: {fieldRef: {fieldPath: status.podIP}}
+          readinessProbe:
+            exec:
+              command: [python3, -B, /opt/deluge-gluetun/lease.py, live]
+            timeoutSeconds: 2
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 40m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 96Mi}
+          volumeMounts:
+            - {name: runtime, mountPath: /run/deluge-vpn}
+            - {name: kube-api, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+        - name: gluetun
+          image: harbor.stinkyboi.com/mirror/ghcr.io/qdm12/gluetun:v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027
+          imagePullPolicy: IfNotPresent
+          command: [/bin/sh, /opt/deluge-gluetun/gluetun-wrapper.sh]
+          env:
+            - {name: TZ, value: America/Los_Angeles}
+            - {name: VPN_SERVICE_PROVIDER, value: airvpn}
+            - {name: VPN_TYPE, value: wireguard}
+            - {name: WIREGUARD_IMPLEMENTATION, value: kernelspace}
+            - {name: VPN_INTERFACE, value: tun0}
+            - {name: WIREGUARD_ALLOWED_IPS, value: 0.0.0.0/0}
+            # The pod-local fenced nftables rules own FORWARD and INPUT for this gateway.
+            - {name: FIREWALL, value: "off"}
+            - {name: HEALTH_RESTART_VPN, value: "on"}
+            - {name: HEALTH_SMALL_CHECK_TYPE, value: dns}
+            - {name: PUBLICIP_ENABLED, value: "off"}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+            capabilities: {drop: [ALL], add: [NET_ADMIN]}
+          resources:
+            requests: {cpu: 200m, memory: 128Mi}
+            limits: {cpu: 300m, memory: 256Mi}
+          volumeMounts:
+            - {name: runtime, mountPath: /run/deluge-vpn, readOnly: true}
+            - {name: profile, mountPath: /vpn-source, readOnly: true}
+            - {name: wrapper, mountPath: /opt/deluge-gluetun, readOnly: true}
+            - {name: tun, mountPath: /dev/net/tun}
+      imagePullSecrets:
+        - name: deluge-vpn-harbor-pull
+      volumes:
+        - name: runtime
+          emptyDir: {medium: Memory, sizeLimit: 1Mi}
+        - name: profile
+          secret:
+            secretName: deluge-vpn
+            defaultMode: 256
+            items: [{key: wg0.conf, path: wg0.conf}]
+        - name: wrapper
+          configMap:
+            name: deluge-gluetun-wrapper
+        - name: tun
+          hostPath: {path: /dev/net/tun, type: CharDevice}
+        - name: kube-api
+          projected:
+            defaultMode: 256
+            sources:
+              - serviceAccountToken: {expirationSeconds: 600, path: token}
+              - configMap:
+                  name: kube-root-ca.crt
+                  items: [{key: ca.crt, path: ca.crt}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deluge-gluetun
+  namespace: media
+spec:
+  type: ClusterIP
+  clusterIP: 10.96.10.61
+  ipFamilyPolicy: SingleStack
+  ipFamilies: [IPv4]
+  ports:
+    - {name: transit, port: 51820, targetPort: 51820, protocol: UDP}

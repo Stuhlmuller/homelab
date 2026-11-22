@@ -556,6 +556,12 @@ inputs = {
       initial_value = local.placeholder
       reader_access = false
     }
+    "/homelab/deluge/harbor-pull-password" = {
+      description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential for Deluge VPN tooling."
+      generated = {
+        source_parameter = "/homelab/harbor/robot-pull-password"
+      }
+    }
     "/homelab/deluge/vpn/wireguard-config" = {
       description   = "Deluge AirVPN WireGuard wg0.conf profile."
       initial_value = local.placeholder

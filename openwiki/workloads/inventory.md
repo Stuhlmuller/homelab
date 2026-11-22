@@ -637,6 +637,11 @@ It introduces no persistent data or external service. See
 [Deluge CPU Audit — 2026-09-05](../operations/deluge-cpu-audit-2026-09-05.md) for the open diagnosis, live verification,
 and required disable rollout.
 
+The [staged Gluetun failover profile](../../docs/deluge-gluetun-failover.md)
+uses two gateway pods on separate workers and one elected AirVPN connection.
+It reuses the existing Deluge VPN profile and keeps the torrent catalog on
+the current singleton.
+
 ## GitOps Project Boundary
 
 Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use the namespace-limited

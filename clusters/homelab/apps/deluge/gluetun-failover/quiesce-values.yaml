@@ -1,0 +1,5 @@
+# Apply this by itself after base values and verify the Deluge pod has stopped
+# before the gateway Deployment can use the same AirVPN device profile.
+controllers:
+  deluge:
+    replicas: 0
