@@ -1301,7 +1301,11 @@ Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
 The static gate requires manual Homelab Diagnostics and Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
-resolved workflow commit differs. Every push to `main` runs only the cancellable
+resolved workflow commit differs. Homelab Diagnostics defaults to Grafana.
+Select `target=mastodon` to check the Mastodon Argo CD Application against the
+expected revision. The public run reports sync and health categories, condition
+types, and affected resource kinds. Resource names and messages stay private.
+Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;

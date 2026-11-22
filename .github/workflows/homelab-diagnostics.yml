@@ -1,6 +1,7 @@
 name: Homelab Diagnostics
+run-name: Diagnose ${{ inputs.target }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds diagnostics to reviewed main; it cannot alter commands or output.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed main and target selects a fixed read-only diagnostic.
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +9,11 @@ on:
         description: Exact main commit to diagnose
         required: true
         type: string
+      target:
+        description: Diagnostic target
+        type: choice
+        default: grafana
+        options: [grafana, mastodon]
 
 permissions: {}
 
@@ -53,25 +59,45 @@ jobs:
       - name: Verify Diagnostic Inputs
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          DIAGNOSTIC_TARGET: ${{ inputs.target }}
         run: |
+          set -euo pipefail
+          case "$DIAGNOSTIC_TARGET" in grafana|mastodon) ;; *) exit 2 ;; esac
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
 
-      - name: Run Grafana Diagnostics Through Octelium
+      - name: Run Diagnostics Through Octelium
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          DIAGNOSTIC_TARGET: ${{ inputs.target }}
         run: |
+          set -euo pipefail
+          umask 077
           private_log="$(mktemp)"
-          trap 'rm -f "$private_log"' EXIT
+          DIAGNOSTIC_SUMMARY="$(mktemp)"
+          export DIAGNOSTIC_SUMMARY
+          trap 'rm -f "$private_log" "$DIAGNOSTIC_SUMMARY"' EXIT
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          kubectl -n monitoring rollout status deployment/grafana --timeout=120s >/dev/null
+          case "$DIAGNOSTIC_TARGET" in
+            grafana) kubectl -n monitoring rollout status deployment/grafana --timeout=120s >/dev/null ;;
+            mastodon)
+              sha256sum --check --status <<<'084f9bc520af5cec2cff32608a176760dc98ad5a259f90e9b82f13870174f1d7  scripts/ci/mastodon-diagnostic-summary.jq'
+              kubectl --request-timeout=15s -n argocd get application mastodon -o json |
+                jq -ce --arg revision "$GITHUB_SHA" -f scripts/ci/mastodon-diagnostic-summary.jq >"$DIAGNOSTIC_SUMMARY"
+              jq -e '.revision_matches and .sync == "Synced" and .health == "Healthy"' "$DIAGNOSTIC_SUMMARY" >/dev/null
+              ;;
+            *) exit 2 ;;
+          esac
           EOF
           then
-            echo "::error::Grafana readiness check failed; live diagnostics were withheld because this is a public repository. Reproduce them locally."
+            if [[ -s "$DIAGNOSTIC_SUMMARY" ]]; then cat "$DIAGNOSTIC_SUMMARY"; fi
+            echo "::error::${DIAGNOSTIC_TARGET} readiness check failed; private live details were withheld."
             exit 1
           fi
-          echo "Grafana readiness check passed; live details withheld."
+          if [[ -s "$DIAGNOSTIC_SUMMARY" ]]; then cat "$DIAGNOSTIC_SUMMARY"; fi
+          echo "${DIAGNOSTIC_TARGET} readiness check passed; private live details withheld."
