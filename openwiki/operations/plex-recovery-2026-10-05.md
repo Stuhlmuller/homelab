@@ -176,7 +176,7 @@ the follow-up below added that failure case and moved quarantine before startup.
 The acceptance criteria were six permanent
 detachments, disappearance of merge retries, lower NAS metadata rates, readable
 application tables, and actual Plex start/seek. See the
-[Langfuse quarantine contract](../../clusters/homelab/apps/langfuse/README.md#clickhouse-diagnostic-quarantine)
+[Langfuse quarantine contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#clickhouse-diagnostic-quarantine)
 for rollback; restoring configuration alone cannot reattach retained tables.
 
 ### Deployment Ordering Correction

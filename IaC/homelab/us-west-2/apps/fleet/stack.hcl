@@ -32,7 +32,7 @@ inputs = {
       },
       {
         name  = "storage"
-        value = "clusters/homelab/apps/fleet/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md"
       }
     ]
   }

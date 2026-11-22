@@ -45,7 +45,7 @@ retain rollback images and backups.
 
 ## Admission inventory
 
-The [Harbor-only image policy](../clusters/homelab/platform/image-policy/README.md)
+The [Harbor-only image policy](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/image-policy/README.md)
 uses Kubernetes native admission to report public references in regular, init,
 and ephemeral containers. Its `Warn, Audit` binding has no system or namespace
 exceptions, so it observes future Pod writes rather than existing Pods. Use the
@@ -108,7 +108,7 @@ Before activation, publish and verify the pinned images, complete the Talos,
 Kubernetes and Istio upgrade ladder, review every rendered and generated
 NetworkPolicy, and admit a dedicated tainted canary with measured capacity.
 Then qualify allowed and denied traffic and firewall lifecycle behavior through
-the [GitOps-owned canary](../clusters/homelab/platform/network-policy/README.md).
+the [GitOps-owned canary](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md).
 The old source-only NRI fragment is not part of this kube-router path. Do not
 activate the staged DaemonSet on a shared worker: existing placeholder policies
 would become effective and could interrupt controllers, storage, webhooks and
@@ -211,7 +211,7 @@ behavior, not Harbor publication or a signature accessory.
 
 ## Policy-enforcing dataplane prerequisite
 
-The [repository-owned enforcer](../clusters/homelab/platform/network-policy/README.md)
+The [repository-owned enforcer](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 pins kube-router 2.11.1 with only its iptables firewall enabled. Flannel stays
 the CNI and kube-proxy stays the service proxy. The Argo Application is dormant
 and its node selector matches no node. The separate canary fixture Application
