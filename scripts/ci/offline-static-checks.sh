@@ -16,11 +16,16 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
-terragrunt hcl validate
+terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
 expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
+discovered_units="$(terragrunt --working-dir IaC/homelab/us-west-2 find --filter 'type=unit' --json | jq length)"
+if [[ "$discovered_units" -ne "$expected_units" ]]; then
+  echo "Discovered ${discovered_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
 if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
@@ -1142,7 +1147,7 @@ done <<'EOF'
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
 .github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
-.github/workflows/validate.yml 0c1ea84d45d05db13893da288764aeb21250ef9ba1bad407d8af042284db6934
+.github/workflows/validate.yml ab14d6c33d69a117d8a7cfc0c791d98322529205d7a42875d30ff8bdf0466bfc
 EOF
 echo "::endgroup::"
 
