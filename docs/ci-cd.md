@@ -163,7 +163,9 @@ checks remain fresh.
   publishes `Codex Code Review` for the exact PR head. It passes only when the
   Codex GitHub App reports a completed code review with zero findings for that
   SHA. Findings fail the status. Missing, stale, or incomplete reviews keep it
-  pending. Push fixes and request `@codex review` if automatic review has not
+  pending. The publisher uses a lightweight runner and cancels older runs for
+  the same PR because each invocation reads the current head and review receipt.
+  Push fixes and request `@codex review` if automatic review has not
   run. Dispatch the verification workflow with the PR number to re-read an
   existing review. `github-iac` owns enforcement of the status on `main`.
   Remove the requirement there before retiring the publisher.

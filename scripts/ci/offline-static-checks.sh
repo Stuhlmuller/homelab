@@ -981,7 +981,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/codex-review-gate.yml 0595db0f3360266d1da816855660f4bac5925b6b1142677c5d07163bd9f5e371
+.github/workflows/codex-review-gate.yml 1adf9da4236b2427450c6418b14f6e46e250acd738b2534893bb89984d7e8102
 .github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
