@@ -15,6 +15,8 @@ sources:
     resource: repo://.specify/extensions/assess/commands/speckit.assess.research.md
   - id: openwiki-source-35a262cf1ec77a810a576502
     resource: repo://.specify/extensions/assess/extension.yml
+  - id: openwiki-source-23f4f29f42d3e5ba42a52b6a
+    resource: repo://.specify/extensions/assess/README.md
 generated: { by: "codex", at: "2026-10-18T17:42:33.479Z" }
 ---
 
@@ -76,7 +78,7 @@ lists the corpora, local indexing commands, and search examples.
 Spec Kit 0.15.1 provides ten core `speckit-*` skills for specification,
 clarification, planning, task generation, analysis, implementation,
 convergence, checklists, constitution authoring, and issue creation.
-The local [`assess` extension](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/.specify/extensions/assess/README.md) adds
+The local [`assess` extension](../../.specify/extensions/assess/README.md) adds
 five Codex skills for intake, research, problem definition, concept shaping,
 and a go / needs-clarification / kill decision. Its commands write to
 `.specify/assessments/<slug>/`; it registers no lifecycle hooks and hands a
