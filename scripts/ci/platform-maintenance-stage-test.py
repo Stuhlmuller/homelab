@@ -92,6 +92,46 @@ class PlatformStageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no nondefault routes"):
             check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
 
+    def test_cilium_route_preflight_retains_exit_status_and_failure_phase(self):
+        source = STAGE.read_text()
+        start = "finish_cilium_preflight() {"
+        finish = start + source.split(start, 1)[1].split("\n}\n", 1)[0] + "\n}"
+        script = """set -euo pipefail
+umask 077
+work="$1"
+stage=cilium-route-preflight
+GITHUB_RUN_ID=123
+GITHUB_SHA="$2"
+preflight_attempt=2
+preflight_phase="$3"
+printf '%s' "$4" >"$work/cilium-route-check.log"
+store_status="$5"
+retain_result() {
+  test "$2" = cilium-route-preflight-2
+  ((store_status == 0))
+  cat "$1"
+}
+cleanup() { touch "$work/cleaned"; }
+""" + finish + '\ntrap \'finish_cilium_preflight "$?"\' EXIT\nexit "$6"\n'
+        for phase, detail, stage_status, store_status in (
+                ("route-check", "no overlap", 0, 0),
+                ("route-check", "pool overlaps worker host route", 1, 0),
+                ("inventory", "", 42, 0),
+                ("route-check", "no overlap", 0, 1)):
+            with self.subTest(phase=phase, stage_status=stage_status, store_status=store_status):
+                with tempfile.TemporaryDirectory() as directory:
+                    result = subprocess.run(["bash", "-c", script, "test", directory, SHA,
+                                             phase, detail, str(store_status), str(stage_status)],
+                                            capture_output=True, text=True, timeout=10)
+                    self.assertTrue((Path(directory) / "cleaned").exists())
+                self.assertEqual(result.returncode, store_status or stage_status, result.stderr)
+                if store_status == 0:
+                    self.assertEqual(json.loads(result.stdout), {
+                        "format": 1, "stage": "cilium-route-preflight", "sourceSha": SHA,
+                        "runId": "123", "runAttempt": "2", "phase": phase,
+                        "exitCode": stage_status, "verified": stage_status == 0, "detail": detail,
+                    })
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)

@@ -59,6 +59,26 @@ retain_result() {
     <<<"$readback" >/dev/null
 }
 
+finish_cilium_preflight() {
+  local stage_status="$1" receipt_status
+  trap - EXIT
+  set +e
+  (
+    set -e
+    jq -n --arg stage "$stage" --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg runAttempt "$preflight_attempt" --arg phase "$preflight_phase" \
+      --argjson exitCode "$stage_status" --rawfile detail "$work/cilium-route-check.log" \
+      '{format: 1, stage: $stage, sourceSha: $sourceSha, runId: $runId,
+        runAttempt: $runAttempt, phase: $phase, exitCode: $exitCode,
+        verified: ($exitCode == 0), detail: $detail}' >"$work/cilium-route-preflight.json"
+    retain_result "$work/cilium-route-preflight.json" "${stage}-${preflight_attempt}"
+  )
+  receipt_status=$?
+  cleanup
+  if ((receipt_status != 0)); then exit "$receipt_status"; fi
+  exit "$stage_status"
+}
+
 load_receipt() {
   local key="$1" target="$2" versions version metadata checksum actual
   versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$key" --no-paginate)"
@@ -120,8 +140,14 @@ case "$stage" in
     retain_result "$work/inspect.json" inspect
     ;;
   cilium-route-preflight)
+    preflight_attempt="${GITHUB_RUN_ATTEMPT:-1}"
+    [[ "$preflight_attempt" =~ ^[1-9][0-9]*$ ]] || exit 2
+    preflight_phase=inventory
+    : >"$work/cilium-route-check.log"
+    trap 'finish_cilium_preflight "$?"' EXIT
     connect_talos
-    [[ -z "$(kubectl -n kube-system get daemonset cilium --ignore-not-found -o name)" ]]
+    current_cilium="$(kubectl -n kube-system get daemonset cilium --ignore-not-found -o name)"
+    [[ -z "$current_cilium" ]]
     kubectl get nodes -o json >"$work/nodes.json"
     kubectl get servicecidrs -o json >"$work/services.json"
     endpoint="$(jq -er .protectedTalosEndpoint "$config")"
@@ -137,8 +163,11 @@ case "$stage" in
         get routes -o json | jq -r '.spec.dst // empty' >"$work/$node.routes"
       route_args+=(--node-routes "$node=$work/$node.routes")
     done
+    preflight_phase=route-check
+    # The checker reports CIDR conflicts. Keep its output within the private
+    # receipt and exclude transport output and credentials.
     python3 -I scripts/cilium-route-preflight.py --pool "$pool" --nodes "$work/nodes.json" \
-      --service-cidrs "$work/services.json" "${route_args[@]}"
+      --service-cidrs "$work/services.json" "${route_args[@]}" >"$work/cilium-route-check.log" 2>&1
     ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1

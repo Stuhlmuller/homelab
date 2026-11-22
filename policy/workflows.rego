@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'94ec9b404bb0d82b55b5ed975634b2403f9f39a0110f1051d385ee852bb2ca2a  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'ee994058c05213e979497d81e7c949c335c27722fecc42a44f8e9fa5ea004d40  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
