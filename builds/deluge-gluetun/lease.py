@@ -22,6 +22,7 @@ import urllib.request
 LEASE = 'deluge-gluetun'
 LEASE_SECONDS = 15
 RECONCILE_SECONDS = 2
+CONTROLLER_LIVE_SECONDS = 10
 FENCE_SECONDS = 7
 START_SECONDS = 35
 UNHEALTHY_SECONDS = 12
@@ -116,9 +117,9 @@ def marker(deadline=None):
             path.unlink(missing_ok=True)
 
 
-def http_healthy(port):
+def http_healthy(port, path='/'):
     try:
-        with urllib.request.urlopen(f'http://127.0.0.1:{port}/', timeout=0.7) as response:
+        with urllib.request.urlopen(f'http://127.0.0.1:{port}{path}', timeout=0.7) as response:
             return response.status == 200
     except (OSError, HTTPException):
         return False
@@ -140,12 +141,16 @@ class Leader:
         self.healthy = healthy
         self.observed = None
         self.observed_at = 0
+        self.last_reconcile = None
         self.ready_until = 0
         self.active = False
         self.published = False
         self.elected_at = 0
         self.last_healthy_at = None
         self.retry_at = 0
+
+    def live(self):
+        return self.last_reconcile is not None and self.monotonic() - self.last_reconcile < CONTROLLER_LIVE_SECONDS
 
     def ready(self):
         return self.boot_ns() < self.ready_until
@@ -170,6 +175,7 @@ class Leader:
                 self.lease.put(lease, '')
 
     def reconcile(self):
+        self.last_reconcile = self.monotonic()
         lease = self.lease.get()
         spec = lease.get('spec', {})
         holder = spec.get('holderIdentity')
@@ -237,7 +243,8 @@ class ReadinessHandler(BaseHTTPRequestHandler):
         super().__init__(*args)
 
     def do_GET(self):
-        self.send_response(200 if self.path == '/' and self.leader.ready() else 503)
+        healthy = self.leader.live() if self.path == '/live' else self.path == '/' and self.leader.ready()
+        self.send_response(200 if healthy else 503)
         self.end_headers()
 
     def log_message(self, *_args):
@@ -247,8 +254,10 @@ class ReadinessHandler(BaseHTTPRequestHandler):
 def main():
     if sys.argv[1:] == ['check']:
         return 0 if http_healthy(9998) else 1
+    if sys.argv[1:] == ['live']:
+        return 0 if http_healthy(9998, '/live') else 1
     if sys.argv[1:]:
-        raise SystemExit('Expected no arguments or check')
+        raise SystemExit('Expected no arguments, check, or live')
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     namespace = os.environ['POD_NAMESPACE']
     identity = os.environ['POD_UID']
