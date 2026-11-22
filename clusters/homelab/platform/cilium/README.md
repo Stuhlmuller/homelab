@@ -70,8 +70,12 @@ Before uncordoning `zimaboard-2`, run the same check against private Pod and
 CiliumEndpoint snapshots containing the Cilium probe. Supply
 `--worker zimaboard-2 --nodes <nodes.json> --previous-boot-id <boot-id>`
 to require a changed boot ID, a Ready node and a current Cilium endpoint
-while the worker remains cordoned. Verify the probe's DNS, Service and
-Multus attachment paths before restoring scheduling.
+while the worker remains cordoned. The `worker-probe/` fixture starts a
+temporary Job on the cordoned worker. Its readiness checks the secondary
+interface, cluster DNS and TCP access to the Kubernetes Service. Verify
+the Cilium endpoint while the Job is Ready and remove the fixture before
+restoring scheduling. Its test bridge exercises Multus delegation. Verify
+the Octelium attachment on the actual Octelium dataplane separately.
 
 
 
