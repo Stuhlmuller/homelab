@@ -84,6 +84,12 @@
     "targetRevision": "v1.20.3"
   },
   {
+    "chart": "cilium",
+    "repoURL": "https://helm.cilium.io",
+    "source": "IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl",
+    "targetRevision": "1.20.5"
+  },
+  {
     "chart": "cni",
     "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
