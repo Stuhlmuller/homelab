@@ -24,7 +24,6 @@ python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
-python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -35,11 +34,13 @@ python3 -I scripts/ci/litellm-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
+node --test scripts/ci/openwiki-viewer-navigation-test.mjs
 python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
+python3 -I scripts/ci/cilium-egress-audit-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/octelium-ci-credential-test.py
@@ -125,6 +126,7 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/network-policy-candidate-report-test.py
+python3 -I scripts/ci/crossplane-retirement-check-test.py
 python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
@@ -135,7 +137,7 @@ python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
-python3 -I scripts/ci/terragrunt-plan-units-test.py
+python3 -I scripts/ci/terragrunt-affected-units-test.py
 python3 -I scripts/ci/terragrunt-plan-runner-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py

@@ -261,12 +261,16 @@ class RestoreDrillTest(unittest.TestCase):
         self.assertTrue(next(m for m in container["volumeMounts"] if m["name"] == "backup")["readOnly"])
         policies = {o["metadata"]["name"]: o["spec"] for o in objects if o["kind"] == "NetworkPolicy"}
         self.assertEqual(set(policies), {"octelium-storage", "octelium-postgres-backup",
-                                         "octelium-postgres-restore-drill", "octelium-storage-default-deny"})
+                                         "octelium-postgres-restore-drill", "octelium-storage-default-deny",
+                                         "octelium-postgres-backup-egress"})
         self.assertEqual(policies["octelium-storage"]["podSelector"], {"matchExpressions": [{
             "key": "app.kubernetes.io/name", "operator": "In",
             "values": ["octelium-postgres", "octelium-redis"]}]})
         self.assertEqual(policies["octelium-postgres-backup"]["podSelector"],
                          {"matchLabels": {"app.kubernetes.io/name": "octelium-postgres"}})
+        self.assertEqual(policies["octelium-storage"]["egress"], [])
+        self.assertEqual(policies["octelium-postgres-backup-egress"]["podSelector"],
+                         {"matchLabels": {"app.kubernetes.io/name": "octelium-postgres-backup"}})
         default = policies["octelium-storage-default-deny"]
         self.assertEqual(default, {"podSelector": {}, "policyTypes": ["Ingress"]})
         server_services = [o for o in objects if o["kind"] == "Service"]

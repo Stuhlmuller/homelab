@@ -160,6 +160,13 @@ verified:
 
 # Harbor Private OCI Registry
 
+## Argo CD bootstrap image
+
+The offline image coverage check requires a digest-pinned Quay catalog entry
+for the bootstrap chart's literal `global.image.tag`. The full catalog keeps
+v3.4.2 for rollback alongside v3.4.14. Use protected Harbor publication and
+authenticated pull verification before applying a new bootstrap image tag.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins

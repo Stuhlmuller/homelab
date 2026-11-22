@@ -10,6 +10,33 @@ import sys
 
 
 EQUIVALENCE = runpy.run_path(str(Path(__file__).with_name("terragrunt-app-equivalence.py")))
+BASELINE_UNHEALTHY = "Argo CD baseline is not Synced/Healthy"
+
+
+def status_summary(application):
+    """Return only fixed status categories for the public Actions log."""
+    def known(value, allowed):
+        return value if value in allowed else "Unknown"
+
+    status = application.get("status", {})
+    sync = status.get("sync", {}).get("status")
+    health = status.get("health", {}).get("status")
+    phase = status.get("operationState", {}).get("phase")
+    condition_types = ("ComparisonError", "SyncError", "InvalidSpecError",
+                       "SharedResourceWarning", "RepeatedResourceWarning")
+    resource_kinds = ("CronJob", "Deployment", "ExternalSecret", "Job",
+                      "PersistentVolumeClaim", "Service", "StatefulSet")
+    return {
+        "sync": known(sync, ("Synced", "OutOfSync")),
+        "health": known(health, ("Healthy", "Progressing", "Degraded", "Suspended", "Missing")),
+        "operation": known(phase, ("Running", "Succeeded", "Failed", "Error", "Terminating")),
+        "conditions": sorted({known(item.get("type"), condition_types) for item in status.get("conditions") or ()}),
+        "affected_kinds": sorted({
+            known(item.get("kind"), resource_kinds) for item in status.get("resources") or ()
+            if item.get("status") == "OutOfSync" or (item.get("health") or {}).get("status", "Healthy") != "Healthy"
+        }),
+    }
+
 
 def runtime_changed(paths):
     return any((path.startswith("clusters/homelab/apps/mastodon/")
@@ -41,7 +68,7 @@ def failures(application, cronjob, jobs, now):
     errors = []
     status = application.get("status", {})
     if status.get("sync", {}).get("status") != "Synced" or status.get("health", {}).get("status") != "Healthy":
-        errors.append("Argo CD baseline is not Synced/Healthy")
+        errors.append(BASELINE_UNHEALTHY)
     if cronjob.get("spec", {}).get("suspend", False):
         errors.append("scheduled database backup is suspended")
     backups = [job for job in jobs if any(
@@ -105,6 +132,8 @@ def main():
         errors = failures(application, cronjob, jobs, datetime.now(timezone.utc))
         for error in errors:
             print(f"::error::Mastodon release check: {error}.", file=sys.stderr)
+        if BASELINE_UNHEALTHY in errors:
+            print("Mastodon Argo CD status", json.dumps(status_summary(application)), file=sys.stderr)
         if not errors:
             print("Mastodon baseline, scheduled backup and fresh isolated database restore passed.")
         return int(bool(errors))

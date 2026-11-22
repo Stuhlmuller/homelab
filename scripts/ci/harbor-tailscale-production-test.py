@@ -286,7 +286,7 @@ class WorkflowPolicy(unittest.TestCase):
                 self.assertIn("Tailnet workflow access requires", result.stdout)
             other["jobs"]["other"]["steps"][0]["env"] = {"alias": "${{ secrets.SOMETHING_ELSE }}"}
             self.assertEqual(verdict(other).returncode, 0)
-            for change in ['environment', 'tag', 'secret', 'action', 'event', 'event_alias', 'output', 'permissions', 'name']:
+            for change in ['environment', 'tag', 'secret', 'action', 'event', 'event_alias', 'output', 'permissions', 'name', 'concurrency']:
                 bad = copy.deepcopy(workflow)
                 job = bad['jobs']['mirror']
                 join = next(x for x in job['steps'] if x['name'] == 'Join Production Tailnet')
@@ -308,6 +308,8 @@ class WorkflowPolicy(unittest.TestCase):
                     job['permissions']['contents'] = 'write'
                 if change == 'name':
                     bad['name'] = 'Unreviewed workflow'
+                if change == 'concurrency':
+                    job['concurrency']['group'] = 'harbor-mirror-production'
                 with self.subTest(change=change):
                     result = verdict(bad)
                     self.assertNotEqual(result.returncode, 0)
