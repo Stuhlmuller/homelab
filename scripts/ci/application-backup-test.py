@@ -102,6 +102,16 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(APP.completed(self.aws, 'octelium'), [identifier])
         self.assertFalse(json.loads((recovered / 'retrieval.json').read_text())['application_restore_tested'])
 
+    def test_fresh_scoped_publication_never_probes_unversioned_payload(self):
+        path = self.source / 'octelium.dump'
+        digest = APP.OFFSITE.digest(path)
+        key = 'applications/octelium-rscstore/sample/rscstore.part01'
+        with patch.object(self.aws, 'call', wraps=self.aws.call) as call:
+            version = APP.upload(self.aws, key, path, digest, create_only=True)
+        self.assertEqual(self.aws.calls, ['put-object', 'head-object'])
+        self.assertIn('--if-none-match', call.call_args_list[0].args[2])
+        self.assertEqual(call.call_args_list[1].args[2][-2:], ['--version-id', version])
+
     def test_partial_upload_never_completes_then_retries(self):
         prepared = self.prepare()
         self.aws.fail_key = '/octelium.dump'

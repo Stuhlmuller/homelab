@@ -1,0 +1,145 @@
+name: Octelium Resource Store Backup
+run-name: Octelium rscstore ${{ inputs.stage }} @ ${{ github.sha }}
+
+# checkov:skip=CKV_GHA_7: the protected workflow uses a fixed stage, exact main, and reviewed storage UIDs.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit
+        required: true
+        type: string
+      stage:
+        description: Preflight with the writer running, or backup after the fence reconciles
+        required: true
+        type: choice
+        options: [preflight, backup]
+      pvc_uid:
+        description: Private observation of the current resource-store PVC UID
+        required: true
+        type: string
+      pv_uid:
+        description: Private observation of the current bound PV UID
+        required: true
+        type: string
+      preflight_run_id:
+        description: Successful protected preflight run, required for backup
+        required: false
+        type: string
+
+permissions: {}
+concurrency:
+  group: octelium-rscstore-backup
+  cancel-in-progress: false
+
+jobs:
+  static-policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$GITHUB_WORKFLOW_SHA" = "$EXPECTED_SHA"
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Validate Dispatch and Backup Contracts
+        run: |
+          set -euo pipefail
+          bash scripts/ci/terragrunt-current-main.sh
+          bash -n scripts/ci/octelium-rscstore-backup.sh
+          python3 -I scripts/ci/octelium-rscstore-capture-test.py
+          python3 -I scripts/ci/application-backup-test.py
+
+  backup:
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.actor_id == '57728706' && github.run_attempt == '1'
+    needs: [static-policy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    environment:
+      name: octelium-rscstore-backup
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify Reviewed Backup Helpers
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            '787d6b4d675565a8b21df9d909c1f656e6ea715c0c80040ee7ad517685b60dd9' scripts/ci/octelium-rscstore-backup.sh \
+            '019393bde636a1a092be18984783401d63999fd75f70387e29eedd566d9b43a6' scripts/octelium-rscstore-capture.py \
+            'bef7063dfb90bef89f17f8fe26fc82e1c79a54b03115667ab5c427f2922d3924' scripts/application-backup.py \
+            '5abb427b7dd8e80cfc44e0ba45f2311e8c4cd269defd7188a8ed578a7d395368' scripts/ci/octelium-rscstore-backup-receipt.py \
+            | sha256sum --check --status
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Private Scratch
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: bash scripts/ci/octelium-rscstore-backup.sh init
+      - name: Check Cluster or Capture Fenced Store
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_RSCSTORE_KUBE_TOKEN }}
+          RSCSTORE_TALOS_TOKEN: ${{ secrets.OCTELIUM_RSCSTORE_TALOS_TOKEN }}
+          RSCSTORE_TALOSCONFIG_B64: ${{ secrets.OCTELIUM_RSCSTORE_TALOSCONFIG_B64 }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh cluster >"$private_log" 2>&1; then
+            echo '::error::The Octelium cluster or scratch check failed. Private details withheld.'
+            exit 1
+          fi
+      - name: Recheck Current Main Before AWS Credentials
+        run: bash scripts/ci/terragrunt-current-main.sh
+      - name: Assume Scoped Backup Role
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN }}
+          role-session-name: octelium-rscstore-${{ github.run_id }}
+          role-duration-seconds: 3600
+          mask-aws-account-id: true
+          unset-current-credentials: true
+      - name: Verify S3 Access or Publish and Prove Extraction
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh publish >"$private_log" 2>&1; then
+            echo '::error::The Octelium S3 or extraction check failed. Private details withheld.'
+            exit 1
+          fi
+          printf 'Octelium resource-store %s verified at %s.\n' "$BACKUP_STAGE" "$EXPECTED_SHA"
+      - name: Remove Private Runner Scratch
+        if: always()
+        run: bash scripts/ci/octelium-rscstore-backup.sh cleanup

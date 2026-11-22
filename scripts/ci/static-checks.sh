@@ -218,13 +218,15 @@ echo "::group::LiteLLM Bedrock IAM policy"
 )
 echo "::endgroup::"
 
-echo "::group::Etcd offsite bucket offline guards"
-(
-  cd IaC/homelab/us-west-2/operator/etcd-backup-storage
-  terragrunt --log-disable init -backend=false -no-color
-  terragrunt --log-disable run --no-auto-init -- validate -no-color
-  terragrunt --log-disable run --no-auto-init -- test -no-color
-)
+echo "::group::Backup infrastructure offline guards"
+for backup_unit in etcd-backup-storage octelium-rscstore-backup; do
+  (
+    cd "IaC/homelab/us-west-2/operator/${backup_unit}"
+    terragrunt --log-disable init -backend=false -no-color
+    terragrunt --log-disable run --no-auto-init -- validate -no-color
+    terragrunt --log-disable run --no-auto-init -- test -no-color
+  )
+done
 echo "::endgroup::"
 
 echo "::group::Octelium bootstrap node containment"

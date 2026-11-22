@@ -115,7 +115,8 @@ source "$1" --offline-verified
         self.assertEqual(initialized, {
             "github-actions-role-policy", "azuread-ci-identities", "entra-stuhlmuller-domain",
             "entra-stuhlmuller-pilot-user", "entra-emergency-global-admin", "entra-owner-mail",
-            "entra-google-workspace-federation", "etcd-backup-storage", "kubernetes-node-labels",
+            "entra-google-workspace-federation", "etcd-backup-storage", "octelium-rscstore-backup",
+            "kubernetes-node-labels",
             "tailscale-access", "litellm-bedrock",
         })
         self.assertGreaterEqual(sum(call["args"] == ["render"] for call in calls), 3)

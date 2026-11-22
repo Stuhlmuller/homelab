@@ -535,6 +535,30 @@ local receipt files alone do not qualify. This is a prepared path, not a
 deployed backup or a DuckDB reopen proof. No WAL file is changed or store
 writer resumed by this stage. See the [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
+The separate operator `octelium-rscstore-backup` unit declares a dedicated
+`homelab-octelium-rscstore-backup` GitHub OIDC role. Configure the
+`octelium-rscstore-backup` GitHub environment to allow deployments only from
+`main` before enabling credentialed publication. The role can check bucket
+versioning and encryption, read explicit object versions, and conditionally
+create SSE-KMS objects under `applications/octelium-rscstore/`. Retrieval can
+discover the current version of a `complete.json` marker and uses explicit
+version IDs for payload objects. Publication records the version ID returned by
+each successful conditional creation before verifying that version.
+
+The [Octelium Resource Store Backup workflow](../../.github/workflows/octelium-rscstore-backup.yml)
+uses a clean exact-`main` checkout. Its dedicated environment supplies
+`OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN` and scoped Kubernetes, native Talos relay,
+and Talos mTLS credentials. `preflight` runs while the writer and read-only
+inspector are active. It checks the current storage UIDs, live transport,
+available private runner disk, and encrypted S3 version readback. Preserve a
+working rollback route while validating the relay that will be used during the
+fence. Match the retained preflight receipt against the current storage UIDs
+before merging the fence. After the fence reconciles to exact `main`, `backup`
+requires a successful preflight run and unchanged backup code. It stores the
+verified archive and fresh extraction proof in S3. GitHub logs report the
+source revision and result. Archive contents, storage UIDs, and object versions
+remain in private receipts.
+
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
