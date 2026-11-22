@@ -541,8 +541,8 @@ The separate operator `octelium-rscstore-backup` unit declares a dedicated
 `main` before enabling credentialed publication. The role can check bucket
 versioning and encryption, read explicit object versions, and conditionally
 create SSE-KMS objects under `applications/octelium-rscstore/`. Retrieval can
-discover the current version of a `complete.json` marker and uses explicit
-version IDs for payload objects. Publication records the version ID returned by
+discover the current version of a `complete.json` marker or a preflight
+receipt and uses explicit version IDs for downloads. Publication records the version ID returned by
 each successful conditional creation before verifying that version.
 
 The [Octelium Resource Store Backup workflow](../../.github/workflows/octelium-rscstore-backup.yml)
@@ -554,7 +554,9 @@ available private runner disk, and encrypted S3 version readback. Preserve a
 working rollback route while validating the relay that will be used during the
 fence. Match the retained preflight receipt against the current storage UIDs
 before merging the fence. After the fence reconciles to exact `main`, `backup`
-requires a successful preflight run and unchanged backup code. It stores the
+checks the successful preflight run, unchanged backup code, and the source SHA,
+run ID, storage UIDs and four-hour age limit in its exact S3 receipt version
+before opening cluster transport. It stores the
 verified archive and fresh extraction proof in S3. GitHub logs report the
 source revision and result. Archive contents, storage UIDs, and object versions
 remain in private receipts.

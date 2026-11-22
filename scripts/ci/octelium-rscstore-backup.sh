@@ -4,7 +4,7 @@ set -euo pipefail
 umask 077
 
 phase="${1:-}"
-case "$phase" in init|cluster|publish|cleanup) ;; *) exit 2 ;; esac
+case "$phase" in init|authorize|cluster|publish|cleanup) ;; *) exit 2 ;; esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_EVENT_NAME:-}" == workflow_dispatch &&
    "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab && "${GITHUB_REF:-}" == refs/heads/main &&
    "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/octelium-rscstore-backup.yml@refs/heads/main &&
@@ -31,24 +31,56 @@ EXPECTED_PVC_UID="$(jq -er '.inputs.pvc_uid' "$GITHUB_EVENT_PATH")"
 EXPECTED_PV_UID="$(jq -er '.inputs.pv_uid' "$GITHUB_EVENT_PATH")"
 export EXPECTED_PVC_UID EXPECTED_PV_UID
 
+if [[ "$phase" == authorize || "$phase" == publish ]]; then
+  aws_cli="$(command -v aws)"
+  : "${AWS_ACCESS_KEY_ID:?missing OIDC session}"
+  : "${AWS_SECRET_ACCESS_KEY:?missing OIDC session}"
+  : "${AWS_SESSION_TOKEN:?missing short-lived OIDC session}"
+  profile_home="$workspace/aws-home"
+  install -m 0700 -d "$profile_home/.aws"
+  # The existing publisher drops AWS_* variables. Supply only this invocation's
+  # credentials through its explicit file-backed profile.
+  printf '[octelium-rscstore]\naws_access_key_id=%s\naws_secret_access_key=%s\naws_session_token=%s\n' \
+    "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_SESSION_TOKEN" \
+    >"$profile_home/.aws/credentials"
+  trap 'rm -f -- "$profile_home/.aws/credentials"' EXIT
+  chmod 0600 "$profile_home/.aws/credentials"
+fi
+
+if [[ "$phase" == authorize ]]; then
+  [[ "$BACKUP_STAGE" == backup ]]
+  [[ "${PREFLIGHT_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]]
+  reviewed="$(gh api "repos/Stuhlmuller/homelab/actions/runs/$PREFLIGHT_RUN_ID" | jq -er '
+    select(.head_branch == "main" and .event == "workflow_dispatch" and .conclusion == "success"
+      and .path == ".github/workflows/octelium-rscstore-backup.yml"
+      and .display_title == ("Octelium rscstore preflight @ " + .head_sha)) | .head_sha')"
+  [[ "$reviewed" =~ ^[0-9a-f]{40}$ ]]
+  git merge-base --is-ancestor "$reviewed" "$EXPECTED_SHA"
+  git diff --quiet "$reviewed" "$EXPECTED_SHA" -- \
+    .github/workflows/octelium-rscstore-backup.yml flake.nix flake.lock \
+    scripts/octelium-rscstore-capture.py scripts/application-backup.py \
+    scripts/etcd-offsite-backup.py scripts/talos-etcd-backup.py \
+    scripts/ci/octelium-rscstore-backup.sh scripts/ci/octelium-rscstore-backup-receipt.py \
+    scripts/ci/install-kubeconfig.sh scripts/ci/install-octelium-client.sh \
+    IaC/application-backup-storage.hcl IaC/homelab/us-west-2/operator/application-backup-storage.hcl \
+    clusters/homelab/apps/octelium-enterprise/capture-stage/inspector.yaml \
+    clusters/homelab/apps/octelium-enterprise/capture-stage/inspector-networkpolicy.yaml \
+    IaC/terragrunt-catalog/modules/aws-octelium-rscstore-backup
+  HOME="$profile_home" python3 -I scripts/ci/octelium-rscstore-backup-receipt.py \
+    "$aws_cli" "$workspace" "$PREFLIGHT_RUN_ID" authorize "$reviewed"
+  exit 0
+fi
+
+if [[ "$BACKUP_STAGE" == backup ]]; then
+  [[ "${PREFLIGHT_RUN_ID:-}" =~ ^[1-9][0-9]*$ && ! -L "$workspace/authorized-preflight.json" ]]
+  jq -e --arg run "$PREFLIGHT_RUN_ID" --arg pvc "$EXPECTED_PVC_UID" --arg pv "$EXPECTED_PV_UID" '
+    .stage == "preflight" and .workflow_run_id == $run and .pvc_uid == $pvc and .pv_uid == $pv
+  ' "$workspace/authorized-preflight.json" >/dev/null
+else
+  [[ -z "${PREFLIGHT_RUN_ID:-}" ]]
+fi
+
 if [[ "$phase" == cluster ]]; then
-  if [[ "$BACKUP_STAGE" == backup ]]; then
-    [[ "${PREFLIGHT_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]]
-    reviewed="$(gh api "repos/Stuhlmuller/homelab/actions/runs/$PREFLIGHT_RUN_ID" | jq -er '
-      select(.head_branch == "main" and .event == "workflow_dispatch" and .conclusion == "success"
-        and .path == ".github/workflows/octelium-rscstore-backup.yml"
-        and .display_title == ("Octelium rscstore preflight @ " + .head_sha)) | .head_sha')"
-    [[ "$reviewed" =~ ^[0-9a-f]{40}$ ]]
-    git merge-base --is-ancestor "$reviewed" "$EXPECTED_SHA"
-    git diff --quiet "$reviewed" "$EXPECTED_SHA" -- \
-      .github/workflows/octelium-rscstore-backup.yml flake.nix flake.lock \
-      scripts/octelium-rscstore-capture.py scripts/application-backup.py \
-      scripts/ci/octelium-rscstore-backup.sh scripts/ci/octelium-rscstore-backup-receipt.py \
-      scripts/ci/install-kubeconfig.sh scripts/ci/install-octelium-client.sh \
-      IaC/terragrunt-catalog/modules/aws-octelium-rscstore-backup
-  else
-    [[ -z "${PREFLIGHT_RUN_ID:-}" ]]
-  fi
   : "${OCTELIUM_AUTH_TOKEN:?missing dedicated Kubernetes transport credential}"
   : "${RSCSTORE_TALOS_TOKEN:?missing dedicated Talos relay credential}"
   : "${RSCSTORE_TALOSCONFIG_B64:?missing dedicated Talos client configuration}"
@@ -97,19 +129,6 @@ PY
   exit 0
 fi
 
-aws_cli="$(command -v aws)"
-: "${AWS_ACCESS_KEY_ID:?missing OIDC session}"
-: "${AWS_SECRET_ACCESS_KEY:?missing OIDC session}"
-: "${AWS_SESSION_TOKEN:?missing short-lived OIDC session}"
-profile_home="$workspace/aws-home"
-install -m 0700 -d "$profile_home/.aws"
-# The existing publisher drops AWS_* variables. Supply only this invocation's
-# credentials through its explicit file-backed profile.
-printf '[octelium-rscstore]\naws_access_key_id=%s\naws_secret_access_key=%s\naws_session_token=%s\n' \
-  "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_SESSION_TOKEN" \
-  >"$profile_home/.aws/credentials"
-trap 'rm -f -- "$profile_home/.aws/credentials"' EXIT
-chmod 0600 "$profile_home/.aws/credentials"
 if [[ "$BACKUP_STAGE" == preflight ]]; then
   test -s "$workspace/cluster-result"
   HOME="$profile_home" python3 -I scripts/ci/octelium-rscstore-backup-receipt.py \

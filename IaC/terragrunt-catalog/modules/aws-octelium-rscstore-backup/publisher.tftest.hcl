@@ -68,6 +68,12 @@ run "scopes_octelium_rscstore_publisher" {
           Resource = "arn:aws:s3:::homelab-application-backups-123456789012-us-east-1/applications/octelium-rscstore/*/complete.json"
         },
         {
+          Sid      = "DiscoverPreflightReceiptVersion"
+          Effect   = "Allow"
+          Action   = ["s3:GetObject"]
+          Resource = "arn:aws:s3:::homelab-application-backups-123456789012-us-east-1/applications/octelium-rscstore/preflight/*.json"
+        },
+        {
           Sid      = "CreateEncryptedBackupObjects"
           Effect   = "Allow"
           Action   = ["s3:PutObject"]

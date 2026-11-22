@@ -104,6 +104,7 @@ class PublicationTests(unittest.TestCase):
 
     def test_fresh_scoped_publication_never_probes_unversioned_payload(self):
         path = self.source / 'octelium.dump'
+        path.chmod(0o600)
         digest = APP.OFFSITE.digest(path)
         key = 'applications/octelium-rscstore/sample/rscstore.part01'
         with patch.object(self.aws, 'call', wraps=self.aws.call) as call:

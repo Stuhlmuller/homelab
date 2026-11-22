@@ -62,6 +62,7 @@ jobs:
           bash -n scripts/ci/octelium-rscstore-backup.sh
           python3 -I scripts/ci/octelium-rscstore-capture-test.py
           python3 -I scripts/ci/application-backup-test.py
+          python3 -I scripts/ci/octelium-rscstore-backup-receipt-test.py
 
   backup:
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.actor_id == '57728706' && github.run_attempt == '1'
@@ -84,10 +85,10 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '787d6b4d675565a8b21df9d909c1f656e6ea715c0c80040ee7ad517685b60dd9' scripts/ci/octelium-rscstore-backup.sh \
+            '5b747ad515675450ecdb2f39025843be9c93a84b7590cdd2e6833755bf6ba3e6' scripts/ci/octelium-rscstore-backup.sh \
             '019393bde636a1a092be18984783401d63999fd75f70387e29eedd566d9b43a6' scripts/octelium-rscstore-capture.py \
             'bef7063dfb90bef89f17f8fe26fc82e1c79a54b03115667ab5c427f2922d3924' scripts/application-backup.py \
-            '5abb427b7dd8e80cfc44e0ba45f2311e8c4cd269defd7188a8ed578a7d395368' scripts/ci/octelium-rscstore-backup-receipt.py \
+            'eef7d67605ddfa76cfe27027089562fc243f2dfaf9e8f3eeea573ebc3641b1b5' scripts/ci/octelium-rscstore-backup-receipt.py \
             | sha256sum --check --status
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
@@ -99,6 +100,37 @@ jobs:
           BACKUP_STAGE: ${{ inputs.stage }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: bash scripts/ci/octelium-rscstore-backup.sh init
+      - name: Assume Backup Role for Preflight Verification
+        if: inputs.stage == 'backup'
+        id: receipt-session
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN }}
+          role-session-name: octelium-preflight-${{ github.run_id }}
+          role-duration-seconds: 900
+          output-credentials: true
+          output-env-credentials: false
+          mask-aws-account-id: true
+          unset-current-credentials: true
+      - name: Verify Prior Protected Preflight and Exact S3 Receipt
+        if: inputs.stage == 'backup'
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          AWS_ACCESS_KEY_ID: ${{ steps.receipt-session.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.receipt-session.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.receipt-session.outputs.aws-session-token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh authorize >"$private_log" 2>&1; then
+            echo '::error::A current preflight receipt does not match the requested backup. Private details withheld.'
+            exit 1
+          fi
       - name: Check Cluster or Capture Fenced Store
         env:
           BACKUP_STAGE: ${{ inputs.stage }}
@@ -119,18 +151,25 @@ jobs:
       - name: Recheck Current Main Before AWS Credentials
         run: bash scripts/ci/terragrunt-current-main.sh
       - name: Assume Scoped Backup Role
+        id: backup-session
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN }}
           role-session-name: octelium-rscstore-${{ github.run_id }}
           role-duration-seconds: 3600
+          output-credentials: true
+          output-env-credentials: false
           mask-aws-account-id: true
           unset-current-credentials: true
       - name: Verify S3 Access or Publish and Prove Extraction
         env:
           BACKUP_STAGE: ${{ inputs.stage }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          AWS_ACCESS_KEY_ID: ${{ steps.backup-session.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.backup-session.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.backup-session.outputs.aws-session-token }}
         run: |
           set -euo pipefail
           private_log="$(mktemp)"

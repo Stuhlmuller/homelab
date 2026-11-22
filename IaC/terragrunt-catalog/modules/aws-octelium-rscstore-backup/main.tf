@@ -28,6 +28,12 @@ locals {
         Resource = "${local.bucket_arn}/applications/octelium-rscstore/*/complete.json"
       },
       {
+        Sid      = "DiscoverPreflightReceiptVersion"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${local.bucket_arn}/applications/octelium-rscstore/preflight/*.json"
+      },
+      {
         Sid      = "CreateEncryptedBackupObjects"
         Effect   = "Allow"
         Action   = ["s3:PutObject"]
