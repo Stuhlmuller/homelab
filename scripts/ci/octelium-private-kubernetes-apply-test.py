@@ -19,7 +19,6 @@ import sys
 root = Path(os.environ["FIXTURE_ROOT"])
 tool = Path(sys.argv[0]).name
 args = sys.argv[1:]
-assert os.environ.get("GH_TOKEN") == "synthetic" if tool == "gh" else "GH_TOKEN" not in os.environ
 
 def event(name):
     with (root / "calls.jsonl").open("a") as log:
@@ -38,14 +37,15 @@ elif tool == "tar":
     destination = Path(args[args.index("-C") + 1]) / "octeliumctl"
     shutil.copyfile(sys.argv[0], destination)
     destination.chmod(0o700)
-elif tool == "gh":
-    assert args == ["api", "repos/Stuhlmuller/homelab/git/ref/heads/main", "--jq", ".object.sha"]
+elif tool == "git":
+    assert args == ["ls-remote", "--exit-code", "https://github.com/Stuhlmuller/homelab.git", "refs/heads/main"]
     event("main.check")
     checks = sum(json.loads(line) == "main.check"
                  for line in (root / "calls.jsonl").read_text().splitlines())
     if os.environ.get("LOOKUP_FAIL") == "true":
         sys.exit(23)
-    print("stale" if checks >= int(os.environ.get("STALE_AT", "1000")) else "fixture")
+    sha = "b" * 40 if checks >= int(os.environ.get("STALE_AT", "1000")) else "a" * 40
+    print(f"{sha}\trefs/heads/main")
 elif tool == "octeliumctl":
     if "login" in args:
         event("catalog.login")
@@ -70,13 +70,13 @@ class PrivateKubernetesApplyTest(unittest.TestCase):
             root = Path(tmp)
             binaries = root / "bin"
             binaries.mkdir()
-            for name in ("yq", "jq", "curl", "sha256sum", "tar", "gh"):
+            for name in ("yq", "jq", "curl", "sha256sum", "tar", "git"):
                 path = binaries / name
                 path.write_text(f"#!{sys.executable}\n" + STUB)
                 path.chmod(0o700)
             environment = dict(os.environ, PATH=str(binaries) + os.pathsep + os.environ["PATH"],
-                               FIXTURE_ROOT=str(root), GITHUB_SHA="fixture",
-                               GITHUB_REPOSITORY="Stuhlmuller/homelab", GH_TOKEN="synthetic",
+                               FIXTURE_ROOT=str(root), GITHUB_SHA="a" * 40, GITHUB_ACTIONS="true",
+                               GITHUB_REF="refs/heads/main", GITHUB_REPOSITORY="Stuhlmuller/homelab",
                                OCTELIUM_CATALOG_AUTH_TOKEN="synthetic")
             if stale_at is not None:
                 environment["STALE_AT"] = str(stale_at)
