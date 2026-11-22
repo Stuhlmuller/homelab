@@ -18,7 +18,7 @@ verified:
 
 # OpenClaw personal assistant
 
-Source: `clusters/homelab/apps/openclaw/README.md` and `assistant/`.
+Source: [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md) and `assistant/`.
 
 September 29 UTC GitHub diagnosis: the running app's bare `gh api` exited 4
 asking for login, while its mounted App key authenticated successfully and the

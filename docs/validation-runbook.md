@@ -158,7 +158,7 @@ curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/
 Expected result: the internal host serves normal Policy Bot UI routes, details
 redirect to `/api/github/auth`, and a safe public hook GET returns `404` with
 one valid backend `X-Request-ID`; root returns `404` without it. This checks
-routing only. Require the [guarded App URL change and fresh signed delivery](../clusters/homelab/apps/policy-bot/README.md#routes).
+routing only. Require the [guarded App URL change and fresh signed delivery](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#routes).
 
 Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
@@ -195,7 +195,7 @@ kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
 Require a Ready local Pod on `acer`, only that Pod in the Service endpoints,
 all six application databases, writable SQL access, and a verified scheduled
 backup. Test indexer searches in Prowlarr, Sonarr and Radarr. Use the
-[database restore procedure](../clusters/homelab/apps/media-postgres/README.md#backup-and-restore)
+[database restore procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/media-postgres/README.md#backup-and-restore)
 for recovery; preserve both claims.
 
 For Radarr access lockout checks, validate that the auth-normalized
@@ -218,7 +218,7 @@ itself, a lockout signal.
 n8n must also wait for `n8n-postgres` to sync and become healthy. Verify the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, the StatefulSet,
 the PVC, and an authenticated connection to the `n8n` database documented in
-`clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n-postgres/README.md) before treating n8n as migrated
 to PostgreSQL.
 
 n8n startup probes use `/healthz`, while readiness and liveness use the
@@ -230,7 +230,7 @@ pool stays closed after a database interruption. A pod that is Ready while
 n8n advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel
 and Traefik; its editor keeps the canonical private mesh URL. Converge Funnel
 before n8n restarts. Existing GitHub registrations move separately through the
-[fixed two-hook helper](../clusters/homelab/apps/n8n/README.md#access-contract),
+[fixed two-hook helper](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#access-contract),
 which uses safe OPTIONS probes and requires fresh delivery receipts.
 
 ```sh

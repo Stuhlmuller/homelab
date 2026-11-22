@@ -28,8 +28,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/networkpolicy.yaml
   - id: openwiki-source-fa98853a4d8b97699eb08972
     resource: repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml
-  - id: openwiki-source-a11878298975bc4bd3bbaf7d
-    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
@@ -44,24 +42,18 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
-  - id: openwiki-source-fbaccd01ca51226fa9e5324d
-    resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-13b48922f1b929b52f4a0233
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
@@ -99,9 +91,9 @@ API and console. Existing DNS and Cloudflare transport remain until cutover
 acceptance; foundation source alone does not establish deployed traffic changes.
 
 Canonical desired state and validation:
-[Traefik README](../../clusters/homelab/apps/traefik/README.md),
+[Traefik README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/README.md),
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
-[Tailscale provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+[Tailscale provider runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
 phase 2a source and the separate external DNS and later CI cutover gates.
 
@@ -227,7 +219,7 @@ The operator enrolls proxies with their declared hostnames and tags. Verify the
 controller-owned resource, online device identity and observed address before
 traffic acceptance. A Ready Pod alone does not prove tailnet reachability.
 CI uses three provider-managed reusable ephemeral auth keys in their scoped
-GitHub secrets. Follow the [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+GitHub secrets. Follow the [provider runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md)
 for credential ownership, policy, lifetime and rotation. Each job uses private
 daemon state and must verify enrollment and cleanup.
 
@@ -255,7 +247,7 @@ healthy proxies and actual application access from a mesh client before changing
 DNS. Preserve current app state and enrollment URLs; confirm Fleet check-in,
 native Cordium execution/reconnection, and uncached node registry pulls.
 
-For the Fleet iPhone gate, use the [guarded one-shot check-in helper](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+For the Fleet iPhone gate, use the [guarded one-shot check-in helper](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 It verifies the selected enrollment, reads Fleet's pending command and profile
 state, then sends one blank APNs ping only when that preflight is clear. A newer
 MDM check-in timestamp is required; a successful ping or an online Tailscale
@@ -459,7 +451,7 @@ See [Validation Gates](../operations/validation-gates.md),
 
 ## AdGuard DNS and private administration
 
-[AdGuard](../../clusters/homelab/apps/adguard/README.md) uses a distinct
+[AdGuard](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md) uses a distinct
 operator-owned DNS-only Service, `automation/adguard-dns`, with hostname
 `homelab-adguard` and `tag:homelab-ingress`. UDP/TCP 53 is exposed;
 administration remains behind private Traefik at `adguard.stinkyboi.com`.
@@ -470,5 +462,5 @@ and authenticated HTTPS administration. Direct checks do not establish ordinary
 client DNS behavior. Client acceptance must identify DNS settings, caches and
 actual exit-node selection. The administrator-owned DNS policy preserves
 MagicDNS, split DNS and search paths. Recovery requires independent control-plane
-access. Follow [client setup and blocking limits](../../clusters/homelab/apps/adguard/README.md#client-setup-and-blocking-limits)
+access. Follow [client setup and blocking limits](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md#client-setup-and-blocking-limits)
 for browser DNS bypasses and domain-filtering limits.

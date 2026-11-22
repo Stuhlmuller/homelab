@@ -100,7 +100,7 @@ kubectl kustomize clusters/homelab/apps/openclaw >/dev/null
 ```
 
 Follow the fixed `inventory`, `archive`, and `verify` dispatches in the
-[OpenClaw runbook](../../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
+[OpenClaw runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
 The protected workflow produces the fresh private Kubernetes status and checks
 PVC/PV UIDs against the pre-shutdown inventory. Private files stay outside Git.
 Expected: all state roots verified, old gateway stopped, no messages/jobs/writes,
