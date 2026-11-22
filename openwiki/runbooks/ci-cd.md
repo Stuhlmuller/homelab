@@ -34,12 +34,8 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -213,7 +209,7 @@ requires a blocked result when `main` advances during sync. The committed
 only after `journalOperator.enabled` is true. It rechecks current `main`,
 source and configuration identity, retained journal and bootstrap claim/PV
 identity, and prior Job state before a fresh Job per workflow attempt. The
-[operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+[operator bundle](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a local journal claim and scoped proof permissions but is absent from
 active GitOps; the disabled gate stops before Job creation. The hosted runner
 does not mount the private journal. `restore` and `acceptance` still exit before
@@ -318,7 +314,7 @@ credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
 The pool remains disabled and existing job selectors stay unchanged. The
-[runner contract](../../builds/cordium-runner/README.md) lists the live
+[runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.
 

@@ -6,7 +6,7 @@ description: Gather focused OpenWiki and source context before homelab feature w
 # Homelab Context
 
 1. Read [OpenWiki quickstart](../../../openwiki/quickstart.md) and choose the
-   task route. Read only the relevant page sections and owning workload README.
+   task route. Read only the relevant page sections and owning runbook.
 2. For an unresolved question, use the installed `openwiki` skill's search/read
    tools. Without MCP, use `rg -n -i '<app>|<symptom>|<component>' openwiki`.
    Read the matching section rather than loading the entire wiki or inventory.

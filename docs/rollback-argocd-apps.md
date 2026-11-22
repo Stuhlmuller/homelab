@@ -61,7 +61,7 @@ Preserve both `media-postgres-local` and `data-media-postgres-0`. The retained
 NFS physical copy became stale when local writes began; use the repository-owned
 `media-postgres-recovery` logical restore overlay instead of mounting that copy
 directly. Follow
-`clusters/homelab/apps/media-postgres/README.md#backup-and-restore`, require the
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/media-postgres/README.md#backup-and-restore), require the
 recovery Job to be `Complete`, and use a separate reviewed revision to return
 the Application to the writable base overlay.
 
