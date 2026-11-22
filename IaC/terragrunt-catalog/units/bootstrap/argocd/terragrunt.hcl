@@ -80,6 +80,11 @@ inputs = {
   values = [
     yamlencode({
       global = {
+        # GHSA-rq7v-q562-vwcq: patched Argo CD 3.4 release.
+        # Keep the existing chart pin to avoid unrelated chart migration.
+        image = {
+          tag = "v3.4.14"
+        }
         affinity = {
           nodeAffinity = {
             type = "hard"
