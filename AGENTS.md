@@ -11,13 +11,14 @@ approval rounds, acceptance checklists, or deployment vetoes.
 Within the user's authorized task, run the declared pipeline and let its checks
 decide readiness. Do not ask for another approval because a document says
 "separately approved", "required", or "blocked". Report a failed check with its
-workflow/job link and fix the owning code. Do not bypass a failing executable
-check, protection, or access denial.
+workflow/job link and follow the root-cause workflow below. Do not bypass a
+failing executable check, protection, or access denial.
 
-When a documented condition has no executable enforcement, implement that check
-in the applicable CI/CD path with a negative test, then describe its behavior in
-the docs. Do not treat prose or a human assertion as proof that a check passed.
-The original user authorization and the host's permission controls still apply.
+When a documented merge or deployment condition has no executable enforcement,
+implement that check in the applicable CI/CD path with a negative test, then
+describe its behavior in the docs. Do not treat prose or a human assertion as
+proof that a check passed. The original user authorization and the host's
+permission controls still apply.
 
 This public repository is the control surface for a Kubernetes homelab running
 on Talos Linux. It has two goals:
@@ -30,6 +31,25 @@ on Talos Linux. It has two goals:
 Agents should treat the repo as homelab infrastructure, not production, and as
 educational material. A good change should be safe to apply, easy to review,
 and useful to someone learning the pattern for the first time.
+
+## Root-cause fixes and reusable design
+
+When you encounter an issue, pause implementation and delivery in the current
+thread. Use read-only diagnosis to gather evidence. In the same thread, explain
+the failure and its impact, identify the owning component and the known or
+suspected root cause, and recommend a reusable design grounded in official
+upstream guidance where available. If a workaround already exists, explain its
+trade-offs and remaining risks. Wait for the human to decide whether to accept
+the existing workaround or pursue the root-cause fix or redesign. Resume within
+that decision and the original authorization. All CI/CD gates still apply.
+
+Fix the owning component through shared interfaces that cover supported use
+cases. Prefer extending existing mechanisms and following official recommended
+patterns. Do not apply symptom-only patches, pin a working version or revision
+to avoid a failure, run hand-picked file paths in place of the declared workflow,
+or selectively skip or weaken CI or deployment tests. Focused reproductions can
+inform diagnosis. Verify the fix through the declared entry points and gates.
+See [the constitution](.specify/memory/constitution.md#vii-root-cause-fixes-and-reusable-design).
 
 ## Repository intent
 
@@ -155,7 +175,8 @@ authority and evidence through functional acceptance.
    [reference coding](docs/xerj-reference-coding.md).
 4. Run the change-specific validation gates in `README.md` and
    `docs/validation-runbook.md`.
-5. Make the smallest code and documentation change that solves the request.
+5. Make the smallest well-architected change that solves the request across
+   supported use cases. Follow the root-cause workflow when an issue surfaces.
 6. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
    dependency, workflow, topology assumption, secret contract, storage
@@ -182,9 +203,9 @@ as an explicit finding in `openwiki/` with source context and next
 steps. Do not leave important homelab observations only in chat history.
 
 If a checkout is intentionally incomplete and expected scripts or Nix targets
-are missing, say that clearly in the PR or final response and use the next best
-specific validation available, such as `talosctl validate`, `kubectl diff`,
-`helm template`, or `kustomize build`.
+are missing, record the unavailable checks in the PR or final response. Use any
+available focused validation as supplemental evidence and report the declared
+workflow as unverified until it runs.
 
 ## Review guidelines
 
