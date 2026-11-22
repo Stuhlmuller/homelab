@@ -860,7 +860,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .on.pull_request.branches == ["main"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
-    (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan", "terragrunt-plan-skipped"] and
+    (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
     .jobs["static-policy"].steps[0].with["fetch-depth"] == 0 and
     .jobs["static-policy"].outputs["requires-live-plan"] == "${{ steps.live-plan-scope.outputs.requires-live-plan }}" and
@@ -904,18 +904,11 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     } and
     ([.jobs["terragrunt-plan"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
-    .jobs["terragrunt-plan-skipped"].needs == ["static-policy"] and
-    (.jobs["terragrunt-plan-skipped"].if |
-      contains("github.event.pull_request.head.repo.full_name == github.repository") and
-      contains("needs.static-policy.outputs.requires-live-plan != '\''true'\''")) and
-    .jobs["terragrunt-plan-skipped"].environment == null and
-    .jobs["terragrunt-plan-skipped"].permissions == {} and
-    (.jobs["terragrunt-plan-skipped"].steps | length) == 1 and
     (. | tostring | contains("update-pr-plan-description") | not) and
     (. | tostring | contains("pull-requests") | not) and
     ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
     .jobs["terragrunt-gate"].if == "${{ !cancelled() }}" and
-    .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan", "terragrunt-plan-skipped"] and
+    .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan"] and
     .jobs["terragrunt-gate"].permissions == {} and
     .jobs["terragrunt-gate"].environment == null and
     (.jobs["terragrunt-gate"] | tostring | contains("secrets") | not) and
@@ -937,7 +930,7 @@ gate_body_sha256="$(
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
-[[ "$gate_body_sha256" == "f1570afa574e5a7cf7f6cc9ec5721d483a5a37c58b207729024028440fd07e17" ]] || {
+[[ "$gate_body_sha256" == "a763f0da3abffbde191ffb2c3d55fbc561c90b2b7f7a42f52a601de47d0d8194" ]] || {
   echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1053,9 +1046,9 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
     '.github/workflows/terragrunt-plan.yml:static-policy' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
-    '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
-    '.github/workflows/validate.yml:harbor-core-compatibility'
+    '.github/workflows/validate.yml:harbor-core-compatibility' \
+    '.github/workflows/validate.yml:runtime-scope'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
@@ -1126,8 +1119,8 @@ done <<'EOF'
 .github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
-.github/workflows/validate.yml ab14d6c33d69a117d8a7cfc0c791d98322529205d7a42875d30ff8bdf0466bfc
+.github/workflows/terragrunt-plan.yml ea1ebc7a28bae384177c573351f4aa3506f2fb650121bc6d5331deef06b55940
+.github/workflows/validate.yml 5cfd06911a7d00a46a26409dd85e7f207d87df5c9467677b2bbc9893abdad78a
 EOF
 echo "::endgroup::"
 
