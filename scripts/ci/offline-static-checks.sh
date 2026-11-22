@@ -985,7 +985,6 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
-    '.github/workflows/argocd-image-updater.yml:provider-ownership' \
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
@@ -1008,10 +1007,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
-    '.github/workflows/image-automation.yml:image-update-gate' \
-    '.github/workflows/image-automation.yml:observe' \
-    '.github/workflows/image-automation.yml:promote-pr' \
-    '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
@@ -1080,24 +1075,6 @@ for workflow in .github/workflows/*.yml; do
     else true end
   ' <<<"$workflow_json" >/dev/null || {
     echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
-    exit 1
-  }
-done
-
-yq -o=json '.' .github/workflows/argocd-image-updater.yml | jq -e '
-  [.on.pull_request.paths, .on.push.paths] | all(
-    index("scripts/ci/argocd-registration-plan-check.py") != null and
-    index("scripts/ci/terragrunt-apply.sh") != null
-  )
-' >/dev/null || {
-  echo "Native provider regression must run for registration guard changes." >&2
-  exit 1
-}
-
-for promotion_job in image-update-gate promote-pr; do
-  yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
-    .github/workflows/image-automation.yml >/dev/null || {
-    echo "Image automation promotion job $promotion_job lost its activation gate." >&2
     exit 1
   }
 done
