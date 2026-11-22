@@ -48,7 +48,7 @@ inputs = {
       },
       {
         name  = "runbook"
-        value = "clusters/homelab/apps/harbor/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md"
       }
     ]
   }

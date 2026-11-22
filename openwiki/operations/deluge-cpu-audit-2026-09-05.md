@@ -156,7 +156,7 @@ No diagnostic rollout or profile collection has been performed.
 The profiling static gate accepts both reviewed `off` and `on` states with the
 exact loopback address. Deployment defaults remain `off`; the capture helper
 requires clean, committed `on` values before live access. See the
-[activation runbook](../../clusters/homelab/apps/deluge/README.md#gluetun-cpu-profiling).
+[activation runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/deluge/README.md#gluetun-cpu-profiling).
 
 If profiling shows useful work is quota-limited, compare a small declarative
 limit change against the same CPU, packet-rate, VPN-health, and node-headroom

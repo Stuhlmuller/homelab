@@ -12,7 +12,7 @@ backend and frontend references.
 Both deployments use `imagePullSecrets: [{name: harbor-pull}]`, rendered by the
 existing ExternalSecret from `/homelab/nofx/harbor-pull-password`. The read-only
 robot credential never enters NOFX containers. See the
-[publication contract](../builds/nofx/README.md#publish-update-and-revert).
+[publication contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/nofx/README.md#publish-update-and-revert).
 Retain the GHCR originals and credential as a reviewed recovery path.
 
 ## GHCR recovery credential contract
@@ -206,7 +206,7 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0018`
+[NOFX README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0018`
 in the source download and confirm all traders remain stopped and retain their
 saved visibility settings after restart.
 Reload the authenticated UI
