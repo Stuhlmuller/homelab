@@ -16,9 +16,6 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    concurrency:
-      group: release-preview-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
     permissions:
       contents: read
     steps:
@@ -51,6 +48,7 @@ jobs:
     concurrency:
       group: semantic-release-main
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: write # for creating releases
     steps:

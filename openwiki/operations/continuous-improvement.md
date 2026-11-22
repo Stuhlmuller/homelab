@@ -178,7 +178,7 @@ observations below retain their original dates.
   unhealthy and Harbor OutOfSync alerts. All four nodes and 189 non-terminal
   Pods were Ready; all 43 Argo CD Applications were Healthy and Synced.
 - **Risk:** Watchdog remains disabled without an independent dead-man receiver
-  (`clusters/homelab/apps/prometheus/README.md`). A monitoring-stack outage can
+  ([archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md)). A monitoring-stack outage can
   therefore remain silent. Retired UPnP Job failures still generate recurring
   noise. Authenticated Grafana API inspection returned HTTP 401 using the
   current `grafana-admin` Secret, so per-rule/API checks were unavailable;

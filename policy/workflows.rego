@@ -876,6 +876,20 @@ private_live_output(run) if {
 	private_live_tail(tail)
 }
 
+# Deployment steps propagate their exit status and discard both output streams.
+private_live_output(run) if {
+	trim(run, "\n") in quiet_deploy_runs
+}
+
+quiet_deploy_runs := {
+	`umask 077
+nix develop --command bash scripts/ci/install-kubeconfig.sh >/dev/null 2>&1
+nix develop --command kubectl --request-timeout=15s version >/dev/null 2>&1`,
+	`nix develop --command bash scripts/ci/terragrunt-apply.sh >/dev/null 2>&1`,
+	`umask 077
+nix develop --command bash scripts/ci/octelium-private-kubernetes-apply.sh >/dev/null 2>&1`,
+}
+
 # The AzureAD plan report can contain provider diagnostics, so keep it and the
 # plan log inside the same private directory and expose only the verified helper.
 private_live_output(run) if {
@@ -1118,19 +1132,6 @@ private_live_tail(tail) if {
 	safe_withheld_echo(lines[7])
 }
 
-private_live_tail(tail) if {
-	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
-	count(lines) == 8
-	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-	lines[2] == `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-	lines[3] == "fi"
-	safe_withheld_echo(lines[4])
-	lines[5] == "exit 1"
-	lines[6] == "fi"
-	safe_withheld_echo(lines[7])
-}
-
 safe_withheld_echo(line) if {
 	startswith(line, `echo "`)
 	endswith(line, `"`)
@@ -1174,7 +1175,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "c7d9bea880c36e9c29963e75a24007c110784c3071070a881e586670d60c3b2d"
+	crypto.sha256(json.marshal(canonical)) == "fab5a7cff3d19619d08d1a3d17a8cbc3370a55308cc874be44e56e776c009326"
 }
 
 tailnet_workflow_requested if {
