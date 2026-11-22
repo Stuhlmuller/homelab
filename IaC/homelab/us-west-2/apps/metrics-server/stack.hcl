@@ -24,6 +24,11 @@ inputs = {
             }
           }
         }
+      },
+      {
+        repoURL        = local.shared.repo_url
+        path           = "clusters/homelab/platform/metrics-server"
+        targetRevision = local.shared.target_revision
       }
     ]
     syncPolicy = {
