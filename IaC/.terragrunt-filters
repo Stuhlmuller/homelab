@@ -1,0 +1,2 @@
+# Catalog units are templates for generation, not deployment targets.
+!./terragrunt-catalog/**
