@@ -192,8 +192,17 @@ def qualify(kubectl, chart, flannel):
     run(*kubectl, "wait", "--for=condition=Ready", "node/" + WORKER, "--timeout=180s")
     run(*kubectl, "-n", "kube-system", "rollout", "status", "ds/kube-multus-ds", "--timeout=180s")
     run(*kubectl, "-n", "kube-flannel", "rollout", "status", "ds/kube-flannel-ds", "--timeout=180s")
+    # CoreDNS may have been recreated on the trial overlay during the worker
+    # restart. Reattach those DNS endpoints to the restored primary network.
+    run(*kubectl, "-n", "kube-system", "rollout", "restart", "deployment/coredns")
+    run(*kubectl, "-n", "kube-system", "rollout", "status", "deployment/coredns", "--timeout=180s")
+    dns = json.loads(run(*kubectl, "-n", "kube-system", "get", "pods", "-l", "k8s-app=kube-dns", "-o", "json"))
+    addresses = [pod["status"]["podIP"] for pod in dns["items"] if not pod["metadata"].get("deletionTimestamp")]
+    flannel_pool = ipaddress.ip_network("10.244.0.0/16")
+    if not addresses or any(ipaddress.ip_address(address) not in flannel_pool for address in addresses):
+        raise AssertionError("CoreDNS endpoints did not return to Flannel after rollback")
     restored = endpoint(kubectl, "restored", WORKER, attachment=True)
-    if restored not in ipaddress.ip_network("10.244.0.0/16"):
+    if restored not in flannel_pool:
         raise AssertionError(f"Restored Pod did not receive a Flannel address: {restored}")
     probe(kubectl, "legacy", restored, 8080)
     probe(kubectl, "restored", flannel_ip, 8080)
