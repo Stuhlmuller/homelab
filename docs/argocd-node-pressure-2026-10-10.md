@@ -29,7 +29,7 @@ establish an OOM, a storage fault, or a particular workload as the cause.
 The node also hosted `automation/n8n-postgres-0` with PVC
 `data-n8n-postgres-0`. Writer-fencing safeguards were preserved: no Pod or PVC
 was force-deleted or moved manually. The
-[PostgreSQL contract](../clusters/homelab/apps/n8n-postgres/README.md)
+[PostgreSQL contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n-postgres/README.md)
 uses NFS-backed state; an unreachable kubelet is not proof that its database
 writer has stopped.
 

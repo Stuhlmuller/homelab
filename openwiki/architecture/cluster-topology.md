@@ -4,18 +4,12 @@ title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
 sources:
-  - id: openwiki-source-3ee445a5390585cab7a1edab
-    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
-  - id: openwiki-source-0dd011c84b2dc53d92df4754
-    resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
@@ -192,7 +186,7 @@ These are desired-state projections, not live rollout proof. Before starting
 a Workspace, verify the new web Pod is Ready on Acer, the old Pod has left
 `zimaboard-1`, SQL and web behavior recover, and both nodes retain measured
 headroom without pressure. Preserve workspace PV bindings and run only one
-Workspace. See the [standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
+Workspace. See the [standby and rollback procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
 
 ### Octelium dataplane capacity
 
@@ -384,6 +378,10 @@ types use public resolvers. The owner adds the DNS proxy's observed IP to
 Tailscale only after direct UDP/TCP answers, device identity and client checks pass;
 public app address records stay until a later guarded retirement.
 
+AdGuard is placed away from `zimaboard-2` to reserve memory for the planned
+Cilium agent and Envoy. Its NFS-backed work volume permits rescheduling to
+another eligible node. Verify the tailnet DNS path after rescheduling.
+
 ## Source Files
 
 - `ONBOARDING.md`
@@ -393,6 +391,7 @@ public app address records stay until a later guarded retirement.
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
+- [Cilium migration trial](../../clusters/homelab/platform/cilium/README.md)
 
 ## Maintenance Notes
 

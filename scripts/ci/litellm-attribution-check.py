@@ -31,6 +31,7 @@ from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.integrations.opentelemetry import OpenTelemetryConfig
 from litellm.litellm_core_utils.litellm_logging import StandardLoggingPayloadSetup
 from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+from litellm.llms.bedrock.chat import converse_handler
 from litellm.llms.openai.openai import OpenAIChatCompletion
 from litellm.proxy._types import ProxyException
 from litellm.proxy._types import UserAPIKeyAuth
@@ -121,10 +122,11 @@ class Span:
 
 async def check_failure_telemetry():
     marker = FIXTURE_PROVIDER
-    data = {"api_key": marker, "metadata": {}, "proxy_server_request": {
+    data = {"api_key": marker, "model": "openrouter/free", "metadata": {}, "proxy_server_request": {
         "headers": {"authorization": marker}, "body": {"api_key": marker},
     }}
     await identity.attribution.async_pre_call_hook(UserAPIKeyAuth(key_alias="nofx"), None, data, "acompletion")
+    data["model"] = "openrouter/openrouter/free"
     spans, attempts, captured = [], [], {}
     finished = asyncio.Event()
     logger = identity.langfuse
@@ -152,7 +154,7 @@ async def check_failure_telemetry():
             patch.object(logger, "async_log_failure_event", side_effect=failure):
         try:
             await litellm.acompletion(
-                model="openrouter/openrouter/free", messages=[{"role": "user", "content": "Reply OK"}],
+                messages=[{"role": "user", "content": "Reply OK"}],
                 client=client, num_retries=0, **data,
             )
         except litellm.BadRequestError as error:
@@ -264,6 +266,8 @@ async def check_admission():
     await guard({"type": "lifespan"}, None, None)
     assert reached == ["http", "lifespan"]
     assert await invoke(b'{"model":"openrouter/free","litellm_credential_name":"untrusted"}') == 400
+    assert await invoke(b'{"model":"bedrock/nova-lite","aws_bedrock_runtime_endpoint":"https://untrusted.invalid"}') == 400
+    assert await invoke(b'{"model":"bedrock/nova-lite","litellm_request_debug":true}') == 400
     expected_body = b'{"credential_name":"openrouter","credential_values":{"api_key":"fixture"}}'
     for path, method in (("/credentials", "POST"), ("/credentials/openrouter", "PATCH")):
         assert await invoke(expected_body, path=path, method=method) == 200
@@ -291,7 +295,9 @@ def check_launcher():
             proxy_server.prisma_client = SimpleNamespace()
             assert proxy_server.user_custom_auth is None
             assert "custom_auth" not in proxy_server.general_settings
-            assert len(proxy_server.llm_router.model_list) == 1
+            assert {model["model_name"] for model in proxy_server.llm_router.model_list} == {
+                gateway_launcher.FREE_MODEL, *gateway_launcher.BEDROCK_MODELS,
+            }
             logger = next(callback for callback in litellm.callbacks
                           if isinstance(callback, LangfuseOtelLogger))
             spans, attempts = [], []
@@ -329,6 +335,40 @@ def check_launcher():
                     await asyncio.wait_for(finished.wait(), 5)
             assert len(attempts) == 1
             assert sum(span.attributes.get("llm.token_count.prompt") == 8 for span in spans) == 1
+
+            def bedrock_response(request):
+                assert request.url.host == "bedrock-runtime.us-west-2.amazonaws.com"
+                assert request.headers["authorization"].startswith("AWS4-HMAC-SHA256 Credential=fixture-aws/")
+                assert FIXTURE_PROVIDER not in str(request.headers)
+                return httpx.Response(200, request=request, json={
+                    "output": {"message": {"role": "assistant", "content": [{"text": "OK"}]}},
+                    "stopReason": "end_turn", "usage": {"inputTokens": 8, "outputTokens": 1, "totalTokens": 9},
+                })
+            async with httpx.AsyncClient(transport=httpx.MockTransport(bedrock_response)) as bedrock_client, \
+                    httpx.AsyncClient(transport=httpx.ASGITransport(native_app), base_url="http://fixture") as http:
+                async def post_bedrock(url, headers, data, logging_obj):
+                    return await bedrock_client.post(url, headers=headers, content=data)
+                with patch.object(converse_handler, "get_async_httpx_client",
+                                  return_value=SimpleNamespace(post=AsyncMock(side_effect=post_bedrock))) as transport:
+                    body = {"model": "bedrock/nova-lite", "messages": [{"role": "user", "content": "Reply OK"}]}
+                    denied_response = await http.post("/v1/chat/completions", headers=headers, json=body)
+                    assert denied_response.status_code == 401, denied_response.text
+                    assert denied_response.json()["error"]["type"] == "key_model_access_denied"
+                    transport.assert_not_called()
+                    operator = (Path(directory) / "operator").read_text()
+                    for alias, profile in (
+                        ("bedrock/nova-lite", "us.amazon.nova-lite-v1:0"),
+                        ("bedrock/claude-sonnet-4-5", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"),
+                        ("bedrock/gpt-6.2-sol", "us.openai.gpt-6.2-sol"),
+                        ("bedrock/deepseek-v3.2", "deepseek.v3.2"),
+                    ):
+                        result = await http.post("/v1/chat/completions",
+                                                 headers={"Authorization": f"Bearer {operator}"},
+                                                 json={**body, "model": alias})
+                        assert result.status_code == 200, result.text
+                        assert result.json()["choices"][0]["message"]["content"] == "OK"
+                        url = httpx.URL(transport.return_value.post.call_args.kwargs["url"])
+                        assert url.path == f"/model/{profile}/converse"
             assert fixture_key not in str([span.attributes for span in spans])
             assert "fixture-upstream" not in str([span.attributes for span in spans])
         finally:
@@ -351,7 +391,9 @@ def check_launcher():
         yield path
     auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
     with tempfile.TemporaryDirectory(dir="/tmp") as directory, \
-            patch.dict(os.environ, {"NUM_WORKERS": "7", "WEB_CONCURRENCY": "8", "OPENAI_API_KEY": "unused"}, clear=True), \
+            patch.dict(os.environ, {"NUM_WORKERS": "7", "WEB_CONCURRENCY": "8", "OPENAI_API_KEY": "unused",
+                                    "AWS_SHARED_CREDENTIALS_FILE": str(Path(directory) / "credentials"),
+                                    "AWS_CONFIG_FILE": str(Path(directory) / "aws-config")}, clear=True), \
             patch.object(socket.socket, "connect", side_effect=AssertionError("Network forbidden")), \
             patch.object(gateway_launcher, "langfuse_config", return_value=fixture_config), \
             patch.object(gateway_launcher, "database_config", side_effect=fixture_database_config), \
@@ -365,6 +407,8 @@ def check_launcher():
             patch.object(LangfuseOtelLogger, "__init__", new=initialize_logger), \
             patch.object(uvicorn, "run", side_effect=run_uvicorn) as serve:
         fixture_key = "sk" + "-openclaw-" + "x" * 48
+        (Path(directory) / "credentials").write_text(
+            "[litellm-bedrock]\naws_access_key_id = fixture-aws\naws_secret_access_key = fixture-secret\n")
         for name in (*identity.APPS, "operator"):
             (Path(directory) / name).write_text(fixture_key if name == "openclaw" else "sk-other-" + name + "x" * 48)
         shutil.copyfile(identity.__file__, Path(directory) / "app_identity.py")
@@ -698,6 +742,9 @@ async def check():
         for app in (*identity.APPS, "operator"):
             (fixture_key_directory / app).write_text(f"sk-{app}-" + "x" * 48)
         trusted_provider = FIXTURE_PROVIDER
+        operator_alias = UserAPIKeyAuth(key_alias="operator")
+        await denied(identity.attribution.async_pre_call_hook(
+            operator_alias, None, {"model": "bedrock/nova-lite"}, "acompletion"), 403)
         for app in identity.APPS:
             token = (fixture_key_directory / app).read_text()
             user = UserAPIKeyAuth(api_key=sha256(token.encode()).hexdigest(), key_alias=app, user_id=app)
@@ -705,6 +752,7 @@ async def check():
                 marker = "test-provider-key-must-not-be-exported"
                 data = {
                     "api_key": marker,
+                    "model": "openrouter/free",
                     metadata_key: {"trace_user_id": "spoofed", "session_id": "session-1",
                                    "user_api_key": user.api_key, "user_api_key_hash": user.api_key,
                                    "user_api_key_auth": user.model_dump(mode="json")},

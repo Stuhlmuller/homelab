@@ -1,7 +1,7 @@
 ---
 type: overview
 title: "Source Map"
-description: "Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership."
+description: "Maps wiki topics to canonical guides, operational runbooks, and source ownership."
 tags: [knowledge-base, source-map]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
@@ -20,38 +20,20 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-bb7ca8a5177e874fa05bda90
     resource: repo://builds/openclaw-enterprise/operator.Dockerfile
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
-  - id: openwiki-source-9f4d1b63d947cd42e3af68b2
-    resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
-    resource: repo://clusters/homelab/apps/mastodon/README.md
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-4b551d11e16fb851a8676ce2
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml
   - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
-  - id: openwiki-source-fbaccd01ca51226fa9e5324d
-    resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-4ca0ce872f200b18ae467a0e
     resource: repo://docs/arr-playback-policy.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -68,10 +50,6 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
-  - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
-    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
-  - id: openwiki-source-13b48922f1b929b52f4a0233
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-f46a174a7f12aaf8ef457c59
     resource: repo://scripts/arr-playback-policy.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -154,13 +132,13 @@ desired state.
 | `docs/argocd-app-onboarding.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
-| `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
-| `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `clusters/homelab/apps/bulldozer/README.md`, `.github/workflows/bulldozer-credential.yml`, and `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl` | [Staged Bulldozer workload](workloads/inventory.md), [GitHub App secret contract](runbooks/secrets-aws-ssm.md#bulldozer-github-app), and [Funnel callback](runbooks/tailnet-ingress.md#route-boundaries) |
-| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
+| `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
+| `clusters/homelab/apps/traefik/routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
+| `.github/workflows/bulldozer-credential.yml`, and `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl` | [Staged Bulldozer workload](workloads/inventory.md), [GitHub App secret contract](runbooks/secrets-aws-ssm.md#bulldozer-github-app), and [Funnel callback](runbooks/tailnet-ingress.md#route-boundaries) |
+| `clusters/homelab/platform/tailnet-dns/values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/ci/tailnet-dns-test.py` | [DNS declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and scoped CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/terragrunt-catalog/modules/tailscale-access/` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and scoped CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `scripts/talos-harbor-mirrors.py` | [Private node registry path](operations/harbor-oci.md#private-node-registry-foundation) |
 | `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
@@ -169,7 +147,7 @@ desired state.
 | `clusters/homelab/apps/octelium-enterprise/capture-stage/`, `scripts/octelium-rscstore-capture.py`, and `scripts/ci/octelium-rscstore-capture-test.py` | [Dormant resource-store capture](architecture/storage-and-state.md), [offline and activation gates](operations/validation-gates.md#dormant-octelium-resource-store-capture) |
 | `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
-| `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
+| `IaC/terragrunt-catalog/modules/entra-owner-mail/` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
 | `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |
 | `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Retired Platform SSO boundary and historical identity evidence](architecture/secrets-and-identity.md#fleet-free-identity-boundaries) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
@@ -185,8 +163,7 @@ desired state.
 
 | Source | Wiki page |
 | --- | --- |
-| `clusters/homelab/apps/README.md` | [Application Notes](workloads/application-notes.md) |
-| `clusters/homelab/apps/*/README.md` | [Application Notes](workloads/application-notes.md) |
+| `clusters/homelab/apps/` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Source-declared, unsynced workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `clusters/homelab/apps/openclaw-enterprise-operator/` | [Unregistered journal claim, scoped proof RBAC, and private Job network intent](workloads/inventory.md); static PV, placement, and activation remain pending |
@@ -201,11 +178,11 @@ desired state.
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |
-| `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
-| `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
-| `IaC/homelab/us-west-2/apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
+| `clusters/homelab/apps/deluge/daemon-status.py` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
+| `clusters/homelab/platform/` | [Application Notes](workloads/application-notes.md) |
+| `IaC/homelab/us-west-2/apps/` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 
-Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
+Mastodon source ownership: [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md),
 [registration](../IaC/homelab/us-west-2/apps/mastodon/stack.hcl),
 [secret declarations](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
 [protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and

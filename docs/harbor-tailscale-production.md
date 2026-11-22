@@ -9,7 +9,7 @@ verification and complete pulls remain required.
 The workflow is dispatch-only, restricted to exact reviewed `main` and the
 `homelab-production` environment. Its credential check fails when the
 environment's `TAILSCALE_AUTH_KEY` is absent. The administrator-owned
-[Tailscale access module](../IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+[Tailscale access module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md)
 owns the provider key and its lifetime. Keep raw credentials in protected
 credential storage and out of command arguments, logs and git.
 

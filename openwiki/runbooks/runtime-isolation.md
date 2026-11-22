@@ -26,14 +26,10 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-007543776318a4afbd5fc1b0
     resource: repo://clusters/homelab/platform/network-policy/daemonset.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
@@ -162,7 +158,7 @@ retains TLS termination. Port 80 needs separate review. This could close the
 private listener when kube-router or the sidecar is absent, without clearing
 another worker. Its source is staged but the runtime is not deployed or
 proven. The current Tailscale operator uses a separate proxy;
-[`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
+[`tailnet-dns`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md) derives
 answers from its LoadBalancer status, and
 [CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
 Harbor and Octelium API names to its Service. A selectorless headless Service
@@ -201,7 +197,7 @@ app routes still have 54 source entries. The
 existing-node evacuation below remains a separate general `NetworkPolicy`
 canary candidate, not a prerequisite for the sidecar test.
 
-The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.md)
+The [dormant sidecar source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/canary/README.md)
 renders independently and is absent from the live Traefik Argo source. It has
 distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
 first raw TCP Serve exposes only tailnet 443. The current broad grant reaches
