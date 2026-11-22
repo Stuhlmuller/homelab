@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+ARGOCD_BOOTSTRAP = "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
@@ -217,7 +218,7 @@ def chart_sources():
         repository, path, revision = match.groups()
         charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
                        "chart": "git:" + path, "targetRevision": revision})
-    bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
+    bootstrap = ROOT / ARGOCD_BOOTSTRAP
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
                    "chart": fields["chart"], "targetRevision": fields["chart_version"]})
@@ -409,6 +410,21 @@ def ownership_errors():
             for destination in sorted(destinations - disabled)]
 
 
+def argocd_bootstrap_image_error(catalog):
+    bootstrap = (ROOT / ARGOCD_BOOTSTRAP).read_text()
+    tags = re.findall(
+        r'global\s*=\s*\{\s*(?:#[^\n]*\n\s*)*image\s*=\s*\{\s*tag\s*=\s*"([^"]+)"',
+        bootstrap,
+    )
+    if len(tags) != 1:
+        return f"{ARGOCD_BOOTSTRAP}: expected one literal global.image.tag"
+    image = f"quay.io/argoproj/argocd:{tags[0]}"
+    if not any(re.fullmatch(re.escape(image) + r"@sha256:[0-9a-f]{64}", item["source"])
+               for item in catalog):
+        return f"{ARGOCD_BOOTSTRAP}: missing digest-pinned Harbor source for {image}"
+    return None
+
+
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
@@ -440,6 +456,8 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
+    if bootstrap_error := argocd_bootstrap_image_error(catalog):
+        errors.append(bootstrap_error)
     errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
