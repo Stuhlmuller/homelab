@@ -142,7 +142,7 @@
             text = ''
               (cd IaC && terragrunt stack generate)
               terragrunt hcl fmt --check
-              terragrunt hcl validate
+              terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
               bash scripts/ci/static-checks.sh
               bash scripts/ci/conftest-policies.sh
             '';

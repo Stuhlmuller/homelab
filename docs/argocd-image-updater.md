@@ -116,15 +116,9 @@ second, and confirming an unrelated normal apply preserves it.
 
 ## Protected delivery and validation
 
-All configuration changes use ordinary protected pull requests. The historical
-image catalog remains separate; its optional proposal workflow can create/reuse
-a PR and request normal auto-merge for the exact validated head. It cannot write
-`main` directly or bypass checks. GitHub's default workflow token may not trigger
-new PR checks; if those checks are absent, delivery waits for the normal permitted
-CI path rather than bypassing protection.
+Deliver configuration changes through ordinary protected pull requests. The
+legacy Git proposal workflow has been removed. The offline CI suite still checks
+native HCL, image ownership policy, and the legacy catalog.
 
-Offline checks run native HCL/unit, policy and protected-PR regression fixtures.
-The `Argo CD runtime image ownership` pull-request workflow downloads the pinned
-provider for an isolated API test and renders the pinned Helm chart. See the
-[validation quickstart](../specs/20261117-050238-mutable-image-digests/quickstart.md)
-for commands and the distinction between source validation and runtime evidence.
+The [validation quickstart](../specs/20261117-050238-mutable-image-digests/quickstart.md)
+contains the manual isolated provider test and pinned Helm chart render.
