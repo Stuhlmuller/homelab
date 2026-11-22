@@ -145,7 +145,7 @@ unchanged alert query returned real data below its threshold.
 
 The application and etcd backup destinations live beside the
 [operator stack](../../IaC/homelab/us-west-2/operator/terragrunt.stack.hcl).
-Langfuse's [blob destination](../../IaC/homelab/us-west-2/apps/langfuse/langfuse-blob-storage.hcl)
+Langfuse's [blob destination](../../IaC/homelab/us-west-2/apps/langfuse/blob-storage.hcl)
 lives beside its workload stack.
 
 The dedicated [etcd offsite storage](../operations/etcd-offsite-storage.md) operator
