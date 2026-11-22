@@ -518,8 +518,17 @@ only after Octelium confirms logout:
 ```
 
 The helper verifies the primary CI access resources, invalidates stale Sessions,
-and writes the replacement token to both GitHub environments. Dispatch and bind
-verification to the exact `main` commit:
+and writes the replacement token to both GitHub environments. Check Grafana
+readiness from a private operator terminal using the
+[private Kubernetes access path](octelium.md#private-kubernetes-access):
+
+```sh
+kubectl --request-timeout=15s version
+kubectl -n monitoring rollout status deployment/grafana --timeout=120s
+```
+
+Keep terminal output local. Verify the new CI token through the declared
+Terragrunt Apply at the exact `main` commit when that apply is authorized:
 
 ```sh
 set -euo pipefail
@@ -589,27 +598,18 @@ wait_for_success() {
   return 1
 }
 
-diagnostics_before_id="$(latest_run_id homelab-diagnostics.yml)"
 apply_before_id="$(latest_run_id terragrunt-apply.yml)"
-gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
-  -f expected_sha="$main_sha"
 gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
   -f expected_sha="$main_sha"
 
-diagnostics_run_id="$(
-  find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id"
-)"
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" \
-  --json headSha --jq .headSha)" = "$main_sha"
 test "$(gh run view "$apply_run_id" --repo "$github_repo" \
   --json headSha --jq .headSha)" = "$main_sha"
-wait_for_success "$diagnostics_run_id" "$apply_run_id"
+wait_for_success "$apply_run_id"
 ```
 
-Both exact-head runs must exit successfully. If either fails because the token
-is unusable, rerun the same recovery block; no second short-lived recovery
-identity is needed.
+If the exact-head apply fails because the token is unusable, rerun the same
+credential recovery block.
 
 ## Private Cluster-Access Catalog Rollout
 
