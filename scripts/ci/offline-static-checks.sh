@@ -994,6 +994,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/codex-review-gate.yml:verify' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1092,6 +1093,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/codex-review-gate.yml 0595db0f3360266d1da816855660f4bac5925b6b1142677c5d07163bd9f5e371
 .github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
@@ -1263,6 +1265,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
 python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
+python3 -I scripts/ci/codex-review-gate-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"
