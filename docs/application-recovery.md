@@ -134,7 +134,8 @@ The shared S3 destination is defined in
 [`IaC/application-backup-storage.hcl`](../IaC/application-backup-storage.hcl).
 Use a scoped file-backed AWS profile and read-only access to completed dumps.
 For Octelium resource-store captures, follow the
-[resource-store capture runbook](../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+[resource-store capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
+and verify that the operator profiles cover the resource-store S3 prefix.
 
 Prepare one newly completed source with private scratch directories pre-created
 mode 0700 and the selected read-only source mounted:

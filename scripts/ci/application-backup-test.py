@@ -242,5 +242,6 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(output.stat().st_mode & 0o777, 0o600)
         self.assertEqual(list(self.root.glob('.application.prom-*')), [])
 
+
 if __name__ == '__main__':
     unittest.main()
