@@ -2,6 +2,8 @@ name: Cordium Runner Image Builds
 
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - '.cordium/**'
       - 'builds/cordium-runner/Dockerfile*'
