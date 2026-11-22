@@ -325,10 +325,26 @@ need no PVC, DNS database, backup, or application secret. Direct proxy
 and DNS checks precede the owner tailnet nameserver setting; public address
 records remain until separate client acceptance and guarded retirement.
 
-`platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
-Helm repository with default chart values. It intentionally does not install
+`platform-crossplane` retains the Crossplane core `2.3.3` chart with both
+controllers scaled to zero. The November 21 read-only check found two terminal
+Pods and no live controller requests to reclaim. The chart configures no
 providers, ProviderConfigs, Compositions, managed resources, or cloud
-credentials yet.
+credentials.
+
+For retirement [#842](https://github.com/Stuhlmuller/homelab/issues/842), run
+`python3 -I scripts/crossplane-retirement-check.py` against the authenticated
+homelab API immediately before preparing the chart-prune stage. The check
+requires the pinned 21 core CRDs, zero active workloads or volume claims, and
+only three unchanged initializer objects: the default DeploymentRuntimeConfig,
+the empty package Lock, and the default ManagedResourceActivationPolicy. The
+pinned [Crossplane initializers](https://github.com/crossplane/crossplane/tree/v2.3.3/internal/initializer)
+define those objects.
+
+Stage only chart-owned resource pruning first, keeping the Application and
+runtime-created CRDs in place. After verifying the pruned Argo tree and
+namespace, review the exact initializer objects separately. The subsequent CRD
+cleanup needs a new zero-instance check per CRD. Application state and
+AppProject permissions have their own reviewed retirement.
 
 `octelium-storage` keeps its PostgreSQL resource store and Redis AOF state on
 retained NFS. A daily CronJob writes a verified 14-day PostgreSQL logical
