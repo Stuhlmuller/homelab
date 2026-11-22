@@ -41,7 +41,7 @@ async def check_database(url, directory):
         with patch.object(native_keys, "KEY_DIRECTORY", directory):
             await asyncio.gather(native_keys.import_service_keys(client), native_keys.import_service_keys(client))
             keys = await database.litellm_verificationtoken.find_many()
-            assert len(keys) == 4
+            assert len(keys) == len(native_keys.APPS)
             for key in keys:
                 raw = (directory / key.key_alias).read_text()
                 assert key.token == native_keys.hash_token(raw) and key.token != raw
@@ -49,12 +49,20 @@ async def check_database(url, directory):
                 assert key.allowed_routes == native_keys.ALLOWED_ROUTES
                 user = await database.litellm_usertable.find_unique(where={"user_id": key.user_id})
                 assert user.user_role == "internal_user"
-            first, second = keys[:2]
+            first, second = [key for key in keys if key.key_alias != "kagent"][:2]
             await database.litellm_verificationtoken.update(where={"token": first.token}, data={"blocked": True})
             await database.litellm_verificationtoken.delete(where={"token": second.token})
             await native_keys.import_service_keys(client)
-            assert await database.litellm_verificationtoken.count() == 3
+            assert await database.litellm_verificationtoken.count() == len(native_keys.APPS) - 1
             assert (await database.litellm_verificationtoken.find_unique(where={"token": first.token})).blocked
+            assert await database.litellm_verificationtoken.find_unique(where={"token": second.token}) is None
+            # An installation that already imported its legacy keys imports kagent once.
+            await database.litellm_verificationtoken.delete_many(where={"key_alias": "kagent"})
+            await database.litellm_usertable.delete_many(where={"user_id": {"in": [
+                "kagent", native_keys.KAGENT_IMPORT_MARKER,
+            ]}})
+            await native_keys.import_service_keys(client)
+            assert await database.litellm_verificationtoken.count(where={"key_alias": "kagent"}) == 1
             assert await database.litellm_verificationtoken.find_unique(where={"token": second.token}) is None
             await check_provider_database(database, client, directory)
 

@@ -26,8 +26,7 @@ Change the owning executable check when changing a condition. A new rule in
 prose does not change pipeline behavior.
 
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
-  validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
-  Their required status names stay unchanged, so eligible PRs can still merge.
+  validation, Python and Actions CodeQL, and Terragrunt Gate.
 - NOFX image builds and OpenClaw native configuration checks run after matching
   changes land on `main` or through manual dispatch. The weekly CodeQL schedule
   remains active.
@@ -39,7 +38,9 @@ prose does not change pipeline behavior.
   remain in `Terragrunt Gate` and `validate`.
 - `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
-  policies. Only trusted same-repository changes to the plan workflow,
+  policies. This job also owns the PR's signed offline Nix checks. The
+  `validate` workflow verifies those same outputs on pushes to `main`.
+  Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
   Octelium, and stream the live Terragrunt plan to the Actions log. Other
@@ -90,22 +91,21 @@ runs use separate groups where they share a workflow with these PR checks.
 Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
 queues runs per PR, and Terragrunt Apply and release publication queue jobs
 behind their existing locks. GitHub allows up to 100 pending entries per
-concurrency group with `queue: max`. Terragrunt Apply Request and release
-previews run independently. GitHub manages scheduling for Code Quality scans.
+concurrency group with `queue: max`. Terragrunt Apply Request runs
+independently. GitHub manages scheduling for Code Quality scans.
 
 ## Release publication
 
 The release publisher takes one non-canceling `semantic-release-main` lock,
 then checks out current `main`. Each publisher analyzes every commit since the
 last tag, including intervening pushes. Repeated runs with no new releasable
-commits create no tag. Publishers and independent PR previews time out after
-15 minutes.
+commits create no tag. The publisher runs on pushes to `main` and times out
+after 15 minutes.
 
 The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
 with package integrity hashes. `npm ci --ignore-scripts` installs without a
-step token. Only publication receives `GITHUB_TOKEN`; PR previews use a local
-bare Git repository without a token. Renovate's npm manager and lockfile
-maintenance propose updates through PRs. No npm package is published.
+step token. Only publication receives `GITHUB_TOKEN`. Renovate's npm manager
+and lockfile maintenance propose updates through PRs. No npm package is published.
 
 After `npm ci --ignore-scripts`, run
 `nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
@@ -159,11 +159,16 @@ checks remain fresh.
   static and Terragrunt gates. It runs the upstream Super-Linter action with
   `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
   lint runs for the same pull request.
-- Policy Bot reads this repository's `.policy.yml` and automatically approves
-  PRs with `requires.count: 0`, so merging does not depend on a human review,
-  Codex review, or thumbs-up comment. Required GitHub checks still gate merges.
-  Policy Bot reads the policy from the target branch, so this behavior takes
-  effect after the policy change lands on `main`.
+- Policy Bot reads `.policy.yml` from the target branch and passes its
+  status with `requires.count: 0`. GitHub branch rules enforce required checks.
+- [Verify Codex Code Review](../.github/workflows/codex-review-gate.yml)
+  publishes `Codex Code Review` for the exact PR head. It passes only when the
+  Codex GitHub App reports a completed code review with zero findings for that
+  SHA. Findings fail the status. Missing, stale, or incomplete reviews keep it
+  pending. Push fixes and request `@codex review` if automatic review has not
+  run. Dispatch the verification workflow with the PR number to re-read an
+  existing review. `github-iac` owns enforcement of the status on `main`.
+  Remove the requirement there before retiring the publisher.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
 - The protected OpenClaw Enterprise startup and operations policies accept only
@@ -181,12 +186,10 @@ checks remain fresh.
   overrides from changing checked commands.
   This is a source gate; private recovery and capacity receipts still control
   whether a maintenance stage may run.
-- The `main` ruleset requires pull requests, squash-only linear history,
-  verified signatures, and seven checks, and blocks branch deletion and force
-  pushes. A branch need not be up to date with `main` to merge. The required
-  checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
-  `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
-  active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
+- The `main` ruleset requires pull requests and squash-only linear history,
+  and blocks branch deletion and force pushes. The required checks in ruleset
+  `14700233` are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
+  `analyze-actions`, and `Terragrunt Gate`. `github-iac` owns this ruleset.
 - The live Terragrunt plan job retains its Actions development-shell cache.
   Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
@@ -261,10 +264,9 @@ checks remain fresh.
   `Failed to execute "tofu ..."` line because Terragrunt shells out to
   OpenTofu internally; do not copy those cache-directory commands as the
   operator recovery path.
-- Application-registration and secret-materialization stack phases use
-  explicit `--filter` expressions so only units changed between the selected
-  base and `HEAD` are queued. Pull request plans compare against the PR base
-  branch. Production applies use the latest successful historical push apply
+- Pull request plans and full production applies discover changed units with
+  `--filter-affected`. Pull request plans compare against the merge base of the
+  PR checkout and the target branch. Production applies use the latest successful historical push apply
   or dispatch whose run name starts with `Full @` as the checkpoint; targeted
   dispatches use `Targeted <app> @ <sha>` and never advance it. A targeted Argo
   dispatch instead plans and applies its exact named unit regardless of the
@@ -292,19 +294,17 @@ checks remain fresh.
   paths, including generated units, and excludes catalog templates and
   operator-owned units. PR plans use a temporary empty unit with the original
   backend key and OpenTofu encryption settings.
-  Production apply uses Terragrunt's Git filter with `--filter-allow-destroy`
+  Production apply uses `--filter-affected` with `--filter-allow-destroy`
   and runs the deleted unit from the base revision's configuration. For each
   retiree it saves the binary destroy plan and JSON, checks the JSON against
   current Conftest policy, verifies the current main commit, and replays the
   same saved plan. Missing plans or policy rejections stop the apply.
-- The protected full apply runs the production phases explicitly:
-  destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
-  SSM parameter declarations, apply Entra application registrations, apply Argo
-  CD Application registrations serially, and finally materialize Kubernetes
-  Secrets from SSM. Stack-wide apply phases use Terragrunt's explicit
-  `run --all --filter ... --non-interactive -- apply ...` form so the run
-  queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
-  forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+- The full apply reconciles affected units in order. It handles retirements
+  first, then backup storage, Argo CD bootstrap, SSM and Langfuse storage,
+  node labels, AzureAD, Argo CD registrations, and Kubernetes Secrets.
+  When Langfuse blob storage is affected, the apply reconciles its SSM
+  prerequisite first. Explicit manual dispatches can still reconcile their
+  requested unit when the comparison range is empty.
 
 ## Terragrunt Gate Ruleset Rollout
 
@@ -535,8 +535,17 @@ only after Octelium confirms logout:
 ```
 
 The helper verifies the primary CI access resources, invalidates stale Sessions,
-and writes the replacement token to both GitHub environments. Dispatch and bind
-verification to the exact `main` commit:
+and writes the replacement token to both GitHub environments. Check Grafana
+readiness from a private operator terminal using the
+[private Kubernetes access path](octelium.md#private-kubernetes-access):
+
+```sh
+kubectl --request-timeout=15s version
+kubectl -n monitoring rollout status deployment/grafana --timeout=120s
+```
+
+Keep terminal output local. Verify the new CI token through the declared
+Terragrunt Apply at the exact `main` commit when that apply is authorized:
 
 ```sh
 set -euo pipefail
@@ -606,27 +615,18 @@ wait_for_success() {
   return 1
 }
 
-diagnostics_before_id="$(latest_run_id homelab-diagnostics.yml)"
 apply_before_id="$(latest_run_id terragrunt-apply.yml)"
-gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
-  -f expected_sha="$main_sha"
 gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
   -f expected_sha="$main_sha"
 
-diagnostics_run_id="$(
-  find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id"
-)"
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" \
-  --json headSha --jq .headSha)" = "$main_sha"
 test "$(gh run view "$apply_run_id" --repo "$github_repo" \
   --json headSha --jq .headSha)" = "$main_sha"
-wait_for_success "$diagnostics_run_id" "$apply_run_id"
+wait_for_success "$apply_run_id"
 ```
 
-Both exact-head runs must exit successfully. If either fails because the token
-is unusable, rerun the same recovery block; no second short-lived recovery
-identity is needed.
+If the exact-head apply fails because the token is unusable, rerun the same
+credential recovery block.
 
 ## Private Cluster-Access Catalog Rollout
 
@@ -823,25 +823,14 @@ The Microsoft Entra providers use `ARM_CLIENT_ID`, `ARM_TENANT_ID` and
 They obtain short-lived assertions through the job's `id-token: write`
 permission. The readiness check requires both identity selectors and both GitHub
 OIDC request inputs; an incomplete OIDC setup cannot fall back to a client secret.
-Trusted pull request plans render the AzureAD stack only when the identity is
-configured in `homelab-plan`; production uses the separate
-`homelab-production` identity. User and claims-policy lifecycle and application
-assignment changes retain the reviewed operator Terraform path because the CI
-identity has no corresponding tenant-wide write grants. When the identity is
-not configured, production apply skips
-that phase only if the unapplied range did not change the AzureAD stack or its
-shared root configuration. Every root source change requires the credentials
-so identity drift is not silently ignored.
+User and claims-policy lifecycle and application assignment changes retain the
+reviewed operator Terraform path because the CI identity lacks those
+tenant-wide write grants.
 
-For pull requests, a changed AzureAD stack or shared root, or changed plan
-inputs (`flake.nix`, `flake.lock`, `policy/terraform.rego`,
-`scripts/ci/terragrunt-filter-base.sh`, or `scripts/ci/terragrunt-plan.sh`),
-requires the `homelab-plan` environment's `AZUREAD_CLIENT_ID` and
-`AZUREAD_TENANT_ID` secrets plus a complete GitHub OIDC session. The
-`Terragrunt Plan` job fails if these are unavailable or the diff cannot be
-determined; it skips AzureAD only for unrelated changes. Restore the plan
-identity using the [Entra provider runbook](entra-terraform-provider.md),
-rerun the PR check, and verify its protected plan succeeds before merging.
+Plan and apply require AzureAD credentials when Terragrunt discovers an
+affected AzureAD unit. The `homelab-plan` and `homelab-production` environments
+use separate identities. Discovery errors stop the pipeline. For identity setup
+and recovery, see the [Entra provider runbook](entra-terraform-provider.md).
 
 The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
 refresh-enabled no-change plans for all four Entra units under both protected
@@ -851,19 +840,18 @@ operator Terraform for changes beyond the CI permission boundary.
 
 ## Plan performance
 
-PR plans discover affected components once with `--filter-affected` against the
-prepared PR merge base. The selector supplements native discovery with per-app
-stack/sidecar paths because generated units are ignored by Git. Shared IaC,
-local module sources, toolchain, policy, and planning-script changes retain full
-coverage; dirty local checkouts also plan the full allowed scope. Deleted units
-keep their separate state comparison and destroy-plan policy checks.
+Each run discovers affected units once with `terragrunt find --filter-affected`.
+Terragrunt tracks generated inputs, shared HCL, and local module sources.
+A changed catalog unit selects deployed instances with the same generated
+configuration. An empty comparison skips regular unit plans and applies.
+PR plans follow their existing allowlist, including exclusions for units that
+read secret material. Workflow and Terraform policy edits still run static
+checks.
 
-Selected units run in the current checkout, where Conftest can inspect every
-saved plan. Direct Git-filtered runs execute in temporary worktrees, so they
-must not replace this two-step selection. Empty selections run no unit command.
-Argo CD plans run up to eight units concurrently and AzureAD up to four, while
-Terragrunt preserves dependency ordering. Bootstrap and backup-storage plans
-run only when selected. Plans still refresh live state.
+Plan and apply phases use exact paths from discovery to run in the current
+checkout, where Conftest can inspect saved plans. PR plans run up to two
+Argo CD units and four AzureAD units concurrently. Terragrunt preserves
+dependency ordering.
 
 Terragrunt's automatic OpenTofu provider cache and partial-parse cache avoid
 repeated downloads and include parsing. CI persists only provider binaries at
@@ -874,7 +862,7 @@ are never stored in this cache. Local module edits are detected automatically;
 normal plans no longer force `--source-update`. Delete the provider cache to
 rebuild it, or revert the workflow/runner change to restore serial planning.
 
-Validate selection with `python3 -I scripts/ci/terragrunt-plan-units-test.py` and
+Validate selection with `python3 -I scripts/ci/terragrunt-affected-units-test.py` and
 the existing plan-stage, stack, and apply fixtures. CI timings, including cold
 versus warm cache runs, are the evidence for the actual wall-clock improvement.
 
@@ -910,20 +898,14 @@ appearing as PR deletions. Missing common ancestry, including truncated shallow
 history, stops the plan.
 Protected applies retain the exact last-successful `APPLY_BASE_SHA`, including
 retirements across multiple unapplied commits. Local runs otherwise use the
-current `main` ref. Set `TERRAGRUNT_FILTER_BASE_SHA` and
-`TERRAGRUNT_FILTER_HEAD_SHA` to reproduce an exact comparison locally;
-explicit bases are not normalized. Changed-unit and deleted-unit selection
-share this comparison base.
+current `main` ref. For a local comparison, use a worktree whose `HEAD` is the
+requested head and whose local `main` points to the requested base. CI
+prepares those refs from the resolved commits before running
+`--filter-affected`.
 
-Stack inventory and AzureAD comparisons resolve Git paths from the repository
-root, including when Terragrunt calls them from the apps directory. Both the
-legacy stack and per-app stacks retain their historical unit identities.
-An unreadable AzureAD inventory selects the full AzureAD scope conservatively;
-it cannot masquerade as an unchanged or empty subset. Existing credential
-checks still apply. Deleted-unit selection must read both complete inventories
-and the deletion diff successfully before returning candidates. A failed read
-stops plan or apply at that stage, without consuming a partial list or reporting
-that no units were deleted. A valid empty inventory remains valid.
+Retirement checks both revisions' complete inventories against affected
+discovery. Historical state identities distinguish a layout move from a
+retirement. A failed read or undiscovered retirement stops plan or apply.
 Verify changes with the stack-selection and plan/apply fixtures, then an actual
 live PR plan. Recover missing history or invalid stack source through the normal
 checkout or reviewed source repair; do not suppress the inventory failure.
