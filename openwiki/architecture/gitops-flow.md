@@ -53,6 +53,9 @@ flowchart LR
 
 Reviewed source separates infrastructure registration from runtime reconciliation.
 
+The [monorepo layout review](../../docs/kubernetes-monorepo-layout-review.md)
+proposes folder boundaries and lists the paths a future move would affect.
+
 The trusted pull-request Terragrunt plan streams its human-readable output in
 Actions. Secret values are marked sensitive in Terraform, while saved plans and
 JSON policy inputs remain temporary and are deleted after the run. See the
@@ -69,12 +72,9 @@ revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
 
-Protected apply keeps command output private. On failure, the checksum-verified
-classifier reports only fixed phase and failure-hint labels; unknown text stays
-private. Hints reset at each recognized phase and are investigation leads,
-not confirmed causes. Diagnostic failure cannot change the failed apply result.
-Keep helper, workflow and exact policy/hash contracts synchronized; the
-[CI/CD runbook](../../docs/ci-cd.md#security-model) describes validation and rollback.
+Protected apply uses the existing deployment commands and their exit codes.
+Both output streams are discarded on the public runner. Diagnose failures from
+a private operator session. See the [CI/CD runbook](../../docs/ci-cd.md#security-model).
 A green skipped PR plan or targeted apply does not prove the full pipeline works;
 retain actual live-plan and full-apply run evidence for the tested revisions.
 

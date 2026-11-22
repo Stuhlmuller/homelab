@@ -281,13 +281,17 @@ repair_argocd_app_state_unit="$(
   cd IaC/homelab/us-west-2/apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" || "${TERRAGRUNT_ARGOCD_APP:-}" == "codex-cloud-signer" || "${TERRAGRUNT_ARGOCD_APP:-}" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "litellm" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" || "${TERRAGRUNT_ARGOCD_APP:-}" == "codex-cloud-signer" || "${TERRAGRUNT_ARGOCD_APP:-}" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter) >/dev/null
   echo "::group::Targeted Argo CD apply prerequisites"
   target_project=homelab
   target_namespace="$TERRAGRUNT_ARGOCD_APP"
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" ]]; then
+    target_namespace=ai
+    kubectl get namespace ai -o name >/dev/null
+  fi
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" ]]; then
     target_namespace=monitoring
     kubectl get namespace monitoring -o name >/dev/null
@@ -375,7 +379,7 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     kubectl wait --for=condition=Ready --timeout=0s clusterissuer/letsencrypt-cloudflare
   else
     kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
-    if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
+    if [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" || "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
       kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$target_namespace" '
         any(.spec.conditions[]?.namespaces[]?; . == $app)
       ' >/dev/null
@@ -413,7 +417,7 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" || "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
     plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"

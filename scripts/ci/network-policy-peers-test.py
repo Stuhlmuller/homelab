@@ -52,11 +52,14 @@ class PeerTests(unittest.TestCase):
         })])
         dataplane = next(rule for rule in egress if rule["ports"] == [
             {"protocol": "TCP", "port": 8080}])
-        self.assertEqual(dataplane["to"], [peer("octelium", labels={
+        octelium = peer("octelium", labels={
             "app": "octelium",
             "octelium.com/component": "ingress-dataplane",
             "octelium.com/component-type": "cluster",
-        })])
+        })
+        self.assertEqual(dataplane["to"], [
+            octelium, peer("openwiki", labels={"app.kubernetes.io/name": "openwiki"}),
+        ])
 
         config = nested_yaml(documents(APPS / "octelium-public/configmap.yaml")[0]
                              ["data"]["config.yaml"])
@@ -66,7 +69,13 @@ class PeerTests(unittest.TestCase):
             "istio-ingressgateway.istio-system.svc.cluster.local:443",
             "octelium-api-ingressgateway.istio-system.svc.cluster.local:443",
             "octelium-ingress-dataplane.octelium.svc.cluster.local:8080",
+            "openwiki.openwiki.svc.cluster.local:8080",
         })
+        self.assertEqual([route for route in config["ingress"]
+                          if route.get("hostname") == "openwiki.stinkyboi.com"], [{
+            "hostname": "openwiki.stinkyboi.com",
+            "service": "http://openwiki.openwiki.svc.cluster.local:8080",
+        }])
         self.assertEqual(len([rule for rule in egress if rule["ports"] == [
             {"protocol": "TCP", "port": 443}]]), 1)
         self.assertEqual(len([rule for rule in egress if rule["ports"] == [
@@ -77,8 +86,8 @@ class PeerTests(unittest.TestCase):
                          ["labels"]["istio"], "octelium-api-ingressgateway")
         emergency = documents(APPS / "octelium-enterprise/emergency-dataplane.yaml")[0]
         self.assertEqual({key: emergency["spec"]["template"]["metadata"]["labels"][key]
-                          for key in dataplane["to"][0]["podSelector"]["matchLabels"]},
-                         dataplane["to"][0]["podSelector"]["matchLabels"])
+                          for key in octelium["podSelector"]["matchLabels"]},
+                         octelium["podSelector"]["matchLabels"])
 
     def test_harbor_metrics_accept_only_prometheus(self):
         monitor = peer("monitoring", labels={"app.kubernetes.io/name": "prometheus"})
