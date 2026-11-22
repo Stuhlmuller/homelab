@@ -936,12 +936,6 @@ private_live_output(run) if {
 	trim(run, "\n") == harbor_mirror_private_run
 }
 
-# Homelab Diagnostics can print a fixed status summary after verifying its filter.
-private_live_output(run) if {
-	input.name == "Homelab Diagnostics"
-	crypto.sha256(trim(run, "\n")) == "a1f3ae888a48d667dd1c26ab73708f69dbf93579b14950dbd7ecb47f5cfc1d30"
-}
-
 # The native receipt is a bounded, nonsecret attestation. Its exact workflow
 # command and sole artifact are reviewed together below.
 private_live_output(run) if {
