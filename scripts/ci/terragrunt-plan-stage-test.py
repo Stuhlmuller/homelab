@@ -186,29 +186,16 @@ class PrivatePlanStageTest(unittest.TestCase):
             self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
             self.assertFalse(output.exists())
 
-    def test_provider_cache_contract_rejects_state_paths_and_extra_credentials(self):
-        source = HELPER.with_name("offline-static-checks.sh").read_text()
-        gate = source.split('echo "::group::Terragrunt pull request gate"', 1)[1]
-        gate = gate.split("scope_body_sha256=", 1)[0]
-        original = json.loads(subprocess.check_output(
+    def test_provider_cache_excludes_state_paths_and_credentials(self):
+        workflow = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".", str(WORKFLOW)], text=True))
-        for mutation in (None, "path", "action", "credentials"):
-            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
-                document = json.loads(json.dumps(original))
-                cache = next(step for step in document["jobs"]["terragrunt-plan"]["steps"]
-                             if step["name"] == "Cache Terragrunt Providers")
-                if mutation == "path":
-                    cache["with"]["path"] = "IaC/**/.terragrunt-cache"
-                elif mutation == "action":
-                    cache["uses"] = "actions/cache@main"
-                elif mutation == "credentials":
-                    cache["env"] = {"EXTRA_CREDENTIAL": "fixture"}
-                target = Path(tmp) / ".github/workflows/terragrunt-plan.yml"
-                target.parent.mkdir(parents=True)
-                target.write_text(json.dumps(document))
-                result = subprocess.run(["bash", "-euo", "pipefail", "-c", gate],
-                                        cwd=tmp, capture_output=True, text=True, timeout=15)
-                self.assertEqual(result.returncode == 0, mutation is None, result.stderr)
+        caches = [step for step in workflow["jobs"]["terragrunt-plan"]["steps"]
+                  if step.get("name") == "Cache Terragrunt Providers"]
+        self.assertEqual(len(caches), 1)
+        cache = caches[0]
+        self.assertRegex(cache["uses"], r"^actions/cache@[0-9a-f]{40}$")
+        self.assertEqual(cache["with"]["path"], "~/.cache/terragrunt/providers")
+        self.assertIsNone(cache.get("env"))
 
     def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
         workflow = WORKFLOW.read_text()

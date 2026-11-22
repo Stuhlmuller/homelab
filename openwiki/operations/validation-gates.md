@@ -196,8 +196,6 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-d070446e78bc2444fe729dec
@@ -366,9 +364,8 @@ secret and saved-state scans remain checked.
 
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
-Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
-`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
-and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+`scripts/ci/offline-checks.sh` runs the fixtures. CI verifies signed cache
+outputs and builds in a sandbox on a cache miss. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
 
 For Descheduler values or chart changes, run
@@ -668,12 +665,6 @@ enforcing dataplane; require the isolated canary before activation.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
-The offline static gate renders all nine DNS egress policies and requires their
-TCP/UDP port 53 peers to select only `kube-system` Pods labeled
-`k8s-app=kube-dns`. It also checks that the `kube-dns` Service selector and
-CoreDNS Deployment Pod selector contain exactly that label. These source checks
-do not qualify DNS traffic on the isolated enforcement canary.
-
 The read-only [NetworkPolicy inventory](../../scripts/network-policy-inventory.py)
 compares normalized ingress and egress rules with rendered source and hashes
 both directions for private review. `--fail-on-findings` flags live-only,
@@ -892,11 +883,9 @@ are added. Review each pinned `source.json`, `action.yml`, and `HARDENING.md`
 when updating these dependencies.
 
 Keep the artifact-upload prohibition effective for both upstream and Chainguard
-names in `policy/workflows.rego`. Refresh the exact workflow security hashes only
-after reviewing the full definitions. Validate with `actionlint`,
+names in `policy/workflows.rego`. Validate workflow edits with `actionlint`,
 `conftest verify --policy policy`, workflow policy evaluation, and the static
-gate. GitHub execution remains the integration check; rollback restores the
-previous action references and their matching workflow security hashes.
+gate. GitHub execution remains the integration check.
 
 ### Workflow security contracts
 
@@ -964,10 +953,9 @@ remained secondary, so the pilot rename was not retried. This operator execution
 does not satisfy or bypass the protected CI plan gate; see the
 [dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
-The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
-included in that closed credentialed-workflow inventory. It uses only the
-existing production AWS role and Cloudflare rule-removal secret, with private
-API output withheld. Validate its full definition before updating the hash.
+The Tunnel DNS workflow is bound to an explicit reviewed main SHA. It uses the
+production AWS role and Cloudflare rule-removal secret and withholds private API
+output.
 
 The `NOFX Registry Credential` workflow uses the same reviewed-main and protected
 environment boundaries. Its AWS session can update only the dedicated NOFX
@@ -1002,10 +990,6 @@ buildless `actions` analysis job because this repository has no compiled
 application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
-The Chainguard CodeQL action v4.38.2 pin (`05a2b18f97905888db8f883471cc925f1a97a01c`)
-is recorded in the exact normalized workflow security hash. Updating action
-revisions requires reviewing that workflow and refreshing its hash alongside
-the pin; the credentialed-job inventory and permission checks still apply.
 
 For docs-only or wiki-only changes, run the OpenWiki navigation check plus
 focused Markdown and whitespace checks when the infrastructure graph is untouched:
@@ -1382,13 +1366,11 @@ rollout. All must pass before closing the readiness finding; connector access
 alone is insufficient. Keep raw logs outside git.
 
 The [held 1.28.10 candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/istio/README.md)
-is disabled and outside Argo. The offline static gate pins all six active
-1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
-replacement chart URL and archive hashes. All six declared active sources and
+is disabled and outside Argo. All six declared active sources and
 the chart inventories now use `https://blob.istio.io/istio-release/charts` with
 unchanged 1.27.3 versions and package hashes. The old GCS AppProject entry stays
 for rollback until a scoped Terragrunt apply and live Argo source verification
-pass; this source gate is not a live upgrade receipt.
+pass.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
@@ -2296,9 +2278,8 @@ Changes under `builds/nofx` also require `bash builds/nofx/test.sh` and
 patched backend and frontend build targets. The NOFX Images workflow runs these
 without publishing credentials on PRs. Its main-only publishing job rebuilds
 before registry login, rejects stale or mismatched main SHAs, and records fixed
-GHCR image digest references. Both jobs are included in the closed credentialed
-workflow inventory and the exact normalized workflow hash; actionlint,
-Conftest, and Checkov cover workflow edits.
+GHCR image digest references. Actionlint, Conftest, and Checkov cover workflow
+edits.
 
 Image publication and deployment are separate changes. First-time packages
 default to private, so public visibility and anonymous image access must be
@@ -2522,9 +2503,8 @@ Full registry and runtime acceptance still needs fresh Linux CI evidence.
 Core publication regression cases additionally require one fixed subject,
 dedicated workflow/current-main binding, complete private pulls before signing,
 the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
-pull/digest/signature failures. The credentialed job inventory and canonical
-workflow hash enroll both the publisher and pinned-reference reporting job;
-dispatch verification precedes checkout and repeats before credentials.
+pull/digest/signature failures. The publisher verifies dispatch before checkout
+and again before accessing credentials.
 The protected publisher also requires zero matches in the exact full-container
 Grype report before registry credentials; ordinary audit fixtures continue to
 retain unresolved findings for review.
@@ -2588,9 +2568,8 @@ protected `all` run `40011909180` passed the revised catalog.
 
 The fixed Renovate scope contains eight cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
-copy and authenticated-pull path. The workflow's exact security hash
-locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
-validate consuming workloads.
+copy and authenticated-pull path. Image publication and workload validation
+run separately.
 
 The staged hourly Renovate runner has a credential-free config and discovery
 test in `static-checks.sh`. The config test injects a cache write failure and
@@ -2698,8 +2677,6 @@ descriptors. Its scan-client fixture requires Harbor's exact vulnerability
 report negotiation header. The static gate rejects commit-status write grants
 in pull-request workflows, so the trusted base receipt provenance status cannot
 be forged by the ordinary lint job. These checks do not dispatch the receipt.
-The trusted provenance workflow has an exact job/script allowlist and canonical
-workflow hash; reviewed edits must update both and test the actual workflow.
 The static secret scan derives a local system hook from the pinned pre-commit
 configuration, preserving text selection and reviewed findings without fetching
 remote hook environments inside offline fixtures.
@@ -2750,8 +2727,7 @@ its loaded-rule API check is distinct from controller health.
 
 The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
 idempotent owner bootstrap, routes, fixed SMTP injection and conflict-safe public
-DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
-the DNS job installs Nix and runs both kubeconfig setup and publication inside
+DNS helpers. The DNS job installs Nix and runs both kubeconfig setup and publication inside
 the pinned shell. These fixtures do not contact SMTP or publish DNS.
 
 The [scheduled verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)

@@ -148,8 +148,6 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d070446e78bc2444fe729dec
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b

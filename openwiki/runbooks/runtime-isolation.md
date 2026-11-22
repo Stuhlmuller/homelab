@@ -40,8 +40,6 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-79ade26d1f528d349dc08fed

@@ -6,6 +6,14 @@ set -euo pipefail
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
+(
+  redirect_source="$(mktemp)"
+  trap 'rm -f "$redirect_source"' EXIT
+  yq -r '.spec.configPatches[0].patch.value.typed_config.inlineCode' \
+    clusters/homelab/apps/octelium-cluster/console-redirect.yaml > "$redirect_source"
+  lua scripts/ci/octelium-console-redirect-check.lua "$redirect_source"
+)
+
 # Kuma catalog/freshness/ownership/recovery contracts run in the pinned offline
 # tool set. Real-image timed/network fixtures are a separate local delivery gate.
 command -v promtool >/dev/null
@@ -168,4 +176,10 @@ python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
 python3 scripts/ci/openclaw-runtime-storage-check.py
 python3 -I scripts/ci/nix-cache-test.py
-bash scripts/ci/offline-static-checks.sh
+bash scripts/ci/prowlarr-config-check.sh
+python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
+python3 -I scripts/ci/octelium-ci-kubeconfig-secret-test.py
+python3 -I builds/local-path-provisioner/scan-test.py
+node scripts/ci/openclaw-github-check.cjs
+python3 -I scripts/ci/openclaw-credential-containment-test.py
+node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs

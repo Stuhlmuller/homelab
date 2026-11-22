@@ -62,8 +62,6 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
   - id: openwiki-source-2b445535596913b662665f3c
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-8483d28614308625b1073872
