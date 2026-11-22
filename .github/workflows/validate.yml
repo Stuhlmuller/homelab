@@ -119,7 +119,7 @@ jobs:
         run: nix develop --command bash -c 'cd IaC && terragrunt stack generate'
 
       - name: Validate Terragrunt HCL
-        run: nix develop --command terragrunt hcl validate
+        run: nix develop --command bash -c 'cd IaC/homelab/us-west-2 && terragrunt hcl validate'
 
       - name: Render Kustomize sources
         run: |

@@ -16,11 +16,16 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
-terragrunt hcl validate
+terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
 expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
+discovered_units="$(terragrunt --working-dir IaC/homelab/us-west-2 find --filter 'type=unit' --json | jq length)"
+if [[ "$discovered_units" -ne "$expected_units" ]]; then
+  echo "Discovered ${discovered_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
 if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
@@ -985,7 +990,6 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
-    '.github/workflows/argocd-image-updater.yml:provider-ownership' \
     '.github/workflows/bulldozer-credential.yml:credential' \
     '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
@@ -997,6 +1001,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-runner-publish.yml:publish' \
     '.github/workflows/cordium-runner-publish.yml:published-digests' \
     '.github/workflows/cordium-runner-publish.yml:test-build' \
+    '.github/workflows/deployment-checks.yml:validate' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
@@ -1008,10 +1013,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
-    '.github/workflows/image-automation.yml:image-update-gate' \
-    '.github/workflows/image-automation.yml:observe' \
-    '.github/workflows/image-automation.yml:promote-pr' \
-    '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
     '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
@@ -1039,8 +1040,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
     '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
-    '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/platform-maintenance.yml:maintenance' \
     '.github/workflows/platform-maintenance.yml:static-policy' \
     '.github/workflows/release.yml:release' \
@@ -1084,24 +1085,6 @@ for workflow in .github/workflows/*.yml; do
   }
 done
 
-yq -o=json '.' .github/workflows/argocd-image-updater.yml | jq -e '
-  [.on.pull_request.paths, .on.push.paths] | all(
-    index("scripts/ci/argocd-registration-plan-check.py") != null and
-    index("scripts/ci/terragrunt-apply.sh") != null
-  )
-' >/dev/null || {
-  echo "Native provider regression must run for registration guard changes." >&2
-  exit 1
-}
-
-for promotion_job in image-update-gate promote-pr; do
-  yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
-    .github/workflows/image-automation.yml >/dev/null || {
-    echo "Image automation promotion job $promotion_job lost its activation gate." >&2
-    exit 1
-  }
-done
-
 while read -r workflow expected_hash; do
   [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
     echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
@@ -1114,6 +1097,7 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/deployment-checks.yml 2cfeeda43c50b922216f047a7eb7cdeb65d76a1f3a8ad0f73d1333db956c14da
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
@@ -1135,12 +1119,12 @@ done <<'EOF'
 .github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
-.github/workflows/octelium-private-kubernetes-apply.yml 62ee2b99bad348536702022713a113ab07830a4515431623a35cd6869cf88b91
+.github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
 .github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
-.github/workflows/terragrunt-apply.yml d69111c2a2a4730d0a075a22eb4054cec6f76e229784de939c501e7c52b95536
+.github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
 .github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
-.github/workflows/validate.yml 0c1ea84d45d05db13893da288764aeb21250ef9ba1bad407d8af042284db6934
+.github/workflows/validate.yml ab14d6c33d69a117d8a7cfc0c791d98322529205d7a42875d30ff8bdf0466bfc
 EOF
 echo "::endgroup::"
 
@@ -1169,9 +1153,7 @@ for workflow_job in \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
   '.github/workflows/mastodon-public-dns.yml:static-policy' \
   '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
-  '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
-  '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
-  '.github/workflows/terragrunt-apply.yml:static-policy'; do
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
   job="${workflow_job##*:}"
   yq -o=json '.' "$workflow" |
@@ -1183,6 +1165,17 @@ for workflow_job in \
       .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
       (.jobs[$job].steps[0].run | contains("refs/heads/main")) and
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
+    ' >/dev/null
+done
+for workflow in terragrunt-apply octelium-private-kubernetes-apply; do
+  yq -o=json '.' ".github/workflows/$workflow.yml" |
+    jq -e '
+      .on.workflow_dispatch.inputs.expected_sha.required == true and
+      .jobs["static-policy"] == {
+        "uses": "./.github/workflows/deployment-checks.yml",
+        "permissions": {"contents": "read"},
+        "with": {"expected_sha": "${{ inputs.expected_sha }}"}
+      }
     ' >/dev/null
 done
 yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
@@ -1333,12 +1326,11 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "type": "boolean"
     } and
     .on.workflow_dispatch.inputs.application_backup_storage == {
-      "description": "Apply only the versioned OpenClaw legacy archive bucket",
+      "description": "Apply only the application backup storage unit",
       "required": false,
       "default": false,
       "type": "boolean"
     } and
-    .jobs["static-policy"].steps[0].if == null and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
     ($live_apply | length) == 1 and
@@ -1369,22 +1361,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "cancel-in-progress": false,
       "queue": "max"
     } and
-    .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
-    .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
-    .jobs["terragrunt-apply"].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
-    .jobs["terragrunt-apply"].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
-    .jobs["terragrunt-apply"].steps[0].env.GH_TOKEN == "${{ github.token }}" and
-    (.jobs["terragrunt-apply"].steps[0] | tostring | contains("secrets") | not) and
-    (.jobs["terragrunt-apply"].steps[0].run |
-      contains("repos/${GH_REPO}/git/ref/heads/main") and
-      contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
-      contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
+    .jobs["terragrunt-apply"].steps[1] == {
+      "name": "Verify Current Main Commit",
+      "run": "bash scripts/ci/terragrunt-current-main.sh"
+    } and
     ([.jobs["terragrunt-apply"].steps | to_entries[] |
-      select(.value | tostring | contains("secrets.")) | .key] | min) > 0 and
-    any(.jobs["terragrunt-apply"].steps[];
-      .name == "Resolve Last Successful Apply" and
-      .env.APPLY_HEAD_SHA == "${{ github.sha }}"
-    ) and
+      select(.value | tostring | contains("secrets.")) | .key] | min) > 1 and
     (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run |
       contains("--paginate --slurp") and
       contains("branch=main&status=success&per_page=100") and
@@ -1442,7 +1424,6 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     .permissions == {} and
     (.jobs | keys | sort) == ["reconcile", "static-policy"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
-    .jobs["static-policy"].steps[0].name == "Verify Dispatch Commit" and
     .jobs.reconcile.needs == ["static-policy"] and
     .jobs.reconcile.environment == {"name": "homelab-production"} and
     .jobs.reconcile.permissions == {"contents": "read"} and
@@ -1451,18 +1432,12 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
       "group": "octelium-private-kubernetes-production",
       "cancel-in-progress": false
     } and
-    .jobs.reconcile.steps[0].name == "Verify Current Main Commit" and
-    .jobs.reconcile.steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
-    .jobs.reconcile.steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
-    .jobs.reconcile.steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
-    .jobs.reconcile.steps[0].env.GH_TOKEN == "${{ github.token }}" and
-    (.jobs.reconcile.steps[0].run |
-      contains("repos/${GH_REPO}/git/ref/heads/main") and
-      contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
-      contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
+    .jobs.reconcile.steps[1] == {
+      "name": "Verify Current Main Commit",
+      "run": "bash scripts/ci/terragrunt-current-main.sh"
+    } and
     ($catalog_steps | length) == 1 and
     $catalog_steps[0].env == {
-      "GH_TOKEN": "${{ github.token }}",
       "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
     } and
     ($catalog_steps[0].run |
@@ -1474,13 +1449,13 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     (.jobs.reconcile | tostring | contains("id-token") | not) and
     (.jobs.reconcile | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
     (.jobs.reconcile | tostring | contains("kubectl") | not) and
-    (.jobs.reconcile | tostring | contains("terragrunt") | not)
+    ($catalog_steps[0].run | contains("terragrunt") | not)
   ' >/dev/null
 bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c" ]] || {
+  "4937adc1a5f41201c17e83fc777ac0e76a5678a93bd1c8d9d5fccef697d364af" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }
