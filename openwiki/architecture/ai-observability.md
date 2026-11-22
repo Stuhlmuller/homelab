@@ -19,15 +19,37 @@ verified:
 # AI observability
 
 Langfuse is the operator UI for prompts, outputs, errors and token usage.
-LiteLLM is the sole in-cluster inference gateway: it accepts only
-`openrouter/free`, authenticates named callers with dedicated keys and emits
-trusted application attribution to Langfuse. The provider credential is mounted
-only by LiteLLM from `/homelab/litellm/openai-api-key`; it is an OpenRouter
-credential despite the legacy SSM parameter name.
+LiteLLM is the in-cluster inference gateway. It authenticates named callers
+with dedicated keys scoped to `openrouter/free` and emits trusted application
+attribution to Langfuse. Gateway administrators can also use the Bedrock
+chat routes below. LiteLLM signs those requests with a mounted AWS
+credentials profile. Its OpenRouter
+credential originates from the legacy `/homelab/litellm/openai-api-key`.
 
 The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
 by callers. See the [gateway contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
+
+## Bedrock chat
+
+| LiteLLM model | Amazon Bedrock model or US inference profile |
+| --- | --- |
+| `bedrock/claude-sonnet-4-5` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `bedrock/nova-lite` | `us.amazon.nova-lite-v1:0` |
+| `bedrock/gpt-6.2-sol` | `us.openai.gpt-6.2-sol` |
+| `bedrock/deepseek-v3.2` | `deepseek.v3.2` |
+
+Use `/v1/chat/completions` with an authenticated gateway administrator.
+All routes use Converse through `us-west-2`. US inference profiles process
+requests within the US. DeepSeek V3.2 runs directly in Oregon.
+The gateway enforces the administrator requirement even if a virtual key
+has a broad model allowlist.
+
+The [operator runbook](../../docs/operator-infrastructure.md#litellm-bedrock)
+covers provisioning. Check the `ai/litellm-bedrock` ExternalSecret Ready
+condition before testing the routes. Missing Bedrock credentials leave
+OpenRouter available. After credential rotation and ExternalSecret refresh,
+roll the gateway through GitOps to clear its cached AWS credentials.
 
 ## Gateway capacity and protected rollout check
 

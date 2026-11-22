@@ -829,6 +829,13 @@ attest and test actual Fleet console SAML and local recovery login. See the
 
 ## GitHub Workflow Checks
 
+Repository PR workflows run when the PR targets `main`, including after a
+stacked PR is retargeted to `main`. Existing path filters still apply.
+
+When a newer update triggers the same PR check workflow, GitHub cancels its
+older queued or running run. Terragrunt and Release are exempt.
+See [superseded pull request runs](../../docs/ci-cd.md#superseded-pull-request-runs).
+
 Static validation creates a private temporary Terragrunt download directory
 outside the checkout and removes it on exit. The cache location is inherited by
 child fixtures; it does not change infrastructure inputs. The artifact scanner
@@ -859,7 +866,7 @@ and linting retain explicit reviewed versions. Semantic-release uses the
 flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
 Its PR preview is tokenless; only the serialized `main` publisher receives the
 release token. The [release contract](../../docs/ci-cd.md#release-publication)
-includes a disposable Git-remote test for preview, coalescing, and idempotence.
+includes a disposable Git-remote test for preview, intervening commits, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
@@ -929,15 +936,10 @@ working-directory overrides, and shell-prelude environment variables. The
 credentialed legacy operation has an exact eight-variable environment map. These
 are source checks, not evidence that either workflow has run.
 
-The live-plan and protected-apply diagnostic exceptions check a classifier's
-SHA-256 inside the hashed workflow before reading private output. A changed or
-missing helper is not executed; only the fixed withheld error remains. The
-live-plan classifier reports a fixed last-recognized-stage label and the first
-recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
-`policy`, or `unknown`); the apply classifier reports only its fixed phase
-label. These are not verified causes: misleading private text can change a
-label but cannot expose its text. Raw output, plans, and credentials remain
-withheld and deleted.
+The live-plan diagnostic exception checks the classifier's SHA-256 before it
+reads private output. It reports only a fixed stage label and error hint.
+Protected apply reports the command's exit status and discards both output
+streams. Saved plans and credentials remain private.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
@@ -1762,12 +1764,10 @@ that route is the failed dependency, restore reviewed
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
-The trusted GitHub Actions PR plan job is serialized with a shared concurrency
-group because it reads the same OpenTofu S3 backend state across pull requests.
-Do not treat a queued PR plan as unhealthy; it is waiting for the live-state
-lock lane. Same-PR replacement runs also queue instead of canceling in-progress
-plans, because interrupting OpenTofu while it holds an S3 backend lock can leave
-a stale lock that blocks later plans.
+Terragrunt Plan serializes runs per PR and keeps them queued while an earlier
+run finishes. Interrupting OpenTofu while it holds an S3 backend lock can leave
+a stale lock that blocks later plans. Terragrunt Apply keeps its separate
+production lock and queues each pending apply, subject to GitHub's queue limit.
 
 ## Live Rollout Rule
 

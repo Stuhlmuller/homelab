@@ -965,20 +965,8 @@ test_rejects_modified_azuread_plan_stage_classifier if {
 	}
 }
 
-test_allows_exact_apply_stage_classifier if {
-	violations := deny with input as workflow_with_live_run(classified_apply_run)
-	count(violations) == 0
-}
-
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_unverified_apply_stage_classifier if {
-	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -1025,54 +1013,19 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
-test_rejects_classified_apply_success_exit if {
-	run := replace(classified_apply_run, "exit 1", "exit 0")
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_modified_apply_stage_guard if {
-	every replacement in [
-		replace(apply_stage_guard, "f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829", "0000000000000000000000000000000000000000000000000000000000000000"),
-		replace(apply_stage_guard, "sha256sum --check --status", "true"),
-		replace(apply_stage_guard, "sha256sum", "shasum"),
-		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
-		replace(apply_stage_guard, " --check", ""),
-		replace(apply_stage_guard, " --status", ""),
-		replace(apply_stage_guard, "stage.sh", "other.sh"),
-		replace(apply_stage_guard, " 2>/dev/null", ""),
-		replace(apply_stage_guard, "; then", " || true; then"),
-		sprintf("%s\n  echo extra", [apply_stage_guard]),
-	] {
-		run := replace(classified_apply_run, apply_stage_guard, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
-	}
-}
-
-test_rejects_modified_apply_stage_classifier if {
-	every replacement in [
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || cat "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || exit 0`,
-		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/other.sh <"$private_log"`,
-		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
-		`cat "$private_log"`,
-		`echo "$private_log details withheld"`,
-		`echo "$line details withheld"`,
-		sprintf("%s\n  echo extra", [apply_stage_call]),
-	] {
-		run := replace(classified_apply_run, apply_stage_call, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
+test_quiet_deploy_commands_must_withhold_both_streams_and_propagate_failure if {
+	count(quiet_deploy_runs) == 3
+	every run in quiet_deploy_runs {
+		private_live_output(run)
+		every unsafe in [
+			replace(run, " >/dev/null", ""),
+			replace(run, " 2>&1", ""),
+			sprintf("%s || true", [run]),
+		] {
+			violations := deny with input as workflow_with_live_run(unsafe)
+			some msg in violations
+			contains(msg, "withhold sensitive command output")
+		}
 	}
 }
 
@@ -1242,12 +1195,6 @@ fi
 echo "success details withheld"`
 
 classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
-
-apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-
-apply_stage_guard := `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-
-classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
 
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
