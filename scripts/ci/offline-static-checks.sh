@@ -603,7 +603,7 @@ kubectl kustomize clusters/homelab/apps/cordium |
     $bootstrap_apps[0].spec.syncPolicy == {
       "automated": {
         "allowEmpty": false,
-        "enabled": true,
+        "enabled": false,
         "prune": true,
         "selfHeal": true
       },
@@ -846,11 +846,13 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
   jq -e '
     [.jobs["static-policy"].steps[] | select(.id == "live-plan-scope")] as $scope |
     [.jobs["static-policy"].steps[] | select(.name == "Run Static Checks")] as $conftest |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Cache Terragrunt Providers")] as $provider_cache |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Verify Live Plan Inputs")] as $plan_inputs |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
     (.on | keys) == ["pull_request"] and
-    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review"] and
+    .on.pull_request.branches == ["main"] and
+    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
     (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan", "terragrunt-plan-skipped"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
@@ -872,6 +874,10 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
       "id-token": "write"
     } and
     .jobs["terragrunt-plan"].env == null and
+    ($provider_cache | length) == 1 and
+    $provider_cache[0].uses == "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830" and
+    $provider_cache[0].with.path == "~/.cache/terragrunt/providers" and
+    $provider_cache[0].env == null and
     ($plan_inputs | length) == 1 and
     $plan_inputs[0].env == {
       "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
@@ -921,7 +927,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "e416d6560dbb02c20cf506a91d78283f6d9a49acf6678ad8c40fffe713b9e1c1" ]] || {
+[[ "$scope_body_sha256" == "22c70ea54b7675e4b43d232adad1d2922d5de5ce115e7f1c9f50449533910d69" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1057,12 +1063,22 @@ expected_credentialed_job_inventory="$({
 }
 
 for workflow in .github/workflows/*.yml; do
-  yq -o=json '.' "$workflow" | jq -e '
+  workflow_json="$(yq -o=json '.' "$workflow")"
+  jq -e '
+    if (.on // {} | has("pull_request")) then
+      .on.pull_request.branches == ["main"] and
+      (.on.pull_request.types | index("edited") != null)
+    else true end
+  ' <<<"$workflow_json" >/dev/null || {
+    echo "Pull-request workflow must target main and run when retargeted: $workflow" >&2
+    exit 1
+  }
+  jq -e '
     if (.on // {} | has("pull_request")) then
       [.permissions, .jobs[].permissions] |
       all(. != "write-all" and (type != "object" or .statuses != "write"))
     else true end
-  ' >/dev/null || {
+  ' <<<"$workflow_json" >/dev/null || {
     echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
     exit 1
   }
@@ -1099,15 +1115,15 @@ done <<'EOF'
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
+.github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 4f1506a4f1cfb0bf8ab85b5c2cbdd59969b5568bad07dc9ba03064b29e363895
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
+.github/workflows/harbor-mirror.yml b89e2487c50c84e0de24674543375205c61e33e5d083b2e5b0bcc7456919108d
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
-.github/workflows/lint.yml 8408798ea388d2ee3b806d2f33f42382689448aa6aa1d5f8f616abfbef4bc321
+.github/workflows/lint.yml a0348d00b52e0e8d7269fa1ba98ed45615bee45c5ce94cef3d8e300e06b76819
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
@@ -1116,15 +1132,15 @@ done <<'EOF'
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
-.github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
+.github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/n8n-paired-checkpoint.yml efc6203ae41d43630c075f22a1a079e0a674371c7f746b187b73dced96497454
-.github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
-.github/workflows/release.yml c1b3ab8f020d9bef976f9e48106b3d82e0bb81391373eecca0a5c9f18e18b286
-.github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 97cb4eb564691632695092c45a8d54fc22f45e8b98341da2a53ec6a6bff3075a
-.github/workflows/terragrunt-plan.yml 955f02170dbd3ff8a8e692281a759ead321a99fa296bc795481d5383217b254e
-.github/workflows/validate.yml d35de76f1d421c9bf2295e8186f464c0959de245560678e8cb76bb503de52a6d
+.github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
+.github/workflows/octelium-private-kubernetes-apply.yml 62ee2b99bad348536702022713a113ab07830a4515431623a35cd6869cf88b91
+.github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
+.github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
+.github/workflows/terragrunt-apply.yml d69111c2a2a4730d0a075a22eb4054cec6f76e229784de939c501e7c52b95536
+.github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
+.github/workflows/validate.yml 0c1ea84d45d05db13893da288764aeb21250ef9ba1bad407d8af042284db6934
 EOF
 echo "::endgroup::"
 
@@ -1211,9 +1227,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
     [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
-    (.on | keys | sort) == ["pull_request_target", "push"] and
+    (.on | keys | sort) == ["push", "workflow_run"] and
     .on.push == {"branches": ["main"]} and
-	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
+    .on.workflow_run == {"workflows": ["Terragrunt Plan"], "types": ["completed"]} and
     .permissions == {} and
     .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
     .env == null and
@@ -1241,13 +1257,18 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
       contains("jq -r '\''.[].head.sha'\''") and
       contains("$GITHUB_EVENT_NAME") and
-      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\" || exit 1") and
+      contains("verification_base_sha=\"$base_sha\"") and
+      contains(".workflow_run.event == \"pull_request\"") and
+      contains(".workflow_run.head_sha") and
+      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\"") and
+      contains("--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"") and
       contains("native-receipts-unchanged") and
       contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
       contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
       contains("repos/${GITHUB_REPOSITORY}/commits/main") and
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
+python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
   fixture_env="$(type -P env || true)"
@@ -1268,7 +1289,7 @@ while read -r source expected_hash; do
     exit 1
   }
 done <<'EOF'
-scripts/ci/harbor-native-chainguard-receipt-import.py a2ac20c35e1b57d9238bb8ab76a4f154a20e0a98b17cb248fd0935ac241a2b22
+scripts/ci/harbor-native-chainguard-receipt-import.py 3bb5541f181af9d8945ea5be68ecccaf9d7a1a1dc9b432d45a0f52e241af4c3e
 scripts/ci/harbor-native-chainguard-receipt.py aa0f770ca2d3ca4184d609581f11fb828d28a1c0e219cedbf744cbb5caad5380
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
@@ -1278,13 +1299,11 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
     .permissions == {} and
     .env == null and
     (.jobs | keys) == ["request"] and
-    .concurrency == {
-      "group": "terragrunt-apply-request",
-      "cancel-in-progress": true
-    } and
+    .concurrency == null and
+    .jobs.request.concurrency == null and
     .jobs.request.environment == null and
     .jobs.request.env == null and
-    .jobs.request.permissions == {"actions": "read"} and
+    .jobs.request.permissions == null and
     (.jobs.request | tostring | contains("secrets") | not) and
     (.jobs.request.permissions["id-token"] == null) and
     (.jobs.request.steps | length) == 1 and
@@ -1292,8 +1311,6 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
     .jobs.request.steps[0].env.REQUEST_SHA == "${{ github.sha }}" and
     (.jobs.request.steps[0].run |
       contains("gh workflow run terragrunt-apply.yml --repo ${GH_REPO} --ref main -f expected_sha=${REQUEST_SHA}") and
-      contains("terragrunt-apply.yml/runs?per_page=100") and
-      contains("select(.status != \"completed\")") and
       contains("${GITHUB_STEP_SUMMARY}"))
   ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
@@ -1325,14 +1342,14 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
     ($live_apply | length) == 1 and
+    ([.jobs["terragrunt-apply"].steps[] | select(.name == "Configure Kubernetes Credentials").env] ==
+      [{"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}]) and
     $live_apply[0].env == {
       "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
-      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
-      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}"
     } and
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
@@ -1349,7 +1366,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
-      "cancel-in-progress": false
+      "cancel-in-progress": false,
+      "queue": "max"
     } and
     .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
@@ -1449,7 +1467,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     } and
     ($catalog_steps[0].run |
       contains("bash scripts/ci/octelium-private-kubernetes-apply.sh") and
-      contains("details withheld")) and
+      endswith(" >/dev/null 2>&1\n")) and
     ([.jobs.reconcile.steps[] |
       select(.name != "Reconcile Private Kubernetes Catalog") |
       .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and
@@ -1648,6 +1666,7 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 node scripts/ci/openclaw-github-check.cjs
+python3 -I scripts/ci/openclaw-credential-containment-test.py
 # homelab-workloads deliberately has no cluster-scoped resource permissions.
 kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \
   '[select(.kind == "PersistentVolume" or .kind == "StorageClass")] | length == 0' - >/dev/null
