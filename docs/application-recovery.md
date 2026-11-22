@@ -66,7 +66,7 @@ ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
 gap. The paired adapters provide publication, not an approved writer-fencing or
 capture workflow. Do not enable them until that capture change is reviewed.
 
-The dormant [rscstore capture stage](../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
+The dormant [rscstore capture stage](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
 adds a source-owned stopped-writer whole-PVC path to the existing versioned
 application backup bucket. It needs separate inspector and fence activation,
 exact-version readback, and isolated file extraction before an off-NAS archive
@@ -326,7 +326,7 @@ AdGuard's recovery authority is its Git configuration and the protected AWS SSM
 `/homelab/adguard/admin-password` value, with independent administrator access to
 AWS/encrypted IaC state. Its retained NFS work claim holds rebuildable filter
 cache; neither a PVC nor a backup declaration proves a successful restore.
-The [AdGuard recovery command](../clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+The [AdGuard recovery command](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
 reconstructs those sources in disposable local containers and records exact source
 and credential versions privately. It tests replacement and fresh-cache restore
 without production mounts. Live private routing and client DNS require separate
