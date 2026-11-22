@@ -32,8 +32,6 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -52,48 +50,30 @@ sources:
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
-  - id: openwiki-source-9f4d1b63d947cd42e3af68b2
-    resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-7768e8293039ce9a3d76e6b1
-    resource: repo://clusters/homelab/apps/istio/README.md
   - id: openwiki-source-0f74d31324e8c8db68700f72
     resource: repo://clusters/homelab/apps/istio/upgrade-1.28.10.json
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
-  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
-    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
-  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
-    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-06c51d450592da5906a7761d
     resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-8918085c21c3a103803f7fbe
     resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-a11878298975bc4bd3bbaf7d
-    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
-  - id: openwiki-source-01fc0bedc522f2abd58d6698
-    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
     resource: repo://clusters/homelab/apps/traefik/certificate.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -108,10 +88,6 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
@@ -400,7 +376,7 @@ For Descheduler values or chart changes, run
 rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
 exactly one `--descheduling-interval=30m` argument. Update the check alongside
 the pinned chart when upgrading. Live revision, argument and execution-cadence
-acceptance remain separate; see the [workload notes](../../clusters/homelab/apps/descheduler/README.md).
+acceptance remain separate; see the [workload notes](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/descheduler/README.md).
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:
 Argo applied `07672f6d13114a6e695c28339dd99e401c840972`, then compared its
@@ -410,7 +386,7 @@ Each cycle also exposed the pre-existing missing-plugin configuration error;
 Issue #1805 tracks its source repair and two-cycle functional acceptance.
 Do not equate zero evictions or Ready status with successful policy evaluation.
 
-The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
+The [Linux builder](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
 changes; reviewed homelab source remains the trust boundary. Keep strict
@@ -541,14 +517,14 @@ the existing 15-minute firing hold after five-minute group detection. The check
 also requires the custom rule's
 Kustomize registration, the chart-default replacement switch, and matching
 15-day retention. Live rollout must leave one healthy `KubeJobFailed` rule;
-see `clusters/homelab/apps/prometheus/README.md` for verification and rollback.
+see [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md) for verification and rollback.
 
 The static gate also runs `scripts/ci/memory-overcommit-check.py` against the
 repository-owned `KubeMemoryOvercommit` rule. It checks the accepted non-HA
 total-capacity threshold, the 10-minute hold, recovery, cluster isolation, and
 replacement registration. Live rollout must leave one healthy rule in
 `homelab.memory` and no alert while requests fit total allocatable capacity.
-See `clusters/homelab/apps/prometheus/README.md#memory-capacity-policy`.
+See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md#memory-capacity-policy).
 
 Operator-owned AWS bootstrap units require a focused backend-free validation
 and an administrator-authenticated plan before apply:
@@ -690,7 +666,7 @@ Harbor monitoring peers, Harbor and Mastodon gateway peers, and Mastodon's
 ambient HBONE TCP/15008 allowance. It cannot prove traffic through an
 enforcing dataplane; require the isolated canary before activation.
 See [ingress](../runbooks/tailnet-ingress.md) and the
-[provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+[provider runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 The offline static gate renders all nine DNS egress policies and requires their
 TCP/UDP port 53 peers to select only `kube-system` Pods labeled
@@ -853,6 +829,13 @@ attest and test actual Fleet console SAML and local recovery login. See the
 
 ## GitHub Workflow Checks
 
+Repository PR workflows run when the PR targets `main`, including after a
+stacked PR is retargeted to `main`. Existing path filters still apply.
+
+When a newer update triggers the same PR check workflow, GitHub cancels its
+older queued or running run. Terragrunt and Release are exempt.
+See [superseded pull request runs](../../docs/ci-cd.md#superseded-pull-request-runs).
+
 Static validation creates a private temporary Terragrunt download directory
 outside the checkout and removes it on exit. The cache location is inherited by
 child fixtures; it does not change infrastructure inputs. The artifact scanner
@@ -883,7 +866,7 @@ and linting retain explicit reviewed versions. Semantic-release uses the
 flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
 Its PR preview is tokenless; only the serialized `main` publisher receives the
 release token. The [release contract](../../docs/ci-cd.md#release-publication)
-includes a disposable Git-remote test for preview, coalescing, and idempotence.
+includes a disposable Git-remote test for preview, intervening commits, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
@@ -953,15 +936,10 @@ working-directory overrides, and shell-prelude environment variables. The
 credentialed legacy operation has an exact eight-variable environment map. These
 are source checks, not evidence that either workflow has run.
 
-The live-plan and protected-apply diagnostic exceptions check a classifier's
-SHA-256 inside the hashed workflow before reading private output. A changed or
-missing helper is not executed; only the fixed withheld error remains. The
-live-plan classifier reports a fixed last-recognized-stage label and the first
-recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
-`policy`, or `unknown`); the apply classifier reports only its fixed phase
-label. These are not verified causes: misleading private text can change a
-label but cannot expose its text. Raw output, plans, and credentials remain
-withheld and deleted.
+The live-plan diagnostic exception checks the classifier's SHA-256 before it
+reads private output. It reports only a fixed stage label and error hint.
+Protected apply reports the command's exit status and discards both output
+streams. Saved plans and credentials remain private.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
@@ -1044,7 +1022,7 @@ rg -n \
 `scripts/ci/langfuse-valkey-recovery-test.py` checks stopped-writer guards,
 backup integrity and candidate-only AOF repair. Its optional `--checker` runs
 a synthetic corrupt tail through the matching Valkey 8.0.11 executable.
-The [capture runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection)
+The [capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection)
 requires offline live guards, off-NAS hashes and measured loss before requesting
 live replacement; fixture success alone is not production recovery.
 
@@ -1078,7 +1056,7 @@ The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
 the active values render one Deployment replica and the fence overlay renders
 zero, with no migration Job in either render. Its
-[workload runbook](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
+[workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
 before a paired capture; source rendering alone is not a live backup.
 The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
@@ -1173,8 +1151,9 @@ single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must still show
-zero `octeliumee-rscstore` replicas, the inspector Pod, and its exact-label
-NetworkPolicy. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+one `octeliumee-rscstore` replica, the inspector Pod, and its exact-label
+NetworkPolicy. The fence component renders only when added to the app
+Kustomization. See the [capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
 ```sh
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
@@ -1250,7 +1229,7 @@ the public browser probe in `scripts/octelium-e2e-check.sh`, then verify
 authenticated page rendering and audit queries. Revalidate Envoy compatibility
 when upgrading Istio. Automated pruning is disabled for this app: rollback
 must commit an empty `spec.configPatches` list and adjust the filter test gate,
-as described in `clusters/homelab/apps/octelium-cluster/README.md`; deleting
+as described in [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-cluster/README.md); deleting
 the file alone leaves the live filter installed.
 
 Before declaring Octelium-backed app UI access healthy, the replacement path
@@ -1402,7 +1381,7 @@ Use these read-only checks after node recovery or an ambient configuration
 rollout. All must pass before closing the readiness finding; connector access
 alone is insufficient. Keep raw logs outside git.
 
-The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
+The [held 1.28.10 candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/istio/README.md)
 is disabled and outside Argo. The offline static gate pins all six active
 1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
 replacement chart URL and archive hashes. All six declared active sources and
@@ -1785,12 +1764,10 @@ that route is the failed dependency, restore reviewed
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
-The trusted GitHub Actions PR plan job is serialized with a shared concurrency
-group because it reads the same OpenTofu S3 backend state across pull requests.
-Do not treat a queued PR plan as unhealthy; it is waiting for the live-state
-lock lane. Same-PR replacement runs also queue instead of canceling in-progress
-plans, because interrupting OpenTofu while it holds an S3 backend lock can leave
-a stale lock that blocks later plans.
+Terragrunt Plan serializes runs per PR and keeps them queued while an earlier
+run finishes. Interrupting OpenTofu while it holds an S3 backend lock can leave
+a stale lock that blocks later plans. Terragrunt Apply keeps its separate
+production lock and queues each pending apply, subject to GitHub's queue limit.
 
 ## Live Rollout Rule
 
@@ -1818,7 +1795,7 @@ After reviewed Argo reconciliation, run
 Require zero exit status, expected torrent count, healthy cached RPC/VPN
 metrics, a serving Service endpoint and successful access through the original
 route. A direct loopback check alone does not prove browser access. See the
-[Deluge runbook](../../clusters/homelab/apps/deluge/README.md#troubleshooting)
+[Deluge runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/deluge/README.md#troubleshooting)
 and [October incident](deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure).
 
 ## Gluetun CPU capture
@@ -1907,7 +1884,7 @@ intentional failure, and session renewal. These fixtures establish only the
 declared contract: live NRI enforcement, denied traffic, credential refresh,
 cold pulls, canary cleanup, and workflow execution remain gates before
 enabling registration or changing job selectors. See the
-[runner source contract](../../builds/cordium-runner/README.md).
+[runner source contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md).
 
 ## OpenClaw Enterprise replacement gates
 
@@ -2155,7 +2132,7 @@ for the logical Namespace; retain the physical tenant Namespace. These local
 tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
 network-policy enforcement, hooks, routes, Namespace adoption or restore.
 The local `--expected-sha` guard is not an exact-remote-main check. The staged
-[journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+[journal operator](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 adds an exact-main one-shot Job dispatcher, retained journal PVC declaration,
 scoped proof RBAC and private-network intent. The static gate runs its
 [failure and restart fixtures](../../scripts/ci/openclaw-enterprise-journal-operator-test.py).
@@ -2293,7 +2270,7 @@ Only a separate reviewed activation after image/launcher and Talos runtime proof
 may add it to GitOps and lift suspension. Post-activation acceptance
 requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
 30-hour staleness alert. Static fixtures alone do not prove live restoration.
-See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
+See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-storage/README.md) for private diagnostics,
 rollback, and the limits of this PostgreSQL-only drill.
 
 ## OpenClaw container privilege gate
@@ -2416,7 +2393,7 @@ ready workloads and secrets, Bound claims, the pinned public version, blocked
 setup aliases, authenticated administrator access and the PostSync backup's
 verified-publication log. Nightly recurrence, offsite recovery, actual device
 enrollment and reversible profile delivery are separate gates. See the
-[Fleet runbook](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 On October 3, the reviewed scoped mirror, targeted apply, DNS reconciliation,
 public administrator/API checks and initial backup passed; the Fleet runbook
@@ -2424,14 +2401,14 @@ records their workflow IDs. Omitted ExternalSecret server defaults caused
 repeated Argo self-healing, so Fleet now declares refresh interval, remote-ref
 strategies and template merge policy explicitly, matching the live API defaults.
 
-The [Apple acceptance record](../../clusters/homelab/apps/fleet/README.md#apple-activation-and-device-acceptance-2026-10-03)
+The [Apple acceptance record](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#apple-activation-and-device-acceptance-2026-10-03)
 confirms active APNs, a user-approved Mac, a freshly acknowledged MDM query and
 verified temporary profile installation/removal with baseline profiles retained.
 Free enrollment uses **Personal (BYOD)** through `/enroll`; the administrator
 manual-profile endpoint requires Premium and returns HTTP 402. iOS inventory
 and command acceptance remain pending; the runbook owns detailed evidence,
 the observed unexplained push delay and certificate renewal metadata. The
-[profile verifier](../../clusters/homelab/apps/fleet/README.md#verify-reversible-profile-delivery-on-this-mac)
+[profile verifier](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#verify-reversible-profile-delivery-on-this-mac)
 defaults to a preview; `--execute` targets only the exact local Mac and requires
 verified removal of its temporary profile while retaining the baseline.
 
@@ -2572,7 +2549,7 @@ require no published host ports, internal networking and core health ordering.
 The registry client shares the proxy's network namespace and uses its loopback
 listener; this avoids publishing a port from an internal-only Docker bridge.
 Passing this fixture does not prove full-catalog or CVE-free publication;
-see the [candidate gates](../../builds/harbor-core/README.md).
+see the [candidate gates](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/harbor-core/README.md).
 
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression
 tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
@@ -2791,7 +2768,7 @@ recovery. Protected CI and GitOps own delivery conditions. Login, SMTP, public
 HTTP, WebFinger, media and streaming remain distinct runtime observations.
 The DNS workflow checks Mastodon and the shared connector Synced/Healthy at
 its reviewed revision; this page adds no separate activation approval.
-See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).
+See the [Mastodon runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md).
 
 ## Reviewed secret-scan findings
 
@@ -2883,7 +2860,7 @@ Publication must establish the exact fixed `uptime-kuma` image scope before
 consumer delivery. Targeted Terragrunt tests check prerequisites and SSM-before-
 Application ordering; chart/overlay renders and policy checks cover mounts,
 identity and private routes. Local successes do not establish live uptime.
-Follow [the runbook](../../clusters/homelab/apps/uptime-kuma/README.md) and
+Follow [the runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/uptime-kuma/README.md) and
 [feature acceptance guide](../../specs/20261116-210437-uptime-kuma/quickstart.md)
 for exact-revision private login, catalog observations, controlled recovery,
 repeat reconciliation, replacement continuity and actual backup/restore jobs.
@@ -2891,7 +2868,7 @@ Record unhealthy targets as findings rather than weakening predicates.
 
 ## AdGuard rollout and DNS activation
 
-The [AdGuard runbook](../../clusters/homelab/apps/adguard/README.md) separates
+The [AdGuard runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md) separates
 source validation, rollout, direct acceptance and normal-client acceptance.
 Offline checks cover manifests/init, live-evidence validation, exact saved-plan
 cutover/rollback, protected recovery boundaries, routes and targeted
