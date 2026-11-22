@@ -40,7 +40,7 @@ prose does not change pipeline behavior.
   commit statuses, so pull-request code cannot forge the protected native
   Chainguard receipt provenance status. Repository-specific blocking checks
   remain in `Terragrunt Gate` and `validate`.
-- `Terragrunt Plan` runs on every pull request. Its unprivileged static job
+- `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
@@ -77,6 +77,11 @@ Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
 ## Superseded pull request runs
+
+Repository PR workflows run only when the PR targets `main`. Editing a PR
+triggers eligible checks on `main`, including when a stacked PR is retargeted.
+Existing path filters still apply. Push, scheduled and manual triggers keep
+their own conditions.
 
 PR checks use a concurrency group for each pull request. When an update
 triggers the same check workflow, GitHub cancels its older queued or running

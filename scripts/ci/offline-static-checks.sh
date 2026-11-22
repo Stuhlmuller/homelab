@@ -851,7 +851,8 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
     (.on | keys) == ["pull_request"] and
-    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review"] and
+    .on.pull_request.branches == ["main"] and
+    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
     (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan", "terragrunt-plan-skipped"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
@@ -1062,12 +1063,22 @@ expected_credentialed_job_inventory="$({
 }
 
 for workflow in .github/workflows/*.yml; do
-  yq -o=json '.' "$workflow" | jq -e '
+  workflow_json="$(yq -o=json '.' "$workflow")"
+  jq -e '
+    if (.on // {} | has("pull_request")) then
+      .on.pull_request.branches == ["main"] and
+      (.on.pull_request.types | index("edited") != null)
+    else true end
+  ' <<<"$workflow_json" >/dev/null || {
+    echo "Pull-request workflow must target main and run when retargeted: $workflow" >&2
+    exit 1
+  }
+  jq -e '
     if (.on // {} | has("pull_request")) then
       [.permissions, .jobs[].permissions] |
       all(. != "write-all" and (type != "object" or .statuses != "write"))
     else true end
-  ' >/dev/null || {
+  ' <<<"$workflow_json" >/dev/null || {
     echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
     exit 1
   }
@@ -1104,15 +1115,15 @@ done <<'EOF'
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 157c77607c1e73f4f9017129fe0d532ef64fdc6bf79242928bba6d28e81928bf
+.github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml cfd1f72a079a7142f2676b747f7f80acd3cb27ac794b0b86b17608ed2cc9361f
+.github/workflows/harbor-mirror.yml b89e2487c50c84e0de24674543375205c61e33e5d083b2e5b0bcc7456919108d
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
-.github/workflows/lint.yml 8408798ea388d2ee3b806d2f33f42382689448aa6aa1d5f8f616abfbef4bc321
+.github/workflows/lint.yml a0348d00b52e0e8d7269fa1ba98ed45615bee45c5ce94cef3d8e300e06b76819
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
@@ -1128,8 +1139,8 @@ done <<'EOF'
 .github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml d69111c2a2a4730d0a075a22eb4054cec6f76e229784de939c501e7c52b95536
-.github/workflows/terragrunt-plan.yml 325a2f07b7da11dc4ec0f5031db6172fd264b5c9e96741559708fd1ce882694a
-.github/workflows/validate.yml 15039c1fe4c3124189b733250c1c182742c22228244a8a2cf09843dfd5d85c91
+.github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6
+.github/workflows/validate.yml 0c1ea84d45d05db13893da288764aeb21250ef9ba1bad407d8af042284db6934
 EOF
 echo "::endgroup::"
 
