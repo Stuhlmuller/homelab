@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException
 from native_keys import database_config, import_provider_credential, import_service_keys
 
 LOGGING_OVERRIDES = set(StandardCallbackDynamicParams.__annotations__) | {
-    "success_callback", "failure_callback", "callbacks", "no-log",
+    "success_callback", "failure_callback", "callbacks", "no-log", "litellm_request_debug",
 }
 PROVIDER_OVERRIDES = {
     "api_key", "api_base", "base_url", "custom_llm_provider", "headers", "extra_headers",
@@ -27,6 +27,8 @@ PROVIDER_OVERRIDES = {
     "mock_response", "mock_tool_calls", "mock_timeout", "provider_specific_header", "ssl_verify",
     "litellm_credential_name",
 }
+FREE_MODEL = "openrouter/free"
+BEDROCK_MODELS = ("bedrock/claude-sonnet-4-5", "bedrock/nova-lite")
 MAX_BODY_BYTES = 32 * 1024 * 1024  # Bounded text/image JSON admission, including chunked uploads.
 HOST_AUTHORITY = re.compile(rb"(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::[0-9]{1,5})?")
 
@@ -110,14 +112,14 @@ class TelemetryAdmission:
         if LOGGING_OVERRIDES.intersection(keys):
             return await JSONResponse({"error": "Request-level logging overrides are disabled"},
                                       status_code=400)(scope, receive, send)
-        if inference and PROVIDER_OVERRIDES.intersection(keys):
+        if inference and (PROVIDER_OVERRIDES.intersection(keys) or any(key.startswith("aws_") for key in keys)):
             return await JSONResponse({"error": "Provider routing overrides are disabled"},
                                       status_code=400)(scope, receive, send)
         if inference and (request.method != "POST" or route not in {"/chat/completions", "/v1/chat/completions"}):
-            return await JSONResponse({"error": "Only free chat completions are enabled"},
+            return await JSONResponse({"error": "Only chat completions are enabled"},
                                       status_code=400)(scope, receive, send)
-        if inference and model != "openrouter/free":
-            return await JSONResponse({"error": "Only OpenRouter free models are enabled"},
+        if inference and model not in (FREE_MODEL, *BEDROCK_MODELS):
+            return await JSONResponse({"error": "Model is not configured for chat completions"},
                                       status_code=400)(scope, receive, send)
         del request
 

@@ -10,6 +10,20 @@ format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
 
+## LiteLLM Bedrock
+
+Generate the operator stack, then plan and apply only
+`IaC/homelab/us-west-2/operator/litellm-bedrock` from reviewed `main`. Review
+the private saved plan. The unit owns one dedicated IAM user, its
+inference-only policy and access key, and the encrypted SSM profile consumed by
+LiteLLM. The plan and state can contain the AWS credential.
+
+Run the protected [Terragrunt Apply](../.github/workflows/terragrunt-apply.yml)
+with `argocd_app=litellm` and the exact current `expected_sha`. This applies
+the shared SSM reader grants before the Application registration. Check
+`ai/litellm-bedrock` ExternalSecret readiness, then verify both chat routes
+using the [gateway contract](../openwiki/architecture/ai-observability.md#bedrock-chat).
+
 ## Entra CI provider identities
 
 `azuread-ci-identities` declares separate GitHub OIDC identities for protected

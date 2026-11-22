@@ -17,6 +17,7 @@ spec:
     - https://charts.crossplane.io/stable
     - https://grafana-community.github.io/helm-charts
     - https://helm.goharbor.io
+    - https://helm.cilium.io
     - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
@@ -43,6 +44,8 @@ spec:
       namespace: automation
     - server: https://kubernetes.default.svc
       namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: cilium-secrets
     - server: https://kubernetes.default.svc
       namespace: cordium
     - server: https://kubernetes.default.svc
