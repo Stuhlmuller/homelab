@@ -40,6 +40,7 @@ Generated indexes: [root](index.md), [apps](apps/index.md),
 | Diagnose network or access | [Topology](architecture/cluster-topology.md), [Octelium](runbooks/octelium.md), [ingress](runbooks/tailnet-ingress.md) | Route manifests and workload runbooks; compare native client and browser behavior |
 | Change AI routing | [AI observability](architecture/ai-observability.md) | Caller configuration, LiteLLM/Langfuse contracts, and per-caller acceptance evidence |
 | Publish or upgrade images | [Harbor](operations/harbor-oci.md), [chart organization](patterns/helm-chart-organization.md) | [Harbor images](../.agents/skills/homelab-harbor-images/SKILL.md) |
+| Design Harbor repository layout or image policies | [Harbor](operations/harbor-oci.md) | [Repository layout](../.agents/skills/harbor-oci-repository-layout/SKILL.md), [image lifecycle](../.agents/skills/harbor-oci-image-lifecycle/SKILL.md) |
 | Repair a PR or deliver a rollout | [Validation gates](operations/validation-gates.md) | [Protected PRs](../.agents/skills/homelab-protected-prs/SKILL.md), [release verification](../.agents/skills/homelab-release-verification/SKILL.md) |
 | Maintain documentation | [Source map](source-map.md), [wiki maintenance](operations/wiki-maintenance.md) | [Homelab context](../.agents/skills/homelab-knowledge-base/SKILL.md), [OpenWiki](../.agents/skills/openwiki/SKILL.md) |
 | Plan a larger feature | [Agent workflows](operations/agent-workflows.md) | Repository `speckit-*` skills and `.specify/` templates |

@@ -1714,28 +1714,16 @@ human-readable plan streams to the Actions log. Saved plan files and
 JSON policy inputs remain temporary and are removed on exit. Run the same
 order locally when reproducing a failure.
 
-The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
-stack or shared root sources, or plan inputs, change. Missing client and tenant
-selectors or an incomplete GitHub OIDC session fail the plan; only unrelated
-changes may skip AzureAD. Restore the environment secrets through the
-[Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
-the PR plan and verify the protected gate before merging.
+The protected PR plan requires the `homelab-plan` Entra identity for affected
+AzureAD units. Missing client and tenant selectors or an incomplete OIDC
+session fail the plan.
 
-CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`, `IaC/homelab/us-west-2/apps/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
-`IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
-generated unit groups instead
-of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. Stack index/inputs/defaults, catalog, module, shared root/provider, and tracked generated-group
-changes use the local `*` because each command runs from
-its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
-script changes also refresh every plan without widening production apply scope.
-Affected-only runs combine the repository-relative group with the Git selector
-so Terragrunt cannot queue another unit group. Intentional operator plans use
-mode `0700` temporary directories. CI may save plans in generated unit caches
-for exact apply and policy checks; its scripts use `umask 077` and delete those
-files on exit. Normal local `terragrunt plan` commands do not write plan
-artifacts into generated caches.
+CI uses `terragrunt find --filter-affected` for PR plans and full production
+applies. Terragrunt discovers changed units from generated inputs, shared HCL,
+and local module sources. A changed catalog unit also selects its deployed
+instances. Exact paths keep each active phase in its assigned scope and keep
+saved plans in the current checkout for Conftest and apply.
+
 Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
@@ -1749,12 +1737,10 @@ cloud or cluster access. Manual production and
 diagnostic dispatches reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
-the base and head revisions, so a catalog migration at the same path is not a
-destroy while removing a stack block still retires its state. The production
-Azure credential gate compares AzureAD unit sources, their repository-owned
-module sources, stack blocks, and the shared root source they consume. Every
-root source change fails closed. Unrelated stack changes do not require Azure
-credentials.
+the base and head revisions. A catalog migration that preserves the state
+identity keeps that state. Retirement requires Terragrunt to discover a unit
+whose historical state identity is absent at the head revision. Full apply
+requires AzureAD credentials when its selection includes an AzureAD unit.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
