@@ -63,3 +63,9 @@ unit "operator_tailscale_access" {
   path                    = "tailscale-access"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_litellm_bedrock" {
+  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/operator/litellm-bedrock"
+  path                    = "litellm-bedrock"
+  no_dot_terragrunt_stack = true
+}

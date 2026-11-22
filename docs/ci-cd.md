@@ -51,9 +51,8 @@ prose does not change pipeline behavior.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
 - `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
-  older request check, and prints the exact current-SHA dispatch command plus
-  links to active applies. It has no production environment, stored secrets,
-  or OIDC permission.
+  older request check, and prints the exact current-SHA dispatch command.
+  It has no production environment, stored secrets, or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
@@ -171,8 +170,8 @@ checks remain fresh.
   checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
   `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
   active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
-- Live Terragrunt plan and apply jobs retain their Actions development-shell
-  cache. Static jobs use the signed binary cache instead of restoring an
+- The live Terragrunt plan job retains its Actions development-shell cache.
+  Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
 - GitHub token permissions default to none. Jobs opt in to `contents: read`,
   and live Terragrunt jobs request `id-token: write`. No credentialed plan job
@@ -224,22 +223,9 @@ checks remain fresh.
   adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
   reconciliation output remains withheld from public Actions logs. Workflow
   policy permits only the reviewed PR plan command to stream live CLI output.
-  On a protected apply failure, a reviewed classifier prints fixed phase and
-  failure-hint labels after verifying its SHA-256; raw output remains withheld.
-  Hints classify recognizable authentication, network, provider/module download,
-  state-lock, Helm-operation, current-source-guard or policy errors; `unknown`
-  means no recognized fragment occurred in the last phase. Each phase resets
-  the hint, including the offsite backup-storage stage before bootstrap. A hint
-  narrows investigation but does not establish a root cause. The workflow still
-  fails if classification is unavailable or itself fails. Do not publish raw
-  logs to diagnose an unknown result.
-  Validate classifier changes with `scripts/ci/terragrunt-apply-stage-test.py`
-  and the workflow policy tests; update the exact helper SHA, allowed invocation
-  and normalized workflow digest together after review. Verify recovery with
-  an executed live PR plan and a successful full apply for the recorded current
-  main SHA; skips and targeted applies do not establish full recovery. Revert
-  the classifier and its matching exact security constants together through a
-  protected PR if the diagnostic change needs rollback.
+  Protected apply steps discard both CLI output streams. GitHub Actions uses
+  each command's exit code as the step result. Diagnose apply failures from a
+  private operator session.
   Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
