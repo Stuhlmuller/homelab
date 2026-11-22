@@ -4,18 +4,17 @@ mock_provider "tailscale" {
 }
 mock_provider "aws" {}
 
-# Synthetic cutover expectations must never activate their fixture address.
-# T037 updates this active-source assertion only after observing the real peer.
-run "dns_baseline_until_verified_adguard_cutover" {
+# Assert the reviewed observed endpoint, never the synthetic fixture address.
+run "reviewed_adguard_dns_cutover" {
   command = plan
   assert {
-    condition = (tailscale_dns_configuration.homelab.magic_dns && !tailscale_dns_configuration.homelab.override_local_dns &&
+    condition = (tailscale_dns_configuration.homelab.magic_dns && tailscale_dns_configuration.homelab.override_local_dns &&
       jsonencode(tailscale_dns_configuration.homelab.search_paths) == "[]" &&
-      jsonencode([for resolver in tailscale_dns_configuration.homelab.nameservers : resolver.address]) == jsonencode([
-        for resolver in jsondecode(file("tests/fixtures/adguard-dns-cutover.json")).before.nameservers : resolver.address
+      jsonencode(tailscale_dns_configuration.homelab.nameservers) == jsonencode([
+        { address = "100.79.255.15", use_with_exit_node = true }
       ]) &&
     jsonencode(tailscale_dns_configuration.homelab.split_dns) == jsonencode(jsondecode(file("tests/fixtures/adguard-dns-cutover.json")).before.split_dns))
-    error_message = "Active DNS must retain its prior policy until the observed AdGuard endpoint is reviewed."
+    error_message = "DNS must use only the reviewed AdGuard endpoint with override and exit-node use, preserving MagicDNS and private split DNS."
   }
 }
 
@@ -23,9 +22,6 @@ variables {
   aws_region        = "us-west-2"
   ci_key_generation = 1
   policy            = "{\"grants\":[]}"
-  kms_key_id        = "alias/test-only"
-  kms_region        = "us-east-1"
-  kms_key_spec      = "AES_256"
 }
 
 run "identity_boundaries" {

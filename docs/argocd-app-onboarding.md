@@ -121,7 +121,7 @@ Bazarr keeps its SQLite database and config on a retained local volume on
 `media-tv` at `/tv` and `media-movies` at `/movies`; Sonarr and Radarr retain
 ownership of those claims. Acceptance requires both library synchronizations,
 an English subtitle beside an existing media file, and a verified backup.
-See [the Bazarr runbook](../clusters/homelab/apps/bazarr/README.md).
+See [the Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md).
 
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and
@@ -142,7 +142,7 @@ Readiness requires its App ExternalSecret, retained cache claim, and a successfu
 dry-run parity check. The separate GitHub Actions runner remains the only writer
 until its complete workflow is removed, every unfinished run drains, and its
 repository Actions private key is retired through the guarded receipt. See the
-[Renovate runbook](../clusters/homelab/apps/renovate/README.md) for cutover and
+[Renovate runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md) for cutover and
 rollback.
 
 AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
@@ -156,7 +156,7 @@ the S3 credential parameters exist, and the native-authenticated UI responds
 through its current private Traefik route. LiteLLM registration follows Langfuse, but that does not gate runtime
 readiness. Existing caller runtime remains unchanged while these prerequisites
 reconcile. Activate telemetry only in a follow-up after the
-[caller readiness gates](../clusters/homelab/apps/langfuse/README.md#caller-activation)
+[caller readiness gates](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#caller-activation)
 pass.
 
 ## Registration Provider
@@ -271,14 +271,6 @@ Rollback decision:
 Follow-up issue or PR:
 ```
 
-## Staged Codex signer
-
-`codex-cloud-signer` registers in `automation` with automatic sync disabled.
-Enable it through a PR only after the administrator-owned Tailscale/SSM
-resources and retained local volume exist. The owner must trust the daemon's
-public lock key before it becomes Ready. See its
-[runbook](../clusters/homelab/apps/codex-cloud-signer/README.md).
-
 ## Uptime Kuma onboarding
 
 The [Kuma stack](../IaC/homelab/us-west-2/apps/uptime-kuma/stack.hcl) declares
@@ -296,7 +288,7 @@ add an Octelium Service requirement to these routes. This adds no public or
 Funnel endpoint. Image publication uses the fixed `uptime-kuma` Harbor scope
 before consumer delivery.
 
-The [runbook](../clusters/homelab/apps/uptime-kuma/README.md) describes catalog
+The [runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/uptime-kuma/README.md) describes catalog
 coverage, stable native reconciliation, retained storage and fenced restore
 verification. Source declarations and local tests are not deployment evidence:
 exact-revision private login, three observations per active monitor, failure/

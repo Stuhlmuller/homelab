@@ -8,7 +8,7 @@ Deploy one AdGuard Home instance in existing `automation`, register it through
 Terragrunt/Argo, expose UDP/TCP DNS with a Tailscale operator LoadBalancer Service,
 and serve its authenticated UI at `https://adguard.stinkyboi.com` through existing
 private Traefik ingress. Retain existing split DNS and MagicDNS. After the new
-signed endpoint passes direct acceptance, commit its observed address and apply
+identity-verified endpoint passes direct acceptance, commit its observed address and apply
 only the reviewed DNS configuration change through the administrator-owned
 Tailscale unit. Normal client DNS acceptance completes the rollout.
 
@@ -22,7 +22,7 @@ Traefik, External Secrets, AWS SSM, provider tailscale 0.29.2, Harbor mirror.
 configuration emptyDir reconstructed from repository-owned template and SSM-backed
 admin credential on startup. No unique UI-only configuration is supported.
 **Testing**: Python fixture/static checks, Kustomize render, AdGuard runtime
-fixture, relevant existing route/DNS/SSM/signing/CI checks, deployment verification
+fixture, relevant existing route/DNS/SSM/CI checks, deployment verification
 and actual tailnet/system-resolver acceptance.
 **Target Platform**: Existing Talos Kubernetes Linux cluster; ordinary tailnet
 client with DNS acceptance enabled. Exit-node DNS support requires Tailscale
@@ -41,9 +41,9 @@ Pre-research and post-design: all five principles pass at design level.
 
 | Principle | Design evidence |
 | --- | --- |
-| Repository-owned state | App, secret, routes, signing target, DNS and rollout checks are committed before application; no ad hoc live patching |
+| Repository-owned state | App, secret, routes, DNS and rollout checks are committed before application; no ad hoc live patching |
 | Secret safety | Generated internal admin password in existing encrypted SSM/state; ESO renders bcrypt; mounted files only |
-| Validate before change | Image prerequisite delivery, runtime fixture, targeted preflight, signed-endpoint checks, exact saved DNS plan |
+| Validate before change | Image prerequisite delivery, runtime fixture, targeted preflight, endpoint checks, exact saved DNS plan |
 | Reviewable/teachable | Small dependency-ordered PRs and affected inventory/ingress/storage/secret docs; explicit rollback |
 | Reproducible ownership | Existing shared app registration and SSM unit; ordinary bootstrap retains declared dependencies |
 
@@ -116,15 +116,12 @@ UI edits are transient and not the supported persistent configuration path.
 1. Prerequisite PR adds immutable AdGuard image to Harbor inventory. Merge through
    protected delivery, dispatch the existing publisher at exact main, verify full
    authenticated pulls/platform preservation before merging consuming manifests.
-2. App PR adds workload, secret contract, route/name additions, fixed signing
-   target and targeted apply preflight. Test fixtures and docs accompany it.
-   Extend targeted apply for `adguard` following codex signer namespace/SSM
+2. App PR adds workload, secret contract, route/name additions and targeted apply preflight. Test fixtures and docs accompany it.
+   Extend targeted apply for `adguard` with exact namespace/SSM
    handling, but check `nfs-default` and the correct upstream applications.
 3. Apply exact reviewed main through existing workflow, verify SSM/ESO/PVC,
-   workload, private route and operator-created DNS Service. Use the existing
-   trusted signer with a new fixed `--adguard-only` target; never broaden the
-   Codex webhook signer or trust a new signing authority for this task.
-4. Validate observed Service IP against signed online peer and run all direct
+   workload, private route and operator-created DNS Service. Verify its online peer and Service-owned device identity.
+4. Validate observed Service IP against the online peer and run all direct
    acceptance. Save private receipts tied to source/config/peer identity.
 5. Only then author the cutover commit: replace the two globals with the observed
    AdGuard IPv4, `use_with_exit_node=true`, `override_local_dns=true`; retain
@@ -141,14 +138,14 @@ UI edits are transient and not the supported persistent configuration path.
 7. Read back effective tailnet DNS; run normal-client acceptance and revision
    checks. Keep the issue open until required functional evidence passes.
 
-If signing/admin access is unavailable, complete source delivery that is safe
+If administrator access is unavailable, complete source delivery that is safe
 without it, preserve the exact pending operation, and request only that missing
 operator handoff when concrete. Do not mutate access policy to unblock the task.
 
 ## Cutover evidence freshness and binding
 
 The helper defaults to preview; `--mode cutover --execute` reruns all required
-direct DNS, active-filter, administration and signed-endpoint checks in that same
+direct DNS, active-filter, administration and endpoint checks in that same
 invocation. A stored success receipt alone never authorizes execution. The full
 check set must finish within 300 monotonic seconds. Its completion-to-apply
 interval must be at most 60 monotonic seconds; otherwise repeat the check set.
@@ -156,7 +153,7 @@ Reject negative ages, future-dated persisted receipts and wall-clock regression;
 monotonic timing governs live deadlines. Persist UTC start/end only for audit.
 
 Bind the live result to clean current-main SHA, deployed app revision, config
-revision, DNS Service UID/IP, peer public key/name/tag/signature, exact saved-plan
+revision, DNS Service UID/IP, peer public key/name/tag, exact saved-plan
 SHA-256, and the complete before/after DNS policies. Immediately before apply,
 re-read source/main, configuration and endpoint identity, live DNS policy and
 plan-file digest; require equality with the checked snapshot. Any change
@@ -223,7 +220,6 @@ Source changes:
 - `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`: credential.
 - `clusters/homelab/apps/traefik/` and `platform/tailnet-dns/`: private route/name.
 - `scripts/config/harbor-images.json`: prerequisite image inventory.
-- `scripts/tailscale-ingress-sign.py`: exact fixed target, with existing tests.
 - `scripts/adguard-check.py`, `scripts/adguard-dns-cutover.py`: new acceptance
   and constrained saved-plan helper, with behavioral fixtures under `scripts/ci/`.
 - `scripts/ci/terragrunt-apply.sh` and tests: bounded registration/SSM path.
@@ -233,5 +229,31 @@ Source changes:
 ## Complexity Tracking
 
 No constitution exception. Separate app rollout and DNS cutover are necessary
-because the operator assigns the endpoint and Tailnet Lock requires its actual
-identity before activation. Existing source owners remain authoritative.
+because the operator assigns the endpoint; verify its identity before activation. Existing source owners remain authoritative.
+
+
+## Endpoint identity and evidence
+
+The owner Mac must be online in the expected tailnet. Read only the fixed
+`automation/adguard-dns` Service and its single ready, non-deleting operator-owned
+Pod in `tailscale`. Parent-resource labels, Service UID, Pod UID and app label
+must agree. Read the proxy's actual device status and compare it with exactly
+one peer in the Mac's current network map. Require matching stable device ID,
+positive integer NodeID, nonzero node public key, expected hostname/tag and
+unique nonempty addresses in the tailnet ranges. Require online, unexpired
+identity, `InNetworkMap=true` and the expected map-key binding. Published Service
+hostname and addresses must match that identity; re-read the Service afterward.
+
+Capture the full observed peer with source, deployed and config revisions in
+private acceptance evidence. Missing or inconsistent observations fail. Repeat
+identity checks before and after direct functional acceptance and immediately
+before applying the saved DNS plan. Any observed drift invalidates prior results;
+observations are not atomic across machines. No override substitutes for the
+connected client's actual status. Rollback remains independent of resolver health.
+
+Validator and collector fixtures cover wrong ownership, ready state, key,
+address, stable/numeric IDs, network-map membership, offline/expiry, duplicate
+peers and identity drift. Direct/cutover regressions must reject drift without
+applying DNS, and retain filtering, authentication, TLS, revision, timeout,
+normal-client and independent rollback checks. Owner-run Mac evidence remains
+necessary for UDP/TCP, private administration, recovery and normal-client use.

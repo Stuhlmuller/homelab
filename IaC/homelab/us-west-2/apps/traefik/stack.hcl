@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["cert-manager", "istio", "tailscale"]
+  dependencies = ["../../cert-manager/argocd", "../../istio/argocd", "../../tailscale/argocd"]
   spec = {
     destination = {
       namespace = "traefik"

@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["platform-storage", "radarr", "sonarr"]
+  dependencies = ["../../platform-storage/argocd", "../../radarr/argocd", "../../sonarr/argocd"]
   spec = {
     destination = {
       namespace = "media"

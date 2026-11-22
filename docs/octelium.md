@@ -108,7 +108,7 @@ They create:
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
   Octelium human authentication and forwards directly to
   `http://bazarr.media.svc.cluster.local:6767`. See the
-  [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for the guarded
+  [Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) for the guarded
   single-Service reconciliation and public tunnel DNS commands.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,
@@ -542,7 +542,7 @@ the carrier does not grant Octelium authorization.
 
 The public DNS-restoration workflow is removed before private DNS cutover.
 Use the [current tailnet DNS cutover](../specs/005-retire-public-app-dns/quickstart.md),
-which requires a signed resolver, direct queries and an owner nameserver handoff
+which requires a resolver, direct queries and an owner nameserver handoff
 before retiring the 26 approved non-apex public app address records. The
 public apex and four legacy public endpoints remain. Keep the
 Tunnel Deployment and old carrier only until replacement acceptance. Reverting

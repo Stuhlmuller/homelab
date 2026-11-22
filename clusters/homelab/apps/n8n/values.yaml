@@ -6,6 +6,8 @@ controllers:
       identifier: n8n
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       securityContext:
         runAsGroup: 1000
         runAsNonRoot: true
@@ -70,7 +72,7 @@ controllers:
           N8N_PROXY_HOPS: "1"
           N8N_SECURE_COOKIE: "true"
           N8N_EDITOR_BASE_URL: https://n8n.stinkyboi.com
-          WEBHOOK_URL: https://n8n-webhook.tail67beb.ts.net/
+          N8N_WEBHOOK_URL: https://n8n-webhook.tail67beb.ts.net/
           DB_TYPE: postgresdb
           DB_POSTGRESDB_HOST: n8n-postgres.automation.svc.cluster.local
           DB_POSTGRESDB_PORT: "5432"

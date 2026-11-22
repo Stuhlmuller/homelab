@@ -158,7 +158,7 @@ pattern with one that does not require privileged namespace admission.
 
 ## Staged NetworkPolicy enforcement
 
-[`clusters/homelab/platform/network-policy/`](../clusters/homelab/platform/network-policy/README.md)
+[`clusters/homelab/platform/network-policy/`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 owns the pinned kube-router firewall DaemonSet, isolated canary fixtures and
 ownership-limited cleanup. It leaves Flannel as the CNI and kube-proxy as the
 service proxy. The Argo registrations are dormant; no node is selected or
@@ -194,12 +194,12 @@ this boundary could survive a
 kube-router crash or cold start without relocating Traefik or draining
 `zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
 
-The dormant [canary source](../clusters/homelab/apps/traefik/canary/README.md)
+The dormant [canary source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/canary/README.md)
 implements only TCP 443 Serve for the first test. The current broad tailnet
-grant reaches every signed device regardless of tag, so narrow it and prove
-production clients cannot reach the canary before signing. Its route ConfigMap,
+grant reaches every device regardless of tag, so narrow it and prove
+production clients cannot reach the canary before activation. Its route ConfigMap,
 ServiceAccount, and headless health Service are outside the live Argo source.
-Activation requires a dedicated auth key, exact Tailnet Lock signing, backend
+Activation requires a dedicated auth key, exact device identity, backend
 Istio rules, capacity proof, and direct-path negative probes.
 
 Stage it in reviewed source before cutting over:
@@ -210,26 +210,22 @@ Stage it in reviewed source before cutting over:
    controller and operator LoadBalancer intact. Use a distinct tailnet hostname
    and canary-only tag, pinned images, bounded resources, durable per-Pod
    Tailscale state, narrow Secret RBAC, and a repository-owned authentication
-   contract. Gate deployment on measured two-controller capacity. Keep Tailnet
-   Lock enabled. The fixed signer's `--canary-only` path must match the applied
-   narrow policy and exact Pod/device/Serve identity before signing; it rejects
-   the current wildcard grant. Add the reviewed test-client grant after signing.
-   Prove raw TCP,
-   original TLS certificate, HTTPS, native gRPC, ACLs, and both containers'
-   readiness on the test peer. A Tailscale health response proves an IP, not a
-   signed peer or the intended Serve configuration; check both explicitly.
+   contract. Gate deployment on measured two-controller capacity. Verify exact
+   Pod/device identity and raw TCP Serve to the loopback TLS listener. Apply a
+   reviewed narrow policy and scoped test-client grant. Prove original TLS,
+   HTTPS, native gRPC, access policy and both containers' readiness. A daemon
+   health response alone does not prove the intended Serve configuration.
 2. Prove denied direct private routes from ordinary Pods on the same and a
    different node, from a host, and through Pod IP on ports 80, 8000, 443,
    and 8443, ClusterIP on ports 80 and 443, and the sidecar's `100.64.0.0/10`
-   address. Repeat while Tailscale is absent, restarting, unsigned, or unable
+   address. Repeat while Tailscale is absent, restarting, or unable
    to pull its image.
    Repeat after Traefik replacement, Pod-IP reuse, and node reboot. Prove
    allowed tailnet clients and the independent registry/Funnel paths. Set a
    no-surge rollout or prove measured two-Pod capacity before the live switch.
 3. Replace the current DNS and internal-client contracts in source. The
-   [`tailnet-dns` resolver](../clusters/homelab/platform/tailnet-dns/README.md)
-   now publishes the `traefik-private` LoadBalancer status IP; its checker and
-   [signer](../scripts/tailscale-ingress-sign.py) assume an operator proxy.
+   [`tailnet-dns` resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md)
+   now publishes the `traefik-private` LoadBalancer status IP; its endpoint contract assumes an operator proxy.
    A candidate is a [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
    named `svc:homelab-private-ingress` with only `tcp:443`, declared through the
    pinned [Terraform provider](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/service).
@@ -238,9 +234,8 @@ Stage it in reviewed source before cutting over:
    that Service and advertise it. Do not add a matching auto-approver or tag
    this Service `tag:ci`, which the current policy auto-approves. A repo-owned
    approval path must match the Pod and persistent device identity, exact
-   signed node key, tag, Service name, and Serve endpoint before approving that
+   node key, tag, Service name, and Serve endpoint before approving that
    one host. A tag or `tailscale status` response alone does not prove this.
-   Tailnet Lock must still reject unsigned devices.
 
    Publish the provider-owned IPv4 TailVIP through a selectorless headless Service
    with [`k8s-gateway.dns/resolve-endpoints: "true"`](https://github.com/k8s-gateway/k8s_gateway#endpoint-resolution)
@@ -249,7 +244,7 @@ Stage it in reviewed source before cutting over:
    TailVIP slice says the Service address exists, not that a host is online;
    DNS may keep answering during a host outage. Prove an approved host serves
    TLS and that the same cached A record fails closed after drain, offline,
-   unsigned-host, and wrong-host tests. The approved-name A/AAAA resolver view
+   unauthorized-host and wrong-host tests. The approved-name A/AAAA resolver view
    must have no public `fallthrough` or `forward`; prove the pinned resolver
    returns no address for absent or unready endpoints after its 30-second
    cache bound. Keep its allowlist, Traefik routes, and Service annotation in
@@ -562,7 +557,7 @@ local storage, and prove allowed and denied traffic plus restart, API-loss,
 IP-reuse and reboot behavior on that node. Preserve DNS, API, mesh HBONE,
 webhook, NFS and recovery access. A candidate fixture's narrow deny result
 does not make the stock Enterprise agent's broad public TCP/443 egress a
-domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/platform/network-policy/README.md)
+domain allowlist. Follow the [canary and cleanup runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 before expanding enforcement; deleting the DaemonSet alone may leave firewall
 rules behind.
 

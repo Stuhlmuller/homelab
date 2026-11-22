@@ -77,7 +77,7 @@ local Fleet recovery-administrator password. It signs in
 account is SSO-only. Separate ExternalSecrets keep the root and administrator
 credentials out of Fleet server Pods. Preserve the encryption key with MySQL
 backups. Platform APNs/WSTEP identities are additional enrollment prerequisites;
-see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+see the [Fleet secret contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
 `/homelab/fleet/google-oauth` is a separate operator-only SecureString for the
 dedicated Google Workspace XCreds Web client JSON. It is excluded from External
@@ -95,31 +95,21 @@ repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
-## Tailscale CI signing contract
+## Tailscale CI credentials
 
-The administrator-only `IaC/homelab/us-west-2/operator/tailscale-access` unit owns three Tailscale
-CI auth keys in encrypted OpenTofu state. These are not SSM parameters and are
-not available to External Secrets or application Pods. The operator OAuth SSM
-parameters in the matrix remain unchanged.
+The administrator-only `IaC/homelab/us-west-2/operator/tailscale-access` unit
+owns three CI auth keys in encrypted OpenTofu state. They are not SSM parameters
+and are unavailable to External Secrets or application Pods. The Kubernetes
+operator OAuth parameters remain separate.
 
-`scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
-then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
-`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. Same-repository
-PR plans use `homelab-plan` without a required reviewer; production remains
-restricted to `main`. Cordium's separate tag has no Kubernetes RBAC. No private
-kubeconfig or Tailscale administrator token is copied
-to GitHub. The three old client-ID variables are retired only after all secret
-writes and metadata checks succeed. Dormant provider OIDC identities remain
-protected pending separate retirement.
-
-Tailnet Lock remains enabled. Wrapped keys include a delegated private
-node-signing key, not the trusted authority's private voting key. Protect the
-publisher's `0600` cache, including its separate public authority identities,
-outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
-expiry), then explicitly retire old cached signing authorities after CI
-acceptance. Expiring an auth key alone does not remove that authority. The
-[module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns preview, publication,
-acceptance, rotation, and recovery commands.
+The `homelab-plan` and `homelab-production` environments each hold their scoped
+`TAILSCALE_AUTH_KEY`; the repository holds `TAILSCALE_CORDIUM_AUTH_KEY`.
+Same-repository PR plans use `homelab-plan`; production is restricted to `main`.
+Cordium's separate tag has no Kubernetes RBAC. No private kubeconfig or Tailscale
+administrator credential belongs in GitHub. Protect auth keys as credentials,
+rotate every 60 days before their 90-day expiry, and verify actual CI enrollment.
+The [module runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md)
+owns the provider, scope and rotation contract.
 
 ## Mastodon secret contract
 
@@ -145,7 +135,7 @@ withholds CLI errors and does not validate SMTP authentication. Never pass the
 password as a workflow input or argument. After transfer, remove the temporary
 GitHub secret and advance the committed runtime ExternalSecret/Deployment
 revisions. Verify actual email receipt before accepting the new credential.
-See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
+See the [Mastodon runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md) for provider
 settings, activation, and rollback. This preparation is not live-secret proof.
 
 ## OpenClaw Enterprise credential contract
@@ -278,7 +268,7 @@ deleted credential. Enter a complete replacement key in the pinned UI edit
 form, not its prefilled mask. Verify one gateway generation and the attributed
 Langfuse trace. Restore the database for rollback; never revert to file-backed
 inference, which would bypass UI changes. See the
-[gateway recovery contract](../clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
+[gateway recovery contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
 
 `/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
 provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
@@ -287,6 +277,11 @@ keys at `/homelab/openclaw/litellm-app-token` and
 to the in-cluster gateway; none grants direct provider access. Do not read,
 copy or place any of these values in Git, workflow exports or application
 configuration.
+
+The operator `litellm-bedrock` Terragrunt unit generates
+`/homelab/litellm/bedrock-credentials` as a SecureString. External Secrets
+projects it to `ai/litellm-bedrock`. Only LiteLLM mounts the file, and its AWS
+identity can invoke the declared US Bedrock profiles and Oregon's DeepSeek V3.2.
 
 LiteLLM's database-key migration adds generated
 `/homelab/litellm/postgres-{admin,app}-password` parameters.
@@ -401,8 +396,7 @@ cluster CA is intentionally rotated.
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
-| openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
+| openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | bulldozer | `bulldozer-config` | `bulldozer-config` | `/homelab/bulldozer/github-app/integration-id`, `/homelab/bulldozer/github-app/webhook-secret`, `/homelab/bulldozer/github-app/private-key` |
@@ -496,18 +490,10 @@ SSM, then bump `homelab.rst.io/openclaw-grafana-login-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` to the latest SSM parameter
 version so GitOps rolls OpenClaw and reloads the environment variables.
 
-OpenClaw also reads GitHub App credentials from
-`/homelab/openclaw/github-app/id`,
-`/homelab/openclaw/github-app/installation-id`, and
-`/homelab/openclaw/github-app/private-key`. Only the app container receives the
-ID values as `GITHUB_APP_ID` and `GITHUB_APP_INSTALLATION_ID`.
-The PEM is mounted from `openclaw-github-app-private-key` at
-`/var/run/secrets/openclaw/github-app/private-key.pem`, and
-`GITHUB_APP_PRIVATE_KEY_PATH` points at that file. After replacing SSM
-placeholders, bump
-`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in
-`clusters/homelab/apps/openclaw/values.yaml` so env-backed values reload through
-a normal GitOps rollout.
+The OpenClaw GitHub App SSM parameters remain as retained state tombstones.
+No OpenClaw ExternalSecret reads them and the Pod receives no App key, IDs, or
+mount. Rotate the previously mounted key after the App scope review in #859;
+do not reintroduce the key while the application sandbox is disabled.
 
 Octelium reads `/homelab/octelium/client-auth-token` through
 `octelium-client-auth` as the workload authentication token for the
@@ -548,7 +534,7 @@ The pinned native logout can hide server logout failure; allow the one-hour
 session to expire or verify its revocation before starting the manager. Stop
 manager authentication before rotating the native credential because the User
 allows one session. Controller deployment and mounted-file refresh acceptance
-remain pending. See [runner bootstrap](../builds/cordium-runner/README.md).
+remain pending. See [runner bootstrap](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md).
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/homelab/us-west-2/apps/octelium/azuread`, which writes generated
@@ -705,7 +691,7 @@ is now declared unsuspended in [full dry-run mode](../clusters/homelab/apps/reno
 the legacy Action remains the only writer until cutover. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
-See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+See the [Renovate runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md).
 
 The temporary acceptance observer uses a separate, read-only GitHub App. Its
 two Standard SecureString placeholders must first be created by a reviewed
@@ -875,24 +861,11 @@ The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
 vulnerability exporter references it only for kubelet pulls; the credential is
 not mounted in app containers. The held
-[private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+[private-core candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/private-core-candidate/README.md)
 uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
 rotation. Native-image activation still waits for reviewed publication, scans,
 recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
 declared annotation revision after rotation.
-
-## Codex Cloud signer
-
-The administrator-owned `tailscale-access` module directly owns five
-SecureStrings under `/homelab/tailscale/codex-cloud-signer/`: `auth-key`,
-`oauth-client-id`, `oauth-client-secret`, `webhook-secret`, and `cloud-auth-key`.
-The shared SSM module grants External Secrets only the first four exact names;
-`automation/codex-cloud-signer` projects the reader/webhook files into the API
-and only the single-use enrollment key into its daemon. `cloud-auth-key` is
-operator-only for Codex Cloud's managed VPN. The OAuth client is limited to
-`devices:core:read`; no signing private key is stored in SSM. The retained local
-volume holds signing authority. See the [signer runbook](../clusters/homelab/apps/codex-cloud-signer/README.md)
-for owner trust, 90-day enrollment-key renewal and disk-loss revocation.
 
 ## Uptime Kuma owner credential
 
@@ -928,5 +901,5 @@ Changes to credential/configuration revisions need a declared rollout marker.
 The [AdGuard recovery helper](../scripts/adguard-recovery.py) reads the exact
 protected parameter privately after checking the homelab AWS account and records
 only ARN/version metadata. Administrator recovery requires independent access to
-SSM and encrypted IaC state. The [app runbook](../clusters/homelab/apps/adguard/README.md)
+SSM and encrypted IaC state. The [app runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md)
 describes private password files, isolated recovery and retention limits.

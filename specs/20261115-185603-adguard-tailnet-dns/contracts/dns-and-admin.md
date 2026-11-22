@@ -26,16 +26,13 @@ router may match this host or backend. Unauthenticated settings/write calls must
 fail. UI inspection is supported; persistent settings change through GitOps.
 Credentials are read privately through existing approved custody, never chat.
 
-## Proposed operator helpers (implemented later)
+## Operator acceptance helpers
 
 `python3 -I scripts/adguard-check.py --server <observed-ip>` is read-only and
-must bind Service UID/address, expected operator ownership, signed online peer,
+must bind Service UID/address, expected operator ownership, identity-verified online peer,
 config/source revisions, active filters and direct DNS results. A separate
 client mode records actual system resolver results with OS/client version,
 exit-node mode and cache method. Direct queries cannot impersonate client mode.
-
-`python3 -I scripts/tailscale-ingress-sign.py --adguard-only` previews only the
-fixed target; `--execute` uses existing current-main/signing guards.
 
 `python3 -I scripts/adguard-dns-cutover.py --mode cutover --plan <private-saved-plan>`
 previews the exact current-main saved plan. `--execute` additionally reruns all
@@ -43,7 +40,7 @@ required direct acceptance in the same invocation: <=300 monotonic seconds for
 the full set, <=60 seconds between successful completion and apply. Persisted
 receipts cannot authorize execution; reject future/negative times or clock
 regression. Bind checks to source/deployed/config revisions, Service UID/IP,
-peer identity/signature, plan SHA-256 and complete before/after DNS policy.
+full peer identity, plan SHA-256 and complete before/after DNS policy.
 Immediately re-read main/config/endpoint/live policy and plan bytes; mismatch
 requires a new plan/check run. Native state locks/stale-plan rejection remain.
 Permit only the intended DNS singleton update with fully known values, no

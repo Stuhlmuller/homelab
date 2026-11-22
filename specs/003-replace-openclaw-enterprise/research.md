@@ -22,7 +22,7 @@ A console-only installation is staging, not completed assistant replacement.
 
 Sources: [channel admission](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/configuration-rules.ts),
 [network boundary](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/networking-and-isolation.md),
-[current legacy runbook](../../clusters/homelab/apps/openclaw/README.md).
+[current legacy runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md).
 
 ## R2 — Upgrade supported platform branches in separate stages
 
@@ -295,7 +295,7 @@ Source: [OCE API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590
 [startup file reader](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/composition/startup-file.ts#L87-L137),
 [upstream Secret comparison](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/upgrade-production-images#L470-L496),
 [Kubernetes immutable Secret behavior](https://kubernetes.io/docs/concepts/configuration/secret/#immutable-secrets),
-[legacy recovery contract](../../clusters/homelab/apps/openclaw/README.md#durable-runtime-state-and-recovery).
+[legacy recovery contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md#durable-runtime-state-and-recovery).
 
 ## R8 — Shared Gateway API ownership and supported private Envoy
 

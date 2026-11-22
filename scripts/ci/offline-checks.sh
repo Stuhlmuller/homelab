@@ -28,6 +28,7 @@ ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
 python3 -I scripts/ci/mastodon-routes-test.py
+python3 -I scripts/ci/terragrunt-app-equivalence-test.py
 python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
@@ -112,6 +113,7 @@ python3 -I scripts/ci/harbor-native-chainguard-receipt-import-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
 python3 -I scripts/ci/harbor-core-scan-check-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
+python3 -I scripts/ci/harbor-full-sync-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
 python3 -I scripts/ci/image-automation-test.py
 python3 -I scripts/ci/image-automation-promote-test.py
@@ -131,8 +133,9 @@ python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
-python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
+python3 -I scripts/ci/terragrunt-plan-units-test.py
+python3 -I scripts/ci/terragrunt-plan-runner-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
@@ -144,13 +147,14 @@ python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
-python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py
 python3 scripts/ci/renovate-alert-check.py
 python3 -I scripts/ci/memory-overcommit-check.py
 python3 -I scripts/ci/talos-filesystem-check.py
+python3 -I scripts/ci/state-encryption-test.py
 python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
+bash scripts/ci/terragrunt-deleted-apply-test.sh
 python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
 python3 -I scripts/ci/n8n-runtime-check.py

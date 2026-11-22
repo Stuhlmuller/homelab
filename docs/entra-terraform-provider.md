@@ -51,7 +51,7 @@ prove the domain is verified, managed, non-default, and non-initial. It does
 not configure Microsoft mail, federation or Google Workspace. Existing
 `stuhlmuller.net` users are not created, converted, assigned, or forced to use
 Entra. See the
-[domain module](../IaC/terragrunt-catalog/modules/entra-domain-verification/README.md) for the
+[domain module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-domain-verification/README.md) for the
 saved-plan sequence.
 
 ## Google Workspace federation

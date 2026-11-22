@@ -13,7 +13,7 @@ names the approved private hosts. A and AAAA answers follow the Service's Tailsc
 and forwards other query types to public resolvers. Unmatched A/AAAA names also forward, preserving unrelated public hosts. Traefik remains the HTTPS, authentication, and path-routing owner.
 
 The resolver is published as a Tailscale LoadBalancer on UDP and TCP 53. Reuse the operator-owned `tag:homelab-ingress` and existing member grant, while giving the DNS proxy its own `homelab-dns`
-hostname, Service and tailnet IP. Sign that distinct proxy under Tailnet Lock. Deploy and verify the resolver before the owner enters its observed tailnet IPv4 as the restricted nameserver for
+hostname, Service and tailnet IP. Deploy and verify the resolver before the owner enters its observed tailnet IPv4 as the restricted nameserver for
 `stinkyboi.com`. The 27 public address records are retired only after that handoff and the existing cutover checks; this task stops at the handoff.
 
 ## Technical Context
@@ -62,8 +62,8 @@ No constitution principle is asserted from the placeholder file. The image publi
    the apex private A, approved AAAA NODATA, public apex MX/TXT, and public unrelated A. On a later removed name, verify the private authoritative answer disappears; during overlap the old public
    record can still appear through fallthrough, so public retirement is a separate gate.
 3. **Tailnet exposure**: Chart Service has `loadBalancerClass: tailscale`, the distinct hostname `homelab-dns`, the existing operator-owned `tag:homelab-ingress`, and both UDP/TCP 53. Two CoreDNS Pods
-   use probes/resources and restricted Pod security. The existing `autogroup:member` wildcard grant permits member DNS traffic without a policy edit; restricted CI tags receive no new grant. Extend
-   the fixed Tailnet Lock signing utility to verify and sign this proxy. A healthy Kubernetes Service without a signed, reachable proxy is not accepted. A repo-owned read-only check queries the
+   use probes/resources and restricted Pod security. The existing `autogroup:member` wildcard grant permits member DNS traffic without a policy edit; restricted CI tags receive no new grant. Verify
+   the exact online proxy identity and reachability; a healthy Kubernetes Service alone does not prove either. A repo-owned read-only check queries the
    observed tailnet IP over UDP and TCP and compares approved A answers with the private Traefik Service; use it at handoff and during recovery.
 4. **Supply chain**: Pin the public OCI chart to version `4.0.0` (observed OCI digest `sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7`) and the Codeberg image by index digest
    (`sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4`). Use a chart digest target revision if the Argo render validates it; otherwise keep the repository's exact-version chart
@@ -90,25 +90,24 @@ IaC/terragrunt.stack.hcl                  # generated unit index
 clusters/homelab/argocd/self-management/appproject.yaml
 scripts/config/tailscale-policy.json      # existing tag ownership/member grant verified by tests
 scripts/config/harbor-images.json         # pinned DNS image source
-scripts/tailscale-ingress-sign.py         # fixed proxy identity/signature contract
-scripts/tailnet-dns-check.py              # read-only direct UDP/TCP and approved-answer check
-scripts/tailscale-private-dns.sh          # guarded retirement (not executed before handoff)
+scripts/tailscale-private-dns.sh          # read-only retirement preparation
 scripts/ci/                               # narrow DNS declaration/cutover tests
 docs/networking-tailnet-ingress.md        # tailnet DNS setting, recovery and rollback
 openwiki/                                  # affected topology/inventory/validation note after source change
 ```
 
-**Structure Decision**: Add the resolver as a platform Application; keep one reviewed Traefik Service as the only DNS publication source. Use the existing Cloudflare and Tailnet Lock utilities rather than adding a DNS database or a second writer.
+**Structure Decision**: Add the resolver as a platform Application; keep one reviewed Traefik Service as the only DNS publication source. Use the existing Cloudflare and DNS utilities rather than adding a DNS database or a second writer.
 
 ## Ordered Delivery
 
 1. Publish the pinned Codeberg image through the reviewed one-image Harbor `dns` scope after its prerequisite publisher/policy change. Do not merge a consuming app while strict Talos mirrors cannot pull it.
-2. Merge and apply the resolver, approval annotation, signing and validation changes through normal protected PR/Terragrunt/Argo paths. Verify the existing tailnet policy grants; preserve all current public app records.
-3. Sign the new proxy with the trusted Tailnet Lock signer; read the exact Service and peer IP; run the read-only check from that signer Mac to prove UDP/TCP 53, all 27 answers, apex mail records and
+2. Merge and apply the resolver, approval annotation and validation changes through normal protected PR/Terragrunt/Argo paths. Verify the existing tailnet policy grants; preserve all current public app records.
+3. Read the exact Service and peer IP; query it from an authorized client to prove UDP/TCP 53, all 27 answers, apex mail records and
    unrelated public names. Prove direct reachability from an ordinary tailnet member and verify HTTPS entry points. The permanent declaration test covers add/change/remove; observe live convergence on
    the first later reviewed name change.
 4. **User handoff/pause**: give the owner the verified IPv4 and the restricted `stinkyboi.com` setting. Wait for the owner's tailnet DNS change and normal OS client acceptance.
-5. Later, after live baseline and explicit off-tailnet apex/Cordium impact acceptance, run the guarded public-record retirement through reviewed desired state; wait old TTL, recheck all contracts, and recover private resolver health through declared state if needed.
+5. Later, after live baseline and explicit off-tailnet apex/Cordium impact acceptance, complete read-only public-record preparation and current-state verification; preserve the
+   record-scope boundary and recover private resolution through declared state. No write procedure is offered.
 
 ## Post-Design Constitution Check
 

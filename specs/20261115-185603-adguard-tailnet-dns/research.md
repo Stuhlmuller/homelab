@@ -9,7 +9,7 @@ The installed speckit-plan skill and complete upstream plan command at
 `github/spec-kit@a227e38315cd38172b04f2fb8f06ce8b69b38331` were read.
 A bounded research agent inspected AdGuard/ESO upstream behavior and reported
 version, configuration and image evidence; the coordinator inspected the existing
-app, secret, ingress, DNS, signing and apply paths and live prerequisite metadata.
+app, secret, ingress, DNS and apply paths and live prerequisite metadata.
 
 XERJ MCP, CLI and retained local corpus were unavailable. No node was installed
 or corpus indexed. The declared peer manifest pins
@@ -48,12 +48,12 @@ Sources: [release](https://github.com/AdguardTeam/AdGuardHome/releases/tag/v0.10
 **Decision:** Existing `automation` namespace, namespaced `homelab-workloads`
 Application, Kustomize Deployment/Recreate, operator LoadBalancer DNS Service,
 existing private Traefik for admin. Explicit per-pod ambient opt-out follows
-codex signer pattern; preserve other namespace workloads.
+existing targeted-apply pattern; preserve other namespace workloads.
 **Rationale:** Existing AppProject and ESO permit automation; avoids new namespace
 and privileges. Recreate prevents two writers to cache. Peer uses Recreate and
 persistent conf/work, supporting the basic workload shape.
 **Alternatives:** Peer NET_ADMIN/TUN sidecar rejected in favor of installed
-operator; separate Tailscale UI proxy adds unnecessary signed identity; public
+operator; separate Tailscale UI proxy adds unnecessary device identity; public
 Funnel not needed. A new application chart duplicates a small manifest boundary.
 
 ### Configuration/credentials
@@ -97,21 +97,20 @@ Sources: upstream Configuration/defaults above;
 Runtime fixtures must prove conditional failure does not reach general upstreams
 and verify configured blocking responses, including AAAA.
 
-### Cutover/signing
+### DNS cutover
 
 **Decision:** Separate verified deployment from observed-IP DNS commit/application.
 Keep the single existing tailscale_dns_configuration resource, global
 use_with_exit_node=true and override_local_dns=true; preserve split DNS/MagicDNS.
-Use existing trusted fixed-target Mac signer with a new exact AdGuard target.
 Constrain saved-plan apply with code and negative tests, not prose-only claims.
-**Rationale:** Operator-assigned address and actual signed peer are runtime facts.
+**Rationale:** Operator-assigned address and peer identity are runtime facts.
 Provider supports complete DNS configuration and warns against mixing separate
 DNS resources. Exit-node use flag requires client >=1.88.1.
 **Alternatives:** Guessed IP, competing provider resource, ad hoc API write,
-workload CI administrator privilege, or broadening Codex signing webhook rejected.
+workload CI administrator privilege rejected.
 
 Source: [provider 0.29.2 DNS resource](https://github.com/tailscale/terraform-provider-tailscale/blob/v0.29.2/docs/resources/dns_configuration.md)
-read in full; local tailscale-access runbook, signer and targeted CI apply paths.
+read in full; local tailscale-access runbook and targeted CI apply paths.
 
 ## Observed prerequisites and limitations
 
@@ -125,11 +124,27 @@ read in full; local tailscale-access runbook, signer and targeted CI apply paths
 - Existing private DNS Service publishes 100.71.150.27 and ClusterIP 10.97.225.203.
   These are observed existing values, not the future AdGuard endpoint.
 - ESO ClusterSecretStore Ready and includes automation in its namespace allowlist.
-- Local administrator OAuth files and fixed macOS signer executable are absent.
-  No new signer, credentials, enrollment or access-policy change was attempted.
-- Planning can finish and source work can continue. Signing, administrator DNS
+- Local administrator OAuth files are absent.
+  No credentials, enrollment or access-policy change was attempted.
+- Planning can finish and source work can continue. Administrator DNS
   apply and actual-client acceptance require the existing authorized operator
   path, or a concrete handoff once the artifacts are ready.
 
 All design decisions are resolved. Image execution, secret render, recovery,
 policy enforcement and live rollout are validation tasks, not claimed results.
+
+
+### Device identity schema
+
+**Decision:** Match the connected client's actual network-map peer with proxy
+Self status and Kubernetes ownership. Stable device ID, numeric NodeID, public
+key, hostname, tag and addresses must agree. Require online, unexpired identity
+and reject missing, ambiguous or changing observations.
+**Rationale:** The operator assigns the address; hostname-only or IP-only
+matching cannot establish the exact declared endpoint. Device reachability also
+does not prove effective DNS, filtering or administration behavior, so retain
+all functional and normal-client checks.
+**Alternatives:** Skipping identity verification, inventing evidence, reusing
+stale receipts and relaxing resource ownership are rejected.
+
+Source: [Tailscale PeerStatus](https://github.com/tailscale/tailscale/blob/53a0d659afa51835dd7a9283873cca44261454f8/ipn/ipnstate/ipnstate.go).

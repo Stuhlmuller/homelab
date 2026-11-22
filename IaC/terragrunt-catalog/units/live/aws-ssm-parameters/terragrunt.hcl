@@ -24,6 +24,7 @@ EOF
 }
 
 inputs = {
+  tags       = local.root_config.locals.default_tags
   aws_region = local.aws_region
   kms_key_id = local.root_config.locals.runtime_kms_key_id
   parameter_reader_iam_user_names = [
@@ -42,6 +43,7 @@ inputs = {
     "/homelab/grafana/azuread/allowed-organizations",
     "/homelab/langfuse/s3-access-key-id",
     "/homelab/langfuse/s3-secret-access-key",
+    "/homelab/litellm/bedrock-credentials",
   ]
 
   parameters = {

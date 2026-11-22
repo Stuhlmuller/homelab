@@ -13,15 +13,15 @@ Generated plan.md, research.md, data-model.md, contracts/dns-and-admin.md and
 quickstart.md. Design gates pass; execution gates remain unverified. Chosen:
 Kustomize single Recreate deployment in automation, generated SSM/ESO bcrypt,
 writable reconstructed config, 1Gi retained NFS work cache, operator DNS Service,
-private Traefik route, fixed trusted signing target and separate verified DNS
+private Traefik route, exact device identity and separate verified DNS
 cutover. Existing split DNS/MagicDNS and admin credential ownership preserved.
 
 Read-only live namespace/Application/Service/storage/ESO queries succeeded through
 configured homelab context. Private DNS and Tailscale/ESO/storage are healthy.
 Traefik Application remains Synced/Progressing despite ready Deployment and
 Succeeded operation; require diagnosis/readiness before rollout, not an assumed
-failure cause. Missing local administrator OAuth files and trusted Mac signer
-are concrete later operator dependencies. Do not broaden Codex signing webhook.
+failure cause. Missing local administrator OAuth files
+are concrete later operator dependencies. Keep credentials scoped to their existing owner.
 
 XERJ was unavailable; searched pinned peer tree through GitHub and read exact
 AdGuard/Tailscale source matches, as recorded in research. No node/corpus setup.

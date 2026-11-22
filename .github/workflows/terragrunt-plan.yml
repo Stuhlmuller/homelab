@@ -2,17 +2,20 @@ name: Terragrunt Plan
 
 on:
   pull_request:
+    branches: [main]
     types:
       - opened
       - synchronize
       - reopened
       - ready_for_review
+      - edited
 
 permissions: {}
 
 concurrency:
   group: terragrunt-plan-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+  queue: max
 
 env:
   AWS_REGION: us-east-1
@@ -49,6 +52,10 @@ jobs:
             case "${changed_path}" in
               clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md|clusters/homelab/apps/litellm/*.md|IaC/*/litellm/*.md) ;;
               clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|clusters/homelab/apps/litellm/*|IaC/*/litellm/*|scripts/ci/litellm-release-check.py|scripts/ci/litellm-release-check-test.py|scripts/ci/litellm-runtime-hardening-check.py|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
+                requires_live_plan=true
+                requires_runtime_check=true
+                ;;
+              IaC/root.hcl|IaC/kubernetes-provider.hcl|IaC/stack-defaults.hcl|IaC/homelab/account.hcl|IaC/homelab/us-west-2/region.hcl|IaC/terragrunt-catalog/units/live/argocd-app/*|IaC/terragrunt-catalog/modules/argocd-application-*/*)
                 requires_live_plan=true
                 requires_runtime_check=true
                 ;;
@@ -121,6 +128,14 @@ jobs:
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Cache Terragrunt Providers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/terragrunt/providers
+          key: terragrunt-providers-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'IaC/**/*.tf', 'IaC/terragrunt-catalog/**/*.hcl') }}
+          restore-keys: |
+            terragrunt-providers-v1-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Verify Live Plan Inputs
         env:

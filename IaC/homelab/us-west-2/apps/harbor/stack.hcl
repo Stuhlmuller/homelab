@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "prometheus"]
+  dependencies = ["../../external-secrets/argocd", "../../cert-manager/argocd", "../../istio/argocd", "../../platform-storage/argocd", "../../prometheus/argocd"]
   spec = {
     sources = [
       {
@@ -48,7 +48,7 @@ inputs = {
       },
       {
         name  = "runbook"
-        value = "clusters/homelab/apps/harbor/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md"
       }
     ]
   }

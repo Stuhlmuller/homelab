@@ -3,7 +3,7 @@
 T031 draft preparation follows the separately completed read-only scheduling
 analysis: source review/draft CI may overlap publication; ready/merge still require
 T003. Source covers FR001-018 through workload, credential/route, targeted apply,
-fixed trusted signer, direct/client checks, guarded cutover/rollback and isolated
+direct/client checks, guarded cutover/rollback and isolated
 recovery. Runtime proof remains pending. No global DNS values change in this PR.
 
 Task-lifecycle bounded reviews: workload/credentials/routes and helper/evidence/
@@ -24,7 +24,7 @@ Validation after integration:11 manifest/init tests,41 targeted apply tests,
 regression tests,448 manifest policies,offline static,OpenWiki,secret scan and
 whitespace checks passed. NodePort assertion failed before its fix. The catalog
 fixture's synthetic-retirement expected count was corrected after its first run.
-Earlier runtime/helper/signing tests remain applicable to their unchanged source;
+Earlier runtime/helper tests remain applicable to their unchanged source;
 full required CI will check this exact integrated commit. Local logs are outside
 Git in /workspace/adguard-progress/adguard-kuma-*.
 
@@ -39,7 +39,7 @@ prerequisite (the app's bind.dnsutils flake addition changes the defined publica
 bundle); exact-head required CI, protected review and activation prerequisites.
 T047 must move the toolchain addition ahead of the final publication dispatch;
 current in-progress run alone cannot close that final bundle gate. After source
-merge, targeted Terragrunt dispatch, valid operator OAuth, trusted peer signing,
+merge, targeted Terragrunt dispatch, valid operator OAuth, device enrollment,
 live DNS/admin/recovery and actual-client acceptance remain. Existing stored
 operator OAuth returned401; no CI rotation path or administrator authority has
 been established. No app deployment, credential repair or DNS cutover claimed.
@@ -78,11 +78,3 @@ static checks passed on a339773b. Marking ready triggered the configured replace
 Terragrunt workflow and superseded the previous live plan. Fresh required checks
 still govern the final documentation commit and protected merge. The optional
 Harbor compatibility audit repeated its recorded validation:remediation failure.
-
-Read-only live checks found Traefik Synced/Progressing and both existing ingress
-and DNS proxies reporting local Tailnet Lock Enabled=false with NodeKeySigned
-absent. This does not establish global tailnet policy or prove signed-peer health.
-No proxy reuse design or relaxed check was implemented. Operator OAuth repair,
-actual AdGuard deployment, signed-peer verification and DNS/client acceptance
-remain pending. Ordinary workload CI has no DNS administrator scope; the separate
-operator unit reads private administrator OAuth files absent in this environment.

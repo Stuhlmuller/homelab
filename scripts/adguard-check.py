@@ -54,6 +54,128 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
+def validate_local_mode(status, lock):
+    require(isinstance(status, dict) and isinstance(lock, dict)
+            and type(lock.get('Enabled')) is bool, 'Missing or malformed Tailnet Lock mode')
+    own, tailnet = status.get('Self'), status.get('CurrentTailnet')
+    require(isinstance(own, dict) and isinstance(tailnet, dict)
+            and status.get('BackendState') == 'Running' and own.get('Online') is True
+            and own.get('Expired') is not True and tailnet.get('MagicDNSSuffix') == SIGNER.TAILNET,
+            'Tailnet client must be online in the expected tailnet')
+    if not lock['Enabled'] and 'NodeKey' in lock:
+        key = lock['NodeKey']
+        require(isinstance(key, str) and re.fullmatch(r'nodekey:[0-9a-f]{64}', key)
+                and key != 'nodekey:' + '0' * 64 and key == own.get('PublicKey'),
+                'Disabled Lock node key differs from device identity')
+    return lock['Enabled']
+
+
+def unlocked_identity(peer):
+    """Validate public proxy/peer identity without relying on Lock peer lists."""
+    require(isinstance(peer, dict), 'Missing AdGuard peer identity')
+    key, addresses = peer.get('PublicKey'), peer.get('TailscaleIPs')
+    require(isinstance(peer.get('ID'), str) and bool(peer['ID'])
+            and type(peer.get('NodeID')) is int and peer['NodeID'] > 0
+            and isinstance(key, str) and re.fullmatch(r'nodekey:[0-9a-f]{64}', key)
+            and key != 'nodekey:' + '0' * 64
+            and isinstance(peer.get('DNSName'), str)
+            and peer['DNSName'].rstrip('.') == 'homelab-adguard.' + SIGNER.TAILNET
+            and peer.get('Tags') == ['tag:homelab-ingress']
+            and peer.get('Online') is True and peer.get('Expired') is not True,
+            'AdGuard public peer identity differs')
+    require(isinstance(addresses, list) and bool(addresses)
+            and all(isinstance(address, str) for address in addresses)
+            and len(set(addresses)) == len(addresses), 'Invalid AdGuard tailnet addresses')
+    try:
+        require(all(ipaddress.ip_address(address) in DNS.MESH or ipaddress.ip_address(address)
+                    in ipaddress.ip_network('fd7a:115c:a1e0::/48') for address in addresses),
+                'AdGuard addresses must belong to the tailnet')
+    except ValueError:
+        raise Failure('Invalid AdGuard tailnet addresses') from None
+    return {'dns': peer['DNSName'].rstrip('.'), 'node_key': key, 'device_id': peer['ID'],
+            'node_id': peer['NodeID'], 'tags': list(peer['Tags']), 'addresses': sorted(addresses)}
+
+
+def validate_unlocked_peer(local, local_lock, service, pod, proxy, proxy_lock):
+    require(validate_local_mode(local, local_lock) is False
+            and validate_local_mode(proxy, proxy_lock) is False,
+            'Client and AdGuard proxy must both explicitly report disabled Lock')
+    try:
+        metadata, pod_meta = service['metadata'], pod['metadata']
+        require(metadata.get('name') == 'adguard-dns' and metadata.get('namespace') == 'automation'
+                and isinstance(metadata.get('uid'), str) and bool(metadata['uid'])
+                and not metadata.get('deletionTimestamp'), 'Unexpected AdGuard Service identity')
+        expected = {'tailscale.com/managed': 'true', 'tailscale.com/parent-resource': 'adguard-dns',
+                    'tailscale.com/parent-resource-ns': 'automation',
+                    'tailscale.com/parent-resource-type': 'svc', 'app': metadata['uid']}
+        require(pod_meta.get('namespace') == 'tailscale'
+                and isinstance(pod_meta.get('uid'), str) and bool(pod_meta['uid'])
+                and not pod_meta.get('deletionTimestamp')
+                and all(pod_meta.get('labels', {}).get(k) == v for k, v in expected.items())
+                and any(c.get('type') == 'Ready' and c.get('status') == 'True'
+                        for c in pod.get('status', {}).get('conditions', [])),
+                'AdGuard proxy must be ready and owned by the exact Service')
+        identity = unlocked_identity(proxy['Self'])
+        peers = local.get('Peer')
+        require(isinstance(peers, dict) and all(isinstance(p, dict) for p in peers.values()),
+                'Missing local AdGuard peer map')
+        matches = [(key, peer) for key, peer in peers.items() if peer.get('ID') == identity['device_id']]
+        require(len(matches) == 1, 'Exactly one matching local AdGuard peer is required')
+        map_key, peer = matches[0]
+        require(map_key == identity['node_key'] and peer.get('InNetworkMap') is True
+                and unlocked_identity(peer) == identity, 'Local peer differs from the AdGuard proxy')
+        published = service['status']['loadBalancer']['ingress']
+        require(isinstance(published, list)
+                and any(entry.get('hostname') == identity['dns'] for entry in published)
+                and any('ip' in entry for entry in published)
+                and all(entry['ip'] in identity['addresses'] for entry in published if 'ip' in entry),
+                'Published AdGuard endpoint differs from the proxy')
+        return dict(identity, pod_uid=pod_meta['uid'], lock_enabled=False, signed=False)
+    except (KeyError, TypeError, AttributeError):
+        raise Failure('Malformed AdGuard identity observation') from None
+
+
+def inspect_adguard_peer():
+    """Read only the fixed AdGuard target; shared signing callers remain strict."""
+    def read(args):
+        try:
+            value = json.loads(run(args))
+        except (ValueError, TypeError):
+            raise Failure('Malformed identity response; private output withheld') from None
+        require(isinstance(value, dict), 'Malformed identity response; private output withheld')
+        return value
+
+    def local_observation():
+        status = read([SIGNER.TAILSCALE, 'status', '--json'])
+        lock = read([SIGNER.TAILSCALE, 'lock', 'status', '--json'])
+        return status, lock, validate_local_mode(status, lock)
+
+    local, lock, enabled = local_observation()
+    if enabled:
+        peer = SIGNER.inspect_target(SIGNER.ADGUARD_TARGET, SIGNER.local_signer())
+        require(peer.get('signed') is True, 'Locked AdGuard proxy must have a verified signature')
+        peer = dict(peer, lock_enabled=True)
+    else:
+        service_args = ['kubectl', '-n', 'automation', 'get', 'service', 'adguard-dns', '-o', 'json']
+        service = read(service_args)
+        selector = ('tailscale.com/managed=true,tailscale.com/parent-resource-ns=automation,'
+                    'tailscale.com/parent-resource=adguard-dns,tailscale.com/parent-resource-type=svc')
+        pods = read(['kubectl', '-n', 'tailscale', 'get', 'pods', '-l', selector, '-o', 'json']).get('items')
+        require(isinstance(pods, list) and len(pods) == 1 and isinstance(pods[0], dict),
+                'Exactly one managed AdGuard proxy is required')
+        pod = pods[0]
+        metadata = pod.get('metadata')
+        require(isinstance(metadata, dict) and isinstance(metadata.get('name'), str)
+                and re.fullmatch(r'ts-[a-z0-9-]+', metadata['name']), 'Unexpected AdGuard proxy name')
+        prefix = ['kubectl', '-n', 'tailscale', 'exec', metadata['name'], '-c', 'tailscale', '--', 'tailscale']
+        proxy = read([*prefix, 'status', '--json'])
+        proxy_lock = read([*prefix, 'lock', 'status', '--json'])
+        peer = validate_unlocked_peer(local, lock, service, pod, proxy, proxy_lock)
+        require(read(service_args) == service, 'AdGuard Service changed during identity verification')
+    require(local_observation()[2] is enabled, 'Tailnet Lock mode changed during identity verification')
+    return peer
+
+
 def source_documents():
     rendered = run(['kubectl', 'kustomize', str(ROOT / 'clusters/homelab/apps/adguard')])
     docs = json.loads(run(['yq', 'ea', '-o=json', '-I=0', '[.]', '-'], data=rendered))
@@ -94,8 +216,10 @@ def validate_snapshot(revision, server, source, objects, app, peer):
             and subset({'status': 'Synced', 'revisions': [revision]}, app.get('status', {}).get('sync', {}))
             and app.get('status', {}).get('health', {}).get('status') == 'Healthy',
             'AdGuard Application must be healthy at reviewed current main')
-    require(peer.get('signed') is True and peer.get('dns') == 'homelab-adguard.' + SIGNER.TAILNET,
-            'AdGuard proxy must be online and signed with the declared identity')
+    require(isinstance(peer, dict) and type(peer.get('lock_enabled')) is bool
+            and type(peer.get('signed')) is bool and peer['signed'] is peer['lock_enabled']
+            and peer.get('dns') == 'homelab-adguard.' + SIGNER.TAILNET,
+            'AdGuard proxy requires explicit verified mode and its applicable signature')
     return {'source_revision': revision, 'deployed_revision': revision,
             'config_revision': deployment['spec']['template']['metadata']['annotations']['homelab.stuhlmuller.dev/config-revision'],
             'config_digest': digest(eso['spec']), 'source_digest': digest(list(source.values())),
@@ -109,9 +233,9 @@ def snapshot(server):
     source = source_documents()
     objects = {key: json.loads(run(['kubectl', '-n', 'automation', 'get', key[0], key[1], '-o', 'json'])) for key in source}
     app = json.loads(run(['kubectl', '-n', 'argocd', 'get', 'application', 'adguard', '-o', 'json']))
-    peer = SIGNER.inspect_target(SIGNER.ADGUARD_TARGET, SIGNER.local_signer())
-    # The signing helper independently re-reads the Service and binds it to the
-    # exact managed proxy and lock peer. Re-read to reject a concurrent replacement.
+    peer = inspect_adguard_peer()
+    # Identity collection independently reads the Service and binds it to the
+    # exact managed proxy. Re-read to reject a concurrent replacement.
     require(json.loads(run(['kubectl', '-n', 'automation', 'get', 'service', 'adguard-dns', '-o', 'json']))
             == objects[('Service', 'adguard-dns')], 'DNS Service changed during identity verification')
     return validate_snapshot(revision, server, source, objects, app, peer)
@@ -165,8 +289,10 @@ class Admin:
 
 def validate_admin(profile, querylog, statistics, denied, setup):
     require(profile.get('name') == 'admin', 'Expected initialized administrator is unavailable')
-    require(querylog.get('enabled') is False and querylog.get('file_enabled', False) is False
-            and statistics.get('enabled') is False, 'Query history or statistics retention is enabled')
+    # The API exposes enabled, but not file_enabled or size_memory. Those
+    # settings are verified against declared config and the pinned runtime.
+    require(querylog.get('enabled') is True and statistics.get('enabled') is False,
+            'Recent query visibility must be enabled and statistics disabled')
     require(len(denied) == 2 and all(code in (401, 403) for code in denied),
             'Unauthenticated protected administration is not denied')
     require(setup in (403, 404), 'First-run setup is still available')

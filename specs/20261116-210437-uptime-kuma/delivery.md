@@ -86,9 +86,7 @@ The latter two change review-note layout only; focused Markdown lint passed.
 Local static session64879 failed fetching an OpenWiki npm dependency with
 HTTP503; bounded retry94546 is pending. Live read-only preflight identified
 Traefik Synced with successful operation and ready/current generation4
-Deployment, but aggregate Progressing and an empty codex-signer Ingress
-loadBalancer status. A separate source-convergence review owns the scoped
-prerequisite correction; no unrelated ingress mutation or deployment occurred.
+Deployment. No unrelated ingress mutation or deployment occurred.
 
 
 ## Protected delivery and deployment readiness

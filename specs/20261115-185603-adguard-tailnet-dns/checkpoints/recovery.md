@@ -4,7 +4,7 @@ The preceding separate T020 convergence was clean and made no changes. This
 implementation adds scripts/adguard-recovery.py as a sibling because local
 Docker recovery needs distinct lifecycle and credential custody from live checks.
 Source remains unmerged on feat/adguard-tailnet-dns, base48e8b9e4. No live SSM
-credential read, recovery drill, application deployment, signing or DNS mutation.
+credential read, recovery drill, application deployment or DNS mutation.
 
 The helper reconstructs the actual ESO template through private Helm input,
 checks declared AWS account and exact SSM SecureString identity/version, and

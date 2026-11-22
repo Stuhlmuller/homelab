@@ -10,10 +10,12 @@ unit "azuread_applications_fleet" {
   source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/live/azuread-applications/fleet"
   path                    = "azuread"
   no_dot_terragrunt_stack = true
+  values                  = read_terragrunt_config("${get_terragrunt_dir()}/identity.hcl").inputs
 }
 
 unit "azuread_fleet_pilot_user" {
   source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/live/azuread-applications/fleet-pilot-user"
   path                    = "pilot-user"
   no_dot_terragrunt_stack = true
+  values                  = read_terragrunt_config("${get_terragrunt_dir()}/pilot-user.hcl").inputs
 }

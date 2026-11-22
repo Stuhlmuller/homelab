@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "istio"]
+  dependencies = ["../../external-secrets/argocd", "../../istio/argocd"]
   spec = {
     destination = {
       namespace = "octelium-client"

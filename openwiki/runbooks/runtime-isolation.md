@@ -26,14 +26,10 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-007543776318a4afbd5fc1b0
     resource: repo://clusters/homelab/platform/network-policy/daemonset.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
@@ -162,28 +158,18 @@ retains TLS termination. Port 80 needs separate review. This could close the
 private listener when kube-router or the sidecar is absent, without clearing
 another worker. Its source is staged but the runtime is not deployed or
 proven. The current Tailscale operator uses a separate proxy;
-[`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
-answers from its LoadBalancer status,
-[`tailscale-ingress-sign.py`](../../scripts/tailscale-ingress-sign.py) signs
-that fixed proxy, and
+[`tailnet-dns`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md) derives
+answers from its LoadBalancer status, and
 [CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
 Harbor and Octelium API names to its Service. A selectorless headless Service
 with a ready EndpointSlice could publish the sidecar device IP, but a static
 device IP is unsafe after reassignment. The candidate is a pinned-provider
 [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
-with a stable IPv4 TailVIP and one exact, signed canary host approved through a
-repo-owned script.
-The [Service host approval command](../../scripts/tailscale-service-host-approve.py)
-requires live policy to match reviewed source, one test-user grant for only
-Service TCP 443, a single pending host, the exact `acer` canary Pod and
-persistent state identity, matching Tailscale device ID/public node key/tag,
-signed Tailnet Lock state, and raw TCP Serve to loopback 8443. Its preview
-fingerprint binds a later current-main approval to that observed identity.
-It rejects auto-approval and rechecks immediately before its sole host
-approval write; the staged policy and canary do not yet satisfy preflight.
-The first live preview must confirm the `/vip-services` definition read and
-`/services` pending-host shape before execution. Traffic and wrong-host
-withdrawal probes remain required after API approval.
+with a stable IPv4 TailVIP and one exact, approved canary host.
+The Service host must match the reviewed policy, exact pending advertisement,
+`acer` Pod and persistent state, device ID, node key and tag, and raw TCP Serve
+to loopback 8443. Recheck identity before approval. Traffic and wrong-host
+withdrawal probes remain necessary after API approval.
 The Service endpoint uses raw TCP 443 to the canary loopback listener. A
 selectorless headless Service and reviewed EndpointSlice would publish that
 TailVIP; DNS may still answer it while the host is offline, so a cached-A
@@ -203,7 +189,7 @@ internal Service until the replacements work. `loadBalancerClass` cannot be
 changed in place; create a distinct internal Service before retiring the old
 one. Prove
 these contracts, persistent sidecar
-identity, a canary-only tailnet tag, Tailnet Lock, same-node/remote-node
+identity, a canary-only tailnet tag, same-node/remote-node
 Pod-IP HTTP/HTTPS and tailnet-IP negative probes, native clients, and
 [legacy-route retirement](../../scripts/ci/legacy-ingress-retirement-check.py)
 before cutover, while preserving named Octelium control paths. The 18 legacy
@@ -211,16 +197,16 @@ app routes still have 54 source entries. The
 existing-node evacuation below remains a separate general `NetworkPolicy`
 canary candidate, not a prerequisite for the sidecar test.
 
-The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.md)
+The [dormant sidecar source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/canary/README.md)
 renders independently and is absent from the live Traefik Argo source. It has
 distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
 first raw TCP Serve exposes only tailnet 443. The current broad grant reaches
-every signed device regardless of tag; narrow it and prove the applied policy
-denies every canary client before using the `--canary-only` signer. Add a test
-client grant after signing. Port 80 needs separate review. The
+every device regardless of tag; narrow it and prove the applied policy
+permits only intended test clients before acceptance. Port 80 needs separate
+review. The
 Tailscale container alone receives its projected API token and file-backed auth
 key. Tailscale creates its mutable state Secret; Argo does not reconcile it.
-Backend Istio identity, Tailnet Lock signing, capacity, and negative-path probes
+Backend Istio identity, device identity, capacity, and negative-path probes
 remain activation gates. The November 1
 read-only capacity recheck found only about 580 MiB sampled peak headroom on
 `zimaboard-1`, below the canary's 768 MiB memory limit. `acer` had about

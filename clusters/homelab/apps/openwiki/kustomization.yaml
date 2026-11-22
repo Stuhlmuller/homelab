@@ -1,0 +1,20 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: openwiki
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - networkpolicy.yaml
+configMapGenerator:
+  - name: openwiki-config
+    files:
+      - nginx.conf
+  - name: openwiki-site
+    files:
+      - site/index.html
+      - site/client.js
+      - site/client-lib.js
+      - site/styles.css
+      - site/graph.json.gz

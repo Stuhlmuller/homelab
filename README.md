@@ -1,117 +1,92 @@
 # Homelab
 
-This repository is the declarative control surface for a Talos Linux
-Kubernetes homelab. It is both production infrastructure and learning material:
-changes should be safe to review, repeatable to apply, and useful to someone
-building a similar setup from scratch.
+**One Acer, three ZimaBoards, and a NAS walk into a Kubernetes cluster.**
 
-The cluster is managed through repository-owned desired state. Infrastructure
-uses OpenTofu modules orchestrated by Terragrunt, and Kubernetes runtime state
-is delivered through Argo CD, Helm, Kustomize, and committed manifests.
+This is my Talos Linux homelab and a field guide for building your own.
+The lab doubles as a place to self-host, try out infrastructure ideas,
+and practice getting services back online when things break.
 
-## Repository Map
+[![Latest homelab commit][last-commit]][history]
+[![Monthly homelab commit activity][commit-activity]][activity]
 
-| Path | Purpose |
-| --- | --- |
-| `.talos/` | Talos machine configuration, patches, and Talos client references. |
-| `IaC/` | OpenTofu modules and Terragrunt stacks for cloud, bootstrap, and GitOps registration. |
-| `clusters/homelab/` | Kubernetes desired state for Argo CD, platform services, and applications. |
-| `docs/` | Operator runbooks and learner-facing explanations. |
-| `openwiki/` | OpenWiki Markdown wiki for cross-cutting architecture and operations context. |
-| `policy/` | Conftest/Rego policies for Terraform, Kubernetes, and GitHub Actions checks. |
-| `scripts/ci/` | Reusable local and CI validation helpers. |
+## Meet the hardware
 
-## Change Flow
+| Node | Hardware | Role | Logical CPUs | RAM visible to Kubernetes |
+| --- | --- | --- | ---: | ---: |
+| `acer` | Acer PC | Talos control plane | 8 | 15.5 GiB |
+| `zimaboard-0` | ZimaBoard | Talos worker | 4 | 7.6 GiB |
+| `zimaboard-1` | ZimaBoard | Talos worker | 4 | 7.6 GiB |
+| `zimaboard-2` | ZimaBoard | Talos worker | 2 | 1.8 GiB |
 
-CI/CD owns merge and deployment decisions. Runbooks, app READMEs, wiki pages,
-and skills explain the executable checks; they do not add approval rounds or
-manual deployment blockers. Check results and GitHub protections are the current
-operational policy. See [CI/CD](docs/ci-cd.md).
+**Storage sidekick.** A QNAP TS-451+ serves Kubernetes persistent volumes
+over NFS. Its storage pool uses four 2 TB disks in RAID 5.
+See the [storage guide](docs/storage-nfs.md).
 
-```text
-pull request
-  -> Terragrunt/OpenTofu desired state
-  -> Argo CD Application registration
-  -> Helm, Kustomize, or repo-owned manifests
-  -> Kubernetes cluster state
-```
+## Lab notebook
 
-Do not repair live state by hand-editing cloud resources, Talos config,
-Kubernetes objects, Argo CD resources, or secret-manager resources. Capture the
-desired state in this repository, validate it, then apply it through the
-documented Terragrunt, Argo CD, Helm, Kustomize, or Talos path.
+Green squares mark GitHub contributions by [@rstuhlmuller][profile]
+across repositories. For homelab-specific changes, see the repository's
+[commit activity chart][activity] and [contributor graphs][contributors].
 
-## Getting Started
+[![GitHub contribution heatmap for rstuhlmuller][heatmap]][profile]
 
-Use the Nix development shell when possible. It provides the expected local
-operator tools, including `awscli2`, `conftest`, `kubectl`, `opentofu`,
-`ripgrep`, `talosctl`, and `terragrunt`.
+## How it works
+
+- **Infrastructure as code.** Terragrunt orchestrates OpenTofu modules for
+  infrastructure, cluster bootstrap, and Argo CD application registration.
+- **GitOps.** Argo CD reconciles Kubernetes workloads from Helm charts,
+  Kustomize overlays, and committed manifests.
+- **Change delivery.** Put desired-state changes in Git and deliver them
+  through pull requests. Executable checks and protections govern merge and
+  rollout. See the [CI/CD guide](docs/ci-cd.md).
+
+## Agents in the lab
+
+I use Codex to work on the lab. [OpenWiki](openwiki/quickstart.md) helps it
+find the relevant source and runbooks, and repository skills give it
+repeatable workflows for jobs like adding an app or repairing a PR.
+
+For larger changes, Spec Kit turns an idea into a spec, plan, and task list.
+Agents work in isolated Git worktrees, run focused checks, and follow signed
+PRs through protected merge. When a change rolls out, they verify the deployed
+revision and exercise the service. See the
+[agent workflows](openwiki/operations/agent-workflows.md).
+
+## Get started
+
+Open the Nix development shell from the repository root:
 
 ```sh
 nix develop
 ```
 
-Start with these documents:
+- **Set up a cluster** with the [Talos onboarding guide](ONBOARDING.md) and
+  [Argo CD bootstrap guide](docs/argocd-bootstrap.md).
+- **Add a workload** with the [application onboarding guide](docs/argocd-app-onboarding.md).
+- **Explore the architecture or find a runbook** through the
+  [OpenWiki quickstart](openwiki/quickstart.md).
 
-- `ONBOARDING.md` for Talos nodes, cluster endpoints, storage assumptions, and
-  the bootstrap story.
-- `docs/argocd-bootstrap.md` for the initial Argo CD Terragrunt stack.
-- `docs/argocd-app-onboarding.md` for adding GitOps-managed applications.
-- `docs/octelium.md` for private operator and restricted Cordium Kubernetes access.
-- `docs/ci-cd.md` for GitHub Actions, Octelium, AWS OIDC, and rollout gates.
-- `docs/secrets-aws-ssm.md` for the External Secrets and AWS SSM contract.
-- `docs/storage-nfs.md` for QNAP-backed Kubernetes persistent storage.
-- [OpenWiki quickstart](openwiki/quickstart.md) for task routes and agent context.
+> [!IMPORTANT]
+> Adapt networking, identity, DNS, and storage settings to your environment
+> before applying the configuration. This repository is public. Commit only
+> safe secret references and placeholders. Keep credentials and private key
+> material out of Git.
 
-This is a public repository. Keep raw secrets, kubeconfigs, Talos secrets,
-tokens, private keys, and raw certificate material out of git. Commit safe
-references such as ExternalSecret names, SSM parameter paths, placeholders, and
-non-secret defaults instead.
+## Validate changes
 
-## Validation
-
-Run the smallest validation that proves the change. For most infrastructure or
-GitOps changes, start with:
+Run the repository's static validation from the root:
 
 ```sh
 nix run .#validate
 ```
 
-This generates the Terragrunt stack, then runs HCL formatting and validation,
-the static checks (including whitespace), and Conftest policies with the flake's
-pinned tools.
+Use the [validation runbook](docs/validation-runbook.md) to pick focused checks
+for your change and find the relevant plan, render, or rollout verification.
 
-For docs-only changes, focused Markdown and whitespace checks are usually
-enough:
-
-```sh
-nix develop --command python3 -I scripts/ci/openwiki-check.py
-git diff --check -- README.md docs/ openwiki/ AGENTS.md ONBOARDING.md .agents/skills
-rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" README.md docs openwiki AGENTS.md ONBOARDING.md .agents/skills
-```
-
-See `docs/validation-runbook.md` and
-`openwiki/operations/validation-gates.md` for the full validation
-model, including Terragrunt plans, Kustomize renders, server-side diffs, and
-live readiness checks.
-
-## Operating Principles
-
-- Prefer declarative, reproducible configuration over manual mutation.
-- Keep desired-state inputs in committed non-secret code or data.
-- Use environment variables only for CI/CD credential plumbing and secret
-  injection, not as normal Terragrunt, OpenTofu, Helm, Kustomize, Talos, or app
-  configuration inputs.
-- Keep ingress, storage, backup, and restore implications explicit and
-  documented.
-- Update the knowledge base when a change materially affects architecture,
-  workflows, platform services, workloads, storage, secrets, validation, or
-  operating assumptions.
-
-## Reuse Notes
-
-The repository includes homelab-specific values such as LAN addresses, storage
-paths, and application hostnames. Treat those as examples of the pattern, not
-universal defaults. Before reusing this project, replace local topology,
-identity, DNS, storage, and secret contracts with values that match your own
-environment.
+[last-commit]: https://img.shields.io/github/last-commit/Stuhlmuller/homelab?style=flat-square
+[commit-activity]: https://img.shields.io/github/commit-activity/m/Stuhlmuller/homelab?style=flat-square
+[history]: https://github.com/Stuhlmuller/homelab/commits/main/
+[activity]: https://github.com/Stuhlmuller/homelab/graphs/commit-activity
+[contributors]: https://github.com/Stuhlmuller/homelab/graphs/contributors
+[heatmap]: https://ghchart.rshah.org/22a06b/rstuhlmuller
+[profile]: https://github.com/rstuhlmuller#contribution-graph

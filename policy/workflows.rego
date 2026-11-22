@@ -664,6 +664,7 @@ native_receipt_provenance_job := {
 			"run": `set -euo pipefail
 umask 077
 base_sha="$(git rev-parse HEAD)"
+verification_base_sha="$base_sha"
 [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
 token_file="$(mktemp)"
 pulls_file="$(mktemp)"
@@ -676,7 +677,8 @@ jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
 if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
   event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
   [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
-  grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+  verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
+    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"
   printf '%s\n' "$event_head" >"$heads_file"
 else
   [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
@@ -710,7 +712,7 @@ done <"$heads_file"
 status_failed=0
 while IFS= read -r head_sha; do
   if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
-    --base-sha "$base_sha" --head-sha "$head_sha" \
+    --base-sha "$verification_base_sha" --head-sha "$head_sha" \
     --token-file "$token_file" && \
     [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
     state=success
@@ -872,6 +874,20 @@ private_live_output(run) if {
 	regex.match(`(?m)^[\t ]*trap[\t ]+'rm -f "\$private_log"'[\t ]+EXIT[\t ]*$`, run)
 	regex.match(`(?m)^[\t ]*umask[\t ]+077[\t ]*$`, body)
 	private_live_tail(tail)
+}
+
+# Deployment steps propagate their exit status and discard both output streams.
+private_live_output(run) if {
+	trim(run, "\n") in quiet_deploy_runs
+}
+
+quiet_deploy_runs := {
+	`umask 077
+nix develop --command bash scripts/ci/install-kubeconfig.sh >/dev/null 2>&1
+nix develop --command kubectl --request-timeout=15s version >/dev/null 2>&1`,
+	`nix develop --command bash scripts/ci/terragrunt-apply.sh >/dev/null 2>&1`,
+	`umask 077
+nix develop --command bash scripts/ci/octelium-private-kubernetes-apply.sh >/dev/null 2>&1`,
 }
 
 # The AzureAD plan report can contain provider diagnostics, so keep it and the
@@ -1045,11 +1061,17 @@ case "$IMAGE_SCOPE" in
   adguard)
     bash scripts/ci/harbor-publish.sh mirror-adguard --tailscale
     ;;
+  cilium)
+    bash scripts/ci/harbor-publish.sh mirror-cilium --tailscale
+    ;;
+  kagent)
+    bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'acd364eeca57af100f9ef135644a1c906c07a54e0bb9261c2cf012b3ac402bd4  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1110,19 +1132,6 @@ private_live_tail(tail) if {
 	safe_withheld_echo(lines[7])
 }
 
-private_live_tail(tail) if {
-	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
-	count(lines) == 8
-	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-	lines[2] == `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-	lines[3] == "fi"
-	safe_withheld_echo(lines[4])
-	lines[5] == "exit 1"
-	lines[6] == "fi"
-	safe_withheld_echo(lines[7])
-}
-
 safe_withheld_echo(line) if {
 	startswith(line, `echo "`)
 	endswith(line, `"`)
@@ -1166,7 +1175,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "d5d813836fc61c2c51ee44cc169f5b69bc478660552654862142a3afa47cf5c3"
+	crypto.sha256(json.marshal(canonical)) == "fab5a7cff3d19619d08d1a3d17a8cbc3370a55308cc874be44e56e776c009326"
 }
 
 tailnet_workflow_requested if {

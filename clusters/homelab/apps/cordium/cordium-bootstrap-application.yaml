@@ -23,7 +23,7 @@ spec:
   syncPolicy:
     automated:
       allowEmpty: false
-      enabled: true
+      enabled: false
       prune: true
       selfHeal: true
     syncOptions:

@@ -44,6 +44,7 @@ python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
+python3 -I scripts/ci/cordium-genesis-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
 node --test scripts/ci/renovate-cache-corruption-drill-test.mjs
@@ -65,6 +66,7 @@ python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/codex-cloud-signer-test.py
 python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
+python3 -I scripts/ci/tailnet-dns-retry-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
@@ -207,6 +209,14 @@ python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 echo "::endgroup::"
 
+echo "::group::LiteLLM Bedrock IAM policy"
+(
+  cd IaC/homelab/us-west-2/operator/litellm-bedrock
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
 echo "::group::Etcd offsite bucket offline guards"
 (
   cd IaC/homelab/us-west-2/operator/etcd-backup-storage
@@ -303,18 +313,14 @@ if command -v checkov >/dev/null 2>&1; then
 
     run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
-    # Match pre-commit's tracked regular files; symlinks are not scan inputs.
-    python3 -I - <<'PYTHON'
-from pathlib import Path
-import subprocess
-import sys
-
-root = Path.cwd().resolve()
-tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
-files = [name for name in tracked if name and (root / name).is_file()
-         and (root / name).resolve() == root / name]
-subprocess.run([sys.executable, "scripts/ci/checkov-reviewed-findings.py", "secrets", "-f", *files], check=True)
-PYTHON
+    # Reuse hook selection with the installed reviewed scanner, without fetching hook environments.
+    checkov_hook_config="$static_download_dir/checkov-pre-commit.json"
+    yq -o=json '.repos = [{"repo": "local", "hooks": [.repos[].hooks[] |
+      select(.id == "checkov_secrets") |
+      . * {"name": "Checkov Secrets", "language": "system", "args": ["-f"], "require_serial": true}]}]' \
+      .pre-commit-config.yaml >"$checkov_hook_config"
+    env -u PYTHONPATH -u PYTHONHOME PRE_COMMIT_HOME="$static_download_dir/pre-commit" \
+      pre-commit run checkov_secrets --all-files --config "$checkov_hook_config"
   )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2

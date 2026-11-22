@@ -4,7 +4,7 @@
 
 Executable checks, GitHub branch/environment protections, admission policies,
 and workflow inputs are the source of truth for merge and deployment decisions.
-This applies repository-wide, including runbooks, app READMEs, OpenWiki, specs,
+This applies repository-wide, including runbooks, OpenWiki, specs,
 and local skills. Prose describes behavior and troubleshooting; it does not add
 approval rounds, acceptance checklists, or deployment vetoes.
 

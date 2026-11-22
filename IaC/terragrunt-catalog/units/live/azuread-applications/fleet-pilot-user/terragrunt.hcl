@@ -16,7 +16,4 @@ provider "azuread" {}
 EOF
 }
 
-inputs = {
-  user_principal_name = "rodman.mac@stinkyboi.com"
-  display_name        = "Rodman Mac"
-}
+inputs = jsondecode(read_tfvars_file("terragrunt.values.hcl"))

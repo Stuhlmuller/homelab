@@ -48,7 +48,7 @@ EOF
 }
 
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=19df2cb291eef0084cafb85bed644dcdb082108c"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/helm-release"
 
   after_hook "apply_self_management_application" {
     commands = ["apply"]
@@ -80,6 +80,11 @@ inputs = {
   values = [
     yamlencode({
       global = {
+        # GHSA-rq7v-q562-vwcq: patched Argo CD 3.4 release.
+        # Keep the existing chart pin to avoid unrelated chart migration.
+        image = {
+          tag = "v3.4.14"
+        }
         affinity = {
           nodeAffinity = {
             type = "hard"
@@ -115,7 +120,8 @@ inputs = {
         }
 
         params = {
-          "server.insecure" = "true"
+          "controller.sync.timeout.seconds" = "900"
+          "server.insecure"                 = "true"
         }
 
         rbac = {
