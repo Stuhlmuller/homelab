@@ -42,3 +42,14 @@ in `automation`. It uses `/var/lib/renovate-cache` on `acer`'s Talos
 node loss can lose the rebuildable cache. Renovate's credential-free init
 container sets only the mount root's ownership before the non-root runner
 starts. The old NFS cache and staged dedicated NAS resources remain intact.
+
+## NFS provisioner egress
+
+Cilium permits the NFS provisioner to connect to the Kubernetes API using
+the Service front end on TCP 443 or the API endpoint on TCP 6443. The
+provisioner writes through its mounted NFS volume, so the pod has no direct
+NFS egress grant. The node needs its existing access to the NAS.
+
+Verify the provisioner can watch claims, create a test PV, and write through
+a bound test claim once the pod is managed by Cilium. Verify it cannot open
+a connection to an unlisted destination.
