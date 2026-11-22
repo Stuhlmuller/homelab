@@ -1,9 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: unversioned template → 1.0.0
-- Modified principles: five template placeholders → five project principles below
-- Added sections: Technology and Ownership; Delivery and Review Gates
-- Removed sections: none; placeholder sections were filled
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: none
+- Added principles: VI. Consistent Formatting
+- Removed sections: none
 - Follow-up TODOs: none
 -->
 # Homelab Constitution
@@ -58,6 +58,17 @@ Kubernetes app and cluster directories for runtime resources, `IaC/` for infrast
 `docs/` for guides, `openwiki/` for cross-cutting knowledge, and `scripts/` for operator
 helpers. Clear ownership keeps setup repeatable and changes easy to locate.
 
+### VI. Consistent Formatting
+
+Every repository change MUST follow the applicable formatting skills and the repository's
+configured style for the files it touches. Use the repository's declared formatter where
+one exists and its linter configuration to verify the result. Use the Spec Kit Markdown
+templates for structure and lint Markdown and YAML with the rules in
+[`.github/linters/`](../../.github/linters/). Format OpenTofu with `tofu fmt` and Terragrunt
+with `terragrunt hcl fmt`, as configured in [pre-commit](../../.pre-commit-config.yaml).
+Run the applicable checks before submitting changes and keep formatting edits within the
+scope of the change. The repository's required CI checks determine merge readiness.
+
 ## Technology and Ownership
 
 Talos Linux, Kubernetes, OpenTofu, Terragrunt, Argo CD, Helm/Kustomize-compatible sources,
@@ -88,6 +99,6 @@ repository's safety rules.
 
 Constitution versions follow semantic versioning: MAJOR for incompatible principle
 removals or redefinitions, MINOR for new principles or materially expanded guidance, and
-PATCH for non-semantic clarification. This first populated constitution is version 1.0.0.
+PATCH for non-semantic clarification.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
+**Version**: 1.1.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-11-21

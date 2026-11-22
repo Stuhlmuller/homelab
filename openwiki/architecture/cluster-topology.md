@@ -388,6 +388,10 @@ types use public resolvers. The owner adds the DNS proxy's observed IP to
 Tailscale only after direct UDP/TCP answers, device identity and client checks pass;
 public app address records stay until a later guarded retirement.
 
+AdGuard is placed away from `zimaboard-2` to reserve memory for the planned
+Cilium agent and Envoy. Its NFS-backed work volume permits rescheduling to
+another eligible node. Verify the tailnet DNS path after rescheduling.
+
 ## Source Files
 
 - `ONBOARDING.md`
