@@ -133,12 +133,30 @@ def install_multus(kubectl):
     })
 
 
+def wait_for_multus_default(node):
+    # Containerd reloads CNI independently of the DaemonSet readiness check.
+    # The first fixture needs the Multus shim before its Pod starts.
+    deadline = time.monotonic() + 45
+    while True:
+        runtime = json.loads(run("docker", "exec", node, "crictl", "info", timeout=5))
+        networks = runtime.get("cniconfig", {}).get("Networks") or []
+        for network in networks:
+            if network["IFName"] == "eth0" and any(
+                plugin["Network"]["type"] == "multus-shim" for plugin in network["Config"]["Plugins"]
+            ):
+                return
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"{node} did not load Multus as its default CNI")
+        time.sleep(1)
+
+
 def qualify(kubectl, chart, flannel):
     run(*kubectl, "apply", "-f", str(flannel))
     run(*kubectl, "-n", "kube-flannel", "rollout", "status", "ds/kube-flannel-ds", "--timeout=180s")
     run(*kubectl, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=180s")
     flannel_ip = endpoint(kubectl, "legacy", CONTROL)
     install_multus(kubectl)
+    wait_for_multus_default(WORKER)
     worker_ip = endpoint(kubectl, "worker", WORKER, attachment=True)
     probe(kubectl, "legacy", worker_ip, 8080)
 
