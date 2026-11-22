@@ -72,6 +72,8 @@ revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
 
+Terragrunt and private-access catalog applies reuse [Deployment Checks](../../.github/workflows/deployment-checks.yml)
+to validate the exact current `main` checkout before production access.
 Protected apply uses the existing deployment commands and their exit codes.
 Both output streams are discarded on the public runner. Diagnose failures from
 a private operator session. See the [CI/CD runbook](../../docs/ci-cd.md#security-model).
