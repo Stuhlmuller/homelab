@@ -68,6 +68,15 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
 
+    def test_cilium_route_preflight_reaches_read_only_entry_before_activation(self):
+        result, external = self.run_stage("cilium-route-preflight")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(external)
+        body = STAGE.read_text().split("  cilium-route-preflight)\n", 1)[1].split("    ;;", 1)[0]
+        self.assertIn("get routes -o json", body)
+        self.assertIn("cilium-route-preflight.py", body)
+        self.assertNotRegex(body, r"kubectl\s+(apply|patch|delete|drain)|talosctl.*(reboot|apply-config)")
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)
