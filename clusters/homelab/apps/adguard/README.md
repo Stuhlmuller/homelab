@@ -32,14 +32,9 @@ The authenticated Query Log shows at most 1,000 recent queries held in memory.
 Client IPs remain anonymized; restart clears this history. File query logs,
 statistics and automatic client discovery are off.
 
-The policies permit DNS ingress from Tailscale and administration from Traefik.
-AdGuard forwards general DNS to the two configured Cloudflare servers and private
-DNS to k8s-gateway. Cilium limits cluster resolver queries to service discovery
-and the filter hostname. HTTPS filter refreshes require the approved DNS name
-and TLS server name `adguardteam.github.io` on TCP 443. Apply this revision only
-after Cilium manages the AdGuard endpoint and its DNS and TLS proxies are ready.
-Verify a successful filter refresh and public and private query paths, then
-probe an unlisted HTTPS destination from the AdGuard identity.
+The NetworkPolicy declares DNS ingress from Tailscale, administration from
+Traefik, cluster/private DNS, the two public upstreams and public HTTPS filter
+downloads. The existing Flannel installation does **not** enforce NetworkPolicy.
 Actual external access relies on tailnet grants, device authentication and administration
 authentication; this manifest is not evidence of enforced Pod isolation.
 
