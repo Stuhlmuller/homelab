@@ -341,6 +341,15 @@
       ]
     },
     {
+      "id": "openwiki",
+      "lifecycle": "active",
+      "source": "IaC/homelab/us-west-2/apps/openwiki/stack.hcl",
+      "reason": "Public OpenWiki viewer; monitor Nginx readiness for the generated snapshot.",
+      "monitorIds": [
+        "openwiki-workloads"
+      ]
+    },
+    {
       "id": "openclaw",
       "lifecycle": "active",
       "source": "IaC/homelab/us-west-2/apps/openclaw/stack.hcl",
@@ -2131,6 +2140,44 @@
     ],
     "workloads": [
       {"kind":"deployment","namespace":"octelium-public","name":"cloudflared"}
+    ]
+  },
+  {
+    "key": "openwiki-workloads",
+    "name": "openwiki \u2014 workload health",
+    "ownerAppIds": [
+      "openwiki"
+    ],
+    "kind": "json-query",
+    "target": {
+      "url": "http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query",
+      "method": "POST",
+      "body": "query=vector((scalar(count(kube_deployment_spec_replicas{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_spec_replicas{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_spec_replicas{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_status_replicas_available{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_replicas_available{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_replicas_available{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_metadata_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_metadata_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_metadata_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_status_observed_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_observed_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_observed_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+>%3D+bool+0)+%2A+(scalar(kube_deployment_spec_replicas{deployment%3D\"openwiki\",namespace%3D\"openwiki\"})+>+bool+0)+%2A+(scalar(kube_deployment_status_replicas_available{deployment%3D\"openwiki\",namespace%3D\"openwiki\"})+>%3D+bool+scalar(kube_deployment_spec_replicas{deployment%3D\"openwiki\",namespace%3D\"openwiki\"}))+%2A+(scalar(kube_deployment_status_observed_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"})+>%3D+bool+scalar(kube_deployment_metadata_generation{deployment%3D\"openwiki\",namespace%3D\"openwiki\"})))",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    },
+    "expected": {
+      "statusCodes": [
+        200
+      ],
+      "jsonPath": "(status = \"success\" and $count(data.result) = 1 and data.result[0].value[1] = \"1\") ? \"1\" : \"0\"",
+      "value": "1"
+    },
+    "intervalSeconds": 60,
+    "timeoutSeconds": 10,
+    "retries": 1,
+    "enabled": true,
+    "meaning": "Every listed active workload has fresh, unique desired and available/ready signals; desired replicas must be positive.",
+    "limitations": "Kubernetes readiness and current generation, not an end-to-end user transaction; missing/stale sources fail. ",
+    "sourceSignals": [
+      {"metric":"kube_deployment_spec_replicas","labels":{"namespace":"openwiki","deployment":"openwiki"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_status_replicas_available","labels":{"namespace":"openwiki","deployment":"openwiki"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_metadata_generation","labels":{"namespace":"openwiki","deployment":"openwiki"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_status_observed_generation","labels":{"namespace":"openwiki","deployment":"openwiki"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"}
+    ],
+    "workloads": [
+      {"kind":"deployment","namespace":"openwiki","name":"openwiki"}
     ]
   },
   {
