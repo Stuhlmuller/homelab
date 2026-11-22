@@ -4,7 +4,7 @@ include "root" {
 
 locals {
   root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  destination = read_terragrunt_config("${get_repo_root()}/IaC/homelab/us-west-2/apps/langfuse/langfuse-blob-storage.hcl").inputs
+  destination = read_terragrunt_config("${get_repo_root()}/IaC/langfuse-blob-storage.hcl").inputs
 }
 
 terraform {
