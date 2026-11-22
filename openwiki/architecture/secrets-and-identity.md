@@ -417,6 +417,8 @@ gate remains disabled; these permissions are source intent, not live access.
   production apply adopts a pre-populated Cordium parameter before planning.
 - Cordium genesis uses a separate temporary Kubernetes ServiceAccount and
   cluster RBAC. A failed Argo cleanup hook can strand those privileged objects.
+  The cleanup Job uses the mounted in-cluster identity and has a 120-second
+  deadline. Static checks enforce the exact kubectl invocation.
   The [Cordium recovery runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/cordium/README.md)
   requires a clean exact-main checkout, matched live UIDs, a finished failed
   child sync and no active bootstrap workload before a reviewed one-shot,
