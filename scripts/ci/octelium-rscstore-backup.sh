@@ -116,7 +116,7 @@ for _ in range(30):
 else:
     raise SystemExit("Talos relay did not become ready")
 PY
-  capture_mode=preflight-actions
+  capture_mode="preflight-actions"
   storage_args=()
   if [[ "$BACKUP_STAGE" == backup ]]; then
     capture_mode=capture-actions

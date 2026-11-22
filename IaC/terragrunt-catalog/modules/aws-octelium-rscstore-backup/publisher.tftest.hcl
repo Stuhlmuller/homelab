@@ -128,4 +128,3 @@ run "rejects_wrong_provider_region" {
   }
   expect_failures = [aws_iam_policy.publisher_boundary]
 }
-
