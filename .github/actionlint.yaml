@@ -3,8 +3,17 @@ self-hosted-runner:
     - cordium
     - cordium-canary
 
-# actionlint v1.7.12 predates GitHub's queue: max; Rego pins the protected jobs.
+# actionlint v1.7.12 predates GitHub's queue: max; repository checks pin the protected workflows.
 paths:
   .github/workflows/openclaw-enterprise-operations.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section'
+  .github/workflows/release.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section'
+  .github/workflows/terragrunt-apply.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section'
+  .github/workflows/terragrunt-plan.yml:
     ignore:
       - '^unexpected key "queue" for "concurrency" section'
