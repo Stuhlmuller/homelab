@@ -47,22 +47,22 @@ principal; it is not limited to assigning Fleet administrators.
 
 `IaC/homelab/us-west-2/operator/entra-stuhlmuller-domain` and
 `IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` remain outside the CI credential
-boundary. The former uses a human Entra operator to read and verify the
-existing non-default, managed `stuhlmuller.net` domain; the latter retains only
-the separate cloud-only `rodman.mac@stuhlmuller.net` pilot. The exact
-`rodman@stuhlmuller.net` identity is the existing owner converted in place, not
-a Terraform-created user. Neither expands the plan/apply identities with
-`Domain.ReadWrite.All` or `User.ReadWrite.All`.
+boundary. The domain unit attests that `stuhlmuller.net` is verified,
+federated, non-default, and non-initial. It reads Graph without a write action
+and forgets the completed verification action in its existing backend state
+using `destroy = false`. The first reviewed plan should contain only that
+state-only removal, the status read, and output changes. It should contain no
+Graph mutations.
 
-The module default starts with verification disabled, but this catalog already
-sets `verify_domain = true` after its reviewed DNS change. Its saved plan must
-still prove the exact one-time `verify` action, and the applied output must
-prove the domain is verified, managed, non-default, and non-initial. It does
-not configure Microsoft mail, federation or Google Workspace. Existing
-`stuhlmuller.net` users are not created, converted, assigned, or forced to use
-Entra. See the
-[domain module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-domain-verification/README.md) for the
-saved-plan sequence.
+A new managed domain still uses the separate `entra-domain-verification`
+catalog module. In that bootstrap path, publish and verify the DNS TXT record
+before enabling its one-time, bodyless verification POST. Bootstrap retains
+the Managed-only guard and does not configure federation or mail.
+
+The pilot unit retains only the separate cloud-only
+`rodman.mac@stuhlmuller.net` pilot. The existing owner identity is not a
+Terraform-created user. Neither unit expands the CI identities with
+`Domain.ReadWrite.All` or `User.ReadWrite.All`.
 
 ## Google Workspace federation
 

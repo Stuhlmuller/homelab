@@ -845,16 +845,15 @@ readback does not prove the browser SAML callback or recovery login.
 The separate `rodman.mac@stuhlmuller.net` pilot remains without a role, group,
 license, mailbox or Fleet console assignment and is not a Platform SSO route.
 
-The separate `operator/entra-stuhlmuller-domain` unit reads the existing
-`stuhlmuller.net` Entra domain as a non-default managed domain. It reads the
-Microsoft Graph TXT verification record, does not configure email, federation,
-or Google Workspace, and keeps verification disabled until the DNS owner has
-applied that record through its own reviewed declarative path. Once both
-authoritative servers return it, the reviewed phase-two catalog change enables
-the sole Graph verification action. That action intentionally uses the
-standard bodyless Graph request, retaining the service default of no domain
-takeover; its private saved plan must confirm the domain remains managed and
-non-default. The companion
+The separate `operator/entra-stuhlmuller-domain` unit now attests that
+`stuhlmuller.net` is verified, federated, non-default, and non-initial. The
+steady-state module forgets the completed verification action in the existing
+backend with `destroy = false`. It reads Graph and cannot replay the action.
+For a new managed domain, the separate bootstrap module reads the TXT record
+and enables its bodyless verification POST only after the DNS record is in
+place. This retains the Managed-only guard and the no-takeover default.
+
+The companion
 `operator/entra-stuhlmuller-pilot-user` unit could then create only
 `rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
 non-default state, so it cannot plan against the current federation. The

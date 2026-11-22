@@ -143,7 +143,14 @@ if rg -q '^[[:space:]]*(body[[:space:]]*=|forceTakeover[[:space:]]*=)' <<<"$veri
   exit 1
 fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf
-rg -Fq 'verify_domain = true' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+domain_attestation=IaC/terragrunt-catalog/modules/entra-domain-attestation
+rg -Fq '/entra-domain-attestation"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'from = msgraph_resource_action.verify' "$domain_attestation/main.tf"
+rg -Fq 'destroy = false' "$domain_attestation/main.tf"
+if rg -q '^[[:space:]]*(resource|module|import)[[:space:]]' "$domain_attestation" -g '*.tf'; then
+  echo "The federated Entra domain attestation must remain read-only." >&2
+  exit 1
+fi
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
 rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
 rg -Fq 'homelab-emergency-admin' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
@@ -205,6 +212,10 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
     terragrunt --log-disable run --no-auto-init -- validate -no-color
   )
 done
+(
+  cd IaC/homelab/us-west-2/operator/entra-stuhlmuller-domain
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
 python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
 python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
