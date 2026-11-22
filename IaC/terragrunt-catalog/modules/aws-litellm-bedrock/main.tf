@@ -11,20 +11,38 @@ terraform {
 
 provider "aws" {
   region              = local.region
+  sts_region          = "us-east-1"
   allowed_account_ids = [local.account_id]
 }
 
 locals {
   account_id = "716182248480"
   region     = "us-west-2"
+  sol_model  = "openai.gpt-6.2-sol"
   models = toset([
     "amazon.nova-lite-v1:0",
     "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    local.sol_model,
   ])
   destinations = ["us-east-1", "us-east-2", local.region]
   profiles     = { for model in local.models : model => "arn:aws:bedrock:${local.region}:${local.account_id}:inference-profile/us.${model}" }
   invoke       = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
   tags         = { Project = "homelab", Purpose = "litellm-bedrock" }
+}
+
+data "aws_bedrock_foundation_model_agreement_offers" "sol" {
+  model_id   = local.sol_model
+  offer_type = "PUBLIC"
+}
+
+resource "aws_bedrock_foundation_model_agreement" "sol" {
+  model_id    = local.sol_model
+  offer_token = sensitive(one(data.aws_bedrock_foundation_model_agreement_offers.sol.offers).offer_token)
+
+  lifecycle {
+    ignore_changes  = [offer_token]
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_user" "gateway" {
@@ -53,6 +71,11 @@ resource "aws_iam_user_policy" "gateway" {
         Condition = {
           StringEquals = { "bedrock:InferenceProfileArn" = profile }
         }
+      }],
+      [{
+        Effect   = "Allow"
+        Action   = local.invoke
+        Resource = ["arn:aws:bedrock:${local.region}::foundation-model/deepseek.v3.2"]
       }]
     )
   })

@@ -21,9 +21,9 @@ verified:
 Langfuse is the operator UI for prompts, outputs, errors and token usage.
 LiteLLM is the in-cluster inference gateway. It authenticates named callers
 with dedicated keys scoped to `openrouter/free` and emits trusted application
-attribution to Langfuse. Gateway administrators can also use the US Bedrock
-profiles behind `bedrock/claude-sonnet-4-5` and `bedrock/nova-lite`. LiteLLM
-signs those requests with a mounted AWS credentials profile. Its OpenRouter
+attribution to Langfuse. Gateway administrators can also use the Bedrock
+chat routes below. LiteLLM signs those requests with a mounted AWS
+credentials profile. Its OpenRouter
 credential originates from the legacy `/homelab/litellm/openai-api-key`.
 
 The gateway rejects request-supplied callback, tracing and credential overrides
@@ -32,13 +32,16 @@ by callers. See the [gateway contract](https://github.com/Stuhlmuller/homelab/bl
 
 ## Bedrock chat
 
-| LiteLLM model | Amazon Bedrock US inference profile |
+| LiteLLM model | Amazon Bedrock model or US inference profile |
 | --- | --- |
 | `bedrock/claude-sonnet-4-5` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | `bedrock/nova-lite` | `us.amazon.nova-lite-v1:0` |
+| `bedrock/gpt-6.2-sol` | `us.openai.gpt-6.2-sol` |
+| `bedrock/deepseek-v3.2` | `deepseek.v3.2` |
 
-Use `/v1/chat/completions` with an authenticated gateway administrator. Both
-paid routes use Converse in `us-west-2` with processing within the US.
+Use `/v1/chat/completions` with an authenticated gateway administrator.
+All routes use Converse through `us-west-2`. US inference profiles process
+requests within the US. DeepSeek V3.2 runs directly in Oregon.
 The gateway enforces the administrator requirement even if a virtual key
 has a broad model allowlist.
 

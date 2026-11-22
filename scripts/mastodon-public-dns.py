@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish only Mastodon's reviewed Cloudflare Tunnel DNS record from CI."""
+"""Publish a reviewed Cloudflare Tunnel DNS record from CI."""
 import importlib.util
 import json
 import os
@@ -11,9 +11,7 @@ import urllib.request
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-HOST = 'mastodon.stinkyboi.com'
 ZONE = 'stinkyboi.com'
-OWNER = 'homelab-mastodon-public'
 TOKEN_PARAMETER = '/homelab/cert-manager/cloudflare-api-token'
 TUNNEL_PARAMETER = '/homelab/octelium/cloudflare-tunnel-id'
 spec = importlib.util.spec_from_file_location('credential', ROOT / 'scripts/mastodon-smtp-credential.py')
@@ -50,11 +48,12 @@ def parameter(name):
     return value
 
 
-def ready():
+def ready(site):
     sha = os.environ['GITHUB_SHA']
+    apps = [site, 'octelium-public']
     data = json.loads(credential.command(['kubectl', '-n', 'argocd', 'get', 'applications',
-                                         'mastodon', 'octelium-public', '-o', 'json']))
-    if len(data.get('items', [])) != 2 or {item['metadata']['name'] for item in data['items']} != {'mastodon', 'octelium-public'}:
+                                         *apps, '-o', 'json']))
+    if len(data.get('items', [])) != len(apps) or {item['metadata']['name'] for item in data['items']} != set(apps):
         raise RuntimeError('Applications missing')
     for item in data['items']:
         status = item.get('status', {})
@@ -65,7 +64,9 @@ def ready():
             raise RuntimeError('Reviewed rollout not ready')
 
 
-def reconcile(token, tunnel):
+def reconcile(token, tunnel, site):
+    host = f'{site}.{ZONE}'
+    owner = f'homelab-{site}-public'
     tunnel = str(uuid.UUID(tunnel))
     zones = api(token, 'GET', '/zones?name=' + ZONE)['result']
     if len(zones) != 1 or zones[0].get('name') != ZONE or zones[0].get('status') != 'active':
@@ -74,20 +75,20 @@ def reconcile(token, tunnel):
     if not re.fullmatch('[a-f0-9]{32}', zone):
         raise RuntimeError('Invalid zone identity')
     path = '/zones/' + zone + '/dns_records'
-    data = api(token, 'GET', path + '?name=' + urllib.parse.quote(HOST) + '&per_page=100')
+    data = api(token, 'GET', path + '?name=' + urllib.parse.quote(host) + '&per_page=100')
     records = data['result']
     count = data.get('result_info', {}).get('total_count')
     if not isinstance(records, list) or type(count) is not int or count != len(records) or len(records) > 1:
         raise RuntimeError('Incomplete or conflicting DNS records')
-    desired = {'type': 'CNAME', 'name': HOST, 'content': tunnel + '.cfargotunnel.com',
-               'proxied': True, 'ttl': 1, 'comment': OWNER}
+    desired = {'type': 'CNAME', 'name': host, 'content': tunnel + '.cfargotunnel.com',
+               'proxied': True, 'ttl': 1, 'comment': owner}
     if records:
         record = records[0]
-        if record.get('name') != HOST or record.get('type') != 'CNAME':
+        if record.get('name') != host or record.get('type') != 'CNAME':
             raise RuntimeError('Conflicting record type')
         if all(record.get(key) == value for key, value in desired.items()):
             return
-        if record.get('comment') != OWNER or not re.fullmatch('[a-f0-9]{32}', record.get('id', '')):
+        if record.get('comment') != owner or not re.fullmatch('[a-f0-9]{32}', record.get('id', '')):
             raise RuntimeError('Refusing foreign record replacement')
         path += '/' + record['id']
         method = 'PUT'
@@ -99,19 +100,20 @@ def reconcile(token, tunnel):
         raise RuntimeError('Uncertain DNS write')
 
 
-def main():
+def main(args):
     try:
-        if len(sys.argv) != 1:
-            raise RuntimeError('No inputs supported')
+        if args not in ([], ['mastodon'], ['openwiki']):
+            raise RuntimeError('Unsupported DNS site')
+        site = args[0] if args else 'mastodon'
         credential.validate_context()
-        ready()
-        reconcile(parameter(TOKEN_PARAMETER), parameter(TUNNEL_PARAMETER))
-        print('Mastodon public DNS reconciled; verify browser access and federation before acceptance.')
+        ready(site)
+        reconcile(parameter(TOKEN_PARAMETER), parameter(TUNNEL_PARAMETER), site)
+        print(f'{site}.{ZONE} DNS reconciled. Verify the public endpoint before acceptance.')
         return 0
     except Exception:
-        print('Mastodon DNS publication failed; private details withheld.', file=sys.stderr)
+        print('Tunnel DNS publication failed; private details withheld.', file=sys.stderr)
         return 1
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
