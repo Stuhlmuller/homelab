@@ -682,7 +682,8 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `.github/workflows/litellm-provider-credential.yml`: a temporary production
   GitHub secret, scoped AWS OIDC write, then a separate GitOps `OnChange`
   revision bump. See the [SSM runbook](../../docs/secrets-aws-ssm.md#ai-gateway-contract).
-- LiteLLM's Bedrock IAM identity can invoke only the two declared US profiles.
+- LiteLLM's Bedrock IAM identity can invoke only the declared US profiles
+  and Oregon's DeepSeek V3.2 foundation model.
   The operator Terragrunt unit writes its AWS credentials to
   `/homelab/litellm/bedrock-credentials`. External Secrets projects the profile
   into a read-only file mounted only by LiteLLM.
