@@ -23,7 +23,7 @@ The products are **Octelium** and **Cordium**. The repository's console is
 Repository pins are Octelium Core **0.35.0**
 (`scripts/octelium-cluster-bootstrap.sh`), Enterprise **0.22.0**
 (`scripts/octelium-enterprise-package.sh`), and Cordium **0.12.7**
-(`clusters/homelab/apps/cordium/README.md`). Upstream Cordium's latest release
+([archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/cordium/README.md)). Upstream Cordium's latest release
 was **0.14.0**, published August 29. Current `/latest/` documentation is a
 capability reference, not proof every field works on the deployed versions.
 [Official Cordium release](https://github.com/octelium/cordium/releases/tag/v0.14.0).
@@ -129,7 +129,7 @@ pods and a login page alone prove neither ingestion nor query results.
   outer containers on `zimaboard-1`, with disposable local workspace storage;
   rootless inner containers do not erase that host trust boundary. Do not run
   arbitrary fork-PR code with privileged homelab credentials. Source:
-  `clusters/homelab/apps/cordium/README.md` and
+  [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/cordium/README.md) and
   [Storage And State](../architecture/storage-and-state.md).
 
 Validation: read-only source and documentation review; pinned CLI source
