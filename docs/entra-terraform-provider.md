@@ -66,13 +66,20 @@ saved-plan sequence.
 
 ## Google Workspace federation
 
-`IaC/homelab/us-west-2/operator/entra-google-workspace-federation` is a separate, human-operated
-Terraform unit. It creates the Graph `internalDomainFederation` only after the
-Google Workspace Microsoft Office 365 SAML app has supplied validated metadata
-through the operator-only SSM contract. Google Workspace auto-provisioning must
-create matching Entra users for every enabled Google address; federation
-authenticates those users but does not create them. The CI identities retain no
-domain-write permission.
+The [operator unit](../IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl)
+reads the verified Federated domain and compares its sole SAML configuration
+with the protected Google Workspace metadata from SSM. It checks issuer,
+sign-in and sign-out endpoints, signing certificate, SAML protocol, and the
+reviewed MFA behavior. Review plans privately because they contain metadata.
+If an older state contains the former managed resource, the plan can forget
+that address without deleting the Graph object. Missing state does not
+enable Graph writes.
+
+The separate [bootstrap module](../IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf)
+still requires a verified Managed domain for a reviewed first configuration.
+Google Workspace auto-provisioning must create matching Entra users for every
+enabled Google address. Federation authenticates the users. The CI identities
+retain no domain-write permission.
 
 The plan identity's claims-assignment refresh is a live acceptance gate:
 Microsoft's documented least permissions for that read include

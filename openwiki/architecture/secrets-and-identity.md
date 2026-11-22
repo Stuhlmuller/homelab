@@ -875,12 +875,14 @@ target-domain change; preparation, recovery administrator and attestation
 remain required. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
-`operator/entra-google-workspace-federation` owns the Entra Graph federation
-configuration for `stuhlmuller.net`. Its Google SAML metadata is an
-operator-only SSM SecureString and never appears in Git. Google Workspace
-auto-provisioning creates the matching Entra users; the Entra federation only
-authenticates those users. CI provider identities do not receive domain-write
-permissions, so the unit remains an independently reviewed operator apply.
+The [Google Workspace federation operator unit](../../IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl)
+uses read-only Graph data to verify the sole SAML configuration for the already
+federated `stuhlmuller.net` domain. It compares Graph metadata with the
+operator-only SSM SecureString and keeps plan evidence private. Its former
+managed state address can be forgotten without deleting the Graph object.
+The separate bootstrap module still requires a verified Managed domain.
+Google Workspace auto-provisioning creates the matching Entra users. The
+federation authenticates them. CI identities retain no domain-write access.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-and-historical-alias-release-evidence)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
