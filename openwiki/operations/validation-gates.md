@@ -945,7 +945,7 @@ receipt records the failed phase or route-check result, including any overlappin
 prefix. A successful result requires the checksum-verified receipt.
 
 After Cilium coexistence is Synced and Healthy, use Platform Maintenance
-`stage=cilium-worker-evacuate` on current `main` to evacuate `zimaboard-2`.
+`stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
 Verify healthy Cilium, Envoy, Flannel, and Multus rollouts and confirm AdGuard
 and Harbor core are Ready on surviving nodes. The stage runs a server-side
 drain dry run, rechecks Harbor before eviction, and verifies that Harbor core
