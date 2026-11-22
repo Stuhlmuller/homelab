@@ -21,8 +21,12 @@ LiteLLM. The plan and state can contain the AWS credential.
 Run the protected [Terragrunt Apply](../.github/workflows/terragrunt-apply.yml)
 with `argocd_app=litellm` and the exact current `expected_sha`. This applies
 the shared SSM reader grants before the Application registration. Check
-`ai/litellm-bedrock` ExternalSecret readiness, then verify both chat routes
+`ai/litellm-bedrock` ExternalSecret readiness, then verify the changed chat routes
 using the [gateway contract](../openwiki/architecture/ai-observability.md#bedrock-chat).
+The operator unit also manages the public account model agreement for GPT‑6.2
+Sol. The gateway identity has inference permissions scoped to the declared
+models. To roll back a route, retain the account agreement and remove just
+the route and its inference permissions.
 
 ## Entra CI provider identities
 
