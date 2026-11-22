@@ -313,6 +313,9 @@
       "source": "docker.io/palantirtechnologies/policy-bot:1.41.2@sha256:a35545fe6ac75e2429352e6f8d4baa92ce16d4e524b10a3711031c2ff79841a5"
     },
     {
+      "source": "docker.io/palantirtechnologies/policy-bot:1.42.1@sha256:1d9a1be9ffc3b7c807dc694f2de9bd057b662d5f07787c5b22e0c5624184fc63"
+    },
+    {
       "source": "docker.io/pgvector/pgvector:0.8.1-pg16-bookworm@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337"
     },
     {
