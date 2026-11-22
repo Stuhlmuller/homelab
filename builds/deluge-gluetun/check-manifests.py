@@ -1,10 +1,9 @@
 """Render and check the staged Gluetun handoff and rollback resources."""
 
+import json
 import re
 import subprocess
 from pathlib import Path
-
-import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,7 +16,11 @@ PUBLISHED_IMAGE = re.compile(re.escape(HELPER_IMAGE) + r":homelab-[a-f0-9]{40}@s
 
 def render(*command):
     output = subprocess.check_output(command, text=True)
-    return {(obj["kind"], obj["metadata"]["name"]): obj for obj in yaml.safe_load_all(output) if obj}
+    json_output = subprocess.check_output(
+        ["yq", "eval", "-o=json", "-I=0", ".", "-"], input=output, text=True,
+    )
+    documents = [json.loads(line) for line in json_output.splitlines() if line]
+    return {(obj["kind"], obj["metadata"]["name"]): obj for obj in documents if obj}
 
 
 def helm(version, *overrides):
