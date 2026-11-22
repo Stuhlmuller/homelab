@@ -66,6 +66,12 @@ spec:
               app: octelium
               octelium.com/component: ingress-dataplane
               octelium.com/component-type: cluster
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openwiki
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: openwiki
       ports:
         - protocol: TCP
           port: 8080
