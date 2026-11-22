@@ -281,7 +281,7 @@ configuration.
 The operator `litellm-bedrock` Terragrunt unit generates
 `/homelab/litellm/bedrock-credentials` as a SecureString. External Secrets
 projects it to `ai/litellm-bedrock`. Only LiteLLM mounts the file, and its AWS
-identity can invoke the two declared US Bedrock profiles.
+identity can invoke the declared US Bedrock profiles and Oregon's DeepSeek V3.2.
 
 LiteLLM's database-key migration adds generated
 `/homelab/litellm/postgres-{admin,app}-password` parameters.
