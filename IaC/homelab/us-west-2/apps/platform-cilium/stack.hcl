@@ -30,7 +30,7 @@ inputs = {
     ]
     syncPolicy = {
       automated = {
-        enabled = true
+        enabled = false
         prune   = false
       }
       syncOptions = ["CreateNamespace=false", "ServerSideApply=true"]
@@ -38,7 +38,7 @@ inputs = {
     info = [
       {
         name  = "activation"
-        value = "coexistence overlay; node migration is a separate stage"
+        value = "automatic sync disabled for staged coexistence rollout"
       }
     ]
   }

@@ -404,10 +404,10 @@
     },
     {
       "id": "platform-cilium",
-      "lifecycle": "active",
+      "lifecycle": "staged",
       "source": "IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl",
-      "reason": "Automated coexistence overlay with monitored agent, Envoy and operator readiness.",
-      "monitorIds": ["platform-cilium-workloads"]
+      "reason": "Automatic sync is disabled while the initial Cilium overlay awaits qualified activation.",
+      "monitorIds": []
     },
     {
       "id": "platform-istio-egress",
@@ -2286,154 +2286,6 @@
     ],
     "workloads": [
       {"kind":"deployment","namespace":"kube-system","name":"image-rewrite"}
-    ]
-  },
-  {
-    "key": "platform-cilium-workloads",
-    "name": "Cilium overlay workload health",
-    "ownerAppIds": [
-      "platform-cilium"
-    ],
-    "kind": "json-query",
-    "target": {
-      "url": "http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query",
-      "method": "POST",
-      "body": "query=vector%28%28scalar%28count%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_spec_replicas%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_replicas_available%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_metadata_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_observed_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%2A+%28scalar%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%2A+%28scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_daemonset_status_number_ready%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%2A+%28scalar%28kube_daemonset_status_updated_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_daemonset_status_desired_number_scheduled%7Bdaemonset%3D%22cilium-envoy%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%2A+%28scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_deployment_status_replicas_available%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29+%2A+%28scalar%28kube_deployment_status_observed_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_metadata_generation%7Bdeployment%3D%22cilium-operator%22%2Cnamespace%3D%22kube-system%22%7D%29%29%29",
-      "headers": {
-        "Content-Type": "application/x-www-form-urlencoded"
-      }
-    },
-    "expected": {
-      "statusCodes": [
-        200
-      ],
-      "jsonPath": "(status = \"success\" and $count(data.result) = 1 and data.result[0].value[1] = \"1\") ? \"1\" : \"0\"",
-      "value": "1"
-    },
-    "intervalSeconds": 60,
-    "timeoutSeconds": 10,
-    "retries": 1,
-    "enabled": true,
-    "meaning": "Every listed active workload has fresh, unique desired and available/ready signals; desired replicas must be positive.",
-    "limitations": "Kubernetes rollout and readiness only. Pod routing, endpoint coverage and egress enforcement require functional verification.",
-    "sourceSignals": [
-      {
-        "metric": "kube_daemonset_status_desired_number_scheduled",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_daemonset_status_number_ready",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_daemonset_status_updated_number_scheduled",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_daemonset_status_desired_number_scheduled",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium-envoy"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_daemonset_status_number_ready",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium-envoy"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_daemonset_status_updated_number_scheduled",
-        "labels": {
-          "namespace": "kube-system",
-          "daemonset": "cilium-envoy"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_deployment_spec_replicas",
-        "labels": {
-          "namespace": "kube-system",
-          "deployment": "cilium-operator"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_deployment_status_replicas_available",
-        "labels": {
-          "namespace": "kube-system",
-          "deployment": "cilium-operator"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_deployment_metadata_generation",
-        "labels": {
-          "namespace": "kube-system",
-          "deployment": "cilium-operator"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      },
-      {
-        "metric": "kube_deployment_status_observed_generation",
-        "labels": {
-          "namespace": "kube-system",
-          "deployment": "cilium-operator"
-        },
-        "periodSeconds": 30,
-        "maxAgeSeconds": 60,
-        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
-      }
-    ],
-    "workloads": [
-      {
-        "kind": "daemonset",
-        "namespace": "kube-system",
-        "name": "cilium"
-      },
-      {
-        "kind": "daemonset",
-        "namespace": "kube-system",
-        "name": "cilium-envoy"
-      },
-      {
-        "kind": "deployment",
-        "namespace": "kube-system",
-        "name": "cilium-operator"
-      }
     ]
   },
   {
