@@ -1,7 +1,7 @@
 name: Octelium Resource Store Backup
 run-name: Octelium rscstore ${{ inputs.stage }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: the protected workflow uses a fixed stage, exact main, and reviewed storage UIDs.
+# checkov:skip=CKV_GHA_7: the protected workflow uses a fixed stage, exact main, and a verified preflight run.
 on:
   workflow_dispatch:
     inputs:
@@ -14,14 +14,6 @@ on:
         required: true
         type: choice
         options: [preflight, backup]
-      pvc_uid:
-        description: Private observation of the current resource-store PVC UID
-        required: true
-        type: string
-      pv_uid:
-        description: Private observation of the current bound PV UID
-        required: true
-        type: string
       preflight_run_id:
         description: Successful protected preflight run, required for backup
         required: false
@@ -85,10 +77,10 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '5b747ad515675450ecdb2f39025843be9c93a84b7590cdd2e6833755bf6ba3e6' scripts/ci/octelium-rscstore-backup.sh \
-            '019393bde636a1a092be18984783401d63999fd75f70387e29eedd566d9b43a6' scripts/octelium-rscstore-capture.py \
+            '7cdb7c8efd5324a8136150ee7c56439bcd86cda99b8044c0d39c4d66dfef8ec6' scripts/ci/octelium-rscstore-backup.sh \
+            'cb052cdba346319057e38612abbc0a7ade2de18fa83fea5af38eb61ed65e4f4c' scripts/octelium-rscstore-capture.py \
             'bef7063dfb90bef89f17f8fe26fc82e1c79a54b03115667ab5c427f2922d3924' scripts/application-backup.py \
-            'eef7d67605ddfa76cfe27027089562fc243f2dfaf9e8f3eeea573ebc3641b1b5' scripts/ci/octelium-rscstore-backup-receipt.py \
+            'e0ce092527c9fa165c36c744f55a6e31eb35610591ec7dd74bc752c9935e366f' scripts/ci/octelium-rscstore-backup-receipt.py \
             | sha256sum --check --status
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1

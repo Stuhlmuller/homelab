@@ -549,14 +549,15 @@ The [Octelium Resource Store Backup workflow](../../.github/workflows/octelium-r
 uses a clean exact-`main` checkout. Its dedicated environment supplies
 `OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN` and scoped Kubernetes, native Talos relay,
 and Talos mTLS credentials. `preflight` runs while the writer and read-only
-inspector are active. It checks the current storage UIDs, live transport,
-available private runner disk, and encrypted S3 version readback. Preserve a
-working rollback route while validating the relay that will be used during the
-fence. Match the retained preflight receipt against the current storage UIDs
-before merging the fence. After the fence reconciles to exact `main`, `backup`
-checks the successful preflight run, unchanged backup code, and the source SHA,
-run ID, storage UIDs and four-hour age limit in its exact S3 receipt version
-before opening cluster transport. It stores the
+inspector are active. It discovers and verifies the bound storage UIDs inside
+the protected job, then retains them in its versioned private S3 receipt. It
+also checks live transport, private runner disk, and encrypted readback.
+Preserve a working rollback route and verify successful preflight with current
+storage before merging the fence. After the fence reconciles to exact `main`,
+dispatch `backup` with the successful preflight run ID. It checks unchanged
+backup code and the receipt's source SHA, run ID, and four-hour age limit.
+The backup then verifies live PVC and PV UIDs against the receipt before
+reading the volume. It stores the
 verified archive and fresh extraction proof in S3. GitHub logs report the
 source revision and result. Archive contents, storage UIDs, and object versions
 remain in private receipts.

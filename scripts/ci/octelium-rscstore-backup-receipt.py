@@ -20,14 +20,27 @@ MAX_RECEIPT_BYTES = 16 * 1024
 
 
 def binding(run_id, stage, source_sha):
-    if not re.fullmatch(r"[1-9][0-9]*", run_id):
-        raise ValueError("invalid workflow run ID")
-    pvc_uid, pv_uid = os.environ["EXPECTED_PVC_UID"], os.environ["EXPECTED_PV_UID"]
-    if (not re.fullmatch(r"[0-9a-f]{40}", source_sha)
-            or not all(backup.RSC.UID.fullmatch(uid) for uid in (pvc_uid, pv_uid))):
-        raise ValueError("invalid backup source or storage identity")
+    if not re.fullmatch(r"[1-9][0-9]*", run_id) or not re.fullmatch(r"[0-9a-f]{40}", source_sha):
+        raise ValueError("invalid workflow run ID or backup source")
     return {"format": 1, "stage": stage, "source_sha": source_sha,
-            "workflow_run_id": run_id, "pvc_uid": pvc_uid, "pv_uid": pv_uid}
+            "workflow_run_id": run_id}
+
+
+def storage_binding(data):
+    identities = {name: data.get(name) for name in ("pvc_uid", "pv_uid")}
+    if not all(isinstance(uid, str) and backup.RSC.UID.fullmatch(uid) for uid in identities.values()):
+        raise ValueError("invalid storage identity")
+    return identities
+
+
+def read_private_json(path):
+    backup.OFFSITE.private_file(path)
+    if path.stat().st_size > MAX_RECEIPT_BYTES:
+        raise ValueError("oversized private receipt")
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict):
+        raise ValueError("invalid private receipt")
+    return value
 
 
 def verify_preflight(aws, workspace, run_id, source_sha):
@@ -48,8 +61,9 @@ def verify_preflight(aws, workspace, run_id, source_sha):
     digest = backup.OFFSITE.digest(payload)
     backup.OFFSITE.object_metadata(metadata, digest, version)
     backup.OFFSITE.object_metadata(returned, digest, version)
-    receipt = json.loads(payload.read_text())
+    receipt = read_private_json(payload)
     created = receipt.pop("retained_at", None)
+    expected.update(storage_binding(receipt))
     if (receipt != expected or type(created) is not int
             or not 0 <= time.time() - created <= MAX_PREFLIGHT_AGE):
         raise ValueError("preflight source, storage identities or freshness differ")
@@ -63,16 +77,15 @@ def retain(aws, workspace, run_id, stage):
     receipt["retained_at"] = int(time.time())
     payload = workspace / "workflow-receipt.json"
     if stage == "backup":
-        proof = workspace / "proof/proof.json"
-        backup.OFFSITE.private_file(proof)
-        if proof.stat().st_size > MAX_RECEIPT_BYTES:
-            raise ValueError("oversized proof")
-        data = json.loads(proof.read_text())
+        receipt.update(storage_binding(read_private_json(workspace / "authorized-preflight.json")))
+        data = read_private_json(workspace / "proof/proof.json")
         if (data.get("proof") != "isolated-file-extraction-only"
                 or not backup.ID.fullmatch(data.get("capture_id", ""))):
             raise ValueError("unverified extraction receipt")
         receipt["extraction"] = data
-    elif stage != "preflight":
+    elif stage == "preflight":
+        receipt.update(storage_binding(read_private_json(workspace / "cluster-result")))
+    else:
         raise ValueError("unsupported receipt stage")
     backup.write(payload, backup.canonical(receipt))
     digest = backup.OFFSITE.digest(payload)

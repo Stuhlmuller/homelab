@@ -497,6 +497,8 @@ def cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, *, action
     pv_name = pvc["spec"].get("volumeName")
     require(pv_name, "source PVC is not bound")
     pv = json_output("kubectl", "--context", context, "get", "pv", pv_name, "-o", "json")
+    if actions and not fenced and pvc_uid is None and pv_uid is None:
+        pvc_uid, pv_uid = pvc["metadata"]["uid"], pv["metadata"]["uid"]
     if actions:
         policy = json_output(*prefix, "get", "networkpolicy", INSPECTOR_POLICY, "-o", "json")
         spec = policy["spec"]
@@ -692,17 +694,19 @@ def require_capture_space(workspace, archive_size):
             "off-NAS workspace lacks space for capture, publication and proof")
 
 
-def preflight_actions(workspace, expected_sha, talosconfig, pvc_uid, pv_uid):
+def preflight_actions(workspace, expected_sha, talosconfig):
     workspace = private_parent(workspace)
     release_guard(expected_sha, ACTIONS_CONTEXT, actions=True, fenced=False)
-    source = cluster_guard(ACTIONS_CONTEXT, talosconfig, pvc_uid, pv_uid, expected_sha,
+    source = cluster_guard(ACTIONS_CONTEXT, talosconfig, None, None, expected_sha,
                            actions=True, fenced=False)
+    pvc_uid, pv_uid = source["pvc_uid"], source["pv_uid"]
     archive = tar_stream(ACTIONS_CONTEXT, INSPECTOR)
     require_capture_space(workspace, archive["bytes"])
     require(cluster_guard(ACTIONS_CONTEXT, talosconfig, pvc_uid, pv_uid, expected_sha,
                           actions=True, fenced=False) == source,
             "cluster identity changed during the inspector read")
     release_guard(expected_sha, ACTIONS_CONTEXT, actions=True, fenced=False)
+    return {"pvc_uid": pvc_uid, "pv_uid": pv_uid}
 
 
 def capture(workspace, expected_sha, context, talosconfig, pvc_uid, pv_uid, *, actions=False):
@@ -849,8 +853,9 @@ def main():
         capture_command.add_argument("--workspace", type=Path, required=True)
         capture_command.add_argument("--expected-sha", required=True)
         capture_command.add_argument("--talosconfig", type=Path, required=True)
-        capture_command.add_argument("--expected-pvc-uid", required=True)
-        capture_command.add_argument("--expected-pv-uid", required=True)
+        if command != "preflight-actions":
+            capture_command.add_argument("--expected-pvc-uid", required=True)
+            capture_command.add_argument("--expected-pv-uid", required=True)
         if command == "capture":
             capture_command.add_argument("--context", required=True)
     proof_command = commands.add_parser("prove-retrieval")
@@ -870,9 +875,7 @@ def main():
             print(capture(args.workspace, args.expected_sha, ACTIONS_CONTEXT, args.talosconfig,
                           args.expected_pvc_uid, args.expected_pv_uid, actions=True))
         elif args.command == "preflight-actions":
-            preflight_actions(args.workspace, args.expected_sha, args.talosconfig,
-                              args.expected_pvc_uid, args.expected_pv_uid)
-            print("Octelium resource-store backup preflight passed.")
+            print(json.dumps(preflight_actions(args.workspace, args.expected_sha, args.talosconfig)))
         else:
             prove_retrieval(args.workspace, args.id, args.proof, args.aws_cli, args.profile)
             print("Versioned archive extraction proof complete; DuckDB reopen remains unverified.")

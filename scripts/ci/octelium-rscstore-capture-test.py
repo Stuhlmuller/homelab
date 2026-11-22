@@ -209,15 +209,18 @@ class RscstoreCaptureTest(unittest.TestCase):
         workspace = Path("/unused/private-scratch")
         talosconfig = Path("/unused/talosconfig")
         size = 1024**2
+        identities = {"pvc_uid": PVC_UID, "pv_uid": PV_UID}
         with mock.patch.object(CAPTURE, "private_parent", return_value=workspace), \
                 mock.patch.object(CAPTURE, "release_guard") as release, \
-                mock.patch.object(CAPTURE, "cluster_guard", return_value={"writer_uid": WRITER_UID}) as cluster, \
+                mock.patch.object(CAPTURE, "cluster_guard", return_value={**identities, "writer_uid": WRITER_UID}) as cluster, \
                 mock.patch.object(CAPTURE, "tar_stream", return_value={"bytes": size}) as archive, \
                 mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=100 * size)):
-            CAPTURE.preflight_actions(workspace, SHA, talosconfig, PVC_UID, PV_UID)
+            self.assertEqual(CAPTURE.preflight_actions(workspace, SHA, talosconfig), identities)
         archive.assert_called_once_with(CAPTURE.ACTIONS_CONTEXT, CAPTURE.INSPECTOR)
-        self.assertEqual(cluster.call_args_list, [mock.call(
-            CAPTURE.ACTIONS_CONTEXT, talosconfig, PVC_UID, PV_UID, SHA, actions=True, fenced=False)] * 2)
+        self.assertEqual(cluster.call_args_list, [
+            mock.call(CAPTURE.ACTIONS_CONTEXT, talosconfig, None, None, SHA, actions=True, fenced=False),
+            mock.call(CAPTURE.ACTIONS_CONTEXT, talosconfig, PVC_UID, PV_UID, SHA, actions=True, fenced=False),
+        ])
         self.assertEqual(release.call_args_list, [mock.call(
             SHA, CAPTURE.ACTIONS_CONTEXT, actions=True, fenced=False)] * 2)
         with mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=69 * size)), \

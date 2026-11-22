@@ -27,9 +27,6 @@ if [[ "$phase" == init ]]; then
   exit 0
 fi
 [[ -d "$workspace" && ! -L "$workspace" && "$(stat -c %a "$workspace")" == 700 ]]
-EXPECTED_PVC_UID="$(jq -er '.inputs.pvc_uid' "$GITHUB_EVENT_PATH")"
-EXPECTED_PV_UID="$(jq -er '.inputs.pv_uid' "$GITHUB_EVENT_PATH")"
-export EXPECTED_PVC_UID EXPECTED_PV_UID
 
 if [[ "$phase" == authorize || "$phase" == publish ]]; then
   aws_cli="$(command -v aws)"
@@ -72,10 +69,9 @@ if [[ "$phase" == authorize ]]; then
 fi
 
 if [[ "$BACKUP_STAGE" == backup ]]; then
-  [[ "${PREFLIGHT_RUN_ID:-}" =~ ^[1-9][0-9]*$ && ! -L "$workspace/authorized-preflight.json" ]]
-  jq -e --arg run "$PREFLIGHT_RUN_ID" --arg pvc "$EXPECTED_PVC_UID" --arg pv "$EXPECTED_PV_UID" '
-    .stage == "preflight" and .workflow_run_id == $run and .pvc_uid == $pvc and .pv_uid == $pv
-  ' "$workspace/authorized-preflight.json" >/dev/null
+  preflight="$workspace/authorized-preflight.json"
+  [[ "${PREFLIGHT_RUN_ID:-}" =~ ^[1-9][0-9]*$ && -f "$preflight" && ! -L "$preflight" ]]
+  jq -e --arg run "$PREFLIGHT_RUN_ID" '.stage == "preflight" and .workflow_run_id == $run' "$preflight" >/dev/null
 else
   [[ -z "${PREFLIGHT_RUN_ID:-}" ]]
 fi
@@ -121,11 +117,16 @@ else:
     raise SystemExit("Talos relay did not become ready")
 PY
   capture_mode=preflight-actions
-  if [[ "$BACKUP_STAGE" == backup ]]; then capture_mode=capture-actions; fi
+  storage_args=()
+  if [[ "$BACKUP_STAGE" == backup ]]; then
+    capture_mode=capture-actions
+    pvc_uid="$(jq -er '.pvc_uid | strings' "$preflight")"
+    pv_uid="$(jq -er '.pv_uid | strings' "$preflight")"
+    storage_args=(--expected-pvc-uid "$pvc_uid" --expected-pv-uid "$pv_uid")
+  fi
   python3 -I scripts/octelium-rscstore-capture.py "$capture_mode" \
     --workspace "$workspace" --expected-sha "$EXPECTED_SHA" \
-    --talosconfig "$workspace/talosconfig" --expected-pvc-uid "$EXPECTED_PVC_UID" \
-    --expected-pv-uid "$EXPECTED_PV_UID" >"$workspace/cluster-result"
+    --talosconfig "$workspace/talosconfig" "${storage_args[@]}" >"$workspace/cluster-result"
   exit 0
 fi
 

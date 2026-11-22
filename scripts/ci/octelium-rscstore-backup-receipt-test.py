@@ -27,15 +27,13 @@ class S3ReceiptTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.workspace = Path(self.temporary.name)
-        uids = {"EXPECTED_PVC_UID": "11111111-1111-1111-1111-111111111111",
-                "EXPECTED_PV_UID": "22222222-2222-2222-2222-222222222222"}
-        env = patch.dict(os.environ, uids)
-        env.start()
-        self.addCleanup(env.stop)
+        self.identities = {"pvc_uid": "11111111-1111-1111-1111-111111111111",
+                           "pv_uid": "22222222-2222-2222-2222-222222222222"}
         clock = patch.object(receipt.time, "time", return_value=NOW)
         clock.start()
         self.addCleanup(clock.stop)
         self.record = receipt.binding(RUN_ID, "preflight", SOURCE_SHA)
+        self.record.update(self.identities)
         self.record["retained_at"] = NOW
         self.calls = []
         self.version = "verified-version"
@@ -58,25 +56,36 @@ class S3ReceiptTests(unittest.TestCase):
         receipt.verify_preflight(self, self.workspace, RUN_ID, SOURCE_SHA)
         self.assertEqual([op for op, _ in self.calls], ["head-object", "get-object"])
         marker = self.workspace / "authorized-preflight.json"
-        self.assertEqual(json.loads(marker.read_text())["version_id"], self.version)
+        self.assertEqual(json.loads(marker.read_text()), {**self.record, "version_id": self.version})
         self.assertEqual(marker.stat().st_mode & 0o777, 0o600)
 
-    def test_rejects_different_source_storage_and_old_or_future_receipts(self):
+    def test_rejects_wrong_source_invalid_storage_and_old_or_future_receipts(self):
         for field, value in (
             ("source_sha", "b" * 40), ("workflow_run_id", "123455"),
-            ("pvc_uid", "33333333-3333-3333-3333-333333333333"),
-            ("pv_uid", "33333333-3333-3333-3333-333333333333"),
+            ("pvc_uid", "unverified"),
+            ("pv_uid", None),
             ("retained_at", NOW - receipt.MAX_PREFLIGHT_AGE - 1),
             ("retained_at", NOW + 1), ("stage", "backup"),
         ):
             with self.subTest(field=field, value=value):
                 previous = self.record[field]
                 self.record[field] = value
-                with self.assertRaisesRegex(ValueError, "preflight source"):
+                with self.assertRaisesRegex(ValueError, "preflight source|invalid storage identity"):
                     receipt.verify_preflight(self, self.workspace, RUN_ID, SOURCE_SHA)
                 self.assertFalse((self.workspace / "authorized-preflight.json").exists())
                 (self.workspace / "prior-preflight.json").unlink()
                 self.record[field] = previous
+
+    def test_preflight_retains_storage_ids_from_the_private_cluster_result(self):
+        receipt.backup.write(self.workspace / "cluster-result", receipt.backup.canonical(self.identities))
+        with (patch.dict(os.environ, {"EXPECTED_SHA": SOURCE_SHA}),
+              patch.object(receipt.backup, "upload", return_value=self.version) as upload,
+              patch.object(receipt.backup, "download") as download):
+            receipt.retain(self, self.workspace, RUN_ID, "preflight")
+        self.assertEqual(json.loads((self.workspace / "workflow-receipt.json").read_text()), self.record)
+        self.assertEqual(upload.call_args.args[1], f"applications/octelium-rscstore/preflight/{RUN_ID}.json")
+        self.assertTrue(upload.call_args.kwargs["create_only"])
+        self.assertEqual(download.call_args.args[2]["version_id"], self.version)
 
     def test_rejects_unversioned_head_before_readback(self):
         self.version = "null"
