@@ -32,6 +32,12 @@
       "sha256": "ef5d707f5afbb2c3ce9892f5ff3fca0dec6864db8830a1c454b3d4822c485843"
     },
     {
+      "chart": "cilium",
+      "version": "1.20.5",
+      "repository": "https://helm.cilium.io",
+      "sha256": "0c7592eb75179ecf46dd3ec22145916f0164c4401214ea15afb5b230b1d11a21"
+    },
+    {
       "chart": "cni",
       "version": "1.27.3",
       "repository": "https://blob.istio.io/istio-release/charts",

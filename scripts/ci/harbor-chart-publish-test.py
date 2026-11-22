@@ -15,7 +15,15 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 manifest = json.loads(publisher.MANIFEST.read_text())
 sources = json.loads(publisher.SOURCES.read_text())
-assert len(publisher.validate(manifest, sources)) == 28
+assert publisher.validate(manifest, sources) == manifest["charts"]
+missing = {**manifest, "charts": manifest["charts"][1:]}
+try:
+    publisher.validate(missing, sources)
+except ValueError as error:
+    assert "Argo CD chart lacks a Harbor package" in str(error)
+else:
+    raise AssertionError("missing chart package was accepted")
+
 assert publisher.missing_harbor_artifact(
     "unknown: repository mirror/helm/example not found", "example")
 assert not publisher.missing_harbor_artifact(
