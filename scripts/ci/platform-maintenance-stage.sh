@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|cilium-route-preflight|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|cilium-route-preflight|cilium-evacuate-worker|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -18,7 +18,7 @@ config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
 if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
-elif [[ "$stage" != inspect && "$stage" != cilium-route-preflight ]]; then
+elif [[ "$stage" != inspect && "$stage" != cilium-route-preflight && "$stage" != cilium-evacuate-worker ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
 
@@ -139,6 +139,10 @@ case "$stage" in
     done
     python3 -I scripts/cilium-route-preflight.py --pool "$pool" --nodes "$work/nodes.json" \
       --service-cidrs "$work/services.json" "${route_args[@]}"
+    ;;
+  cilium-evacuate-worker)
+    bash scripts/ci/install-kubeconfig.sh
+    python3 -I scripts/cilium-evacuate-worker.py --expected-sha "$GITHUB_SHA"
     ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1

@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"94ec9b404bb0d82b55b5ed975634b2403f9f39a0110f1051d385ee852bb2ca2a",
+		"f30e2858c3db9be4209f5cc2ae996540a29b9de8a58d3a1169a55ca64aa8d36a",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -190,7 +190,7 @@ platform_maintenance_fixture := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"stage": {"options": ["inspect", "cilium-route-preflight", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"stage": {"options": ["inspect", "cilium-route-preflight", "cilium-evacuate-worker", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
 		"cleanup_run_id": {"required": false, "type": "string"},
 		"qualification_run_id": {},
 		"evidence_source_sha": {},

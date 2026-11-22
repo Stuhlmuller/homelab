@@ -92,6 +92,25 @@ class PlatformStageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no nondefault routes"):
             check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
 
+    def test_worker_evacuation_refuses_unready_overlay_or_another_cordoned_node(self):
+        require_overlay = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["require_overlay"]
+        app = {"spec": {"syncPolicy": {"automated": {"enabled": True}}},
+               "status": {"sync": {"status": "Synced", "revisions": ["1.20.5", SHA]},
+                          "health": {"status": "Healthy"}}}
+        nodes = [{"metadata": {"name": node}, "spec": {}}
+                 for node in ("acer", "zimaboard-0", "zimaboard-1", "zimaboard-2")]
+        daemonset = {"metadata": {"name": "cilium", "generation": 1},
+                     "status": {"observedGeneration": 1, "desiredNumberScheduled": 4,
+                                "numberReady": 4, "updatedNumberScheduled": 4, "numberAvailable": 4}}
+        require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 3
+        with self.assertRaisesRegex(ValueError, "not current and ready"):
+            require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 4
+        nodes[0]["spec"]["unschedulable"] = True
+        with self.assertRaisesRegex(ValueError, "different node is already cordoned"):
+            require_overlay(app, nodes, [daemonset])
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)
