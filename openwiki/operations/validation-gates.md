@@ -1314,7 +1314,8 @@ CI/CD Octelium changes should also pass shell syntax checks for
 Session and access-token lifetimes before applying it with `octeliumctl`.
 Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
-The static gate requires manual Homelab Diagnostics and Terragrunt Apply
+Grafana diagnostics use the private operator Kubernetes context and stay
+out of GitHub Actions. The static gate requires manual Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
 resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
