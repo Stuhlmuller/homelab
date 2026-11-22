@@ -57,7 +57,18 @@ subsequent digest change. Capture revisions and outcomes without credentials.
 Keep runtime acceptance pending until that actual target test succeeds.
 
 For a preinstalled provider, pass `--plugin-dir PATH` to the provider test.
-The PR workflow contains the exact pinned Helm render command and validates
-its output with `--rendered-chart`. The provider fixture inspects actual provider
-requests and propagates deliberate API conflicts; it does not implement or prove
-Kubernetes SSA managed-field semantics.
+Render and validate the pinned chart from the repository root:
+
+```bash
+nix develop --no-update-lock-file --no-write-lock-file --command bash -euo pipefail -c '
+  rendered_chart=$(mktemp)
+  trap "rm -f -- \"$rendered_chart\"" EXIT
+  helm template argocd-image-updater argocd-image-updater \
+    --repo https://argoproj.github.io/argo-helm --version 1.3.1 --namespace argocd \
+    -f clusters/homelab/apps/argocd-image-updater/values.yaml > "$rendered_chart"
+  python3 -I scripts/ci/argocd-image-updater-test.py --rendered-chart "$rendered_chart" --unit
+'
+```
+
+The provider fixture inspects actual provider requests and propagates deliberate
+API conflicts. Live Kubernetes is required to verify SSA managed-field semantics.
