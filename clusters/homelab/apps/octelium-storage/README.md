@@ -197,11 +197,3 @@ remote object versions before completion and monitors capture age. No bucket,
 IAM attachment, schedule or real-data restore is activated. Redis and Enterprise
 package state still need separate coverage; PostgreSQL publication alone does
 not establish whole-application recovery.
-
-## Egress policy
-
-PostgreSQL and Redis accept client-initiated connections and have no
-application-initiated egress grants. The PostgreSQL backup Job can reach
-CoreDNS on TCP and UDP 53 and PostgreSQL on TCP 5432. NFS-backed backup writes
-use the mounted volume. Verify a completed logical backup and normal
-PostgreSQL and Redis client operations when Cilium activates enforcement.
