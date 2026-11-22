@@ -391,6 +391,7 @@ another eligible node. Verify the tailnet DNS path after rescheduling.
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
+- [Cilium migration trial](../../clusters/homelab/platform/cilium/README.md)
 
 ## Maintenance Notes
 
