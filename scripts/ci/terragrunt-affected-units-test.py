@@ -122,7 +122,7 @@ class NativeSelectionTest(unittest.TestCase):
         )
         selected = self.run_command(
             "env", "CI=true", f"TERRAGRUNT_FILTER_BASE_SHA={base}",
-            "bash", "-c", shell, "fixture", str(HELPER.with_name("terragrunt-filter-base.sh")),
+            "TERRAGRUNT_FILTER_HEAD_SHA=HEAD", "bash", "-c", shell, "fixture", str(HELPER.with_name("terragrunt-filter-base.sh")),
         )
         self.assertEqual(selected.splitlines(), [f"{PREFIX}/apps/one/argocd"])
 

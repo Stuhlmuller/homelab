@@ -33,7 +33,7 @@ HCL
 git add catalog IaC
 git commit -qm 'test: add generated unit'
 APPLY_BASE_SHA="$(git rev-parse HEAD)"
-export APPLY_BASE_SHA
+export APPLY_BASE_SHA TERRAGRUNT_FILTER_HEAD_SHA=HEAD
 terragrunt stack run --working-dir "$stack_dir" --non-interactive -- apply -auto-approve >setup.log 2>&1 ||
   { cat setup.log >&2; exit 1; }
 git switch -qc remove-unit
