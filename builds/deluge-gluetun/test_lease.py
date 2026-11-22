@@ -38,6 +38,16 @@ class LeaseFixture:
 
 
 class LeaseTest(unittest.TestCase):
+    def test_standby_is_live_without_publishing_and_expires_when_paused(self):
+        fixture = LeaseFixture('other')
+        self.assertFalse(fixture.controller.live())
+        fixture.controller.reconcile()
+        self.assertTrue(fixture.controller.live())
+        self.assertFalse(fixture.controller.ready())
+        fixture.now = 10
+        self.assertFalse(fixture.controller.live())
+        self.assertEqual(fixture.events, [])
+
     def test_standby_observes_unchanged_resource_version_before_takeover(self):
         fixture = LeaseFixture('other')
         fixture.controller.reconcile()
