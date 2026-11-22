@@ -3,10 +3,8 @@
 
 import base64
 import hashlib
-import ipaddress
 import json
 import os
-import runpy
 import shutil
 import subprocess
 import tempfile
@@ -69,47 +67,6 @@ class PlatformStageTests(unittest.TestCase):
                 result, external = self.run_stage(stage, "zimaboard-1")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
-
-    def test_cilium_route_preflight_reaches_read_only_entry_before_activation(self):
-        result, external = self.run_stage("cilium-route-preflight")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertTrue(external)
-        body = STAGE.read_text().split("  cilium-route-preflight)\n", 1)[1].split("    ;;", 1)[0]
-        self.assertIn("get routes -o json", body)
-        self.assertIn("cilium-route-preflight.py", body)
-        self.assertNotRegex(body, r"kubectl\s+(apply|patch|delete|drain)|talosctl.*(reboot|apply-config)")
-
-    def test_cilium_route_preflight_rejects_overlap_and_missing_nodes(self):
-        check = runpy.run_path(str(ROOT / "scripts/cilium-route-preflight.py"))["check"]
-        pool = ipaddress.ip_network("10.245.0.0/16")
-        nodes = [{"metadata": {"name": "worker"}, "spec": {"podCIDRs": ["10.244.0.0/24"]}}]
-        services = [{"metadata": {"name": "kubernetes"}, "spec": {"cidrs": ["10.96.0.0/12"]}}]
-        self.assertEqual(check(pool, nodes, services, {"worker": ["0.0.0.0/0", "10.1.0.0/24"]}), [])
-        self.assertEqual(check(pool, nodes, services, {"worker": ["10.0.0.0/8"]}),
-                         [("worker host route", "10.0.0.0/8")])
-        with self.assertRaisesRegex(ValueError, "exactly the nodes"):
-            check(pool, nodes, services, {})
-        with self.assertRaisesRegex(ValueError, "no nondefault routes"):
-            check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
-
-    def test_worker_evacuation_refuses_unready_overlay_or_another_cordoned_node(self):
-        require_overlay = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["require_overlay"]
-        app = {"spec": {"syncPolicy": {"automated": {"enabled": True}}},
-               "status": {"sync": {"status": "Synced", "revisions": ["1.20.5", SHA]},
-                          "health": {"status": "Healthy"}}}
-        nodes = [{"metadata": {"name": node}, "spec": {}}
-                 for node in ("acer", "zimaboard-0", "zimaboard-1", "zimaboard-2")]
-        daemonset = {"metadata": {"name": "cilium", "generation": 1},
-                     "status": {"observedGeneration": 1, "desiredNumberScheduled": 4,
-                                "numberReady": 4, "updatedNumberScheduled": 4, "numberAvailable": 4}}
-        require_overlay(app, nodes, [daemonset])
-        daemonset["status"]["numberReady"] = 3
-        with self.assertRaisesRegex(ValueError, "not current and ready"):
-            require_overlay(app, nodes, [daemonset])
-        daemonset["status"]["numberReady"] = 4
-        nodes[0]["spec"]["unschedulable"] = True
-        with self.assertRaisesRegex(ValueError, "different node is already cordoned"):
-            require_overlay(app, nodes, [daemonset])
 
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()

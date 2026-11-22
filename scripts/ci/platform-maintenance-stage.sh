@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|cilium-route-preflight|cilium-evacuate-worker|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -18,7 +18,7 @@ config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
 if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
-elif [[ "$stage" != inspect && "$stage" != cilium-route-preflight && "$stage" != cilium-evacuate-worker ]]; then
+elif [[ "$stage" != inspect ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
 
@@ -118,31 +118,6 @@ case "$stage" in
     python3 -I scripts/platform-maintenance.py inspect --config "$config" \
       --talosconfig "$work/talosconfig" --output "$work/inspect.json"
     retain_result "$work/inspect.json" inspect
-    ;;
-  cilium-route-preflight)
-    connect_talos
-    [[ -z "$(kubectl -n kube-system get daemonset cilium --ignore-not-found -o name)" ]]
-    kubectl get nodes -o json >"$work/nodes.json"
-    kubectl get servicecidrs -o json >"$work/services.json"
-    endpoint="$(jq -er .protectedTalosEndpoint "$config")"
-    pool="$(yq -o=json '.ipam.operator.clusterPoolIPv4PodCIDRList' \
-      clusters/homelab/platform/cilium/values-migration.yaml | jq -er 'select(length == 1) | .[0]')"
-    route_args=()
-    for node in acer zimaboard-0 zimaboard-1 zimaboard-2; do
-      address="$(jq -er --arg node "$node" '.expectedStart.nodes[$node].address' "$config")"
-      jq -e --arg node "$node" --arg address "$address" \
-        'any(.items[]; .metadata.name == $node and any(.status.addresses[]; .address == $address))' \
-        "$work/nodes.json" >/dev/null
-      talosctl --talosconfig "$work/talosconfig" --endpoints "$endpoint" --nodes "$address" \
-        get routes -o json | jq -r '.spec.dst // empty' >"$work/$node.routes"
-      route_args+=(--node-routes "$node=$work/$node.routes")
-    done
-    python3 -I scripts/cilium-route-preflight.py --pool "$pool" --nodes "$work/nodes.json" \
-      --service-cidrs "$work/services.json" "${route_args[@]}"
-    ;;
-  cilium-evacuate-worker)
-    bash scripts/ci/install-kubeconfig.sh
-    python3 -I scripts/cilium-evacuate-worker.py --expected-sha "$GITHUB_SHA"
     ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
