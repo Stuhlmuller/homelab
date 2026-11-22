@@ -164,8 +164,6 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
-  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
-    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-6a90d887ebbab5a858408f90
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
