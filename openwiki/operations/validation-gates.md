@@ -1152,6 +1152,20 @@ kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
 
+### Multica Argo project boundary
+
+Multica uses `homelab-workloads`, whose cluster-resource allowlist is empty.
+The repository-owned overlay renders only resources in `ai`; LiteLLM owns
+that namespace. The project admits the exact Multica chart repository rather
+than a registry wildcard. The current live Argo resource tree also lists only
+`ai` resources. Offline checks validate the overlay and project; the hosted
+static gate anonymously pulls the pinned OCI chart, verifies its reviewed
+package SHA-256, and rejects rendered cluster-scoped objects. Before applying
+the project change, verify that its source has synced and the protected plan
+contains only the reviewed Application project update. After apply, require
+Multica Synced/Healthy; any new chart cluster object must fail under the empty
+cluster-resource allowlist.
+
 ## Dormant Octelium resource-store capture
 
 `scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,

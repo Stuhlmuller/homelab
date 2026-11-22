@@ -277,6 +277,7 @@ echo "::endgroup::"
 
 echo "::group::LiteLLM runtime hardening"
 python3 -I scripts/ci/litellm-runtime-hardening-check.py
+python3 -I scripts/ci/multica-project-boundary-test.py --chart
 echo "::endgroup::"
 
 echo "::group::Descheduler cadence"
