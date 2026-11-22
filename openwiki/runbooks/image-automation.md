@@ -34,5 +34,10 @@ in-memory candidate identity from that separate argument and rejects embedded
 SHA claims. The [Git fixture](../../scripts/ci/image-automation-promote-test.py)
 exercises all three workflow validation steps against actual commits.
 
+The [native Image Updater canary](../../docs/argocd-image-updater.md#disposable-busybox-canary)
+uses a dedicated public mirror alias and two reviewed, distinct BusyBox
+artifacts. The protected publisher verifies the selected artifact before moving
+the alias. Workload enrollment and the live A-to-B proof are separate steps.
+
 See [GitOps Flow](../architecture/gitops-flow.md), [Secrets And Identity](../architecture/secrets-and-identity.md),
 and [Validation](validation.md).

@@ -45,6 +45,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.adguard_mirror_manifest = None
         self.cilium_mirror_manifest = None
         self.kagent_mirror_manifest = None
+        self.canary_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -143,6 +144,11 @@ class HarborPublicationGates(unittest.TestCase):
             kagent_path.unlink(missing_ok=True)
         else:
             kagent_path.write_text(json.dumps(self.kagent_mirror_manifest))
+        canary_path = self.root / "scripts/config/harbor-image-updater-canary.json"
+        if self.canary_mirror_manifest is None:
+            canary_path.unlink(missing_ok=True)
+        else:
+            canary_path.write_text(json.dumps(self.canary_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode] + (["--tailscale"] if tailnet else []),
             cwd=self.root,
@@ -160,8 +166,8 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr + self.public_status)
         return result
 
-    def rejected(self, mode="publish"):
-        result = self.run_helper(mode)
+    def rejected(self, mode="publish", *, tailnet=False):
+        result = self.run_helper(mode, tailnet=tailnet)
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls.exists(), "A refusal path reached a credential or service command")
         return result
@@ -170,10 +176,12 @@ class HarborPublicationGates(unittest.TestCase):
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
                         core=False, cordium=False, enterprise=False,
-                        forward_start_delay=0):
+                        forward_start_delay=0, canary=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        if canary:
+            names = ["busybox"]
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
         if enterprise:
@@ -183,6 +191,7 @@ class HarborPublicationGates(unittest.TestCase):
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
+            **({"canary_variant": canary} if canary else {}),
             **({"mediaType": "application/vnd.oci.image.index.v1+json"} if oci_index else {})}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
@@ -394,6 +403,9 @@ class HarborPublicationGates(unittest.TestCase):
                                 "mirror-alias-verify-missing": "manifest unknown; connection reset",
                                 "mirror-alias-verify-digest": "digest mismatch; connection reset",
                             })
+                    if reference.endswith(":issue-1846-canary") and reference not in published:
+                        print("manifest unknown", file=sys.stderr)
+                        raise SystemExit(1)
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
@@ -492,7 +504,8 @@ class HarborPublicationGates(unittest.TestCase):
                     reference = args[-1].removeprefix("docker://")
                     path = root / "published-images.json"
                     published = json.loads(path.read_text()) if path.exists() else {}
-                    published[reference] = FIXTURE["manifests"][reference]
+                    selected = args[-2].removeprefix("docker://") if reference.endswith(":issue-1846-canary") else reference
+                    published[reference] = FIXTURE["manifests"][selected]
                     path.write_text(json.dumps(published))
                 elif args[0] != "copy":
                     raise SystemExit(95)
@@ -650,6 +663,65 @@ class HarborPublicationGates(unittest.TestCase):
                 self.mirror_manifest = catalog
                 self.rejected(mode="mirror")
 
+    def test_image_updater_canary_rejects_other_artifacts_before_credentials(self):
+        source = "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+        first = {"source": source}
+        second = {"source": "docker.io/library/busybox@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"}
+        self.mirror_manifest = {"images": [first, second]}
+        for entries in ([], [first, second], [{"source": source.replace("busybox", "alpine")}],
+                        [{"source": source[:-1] + "0"}], [{**first, "destination": "shared:latest"}]):
+            with self.subTest(entries=entries):
+                self.canary_mirror_manifest = {"images": entries}
+                self.rejected("mirror-image-updater-canary", tailnet=True)
+        self.canary_mirror_manifest = {"images": [first]}
+        self.rejected("mirror-image-updater-canary")
+        self.mirror_manifest = self.canary_mirror_manifest = {"images": [second]}
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
+        del self.env["RUNNER_TEMP"]
+        accepted = self.rejected("mirror-image-updater-canary", tailnet=True)
+        self.assertIn("RUNNER_TEMP must be set", accepted.stderr)
+
+    def test_image_updater_canary_pulls_before_a_single_alias_write(self):
+        helper = self.root / "scripts/ci/harbor-publish.sh"
+        original = helper.read_text()
+        destination = "harbor.stinkyboi.com/mirror/docker.io/library/busybox"
+        published = self.root / "published-images.json"
+        previous = None
+        for variant, fixture_digest in (
+            ("A", "sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"),
+            ("B", "sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"),
+        ):
+            with self.subTest(variant=variant):
+                self.tailnet_mocks(resume=True, canary=variant)
+                digest = self.published_digests["busybox"]
+                self.canary_mirror_manifest = {"images": [{"source": f"docker.io/library/busybox@{digest}"}]}
+                # Substitute local artifact content while preserving both scoped-digest checks.
+                code = original.replace(fixture_digest, digest, 1)
+                if previous:
+                    prior_digest, prior_publication = previous
+                    code = code.replace(
+                        "sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+                        prior_digest, 1)
+                    helper.write_text(code)
+                    result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                    self.assertNotEqual(result.returncode, 0, "B needs an established A")
+                    self.assertFalse(published.exists())
+                    self.calls.write_text("")
+                    published.write_text(prior_publication)
+                helper.write_text(code)
+                result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+                copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+                self.assertEqual(len(copies), 2)
+                self.assertTrue(copies[0][-1].startswith("dir:"))
+                self.assertEqual(copies[1][-1], f"docker://{destination}:issue-1846-canary")
+                for args in copies:
+                    self.assertEqual(args[-2], f"docker://{destination}@{digest}")
+                self.assert_mirror_copy_credentials(copies)
+                self.assertIn(f"{destination}:issue-1846-canary@{digest}\n",
+                              (self.root / "summary").read_text())
+                previous = (digest, published.read_text())
+
     def test_dns_scope_declares_one_fixed_reviewed_image(self):
         source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
         selected = json.loads((ROOT / "scripts/config/harbor-dns-images.json").read_text())
@@ -704,7 +776,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -729,7 +801,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -766,7 +838,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -805,7 +877,7 @@ class HarborPublicationGates(unittest.TestCase):
         for entry in selected["images"]:
             self.assertIn(entry, catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
@@ -2059,8 +2131,8 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
-    def tailnet_mocks(self, status="401", failure=None):
-        self.transport_mocks(mirror=True, failure=failure)
+    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+        self.transport_mocks(mirror=True, failure=failure, **kwargs)
         self.env.pop("OCTELIUM_AUTH_TOKEN", None)
         self.env.pop("KUBE_API_SERVER_URL", None)
         self.calls.touch(exist_ok=True)
