@@ -6,7 +6,7 @@ metadata:
 spec:
   nodeSelector:
     matchLabels:
-      io.cilium.migration/cilium-default: "true"
+      kubernetes.io/hostname: zimaboard-2
   defaults:
     write-cni-conf-when-ready: /host/etc/cni/net.d/05-cilium.conflist
     custom-cni-conf: "false"

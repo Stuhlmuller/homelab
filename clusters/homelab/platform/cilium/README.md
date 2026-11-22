@@ -31,12 +31,12 @@ load before advancing node cutover.
    Deploy the coexistence Application through GitOps, then implement the protected
    node-by-node cutover and rollback. Include eviction feasibility and retain
    a working route to the Talos and Kubernetes APIs throughout the cutover.
-   The standalone `node-migration.yaml` selector is for the cutover stage
-   after the chart installs its CRD. It allows Cilium to write its primary
-   CNI configuration on a selected node while retaining the Multus and
-   Flannel configuration files. The staged Helm Application does not include
-   this manifest. Validate Multus delegation and rollback on the trial node
-   before introducing the first selector label in the live cluster.
+   The Application tracks `node-migration.yaml`, which selects only
+   `zimaboard-2` by hostname. When the agent starts on the selected worker,
+   it writes the primary CNI configuration and retains the Multus and Flannel
+   files. Before syncing this stage, verify the coexistence overlay, host-route
+   preflight, completed eviction and registry recovery. Recreate the worker
+   workloads through the guarded cutover so their sandboxes use Cilium.
 
 3. Inventory effective egress and install explicit workload grants for DNS,
    API access, internal peers and approved external destinations. Verify

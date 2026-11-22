@@ -26,6 +26,14 @@ inputs = {
         repoURL        = local.shared.repo_url
         targetRevision = local.shared.target_revision
         ref            = "values"
+      },
+      {
+        repoURL        = local.shared.repo_url
+        path           = "clusters/homelab/platform/cilium"
+        targetRevision = local.shared.target_revision
+        directory = {
+          include = "node-migration.yaml"
+        }
       }
     ]
     syncPolicy = {
