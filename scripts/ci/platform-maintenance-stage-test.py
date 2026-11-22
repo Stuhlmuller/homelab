@@ -3,8 +3,10 @@
 
 import base64
 import hashlib
+import ipaddress
 import json
 import os
+import runpy
 import shutil
 import subprocess
 import tempfile
@@ -76,6 +78,19 @@ class PlatformStageTests(unittest.TestCase):
         self.assertIn("get routes -o json", body)
         self.assertIn("cilium-route-preflight.py", body)
         self.assertNotRegex(body, r"kubectl\s+(apply|patch|delete|drain)|talosctl.*(reboot|apply-config)")
+
+    def test_cilium_route_preflight_rejects_overlap_and_missing_nodes(self):
+        check = runpy.run_path(str(ROOT / "scripts/cilium-route-preflight.py"))["check"]
+        pool = ipaddress.ip_network("10.245.0.0/16")
+        nodes = [{"metadata": {"name": "worker"}, "spec": {"podCIDRs": ["10.244.0.0/24"]}}]
+        services = [{"metadata": {"name": "kubernetes"}, "spec": {"cidrs": ["10.96.0.0/12"]}}]
+        self.assertEqual(check(pool, nodes, services, {"worker": ["0.0.0.0/0", "10.1.0.0/24"]}), [])
+        self.assertEqual(check(pool, nodes, services, {"worker": ["10.0.0.0/8"]}),
+                         [("worker host route", "10.0.0.0/8")])
+        with self.assertRaisesRegex(ValueError, "exactly the nodes"):
+            check(pool, nodes, services, {})
+        with self.assertRaisesRegex(ValueError, "no nondefault routes"):
+            check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
 
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
