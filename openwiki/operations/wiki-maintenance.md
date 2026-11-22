@@ -135,3 +135,27 @@ Revert the migration commit to restore the old vault and skills. Revert an
 OpenWiki upgrade as one change covering the skill, receipt, MCP version pin,
 lock record, and notices. Preserve authored wiki pages during integration-only
 rollback. No cluster deployment is required for this documentation workflow.
+
+## Public viewer
+
+[openwiki.stinkyboi.com](https://openwiki.stinkyboi.com/) serves the graph and
+Markdown reader from a static export. The [OpenWiki Application stack](../../IaC/homelab/us-west-2/apps/openwiki/stack.hcl)
+registers the [viewer](../../clusters/homelab/apps/openwiki/kustomization.yaml)
+with Argo CD. The public Cloudflare Tunnel forwards this exact hostname to the
+viewer Service. The namespace's network policy allows that connector and
+blocks pod egress. The app has no persistent state.
+
+To publish updated pages, stage any new Markdown files, regenerate the viewer
+with the pinned exporter, and include the changed output in the wiki PR.
+
+```sh
+nix shell .#openwiki --command python3 scripts/export-openwiki-site.py
+kubectl kustomize clusters/homelab/apps/openwiki >/tmp/openwiki-manifests.yaml
+```
+
+Argo CD rolls the deployment when the generated ConfigMap changes. Verify that
+the public viewer opens Quickstart and follows a link to another page. Revert
+the viewer export in Git and let Argo CD reconcile to roll back a content update.
+For initial DNS publication, dispatch the [protected DNS workflow](../../.github/workflows/mastodon-public-dns.yml)
+with `site=openwiki` and the exact current main SHA after Argo CD reports both
+`openwiki` and `octelium-public` Synced and Healthy at that revision.

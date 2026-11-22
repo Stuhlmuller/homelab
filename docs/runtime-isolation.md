@@ -158,7 +158,7 @@ pattern with one that does not require privileged namespace admission.
 
 ## Staged NetworkPolicy enforcement
 
-[`clusters/homelab/platform/network-policy/`](../clusters/homelab/platform/network-policy/README.md)
+[`clusters/homelab/platform/network-policy/`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 owns the pinned kube-router firewall DaemonSet, isolated canary fixtures and
 ownership-limited cleanup. It leaves Flannel as the CNI and kube-proxy as the
 service proxy. The Argo registrations are dormant; no node is selected or
@@ -194,7 +194,7 @@ this boundary could survive a
 kube-router crash or cold start without relocating Traefik or draining
 `zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
 
-The dormant [canary source](../clusters/homelab/apps/traefik/canary/README.md)
+The dormant [canary source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/canary/README.md)
 implements only TCP 443 Serve for the first test. The current broad tailnet
 grant reaches every device regardless of tag, so narrow it and prove
 production clients cannot reach the canary before activation. Its route ConfigMap,
@@ -224,7 +224,7 @@ Stage it in reviewed source before cutting over:
    allowed tailnet clients and the independent registry/Funnel paths. Set a
    no-surge rollout or prove measured two-Pod capacity before the live switch.
 3. Replace the current DNS and internal-client contracts in source. The
-   [`tailnet-dns` resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+   [`tailnet-dns` resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md)
    now publishes the `traefik-private` LoadBalancer status IP; its endpoint contract assumes an operator proxy.
    A candidate is a [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
    named `svc:homelab-private-ingress` with only `tcp:443`, declared through the
@@ -557,7 +557,7 @@ local storage, and prove allowed and denied traffic plus restart, API-loss,
 IP-reuse and reboot behavior on that node. Preserve DNS, API, mesh HBONE,
 webhook, NFS and recovery access. A candidate fixture's narrow deny result
 does not make the stock Enterprise agent's broad public TCP/443 egress a
-domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/platform/network-policy/README.md)
+domain allowlist. Follow the [canary and cleanup runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 before expanding enforcement; deleting the DaemonSet alone may leave firewall
 rules behind.
 

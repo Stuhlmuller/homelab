@@ -40,7 +40,7 @@ prose does not change pipeline behavior.
   commit statuses, so pull-request code cannot forge the protected native
   Chainguard receipt provenance status. Repository-specific blocking checks
   remain in `Terragrunt Gate` and `validate`.
-- `Terragrunt Plan` runs on every pull request. Its unprivileged static job
+- `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
@@ -50,10 +50,9 @@ prose does not change pipeline behavior.
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
-- `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
-  older request check, and prints the exact current-SHA dispatch command plus
-  links to active applies. It has no production environment, stored secrets,
-  or OIDC permission.
+- `Terragrunt Apply Request` runs after every change lands on `main` and prints
+  the exact dispatch command for that push.
+  It has no production environment, stored secrets, or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
@@ -77,13 +76,32 @@ prose does not change pipeline behavior.
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
+## Superseded pull request runs
+
+Repository PR workflows run only when the PR targets `main`. Editing a PR
+triggers eligible checks on `main`, including when a stacked PR is retargeted.
+Existing path filters still apply. Push, scheduled and manual triggers keep
+their own conditions.
+
+PR checks use a concurrency group for each pull request. When an update
+triggers the same check workflow, GitHub cancels its older queued or running
+run because the results apply to an earlier revision. Branch and path filters
+still decide which workflows start. Push, scheduled and manually dispatched
+runs use separate groups where they share a workflow with these PR checks.
+
+Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
+queues runs per PR, and Terragrunt Apply and release publication queue jobs
+behind their existing locks. GitHub allows up to 100 pending entries per
+concurrency group with `queue: max`. Terragrunt Apply Request and release
+previews run independently. GitHub manages scheduling for Code Quality scans.
+
 ## Release publication
 
 The release publisher takes one non-canceling `semantic-release-main` lock,
-then checks out current `main`. Pending runs may coalesce; the surviving run
-analyzes every commit since the last tag, including intervening pushes. Repeated
-runs with no new releasable commits create no tag. Publishers and independent,
-cancelable PR previews time out after 15 minutes.
+then checks out current `main`. Each publisher analyzes every commit since the
+last tag, including intervening pushes. Repeated runs with no new releasable
+commits create no tag. Publishers and independent PR previews time out after
+15 minutes.
 
 The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
 with package integrity hashes. `npm ci --ignore-scripts` installs without a
@@ -93,7 +111,7 @@ maintenance propose updates through PRs. No npm package is published.
 
 After `npm ci --ignore-scripts`, run
 `nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
-preview isolation, coalesced commit inclusion, and repeat-publication behavior
+preview isolation, inclusion of intervening commits, and repeat-publication behavior
 against a disposable local remote. Confirm the first merged GitHub release run
 separately. Roll back by reverting the workflow and toolchain together.
 
@@ -171,8 +189,8 @@ checks remain fresh.
   checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
   `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
   active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
-- Live Terragrunt plan and apply jobs retain their Actions development-shell
-  cache. Static jobs use the signed binary cache instead of restoring an
+- The live Terragrunt plan job retains its Actions development-shell cache.
+  Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
 - GitHub token permissions default to none. Jobs opt in to `contents: read`,
   and live Terragrunt jobs request `id-token: write`. No credentialed plan job
@@ -224,22 +242,9 @@ checks remain fresh.
   adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
   reconciliation output remains withheld from public Actions logs. Workflow
   policy permits only the reviewed PR plan command to stream live CLI output.
-  On a protected apply failure, a reviewed classifier prints fixed phase and
-  failure-hint labels after verifying its SHA-256; raw output remains withheld.
-  Hints classify recognizable authentication, network, provider/module download,
-  state-lock, Helm-operation, current-source-guard or policy errors; `unknown`
-  means no recognized fragment occurred in the last phase. Each phase resets
-  the hint, including the offsite backup-storage stage before bootstrap. A hint
-  narrows investigation but does not establish a root cause. The workflow still
-  fails if classification is unavailable or itself fails. Do not publish raw
-  logs to diagnose an unknown result.
-  Validate classifier changes with `scripts/ci/terragrunt-apply-stage-test.py`
-  and the workflow policy tests; update the exact helper SHA, allowed invocation
-  and normalized workflow digest together after review. Verify recovery with
-  an executed live PR plan and a successful full apply for the recorded current
-  main SHA; skips and targeted applies do not establish full recovery. Revert
-  the classifier and its matching exact security constants together through a
-  protected PR if the diagnostic change needs rollback.
+  Protected apply steps discard both CLI output streams. GitHub Actions uses
+  each command's exit code as the step result. Diagnose apply failures from a
+  private operator session.
   Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
@@ -270,7 +275,7 @@ checks remain fresh.
   policy-checked saved-plan path. It requires the existing platform to be ready
   before any state repair/import/apply; review the shared SSM plan for unrelated
   updates before production approval. See the
-  [Langfuse dispatch contract](../clusters/homelab/apps/langfuse/README.md#validation).
+  [Langfuse dispatch contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#validation).
   When that exact unit is
   confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
@@ -284,25 +289,16 @@ checks remain fresh.
   Argo CD Applications already registered live. The saved-plan gate rejects
   any creation in that selection; new registrations still require their
   separately reviewed targeted dispatch and prerequisites.
-- Deleted Terragrunt units are handled separately because the current checkout
-  no longer contains the directory that owns their state. The plan and apply
-  scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`
-  and `IaC/live` state paths, including units removed from the explicit stack. Catalog
-  templates and administrator-owned `IaC/homelab/us-west-2/operator` units are excluded. They
-  create temporary empty Terragrunt units at the deleted deployment paths and
-  reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
-  the original backend key. Synthetic Kubernetes and Helm providers reuse the
-  canonical root kubeconfig instead of relying on implicit local defaults.
-  The synthetic configuration uses the owning modules' `aws_kms.main` and
-  `aes_gcm.main` encryption identities with the root state key and region,
-  enforcing encryption for both state and saved plans. Backend SSE alone cannot
-  decrypt OpenTofu client-encrypted state.
-  Pull request plans list the remote-state resources
-  and save a destroy plan without rendering potentially sensitive values.
-  Production apply lists the same state resources, checks the destroy plan
-  against the existing Conftest policy, applies that saved plan only if policy
-  passes, and then continues with the current checkout. Protected SSM, KMS,
-  backend, and Kubernetes Secret deletions remain denied during retirement.
+- Deleted-unit detection compares the last successful full apply SHA with the
+  verified head. It covers the historical `IaC/bootstrap` and `IaC/live` state
+  paths, including generated units, and excludes catalog templates and
+  operator-owned units. PR plans use a temporary empty unit with the original
+  backend key and OpenTofu encryption settings.
+  Production apply uses Terragrunt's Git filter with `--filter-allow-destroy`
+  and runs the deleted unit from the base revision's configuration. For each
+  retiree it saves the binary destroy plan and JSON, checks the JSON against
+  current Conftest policy, verifies the current main commit, and replays the
+  same saved plan. Missing plans or policy rejections stop the apply.
 - The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
@@ -960,7 +956,7 @@ bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
 reviewed images with `harbor-mirror.yml` first and verify private DNS through
 the tailnet resolver in the ordered cutover, following the
-[Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet rollout runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC
 

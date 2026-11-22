@@ -23,11 +23,11 @@ The retained public Cloudflare Tunnel exposes only the federation/media
 allowlist; login, APIs and all other paths return 404 outside the tailnet.
 Keep its public CNAME for remote-server discovery. Mastodon is excluded from
 the fixed public-DNS retirement inventory.
-See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
+See the [Mastodon runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md).
 
 ## DNS Model
 
-The separate [tailnet resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+The separate [tailnet resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md)
 watches only the approved `traefik-private` Service. Its
 `coredns.io/hostname` annotation is paired with explicit HTTPS routes in one
 reviewed change. A/AAAA queries for those hosts use the Service's published
@@ -139,7 +139,7 @@ continue to reach the application unchanged. Prometheus has no ingress.
 
 The shared Istio gateway and old app VirtualServices remain during cutover.
 Traefik uses application Services directly, except for Mastodon's existing web/streaming gateway and the retained console
-redirect compatibility route. See the [Traefik route boundaries](../clusters/homelab/apps/traefik/README.md).
+redirect compatibility route. See the [Traefik route boundaries](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/README.md).
 Compass keeps its existing launch hostnames and discovery-only Ingress entries;
 those names resolve to private Traefik after DNS cutover. Changing its catalog
 is separate from this transport change.
@@ -167,7 +167,7 @@ The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
 with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
 policy in `scripts/config/tailscale-policy.json` owns approvals and tag grants;
-use the [Tailscale operator unit](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
+use the [Tailscale operator unit](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
 reviewed policy changes instead of editing the admin console.
 
 ```sh
@@ -194,7 +194,7 @@ save the cutover receipt; require a fresh naturally occurring successful signed
 delivery. Keep the old callback route until that check passes. The helper's
 non-executing GET preflight expects the POST-only hook's `404` with a valid
 backend request ID, and the root's `404` without one. It verifies routing rather
-than HMAC; see [Policy Bot's pinned behavior](../clusters/homelab/apps/policy-bot/README.md#validation).
+than HMAC; see [Policy Bot's pinned behavior](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#validation).
 
 ## n8n Webhook Callback
 

@@ -49,7 +49,7 @@ are flattened because release assets cannot contain directory paths. Nix
 signatures cover store path, NAR hash, size, and references; changing the
 download URL does not change the signed fingerprint.
 
-The [homelab Linux builder](../clusters/homelab/apps/nix-builder/README.md)
+The [homelab Linux builder](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nix-builder/README.md)
 primes Ubuntu CI through authenticated Kubernetes exec. Stage the exact files
 first; `publish --linux` rejects unstaged changes and verifies the returned
 outputs against the local Linux derivation paths. The signing key stays local.
@@ -188,8 +188,8 @@ signature or content corruption fails verification.
 
 Static jobs no longer restore the entire Nix store from an Actions cache:
 existing unsigned store objects could bypass binary-cache signature checks.
-Live jobs retain their development-shell dependency cache; live plans and
-cluster checks do not consume cached test receipts.
+The live Terragrunt plan job retains its development-shell dependency cache.
+Live plans and cluster checks do not consume cached test receipts.
 
 ## Key lifecycle and rollback
 

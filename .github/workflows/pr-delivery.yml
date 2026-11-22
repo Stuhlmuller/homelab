@@ -2,6 +2,8 @@
 name: PR Delivery
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - scripts/pr-delivery.py
       - scripts/ci/pr-delivery-test.py
@@ -15,8 +17,8 @@ on:
   workflow_dispatch:
 permissions: {}
 concurrency:
-  group: pr-delivery-tests-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pr-delivery-tests-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   regression:
     runs-on: ubuntu-24.04
