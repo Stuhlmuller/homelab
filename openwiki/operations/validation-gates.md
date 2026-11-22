@@ -369,6 +369,9 @@ Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
+remaining fixture groups concurrently. The offline Nix result requires each
+group's result.
 See [signed offline validation](../../docs/nix-cache.md).
 
 For Descheduler values or chart changes, run
