@@ -842,6 +842,11 @@ child fixtures; it does not change infrastructure inputs. The artifact scanner
 still rejects saved plan/state files in ignored checkout paths. See the
 [validation runbook](../../docs/validation-runbook.md).
 
+The required `Terragrunt Gate` covers signed offline Nix checks on every PR
+targeting `main`, including forks and changes that do not need a live plan.
+The `validate / repo` job verifies the same outputs on pushes to `main` and
+runs its other repository checks on both events.
+
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.
 Authorized signed-history repair must preserve a backup ref and exact content,
