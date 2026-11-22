@@ -1047,7 +1047,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/platform-maintenance.yml:maintenance' \
     '.github/workflows/platform-maintenance.yml:static-policy' \
     '.github/workflows/release.yml:release' \
-    '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
     '.github/workflows/terragrunt-apply.yml:static-policy' \
     '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
@@ -1123,7 +1122,7 @@ done <<'EOF'
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
-.github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
+.github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
 .github/workflows/terragrunt-plan.yml 6aae9137cbafbff308f6686a2a0ac9a825d38ba762ccddfd684cb3c5fb6828b6

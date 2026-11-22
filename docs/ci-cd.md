@@ -26,8 +26,7 @@ Change the owning executable check when changing a condition. A new rule in
 prose does not change pipeline behavior.
 
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
-  validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
-  Their required status names stay unchanged, so eligible PRs can still merge.
+  validation, Python and Actions CodeQL, and Terragrunt Gate.
 - NOFX image builds and OpenClaw native configuration checks run after matching
   changes land on `main` or through manual dispatch. The weekly CodeQL schedule
   remains active.
@@ -90,22 +89,21 @@ runs use separate groups where they share a workflow with these PR checks.
 Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
 queues runs per PR, and Terragrunt Apply and release publication queue jobs
 behind their existing locks. GitHub allows up to 100 pending entries per
-concurrency group with `queue: max`. Terragrunt Apply Request and release
-previews run independently. GitHub manages scheduling for Code Quality scans.
+concurrency group with `queue: max`. Terragrunt Apply Request runs
+independently. GitHub manages scheduling for Code Quality scans.
 
 ## Release publication
 
 The release publisher takes one non-canceling `semantic-release-main` lock,
 then checks out current `main`. Each publisher analyzes every commit since the
 last tag, including intervening pushes. Repeated runs with no new releasable
-commits create no tag. Publishers and independent PR previews time out after
-15 minutes.
+commits create no tag. The publisher runs on pushes to `main` and times out
+after 15 minutes.
 
 The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
 with package integrity hashes. `npm ci --ignore-scripts` installs without a
-step token. Only publication receives `GITHUB_TOKEN`; PR previews use a local
-bare Git repository without a token. Renovate's npm manager and lockfile
-maintenance propose updates through PRs. No npm package is published.
+step token. Only publication receives `GITHUB_TOKEN`. Renovate's npm manager
+and lockfile maintenance propose updates through PRs. No npm package is published.
 
 After `npm ci --ignore-scripts`, run
 `nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
@@ -186,12 +184,10 @@ checks remain fresh.
   overrides from changing checked commands.
   This is a source gate; private recovery and capacity receipts still control
   whether a maintenance stage may run.
-- The `main` ruleset requires pull requests, squash-only linear history,
-  verified signatures, and seven checks, and blocks branch deletion and force
-  pushes. A branch need not be up to date with `main` to merge. The required
-  checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
-  `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
-  active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
+- The `main` ruleset requires pull requests and squash-only linear history,
+  and blocks branch deletion and force pushes. The required checks in ruleset
+  `14700233` are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
+  `analyze-actions`, and `Terragrunt Gate`. `github-iac` owns this ruleset.
 - The live Terragrunt plan job retains its Actions development-shell cache.
   Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
