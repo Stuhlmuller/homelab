@@ -871,8 +871,8 @@ GitHub workflows pin their Chainguard Actions references by full commit SHA.
 Checkout, artifact publication, Nix installation, AWS credential setup, CodeQL,
 and linting retain explicit reviewed versions. Semantic-release uses the
 flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
-Its PR preview is tokenless; only the serialized `main` publisher receives the
-release token. The [release contract](../../docs/ci-cd.md#release-publication)
+The serialized publisher runs on pushes to `main` and receives the release
+token. The [release contract](../../docs/ci-cd.md#release-publication)
 includes a disposable Git-remote test for preview, intervening commits, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
