@@ -1045,6 +1045,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
     '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+    '.github/workflows/octelium-rscstore-backup.yml:backup' \
+    '.github/workflows/octelium-rscstore-backup.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/platform-maintenance.yml:maintenance' \
@@ -1142,6 +1144,7 @@ done <<'EOF'
 .github/workflows/mastodon-public-dns.yml f2fcb0549553f32ef19654e730f244516ece35a0233c2eda2517b74c22a0751e
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/n8n-paired-checkpoint.yml 45d6aa059b7a44770977a9964e1285272b8e57b27ee246ecfa0c86b38706ae93
+.github/workflows/octelium-rscstore-backup.yml 26a75e598c324719fd7481790f2cf677201f36ddeaaf27f4dbb8b9f993a6697c
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
 .github/workflows/release.yml 84fe68b50cb4ff7179621a4f9f777fee25909e2560d08f1b6dda6293e1c510b7
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
@@ -1176,7 +1179,8 @@ for workflow_job in \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
   '.github/workflows/mastodon-public-dns.yml:static-policy' \
   '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
-  '.github/workflows/n8n-paired-checkpoint.yml:static-policy'; do
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
+  '.github/workflows/octelium-rscstore-backup.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
   job="${workflow_job##*:}"
   yq -o=json '.' "$workflow" |
