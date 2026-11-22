@@ -208,6 +208,13 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+        for repository, chart, revision in re.findall(
+            r'repoURL\s*=\s*"oci://([^"\s]+)/([^/"\s]+)"\s*'
+            r'path\s*=\s*"\."\s*targetRevision\s*=\s*"([^"]+)"\s*helm\s*=',
+            stack.read_text(),
+        ):
+            charts.append({"source": str(stack.relative_to(ROOT)), "repoURL": repository,
+                           "chart": chart, "targetRevision": revision})
     enterprise = ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
     if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
         match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'

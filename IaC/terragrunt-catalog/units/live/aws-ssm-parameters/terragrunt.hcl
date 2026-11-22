@@ -461,6 +461,21 @@ inputs = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder
     }
+    "/homelab/kagent/litellm-token" = {
+      description = "kagent inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
+    "/homelab/kagent/postgres-password" = {
+      description = "kagent PostgreSQL database password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/nofx/litellm-token" = {
       description = "NOFX inference-only LiteLLM key with app attribution."
       generated = {
