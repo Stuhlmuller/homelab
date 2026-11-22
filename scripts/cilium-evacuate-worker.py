@@ -59,7 +59,7 @@ def require_overlay(app, nodes, daemonsets):
 
 def ready_elsewhere(namespace, labels):
     pods = get("pods", "-n", namespace, "-l", labels)["items"]
-    return any(pod["spec"].get("nodeName") not in {None, WORKER}
+    return any(pod["spec"].get("nodeName") in NODES - {WORKER}
                and not pod["metadata"].get("deletionTimestamp")
                and any(condition["type"] == "Ready" and condition["status"] == "True"
                        for condition in pod.get("status", {}).get("conditions", []))
@@ -94,6 +94,8 @@ def main():
     options = ("drain", WORKER, "--ignore-daemonsets", "--delete-emptydir-data", "--timeout=300s")
     kube(*options, "--dry-run=server", timeout=60)
     check_main(sha)
+    if not ready_elsewhere("harbor", "component=core"):
+        raise SystemExit("Verify Harbor core Ready on a surviving node before evacuation")
     kube(*options, timeout=310)
     kube("-n", "harbor", "rollout", "status", "deployment/harbor-core", "--timeout=300s", timeout=310)
     if not ready_elsewhere("harbor", "component=core"):
