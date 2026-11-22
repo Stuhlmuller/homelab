@@ -2,6 +2,8 @@
 name: PR Delivery
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - scripts/pr-delivery.py
       - scripts/ci/pr-delivery-test.py

@@ -829,6 +829,9 @@ attest and test actual Fleet console SAML and local recovery login. See the
 
 ## GitHub Workflow Checks
 
+Repository PR workflows run when the PR targets `main`, including after a
+stacked PR is retargeted to `main`. Existing path filters still apply.
+
 When a newer update triggers the same PR check workflow, GitHub cancels its
 older queued or running run. Terragrunt and Release are exempt.
 See [superseded pull request runs](../../docs/ci-cd.md#superseded-pull-request-runs).
