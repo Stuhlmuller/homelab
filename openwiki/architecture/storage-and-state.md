@@ -298,8 +298,8 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
-AFFiNE remains suspended for memory capacity, including its PostgreSQL and Redis
-workloads; its four PVCs remain retained. Dispatcharr now declares one app and
+AFFiNE declares one app replica and one replica each for PostgreSQL and Redis.
+All four existing PVCs are retained. Dispatcharr now declares one app and
 one dedicated PostgreSQL replica for IPTV-org USA setup, reusing its two retained
 PVCs. No durable data is removed. See [Monitoring Resource Requests](../operations/monitoring-resource-requests.md)
 and the app READMEs for capacity, suspension and resume checks.
