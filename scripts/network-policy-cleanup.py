@@ -26,6 +26,7 @@ CANARY = "homelab.stinkyboi.com/network-policy-canary"
 FIXTURE_NAMESPACE = "network-policy-canary"
 CLEANUP = "kube-router-network-policy-cleanup"
 ENFORCER = "kube-router-network-policy"
+ISTIO_SYSTEM_DAEMONSETS = {"ztunnel", "istio-cni-node"}
 ROOT_CHAINS = {"INPUT": "KUBE-ROUTER-INPUT", "FORWARD": "KUBE-ROUTER-FORWARD",
                "OUTPUT": "KUBE-ROUTER-OUTPUT"}
 FIXED_CHAINS = {*ROOT_CHAINS.values(), "KUBE-NWPLCY-DEFAULT", "KUBE-NWPLCY-COMMON",
@@ -129,7 +130,8 @@ def require_reviewed_node_pods(node_name, placement, cleanup_pod, daemonset_uid)
                      any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                          owner.get("controller") is True and
                          isinstance(owner.get("name"), str) and owner["name"] and
-                         (owner["name"] == "ztunnel" if identity[0] == "istio-system"
+                         (owner["name"] in ISTIO_SYSTEM_DAEMONSETS if
+                          identity[0] == "istio-system"
                           else owner["name"] not in {ENFORCER, CLEANUP})
                          for owner in owners))
         if not valid:

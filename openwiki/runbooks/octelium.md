@@ -27,7 +27,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:00:26.315Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Octelium
@@ -153,3 +153,26 @@ A live acceptance test froze only the managed client with SIGSTOP. The
 supervisor reaped it, launchd restarted the connection, HTTP returned 200, and
 the same desktop Autopilot page recovered to show 13 entries without an app
 restart. The offline regression exercises a running but unresponsive child.
+
+## Generated proxy alerts
+
+Prometheus monitors the generated `svc-*` and `upstream-svc-*` resources
+in the `octelium` namespace. Argo reports on resources in its application
+tree, which omits these controller-generated Deployments.
+
+- `OcteliumGeneratedProxyUnavailable` fires after five minutes when a
+  generated Service exists and its same-name Deployment has no available
+  replica. Inspect the Service, Deployment, and related Pod scheduling
+  events in the authenticated operator context. The check matches the native
+  Deployment name. Emergency fallback Deployments use separate names.
+- `OcteliumGeneratedProxyStaleTerminating` fires when a generated
+  ReplicaSet-owned Pod has been terminating for more than 15 minutes and
+  the condition persists for another five minutes. Match the Pod UID
+  before investigating its deletion, finalizers, and node health.
+
+The Service serves as the expected inventory. Detecting simultaneous loss of a
+Service and its Deployment requires a separate desired-Service inventory.
+Monitor role capacity, endpoint reachability, public transport, and
+authorization separately. Run `bash scripts/ci/octelium-proxy-alert-check.sh`
+in the repository's Nix devShell to evaluate the rules against the
+failure and recovery fixtures.

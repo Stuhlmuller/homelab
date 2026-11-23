@@ -14,8 +14,6 @@ sources:
     resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-ae9e276e4f1f0876814f04a2
     resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
-  - id: openwiki-source-9a01f0687eaa075cf78c3abc
-    resource: repo://.github/workflows/image-automation.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
@@ -34,12 +32,10 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-ce0cca7cf82efeb87c709d2b
+    resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -88,6 +84,8 @@ sources:
     resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-87a43c568d1aa897dc611cdf
+    resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -96,10 +94,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-31T22:18:24.858Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # CI/CD
@@ -159,11 +157,10 @@ environment protection rules; `homelab-production` has its branch policy and
 no required reviewer. The older October 6 reviewer snapshot is superseded.
 Re-read live settings before changing environment or branch protections.
 
-NOFX image builds, OpenClaw native configuration checks, and Image automation
-verification now run on matching `main` pushes or reviewed manual dispatches,
-without optional pull-request runs. Image automation no longer observes every
-five minutes; dispatch its `verify` operation from `main` for a deliberate
-journal check. Required pull-request checks retain their existing producers.
+NOFX image builds and OpenClaw native configuration checks run on matching
+`main` pushes or manual dispatches. The dedicated image updater and legacy
+proposal workflows were removed. The offline suite still validates the image
+catalog and runtime ownership policy.
 
 The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
 builds the stock controller, runtime, and CLI plus the source-bound journal
@@ -209,7 +206,7 @@ requires a blocked result when `main` advances during sync. The committed
 only after `journalOperator.enabled` is true. It rechecks current `main`,
 source and configuration identity, retained journal and bootstrap claim/PV
 identity, and prior Job state before a fresh Job per workflow attempt. The
-[operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+[operator bundle](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a local journal claim and scoped proof permissions but is absent from
 active GitOps; the disabled gate stops before Job creation. The hosted runner
 does not mount the private journal. `restore` and `acceptance` still exit before
@@ -266,7 +263,7 @@ accept only `workflow_dispatch`. Regression fixtures reject an added
 without manual dispatch. They also reject unreviewed workflow or job run
 defaults and environment, step shell or working-directory overrides, and
 `BASH_ENV` or `ENV` on any step. The credentialed legacy stage binds its exact
-four-variable environment. This is source validation, not a live execution
+eight-variable environment. This is source validation, not a live execution
 receipt.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
@@ -314,7 +311,7 @@ credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
 The pool remains disabled and existing job selectors stay unchanged. The
-[runner contract](../../builds/cordium-runner/README.md) lists the live
+[runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.
 

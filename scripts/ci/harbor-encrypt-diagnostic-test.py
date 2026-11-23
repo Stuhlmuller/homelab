@@ -2,7 +2,10 @@
 """Real encryption round trip and fail-closed recipient checks, offline."""
 import importlib.util
 import io
+import os
+import shlex
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,6 +73,74 @@ class Encryption(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 self.encrypt()
         self.assertFalse(self.destination.exists())
+
+    def test_scan_retains_complete_encrypted_report_only_on_failure(self):
+        cases = (
+            (b"malformed PRIVATE_REPORT\n" * 100000, 7, self.recipient, False, True),
+            (os.urandom(1024 * 1024 + 1), 1, self.recipient, False, False),
+            (b"PRIVATE_REPORT", 1, "0" * 40, False, False),
+            (b"PRIVATE_REPORT", 0, self.recipient, False, False),
+            (b"", 1, self.recipient, False, False),
+            (b"PRIVATE_REPORT", 1, self.recipient, True, False),
+        )
+        cases = [(*case, ("json", "cyclonedx-json")) for case in cases]
+        cases.extend((b"PRIVATE_REPORT", 1, self.recipient, False, True, (formatter,))
+                     for formatter in ("json", "cyclonedx-json"))
+        for payload, audit_status, recipient, archive_failure, retained, formats in cases:
+            with self.subTest(size=len(payload), status=audit_status, recipient=recipient), \
+                 tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                scripts = root / "scripts/ci"
+                scripts.mkdir(parents=True)
+                helper = (ROOT / "scripts/ci/harbor-encrypt-diagnostic.py").read_text()
+                certificate = root / "fixture-public-key.gpg"
+                certificate.write_bytes(self.certificate)
+                helper = helper.replace(module.PRIMARY, self.primary).replace(module.RECIPIENT, recipient)
+                helper = helper.replace(module.KEY_URL, certificate.as_uri())
+                (scripts / "harbor-encrypt-diagnostic.py").write_text(helper)
+                (scripts / "harbor-core-scan-check.py").write_text(f"raise SystemExit({audit_status})\n")
+                report = root / "fixture-report"
+                report.write_bytes(payload)
+                binary = root / "bin"
+                binary.mkdir()
+                grype = root / "scanner/bin"
+                grype.mkdir(parents=True)
+                (grype / "grype").write_text(
+                    "#!/bin/sh\nfor argument do\ncase \"$argument\" in\n" +
+                    "".join(f"{formatter}=*) cp {shlex.quote(str(report))} \"${{argument#{formatter}=}}\" ;;\n"
+                            for formatter in formats) + "esac\ndone\n")
+                (binary / "nix").write_text(
+                    f"#!/bin/sh\nln -s {shlex.quote(str(grype.parent))} \"$3\"\n")
+                (binary / "docker").write_text("#!/bin/sh\n[ \"$1\" != image ] || echo sha256:fixture\n")
+                (binary / "uname").write_text("#!/bin/sh\necho Linux\n")
+                if archive_failure:
+                    (binary / "tar").write_text("#!/bin/sh\necho partial\nexit 9\n")
+                for path in [*binary.iterdir(), grype / "grype"]:
+                    path.chmod(0o755)
+                destination = root / "reports.tar.gz.gpg"
+                destination.write_bytes(b"stale ciphertext")
+                environment = dict(os.environ, GITHUB_ACTIONS="true", RUNNER_TEMP=str(root),
+                                   COPYFILE_DISABLE="1",
+                                   PATH=str(binary) + os.pathsep + os.environ["PATH"])
+                result = subprocess.run(
+                    ["bash", str(ROOT / "builds/harbor-core/scan.sh"),
+                     "--encrypted-report", str(destination)],
+                    cwd=root, env=environment, capture_output=True, check=False,
+                )
+                self.assertEqual(result.returncode, audit_status, result.stderr.decode())
+                self.assertNotIn(b"PRIVATE_REPORT", result.stdout + result.stderr)
+                self.assertFalse(list(root.glob("harbor-core-scan.*")))
+                self.assertEqual(destination.exists(), retained)
+                self.assertFalse(destination.with_suffix(".partial").exists())
+                if retained:
+                    with tarfile.open(fileobj=io.BytesIO(self.gpg("--decrypt", str(destination))), mode="r:gz") as bundle:
+                        files = [m for m in bundle if m.isfile()]
+                        self.assertEqual({m.name for m in files},
+                                         {"./report.json" if f == "json" else "./packages.json" for f in formats})
+                        for member in files:
+                            self.assertEqual(bundle.extractfile(member).read(), payload)
+                    self.assertNotIn(b"PRIVATE_REPORT", destination.read_bytes())
+                    self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
 
     def test_bound(self):
         self.source.write_bytes(b"x" * (1024 * 1024 + 1))

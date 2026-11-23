@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+- local-storage.yaml
+- backup-pvc.yaml
+- externalsecret.yaml
+- networkpolicy.yaml
+- authorizationpolicy.yaml
+- backup-job.yaml
+- backup-cronjob.yaml
+- restore-verification-job.yaml
+- restore-serviceaccount.yaml
+configMapGenerator:
+- name: uptime-kuma-config
+  files:
+  - reconcile.js
+  - monitors.json
+- name: uptime-kuma-backup
+  files:
+  - backup.py
+generatorOptions:
+  disableNameSuffixHash: true

@@ -81,3 +81,24 @@ spec:
       to:
         - operation:
             ports: ["3306"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: uptime-kuma-8080
+  namespace: fleet
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: server
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/monitoring/sa/uptime-kuma
+    to:
+    - operation:
+        ports:
+        - '8080'

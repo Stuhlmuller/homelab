@@ -10,8 +10,6 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-e20ef91bfc85ec57d6b2e621
-    resource: repo://clusters/homelab/platform/dns/README.md
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
     resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -21,7 +19,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T18:25:19.174Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-31T22:18:24.858Z
 ---
 
 # CoreDNS GitOps Ownership
@@ -30,7 +28,7 @@ The Talos-to-Argo ownership handoff completed on 2026-09-07. `platform-dns`
 owns all six CoreDNS resources while preserving DNS behavior and pinning the
 running image content. New clusters still require the ordered takeover below;
 the declaration alone does not complete it. Source and DNS checks are in the
-[platform DNS runbook](../../clusters/homelab/platform/dns/README.md).
+[platform DNS runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/dns/README.md).
 
 ## DNS policy peer dependency
 
@@ -136,7 +134,7 @@ The upgrade processes both objects rather than merging their desired content.
    two available replicas throughout. Finish with two updated, Ready replicas
    using the reviewed image digest, with no crash-looping or failed probes;
    Pod UIDs change as expected. The
-   [runbook lookups](../../clusters/homelab/platform/dns/README.md) must resolve
+   [runbook lookups](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/dns/README.md) must resolve
    public names and the Octelium gateway address correctly through cluster DNS.
 3. Only after these gates pass, render the current private control-plane config
    with the repository patch

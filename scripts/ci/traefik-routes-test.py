@@ -10,6 +10,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 APPS = {
+    "uptime-kuma": "uptime-kuma.monitoring:3001",
+
+    "adguard": "adguard-admin.automation:3000",
     "affine": "affine.affine:3010",
     "argocd": "argocd-server.argocd:80",
     "bazarr": "bazarr.media:6767",
@@ -50,12 +53,20 @@ ROUTERS = HTTP["routers"]
 
 
 class RouteTests(unittest.TestCase):
+    def test_adguard_is_private_authenticated_backend_with_tls_coverage(self):
+        self.assertEqual(ROUTERS["adguard"], {"entryPoints": ["websecure"],
+                         "rule": "Host(`adguard.stinkyboi.com`)", "service": "adguard", "tls": {}})
+        self.assertEqual([name for name, route in ROUTERS.items()
+                          if route.get("service") == "adguard"], ["adguard"])
+        cert = read_yaml("clusters/homelab/apps/traefik/certificate.yaml")["spec"]["dnsNames"]
+        self.assertIn("*.stinkyboi.com", cert)
+
     def test_complete_private_inventory_and_direct_backends(self):
         controls = {"cordium", "octelium-cluster", "octelium-alias",
                     "octelium-api", "octelium-console", "oce-console",
-                    "oce-native-admin"}
+                    "oce-native-admin", "mastodon"}
         self.assertEqual(set(ROUTERS), set(APPS) | controls |
-                         {"n8n-webhook", "policy-bot-hook", "harbor-registry"})
+                         {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer", "harbor-registry"})
         for app, backend in APPS.items():
             with self.subTest(app=app):
                 router = ROUTERS[app]
@@ -103,10 +114,18 @@ class RouteTests(unittest.TestCase):
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()
                   if "funnel" in route["entryPoints"]}
-        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook"})
+        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer"})
+        self.assertEqual(public.pop("codex-signer"), {
+            "entryPoints": ["funnel"],
+            "rule": "Host(`codex-signer.tail67beb.ts.net`) && Path(`/webhooks/tailscale`) && Method(`POST`)",
+            "middlewares": ["reject-ambiguous-paths", "codex-webhook-limit", "codex-webhook-body"],
+            "service": "codex-cloud-signer",
+        })
         expected = {
-            "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`)"),
+            "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`) && "
+                            "!PathRegexp(`(?i)^/webhook/+7d4342d3-103b-437a-a941-811a75dacb2f/*$`)"),
             "policy-bot-hook": ("policy-bot", "Path(`/api/github/hook`)"),
+            "bulldozer-hook": ("bulldozer", "Path(`/api/github/hook`)"),
         }
         for name, (service, paths) in expected.items():
             self.assertEqual(public[name], {
@@ -115,11 +134,20 @@ class RouteTests(unittest.TestCase):
                 "middlewares": ["reject-ambiguous-paths"],
                 "service": service,
             })
-        allowed = re.compile(re.search(r"PathRegexp\(`(.*)`\)",
-                                       public["n8n-webhook"]["rule"])[1])
+        matchers = re.findall(r"PathRegexp\(`(.*?)`\)", public["n8n-webhook"]["rule"])
+        self.assertEqual(len(matchers), 2)
+        allowed, denied = map(re.compile, matchers)
         for base in ("/webhook", "/webhook-test", "/webhook-waiting"):
             for suffix in ("", "/", "/workflow-id"):
                 self.assertIsNotNone(allowed.search(base + suffix))
+        for path in ("/webhook/7d4342d3-103b-437a-a941-811a75dacb2f",
+                     "/webhook//7d4342d3-103b-437a-a941-811a75dacb2f/",
+                     "/webhook/7D4342D3-103B-437A-A941-811A75DACB2F"):
+            self.assertIsNotNone(denied.search(path))
+        for path in ("/webhook/other-id", "/webhook/f3e12cbd-1d01-4ef0-b24e-d68741ea898b/webhook",
+                     "/webhook-test/7d4342d3-103b-437a-a941-811a75dacb2f",
+                     "/webhook/7d4342d3-103b-437a-a941-811a75dacb2f-other"):
+            self.assertIsNone(denied.search(path))
         for path in ("/", "/rest/settings", "/rest/login", "/healthz",
                      "/webhook-admin", "/webhook-test-admin", "/webhook-waiting-admin"):
             self.assertIsNone(allowed.search(path))
@@ -156,6 +184,7 @@ class RouteTests(unittest.TestCase):
             "servers": [{"url": "https://istio-ingressgateway.istio-system.svc.cluster.local:443"}],
         })
         self.assertEqual(HTTP["serversTransports"], {
+            "mastodon": {"serverName": "mastodon.stinkyboi.com"},
             "octelium-console": {"serverName": "console.stinkyboi.com"},
         })
         self.assertEqual(ROUTERS["octelium-alias"]["rule"], "Host(`octelium.stinkyboi.com`)")
@@ -225,7 +254,8 @@ class RouteTests(unittest.TestCase):
         for app, name, port in (("affine", "affine-server", 3010),
                                 ("nofx", "nofx-frontend", 80),
                                 ("openclaw", "openclaw", 8080),
-                                ("policy-bot", "policy-bot", 8080)):
+                                ("policy-bot", "policy-bot", 8080),
+                                ("bulldozer", "bulldozer", 8080)):
             with self.subTest(app=app):
                 policies = json.loads(subprocess.check_output([
                     "yq", "ea", "-o=json", "[.]",

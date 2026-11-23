@@ -10,6 +10,24 @@ format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
 
+## LiteLLM Bedrock
+
+Generate the operator stack, then plan and apply only
+`IaC/homelab/us-west-2/operator/litellm-bedrock` from reviewed `main`. Review
+the private saved plan. The unit owns one dedicated IAM user, its
+inference-only policy and access key, and the encrypted SSM profile consumed by
+LiteLLM. The plan and state can contain the AWS credential.
+
+Run the protected [Terragrunt Apply](../.github/workflows/terragrunt-apply.yml)
+with `argocd_app=litellm` and the exact current `expected_sha`. This applies
+the shared SSM reader grants before the Application registration. Check
+`ai/litellm-bedrock` ExternalSecret readiness, then verify the changed chat routes
+using the [gateway contract](../openwiki/architecture/ai-observability.md#bedrock-chat).
+The operator unit also manages the public account model agreement for GPT‑6.2
+Sol. The gateway identity has inference permissions scoped to the declared
+models. To roll back a route, retain the account agreement and remove just
+the route and its inference permissions.
+
 ## Entra CI provider identities
 
 `azuread-ci-identities` declares separate GitHub OIDC identities for protected
@@ -51,17 +69,11 @@ may set it true after explicit authorization; its reviewed plan must create only
 the user, bootstrap password, and assignment. Test a fresh login, then restore
 the literal to false without changing the protected resources before conversion.
 
-The exact target is the existing external owner converted in place to an
-internal Entra user through the supported Entra admin-center flow. Terraform
-first changes all ownership and Fleet-assignment lookups to immutable object IDs
-so the conversion keeps ownership and grants. Create and test an independent
-cloud-only Global Administrator before converting the sole owner. The only
-permitted portal action is bounded by the private, Graph-read-only
-[`entra-owner-conversion.py`](../scripts/entra-owner-conversion.py)
-prepare/attest transaction; it does not automate the conversion. The complete
-order, Fleet local-recovery migration, and live acceptance checks are in the
-[Fleet Free runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md). No
-support case, Exchange license, or alias workaround is required.
+Fleet, Grafana and Octelium retain immutable owner object-ID references. The
+blocked one-off external-to-internal conversion helper and portal exception
+have been removed. The federated target remains unresolved; see the
+[Fleet Free runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md). No identity
+or recovery-account state changes as part of that source cleanup.
 
 ## Etcd Offsite Backup Storage
 
@@ -83,8 +95,12 @@ production environments in `Stuhlmuller/homelab` and
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
-current runtime-secret key. This metadata-only grant adds no cryptographic or
-key-administration actions. The role cannot manage this bootstrap
+current runtime-secret key. It also allows read-only IAM metadata for the exact
+`homelab/homelab-langfuse-s3` user and
+`homelab-oce-recovery-publisher-boundary` policy and the provider's four IAM
+role metadata reads on the exact `homelab-oce-recovery-publisher` role, so
+protected plans can refresh those resources. The grant adds no cryptographic,
+key-administration, or IAM write actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,

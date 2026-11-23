@@ -40,16 +40,19 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: harbor-generated-rollout
+  name: harbor-generated-rollout-v1
   namespace: octelium
   annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
-    argocd.argoproj.io/sync-wave: "-1"
-    checkov.io/skip1: CKV_K8S_38=The scoped rollout hook needs its bound ServiceAccount token to verify admission and restart generated Deployments.
+    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    checkov.io/skip1: CKV_K8S_38=The scoped rollout Job needs its bound ServiceAccount token to verify admission and restart generated Deployments.
 spec:
-  backoffLimit: 0
-  activeDeadlineSeconds: 5400
+  suspend: true
+  parallelism: 1
+  completions: 1
+  podReplacementPolicy: Failed
+  backoffLimit: 1
+  activeDeadlineSeconds: 18000
   template:
     spec:
       restartPolicy: Never

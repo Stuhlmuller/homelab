@@ -48,7 +48,7 @@ class CacheLayoutTests(unittest.TestCase):
                 beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
                 ending = script.index('job="$(mktemp')
                 script = script[:beginning] + 'mkdir /workspace/offline-check.lock\nprintf "%s\\n" "$pid" > /workspace/offline-check.lock/owner\ntrap cleanup EXIT\n' + script[ending:]
-                blocked = "sh -c " + shlex.quote("trap 'touch /workspace/graceful; exit 143' TERM; touch /workspace/started; sleep 30 & wait")
+                blocked = "sh -c " + shlex.quote("trap 'touch /workspace/graceful; exit 143' TERM; sleep 30 & touch /workspace/started; wait")
                 script = script.replace('tar -x -C "$job/source"', blocked if stage == "import" else "true")
                 script = script.replace(shlex.join(builder.build_command(policy)), blocked if stage == "build" else "true")
                 script = script.replace('nix copy --to "file://$job/cache" $(cat "$job/outputs")', blocked if stage == "export" else "true")

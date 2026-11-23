@@ -30,6 +30,15 @@ run "retains_completed_backups" {
 
   assert {
     condition = (
+      length(aws_iam_policy.publisher_boundary) == 0 &&
+      length(aws_iam_role.publisher) == 0 &&
+      length(aws_iam_role_policy.publisher) == 0
+    )
+    error_message = "The shared bucket module must create no publisher without an explicit input."
+  }
+
+  assert {
+    condition = (
       !aws_s3_bucket.backup.force_destroy &&
       aws_s3_bucket_versioning.backup.versioning_configuration[0].status == "Enabled" &&
       length(aws_s3_bucket_lifecycle_configuration.backup.rule) == 1 &&
@@ -74,6 +83,110 @@ run "retains_completed_backups" {
     }
     error_message = "The transport policy must cover this bucket and its objects and grant no new access."
   }
+}
+
+run "scopes_optional_enterprise_publisher" {
+  command = plan
+  variables {
+    publisher = {
+      role_name     = "homelab-oce-recovery-publisher"
+      object_prefix = "openclaw-enterprise/new/"
+      subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+      workflow      = "OpenClaw Enterprise Recovery Publication"
+      ref           = "refs/heads/main"
+      repository_id = 973476220
+    }
+  }
+
+  assert {
+    condition = (
+      length(aws_iam_role.publisher) == 1 &&
+      aws_iam_role.publisher[0].name == "homelab-oce-recovery-publisher" &&
+      aws_iam_role.publisher[0].max_session_duration == 3600 &&
+      jsondecode(aws_iam_role.publisher[0].assume_role_policy).Statement == [{
+        Effect    = "Allow"
+        Action    = "sts:AssumeRoleWithWebIdentity"
+        Principal = { Federated = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
+        Condition = { StringEquals = {
+          "token.actions.githubusercontent.com:aud"           = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub"           = "repo:Stuhlmuller/homelab:environment:homelab-production"
+          "token.actions.githubusercontent.com:workflow"      = "OpenClaw Enterprise Recovery Publication"
+          "token.actions.githubusercontent.com:ref"           = "refs/heads/main"
+          "token.actions.githubusercontent.com:repository_id" = "973476220"
+        } }
+      }]
+    )
+    error_message = "Only the reserved protected main workflow may assume the separate publisher."
+  }
+
+  assert {
+    condition = (
+      length(aws_iam_policy.publisher_boundary) == 1 &&
+      length(aws_iam_role_policy.publisher) == 1 &&
+      jsondecode(aws_iam_role_policy.publisher[0].policy) == jsondecode(aws_iam_policy.publisher_boundary[0].policy) &&
+      jsondecode(aws_iam_policy.publisher_boundary[0].policy).Statement == [
+        {
+          Sid      = "InspectRecoveryBucket"
+          Effect   = "Allow"
+          Action   = ["s3:GetBucketVersioning", "s3:GetEncryptionConfiguration"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1"
+        },
+        {
+          Sid      = "ListRecoveryVersions"
+          Effect   = "Allow"
+          Action   = ["s3:ListBucketVersions"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1"
+          Condition = { StringLike = {
+            "s3:prefix" = "openclaw-enterprise/new/*"
+          } }
+        },
+        {
+          Sid      = "ReadRecoveryObjects"
+          Effect   = "Allow"
+          Action   = ["s3:GetObject", "s3:GetObjectVersion"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/new/*"
+        },
+        {
+          Sid      = "PublishKmsRecoveryObjects"
+          Effect   = "Allow"
+          Action   = ["s3:PutObject"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/new/*"
+          Condition = { StringEqualsIfExists = {
+            "s3:x-amz-server-side-encryption" = "aws:kms"
+          } }
+        },
+        {
+          Sid      = "UseOnlyBucketS3Key"
+          Effect   = "Allow"
+          Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+          Resource = "arn:aws:kms:us-east-1:123456789012:key/*"
+          Condition = {
+            "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = "alias/aws/s3" }
+            StringEquals = {
+              "kms:ViaService"                   = "s3.us-east-1.amazonaws.com"
+              "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1"
+            }
+          }
+        },
+      ]
+    )
+    error_message = "Publisher grants must stay on the new prefix and bucket-key-scoped KMS use, without delete or legacy access."
+  }
+}
+
+run "rejects_unprotected_publisher_ref" {
+  command = plan
+  variables {
+    publisher = {
+      role_name     = "homelab-oce-recovery-publisher"
+      object_prefix = "openclaw-enterprise/new/"
+      subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+      workflow      = "OpenClaw Enterprise Recovery Publication"
+      ref           = "refs/heads/feature"
+      repository_id = 973476220
+    }
+  }
+  expect_failures = [var.publisher]
 }
 
 run "rejects_wrong_identity" {

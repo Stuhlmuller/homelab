@@ -1,5 +1,6 @@
 include "root" {
-  path = find_in_parent_folders("root.hcl")
+  path   = find_in_parent_folders("root.hcl")
+  expose = true
 }
 
 locals {
@@ -8,6 +9,17 @@ locals {
   placeholder        = "REPLACE_ME"
   argocd_oidc_issuer = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
 }
+
+# The existing SSM state predates client-side encryption. Remove after an encrypted write.
+remote_state = merge(include.root.remote_state, {
+  encryption = jsondecode(
+    lower(local.root_config.locals.project_name) == "homelab" && path_relative_to_include("root") == "homelab/us-west-2/shared/aws-ssm-parameters" ?
+    jsonencode(merge(
+      { for key, value in include.root.remote_state.encryption : key => value if key != "enforced" },
+      { fallback = { method = "unencrypted" } }
+    )) : jsonencode(include.root.remote_state.encryption)
+  )
+})
 
 terraform {
   source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/aws-ssm-parameters"
@@ -24,12 +36,18 @@ EOF
 }
 
 inputs = {
+  tags       = local.root_config.locals.default_tags
   aws_region = local.aws_region
   kms_key_id = local.root_config.locals.runtime_kms_key_id
   parameter_reader_iam_user_names = [
     "external-secrets_aws-ssm-auth",
   ]
   additional_parameter_reader_names = [
+    "/homelab/tailscale/codex-cloud-signer/auth-key",
+    "/homelab/tailscale/codex-cloud-signer/oauth-client-id",
+    "/homelab/tailscale/codex-cloud-signer/oauth-client-secret",
+    "/homelab/tailscale/codex-cloud-signer/webhook-secret",
+
     "/homelab/grafana/azuread/client-id",
     "/homelab/grafana/azuread/client-secret",
     "/homelab/grafana/azuread/auth-url",
@@ -37,9 +55,18 @@ inputs = {
     "/homelab/grafana/azuread/allowed-organizations",
     "/homelab/langfuse/s3-access-key-id",
     "/homelab/langfuse/s3-secret-access-key",
+    "/homelab/litellm/bedrock-credentials",
   ]
 
   parameters = {
+    "/homelab/adguard/admin-password" = {
+      description   = "AdGuard Home administrator password; reconstruct config from Git and this retained credential."
+      reader_access = true
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
     "/homelab/fleet/google-oauth" = {
       description   = "Dedicated Google OAuth Web client JSON for Fleet-managed XCreds Mac login; operator-only."
       initial_value = local.placeholder
@@ -446,6 +473,21 @@ inputs = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder
     }
+    "/homelab/kagent/litellm-token" = {
+      description = "kagent inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
+    "/homelab/kagent/postgres-password" = {
+      description = "kagent PostgreSQL database password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/nofx/litellm-token" = {
       description = "NOFX inference-only LiteLLM key with app attribution."
       generated = {
@@ -732,6 +774,13 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/uptime-kuma/admin-password" = {
+      description = "Uptime Kuma native owner password; generated once and retained."
+      generated = {
+        length  = 48
+        special = false
+      }
+    }
     "/homelab/n8n/encryption-key" = {
       description = "n8n instance encryption key for saved credentials and encrypted data."
       generated = {
@@ -766,6 +815,22 @@ inputs = {
     }
     "/homelab/policy-bot/github-app/integration-id" = {
       description   = "Policy Bot GitHub App integration ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/integration-id" = {
+      description   = "Bulldozer GitHub App ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/webhook-secret" = {
+      description = "Bulldozer GitHub App webhook HMAC secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/private-key" = {
+      description   = "Bulldozer GitHub App private key PEM."
       initial_value = local.placeholder
     }
     "/homelab/policy-bot/github-app/webhook-secret" = {

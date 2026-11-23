@@ -169,6 +169,7 @@ fit_branch_name() {
 
 # Resolve repository root using common.sh functions which prioritize .specify
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=.specify/scripts/bash/common.sh
 source "$SCRIPT_DIR/common.sh"
 
 REPO_ROOT=$(get_repo_root) || exit 1

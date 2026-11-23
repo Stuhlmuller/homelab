@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["cert-manager", "istio", "prometheus"]
+  dependencies = ["../../cert-manager/argocd", "../../istio/argocd", "../../prometheus/argocd"]
   spec = {
     destination = {
       namespace = "monitoring"

@@ -1,0 +1,44 @@
+name: Verify Codex Code Review
+
+# checkov:skip=CKV_GHA_7: the dispatch input selects an open PR by validated number only.
+# issue_comment runs the default branch workflow and never checks out PR code.
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Number of the open pull request to recheck
+        required: true
+        type: number
+
+permissions: {}
+
+jobs:
+  verify:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.issue.pull_request && github.event.comment.user.id == 199175422))
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    concurrency:
+      group: codex-review-${{ github.event.issue.number || inputs.pull_request }}
+      # Every run reads the current head and review receipt from GitHub.
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Check Out Trusted Workflow Revision
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Publish Current Review Status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pull_request }}
+        run: python3 -I scripts/ci/codex-review-gate.py

@@ -4,18 +4,12 @@ title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
 sources:
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-00d374aa17b82a33b8b28024
     resource: repo://clusters/homelab/apps/openclaw/runtime-backup.yaml
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-9824f110ded8ce152ef180f9
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-cb44bee82f523806d88ae83a
     resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -24,8 +18,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-0c00f6db8dd49d62511a3f75
-    resource: repo://IaC/homelab/us-west-2/apps/openclaw/stack.hcl
+  - id: openwiki-source-ae90439c105877e3d7283461
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw/terragrunt.stack.hcl
   - id: openwiki-source-9c3fe2e8035c7eb9d09bfd26
     resource: repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-e6bd097f07292b202c6eecb6
@@ -43,7 +37,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:00:26.315Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Argo CD App Onboarding

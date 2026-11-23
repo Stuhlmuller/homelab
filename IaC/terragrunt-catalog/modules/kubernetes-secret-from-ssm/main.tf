@@ -8,7 +8,7 @@ ephemeral "aws_ssm_parameter" "secret_data" {
 
   lifecycle {
     postcondition {
-      condition     = trimspace(self.value) != "" && trimspace(self.value) != var.placeholder_value
+      condition     = trimspace(self.value) != "" && trimspace(self.value) != "REPLACE_ME"
       error_message = "SSM parameter ${each.value} is empty or still set to the placeholder value."
     }
   }
@@ -31,5 +31,5 @@ resource "kubernetes_secret_v1" "this" {
 
   data_wo          = local.secret_data
   data_wo_revision = var.data_revision
-  type             = var.type
+  type             = "Opaque"
 }

@@ -104,6 +104,18 @@ with tempfile.TemporaryDirectory() as directory:
     check.ROOT = original_root
 
 digest = "sha256:" + "a" * 64
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-dockerhub/library/busybox:1.38@" + digest) == digest
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-ghcr/org/racing/image@" + digest) == digest
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-quay/prometheus/prometheus@" + digest) == digest
+for invalid_proxy_reference in (
+    "harbor.stinkyboi.com/proxy-dockerhub/library/busybox:1.38",
+    "harbor.stinkyboi.com/proxy-dockerhub/busybox@" + digest,
+    "harbor.stinkyboi.com/proxy-unknown/org/image@" + digest,
+    "harbor.stinkyboi.com/mirror/docker.io/library/busybox@" + digest,
+    "harbor.stinkyboi.com/proxy-ghcr/../org/image@" + digest,
+    "harbor.stinkyboi.com/proxy-ghcr/org/image@" + digest[:-1],
+):
+    assert check.proxy_digest(invalid_proxy_reference) is None, invalid_proxy_reference
 assert check.normalize("busybox") == "docker.io/library/busybox:latest"
 assert check.normalize("index.docker.io/busybox:1.38@" + digest) == "docker.io/library/busybox@" + digest
 assert check.normalize("localhost:5000/example:v1") == "localhost:5000/example:v1"
@@ -166,6 +178,10 @@ with tempfile.TemporaryDirectory() as directory:
     prometheus_source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
     catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source},
                           {"source": litellm_source}, {"source": prometheus_source}]}
+    bootstrap = check.ROOT / check.ARGOCD_BOOTSTRAP
+    bootstrap.parent.mkdir(parents=True)
+    bootstrap.write_text('global = {\n  # Preserve the chart pin.\n  image = { tag = "v3.4.14" }\n}')
+    argocd_source = {"source": "quay.io/argoproj/argocd:v3.4.14@" + digest}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
@@ -184,18 +200,16 @@ with tempfile.TemporaryDirectory() as directory:
     check.yaml_documents = lambda paths: (
         [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
     check.chart_sources = list
-    with contextlib.redirect_stdout(io.StringIO()):
-        check.check()
-    cluster = check.ROOT / "clusters/homelab/apps/example/values.yaml"
-    cluster.parent.mkdir(parents=True)
-    cluster.write_text("image: busybox:1.38\n")
     try:
         check.check()
     except SystemExit as error:
-        assert "Non-Harbor Argo image:" in str(error)
+        assert "missing digest-pinned Harbor source for quay.io/argoproj/argocd:v3.4.14" in str(error)
     else:
-        raise AssertionError("Public Argo image passed the desired-state gate")
-    cluster.unlink()
+        raise AssertionError("Unmirrored Argo CD bootstrap tag passed")
+    catalog["images"].append(argocd_source)
+    check.CATALOG.write_text(json.dumps(catalog))
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source.replace("0b556", "0b557")}]}))
     try:
         check.check()
@@ -482,8 +496,8 @@ with tempfile.TemporaryDirectory() as directory:
         plan = next(item for item in check.native_receipt_plans(config).values()
                     if item["image_id"] == "chainguard-curl")
         receipt = {
-            "schema_version": 1,
-            "kind": "native-chainguard-v1",
+            "schema_version": 2,
+            "kind": "native-chainguard-v2",
             "repository_sha": "a" * 40,
             "config_digest": plan["config_digest"],
             "image_id": plan["image_id"],
@@ -493,6 +507,9 @@ with tempfile.TemporaryDirectory() as directory:
             "destination_digest": plan["source_digest"],
             "platforms": {"linux/amd64": "sha256:" + "a" * 64,
                           "linux/arm64": "sha256:" + "b" * 64},
+            "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
             "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
             "consumer_access": True,
         }

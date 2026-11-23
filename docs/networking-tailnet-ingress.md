@@ -16,16 +16,18 @@ and the Tunnel Deployment remain until the final retirement gate.
 
 ## Mastodon declaration
 
-The Mastodon draft intentionally declares a public federation website at
-`mastodon.stinkyboi.com`, separate from the private application inventory.
-Its fixed-host publication workflow uses the retained Cloudflare Tunnel and
-application-owned authentication. The declaration is not live acceptance;
-retiring that connector requires a replacement Mastodon transport first.
-See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
+Mastodon browser and native clients use `mastodon.stinkyboi.com` through
+split DNS and private Traefik on the tailnet. Traefik forwards to the existing
+Istio HTTPS gateway for the web/streaming split, with no Octelium hop.
+The retained public Cloudflare Tunnel exposes only the federation/media
+allowlist; login, APIs and all other paths return 404 outside the tailnet.
+Keep its public CNAME for remote-server discovery. Mastodon is excluded from
+the fixed public-DNS retirement inventory.
+See the [Mastodon runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md).
 
 ## DNS Model
 
-The separate [tailnet resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+The separate [tailnet resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md)
 watches only the approved `traefik-private` Service. Its
 `coredns.io/hostname` annotation is paired with explicit HTTPS routes in one
 reviewed change. A/AAAA queries for those hosts use the Service's published
@@ -33,35 +35,86 @@ Tailscale IPv4; unrelated names and non-address types, including apex mail
 records, forward to public DNS. Traefik still owns TLS and route restrictions.
 The current ingress is IPv4-only. Keep approved AAAA empty until a reviewed
 network change supports it. The resolver has a distinct Tailscale IP and a
-signed `homelab-dns` proxy; never use the ingress IP as the nameserver.
+`homelab-dns` proxy; never use the ingress IP as the nameserver.
 
 After the DNS image is present in Harbor and the resolver is deployed, inspect
-its Service IP and run the direct UDP/TCP handoff check:
+its Service IP and use the [direct resolver verification](#direct-resolver-verification)
+procedure below. These representative queries do not cover the full inventory:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 ```
 
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
 `stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
 using an exit node. Do not set a global nameserver. The resolver keeps private
-answers for all 29 current approved names, including the apex. The separate
+answers for all 30 current approved names, including the apex. The separate
 [public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
 retires A/AAAA/CNAME records for only the 26 approved non-apex names after
 ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks
-pass. Intentionally stopped apps need matching zero-replica source and live
+pass. Current public-retirement procedures are limited to read-only preparation
+and verification because the execution path cannot complete required private-DNS
+validation; no alternative record-write procedure is provided. Intentionally stopped apps need matching zero-replica source and live
 checks in place of a serving HTTP response. Public apex A/MX/TXT and any CAA,
 the Cloudflare zone and DNS-01
 validation, four legacy public endpoints (`octelium-transport`,
 `kubernetes-api-ci`, `n8n-webhook`, and `policy-bot-hook`), and unrelated names
 remain. A resolver outage after retirement gives those 26 names no public app fallback;
-recover the declared resolver or signed proxy without republishing addresses.
+recover the declared resolver or proxy without republishing addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
 retain their original TLS hostname and SNI. Talos node image pulls use the
 separate host-only `10.96.0.50` registry Service; verify pulls on every node
 before changing Harbor's global DNS.
+
+## Direct resolver verification
+
+Use a connected, authorized tailnet client with read-only Kubernetes access.
+Keep raw device status and private operator evidence outside the repository.
+Inspect the `tailnet-dns/tailnet-dns` Service and its ready operator-owned proxy.
+Check its `homelab-dns` hostname, `tag:homelab-ingress`, Service/Pod ownership and
+published address against the proxy's actual device status and the connected
+client's network-map peer. Match stable device ID, numeric NodeID, public key,
+name, tag and addresses; require online, unexpired identity. Read-only
+`tailscale status --json` on the client and proxy supplies device observations.
+Recheck the Service and peer after queries; changed or missing identity invalidates
+these results. Do not substitute an ingress address for the DNS Service address.
+
+Read the approved names and expected private A address from the live
+`traefik/traefik-private` Service, and compare its annotation/routes with reviewed
+source. The resolver IP is the separate DNS Service's observed tailnet IPv4.
+Replace the placeholder below with that observed address:
+
+```sh
+dns_server="<OBSERVED_DNS_TAILNET_IP>"
+approved_names="$(kubectl -n traefik get service traefik-private -o jsonpath='{.metadata.annotations.coredns\.io/hostname}')" || exit 1
+test -n "$approved_names" || exit 1
+printf '%s\n' "$approved_names" | tr ',' '\n' |
+while IFS= read -r name; do
+  case "$name" in
+    \*.*) name="dns-preflight.${name#*.}" ;;
+  esac
+  for record_type in A AAAA; do
+    dig @"$dns_server" "$name" "$record_type" +notcp +ignore +time=3 +tries=1 +noall +comments +question +answer
+    dig @"$dns_server" "$name" "$record_type" +tcp +time=3 +tries=1 +noall +comments +question +answer
+  done
+done
+```
+
+Each query has one attempt and a three-second timeout. Inspect every response:
+require `NOERROR`, authoritative `aa`, no recursive `ra` or truncation flag, and
+exactly the observed private Traefik IPv4 for A. Current private AAAA responses
+must be authoritative NODATA. Wildcard entries use a concrete child. Empty names,
+query failure, public fallthrough or an unexpected answer fails verification;
+printing output or a successful shell exit alone is not acceptance.
+
+Compare apex MX/TXT and an unrelated public name against an independent public
+resolver using the same timeout/retry bounds and both transports. Require matching
+status and record sets; public forwarding must retain `ra`. Then verify ordinary
+client OS resolution and canonical HTTPS separately. Direct queries do not prove
+client DNS adoption, application authentication or service availability.
 
 ## Route Inventory
 
@@ -85,19 +138,36 @@ Tailscale limits network access. AFFiNE native login and Harbor OCI credentials
 continue to reach the application unchanged. Prometheus has no ingress.
 
 The shared Istio gateway and old app VirtualServices remain during cutover.
-Traefik uses application Services directly, except for the retained console
-redirect compatibility route. See the [Traefik route boundaries](../clusters/homelab/apps/traefik/README.md).
+Traefik uses application Services directly, except for Mastodon's existing web/streaming gateway and the retained console
+redirect compatibility route. See the [Traefik route boundaries](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/README.md).
 Compass keeps its existing launch hostnames and discovery-only Ingress entries;
 those names resolve to private Traefik after DNS cutover. Changing its catalog
 is separate from this transport change.
 
 ## Tailnet Exit Node And LAN Route
 
+### Codex service destinations
+
+The `tag:homelab-ci-apply` devices can reach the homelab ingress, operator,
+Funnel hosts, and exit-node connector, plus the named NAS and cluster hosts in
+`scripts/config/tailscale-policy.json`. The NAS remains user-owned and untagged;
+`homelab-nas` names its Tailscale IP, while `homelab-nas-lan` names its LAN IP.
+The cluster host aliases cover the control plane and three workers. These are
+explicit destinations so Codex does not receive access to all tailnet members
+or the full `10.1.0.0/24` route. Service authentication and Kubernetes RBAC
+still apply after network access is allowed.
+
+The grant permits all ports on those named homelab destinations. Review a new
+destination's owner and address before adding it, and update the two Tailscale
+signing/approval guards and the policy tests with the same change. Check the NAS
+alias when replacing the NAS. The `tag:homelab-ci-plan` and
+`tag:homelab-ci-cordium` identities keep their existing narrow grants.
+
 The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
 with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
 policy in `scripts/config/tailscale-policy.json` owns approvals and tag grants;
-use the [Tailscale operator unit](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
+use the [Tailscale operator unit](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
 reviewed policy changes instead of editing the admin console.
 
 ```sh
@@ -124,21 +194,26 @@ save the cutover receipt; require a fresh naturally occurring successful signed
 delivery. Keep the old callback route until that check passes. The helper's
 non-executing GET preflight expects the POST-only hook's `404` with a valid
 backend request ID, and the root's `404` without one. It verifies routing rather
-than HMAC; see [Policy Bot's pinned behavior](../clusters/homelab/apps/policy-bot/README.md#validation).
+than HMAC; see [Policy Bot's pinned behavior](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#validation).
 
 ## n8n Webhook Callback
 
 The public Funnel route permits `/webhook`, `/webhook-test`, `/webhook-waiting`,
-and their slash-separated descendants on `n8n-webhook.tail67beb.ts.net`.
+and their slash-separated descendants on `n8n-webhook.tail67beb.ts.net`,
+except the temporarily contained Emergency Bot path
+`/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`. That hook returns edge
+404; other webhook IDs remain routed.
 Authentication or signing remains workflow-specific. The editor, REST API,
 assets, and root stay at private `n8n.stinkyboi.com`.
 
 Phase 2a sets `WEBHOOK_URL` to `https://n8n-webhook.tail67beb.ts.net/` only after
 Funnel readiness; n8n can re-register hooks during startup. Keep the Emergency
-repository hook on Funnel and retire the unused Codex Review Helper hook through
-`scripts/n8n-github-webhooks.py`. Require the retired ID and path to be absent,
-plus fresh Emergency and Policy Bot deliveries; retain the old callback routes
-until acceptance.
+repository hook configuration on Funnel, but do not claim delivery while its
+path is contained. Defer the Emergency delivery and unused Codex Review Helper
+retirement gates until a reviewed replacement or rollback restores the path.
+Then retire the helper through `scripts/n8n-github-webhooks.py` and require the
+retired ID and path to be absent plus fresh Emergency and Policy Bot deliveries;
+retain the old callback routes until acceptance.
 
 ## Fleet And Future Public Routes
 

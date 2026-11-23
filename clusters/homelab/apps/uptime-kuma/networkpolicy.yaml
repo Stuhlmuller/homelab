@@ -1,0 +1,197 @@
+# Desired network boundaries; current staged enforcer does not prove packet isolation.
+# Restore safety relies on the verified version-bound execution fence and separate identity.
+# Ambient HBONE on the app is authenticated by exact-port AuthorizationPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: uptime-kuma
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: uptime-kuma
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 3001
+  - ports:
+    - protocol: TCP
+      port: 15008
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+          operator.prometheus.io/name: prometheus-kube-prometheus-prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: automation
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: n8n
+    ports:
+    - protocol: TCP
+      port: 5678
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: media
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: bazarr
+    ports:
+    - protocol: TCP
+      port: 6767
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: media
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: radarr
+    ports:
+    - protocol: TCP
+      port: 7878
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: media
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: sonarr
+    ports:
+    - protocol: TCP
+      port: 8989
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: media
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prowlarr
+    ports:
+    - protocol: TCP
+      port: 9696
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: langfuse
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: langfuse
+          app.kubernetes.io/component: web
+    ports:
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: fleet
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: fleet
+          app.kubernetes.io/component: server
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: nofx
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: nofx
+          app.kubernetes.io/component: backend
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 15008
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: nofx
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: nofx
+          app.kubernetes.io/component: frontend
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 15008
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: uptime-kuma-backup
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: uptime-kuma-backup
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: uptime-kuma-restore
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: uptime-kuma-restore
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress: []

@@ -792,6 +792,18 @@ class ActiveAgentReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "Configuration readback changed"):
             self._active()
 
+    def test_boolean_revision_generation_cannot_verify_or_redeploy(self):
+        self._active()
+        self.api.revisions["rev_one"]["configurationGeneration"] = True
+        writes = [call for call in self.api.calls if call[0].startswith("POST") or
+                  call[0] == "PATCH"]
+        with self.assertRaisesRegex(OCE.Blocked, "active revision changed"):
+            self._verify()
+        with self.assertRaisesRegex(OCE.Blocked, "active revision changed"):
+            self._active()
+        self.assertEqual([call for call in self.api.calls if call[0].startswith("POST") or
+                          call[0] == "PATCH"], writes)
+
     def test_stop_waits_for_pointer_and_pods(self):
         self._active()
         original_post = self.api.post_accepted

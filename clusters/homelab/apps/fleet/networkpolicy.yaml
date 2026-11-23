@@ -101,3 +101,27 @@ spec:
               app.kubernetes.io/name: fleet-backup
       ports:
         - {protocol: TCP, port: 3306}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: uptime-kuma-8080
+  namespace: fleet
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: server
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: uptime-kuma
+    ports:
+    - protocol: TCP
+      port: 8080

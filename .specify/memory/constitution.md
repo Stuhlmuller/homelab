@@ -1,9 +1,10 @@
 <!--
 Sync Impact Report
-- Version change: unversioned template → 1.0.0
-- Modified principles: five template placeholders → five project principles below
-- Added sections: Technology and Ownership; Delivery and Review Gates
-- Removed sections: none; placeholder sections were filled
+- Version change: 1.1.0 → 1.2.0
+- Modified principles: none
+- Added principles: VII. Root-Cause Fixes and Reusable Design
+- Added sections: none
+- Removed sections: none
 - Follow-up TODOs: none
 -->
 # Homelab Constitution
@@ -58,6 +59,33 @@ Kubernetes app and cluster directories for runtime resources, `IaC/` for infrast
 `docs/` for guides, `openwiki/` for cross-cutting knowledge, and `scripts/` for operator
 helpers. Clear ownership keeps setup repeatable and changes easy to locate.
 
+### VI. Consistent Formatting
+
+Every repository change MUST follow the applicable formatting skills and the repository's
+configured style for the files it touches. Use the repository's declared formatter where
+one exists and its linter configuration to verify the result. Use the Spec Kit Markdown
+templates for structure and lint Markdown and YAML with the rules in
+[`.github/linters/`](../../.github/linters/). Format OpenTofu with `tofu fmt` and Terragrunt
+with `terragrunt hcl fmt`, as configured in [pre-commit](../../.pre-commit-config.yaml).
+Run the applicable checks before submitting changes and keep formatting edits within the
+scope of the change. The repository's required CI checks determine merge readiness.
+
+### VII. Root-Cause Fixes and Reusable Design
+
+Changes MUST address the underlying failure in the component that owns it. Solutions
+MUST cover the supported use cases through reusable components and shared interfaces.
+Prefer the upstream project's documented, supported patterns and extend existing
+mechanisms where they fit. Agents MUST NOT apply symptom-only patches, pin a known-good
+version or revision to sidestep a failure, substitute hand-picked file paths for the
+declared workflow, or skip or weaken CI or deployment tests to get a passing result.
+
+When an issue surfaces, agents MUST pause the current work in its originating thread.
+Use read-only diagnosis to gather the evidence needed for design feedback. Present the
+failure, the known or suspected root cause, the recommended reusable design, and the
+trade-offs and remaining risks of any existing workaround. Wait for the human to decide
+whether to accept the existing workaround or proceed with a root-cause fix or redesign.
+Human acceptance of a workaround leaves all executable checks and protections in force.
+
 ## Technology and Ownership
 
 Talos Linux, Kubernetes, OpenTofu, Terragrunt, Argo CD, Helm/Kustomize-compatible sources,
@@ -88,6 +116,6 @@ repository's safety rules.
 
 Constitution versions follow semantic versioning: MAJOR for incompatible principle
 removals or redefinitions, MINOR for new principles or materially expanded guidance, and
-PATCH for non-semantic clarification. This first populated constitution is version 1.0.0.
+PATCH for non-semantic clarification.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18
+**Version**: 1.2.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-11-21

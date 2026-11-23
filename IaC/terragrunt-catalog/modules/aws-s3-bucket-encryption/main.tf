@@ -1,29 +1,3 @@
-terraform {
-  required_version = ">= 1.6.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "6.63.0"
-    }
-  }
-}
-
-variable "bucket_name" {
-  description = "Existing bucket whose encryption configuration this unit owns."
-  type        = string
-}
-
-variable "default_kms_key_id" {
-  description = "Existing default KMS key ARN; explicit per-object keys remain supported."
-  type        = string
-}
-
-variable "bucket_key_enabled" {
-  description = "Cache S3 bucket keys to reduce KMS requests for new object versions."
-  type        = bool
-}
-
 # Adopt only encryption configuration, never the bucket or its objects.
 import {
   to = aws_s3_bucket_server_side_encryption_configuration.this

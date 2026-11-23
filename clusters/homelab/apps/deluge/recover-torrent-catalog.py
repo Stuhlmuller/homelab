@@ -2,6 +2,7 @@
 """Recover Deluge's torrent catalog from intact metadata and fast-resume data."""
 
 import datetime
+import lzma
 import os
 import pickle
 import shutil
@@ -105,10 +106,9 @@ def decode_resume_data(data):
     }
 
 
-def load_complete_resume_data(torrent_ids):
-    candidates = []
+def resume_sources():
     if FASTRESUME.is_file():
-        candidates.append((str(FASTRESUME), FASTRESUME.read_bytes()))
+        yield str(FASTRESUME), FASTRESUME.read_bytes()
 
     archives = sorted(
         ARCHIVE_DIR.glob("*.tar.xz"), key=lambda path: path.stat().st_mtime, reverse=True
@@ -125,13 +125,13 @@ def load_complete_resume_data(torrent_ids):
                     None,
                 )
                 if member is not None:
-                    candidates.append(
-                        (str(archive_path), archive.extractfile(member).read())
-                    )
-        except (OSError, tarfile.TarError) as error:
+                    yield str(archive_path), archive.extractfile(member).read()
+        except (OSError, EOFError, lzma.LZMAError, tarfile.TarError) as error:
             print(f"Skipping unreadable recovery archive {archive_path}: {error}")
 
-    for source, data in candidates:
+
+def load_complete_resume_data(torrent_ids):
+    for source, data in resume_sources():
         try:
             resume_by_id = decode_resume_data(data)
         except Exception as error:

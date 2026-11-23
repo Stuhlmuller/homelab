@@ -1,11 +1,18 @@
 # OPENWIKI:MCP:START
 [mcp_servers.openwiki]
-command = "npx"
-args = ["--yes", "--package=openwiki@0.7.0", "openwiki", "mcp", "--host", "codex"]
+command = "/bin/sh"
+args = ["-c", '''
+for candidate in /nix/var/nix/profiles/default/bin/nix /run/current-system/sw/bin/nix ~/.nix-profile/bin/nix; do
+  if [ -x "$candidate" ]; then
+    exec "$candidate" run github:Stuhlmuller/homelab#openwiki -- mcp --host codex
+  fi
+done
+exec nix run github:Stuhlmuller/homelab#openwiki -- mcp --host codex
+''']
 # OPENWIKI:MCP:END
 
-# Allow the pinned package download on a cold npm cache.
-startup_timeout_sec = 60
+# Allow the pinned Nix package to build on a cold store.
+startup_timeout_sec = 180
 
 [mcp_servers.xerj]
 command = "/bin/sh"

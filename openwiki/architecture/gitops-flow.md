@@ -10,26 +10,22 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-9824f110ded8ce152ef180f9
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
+    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
+  - id: openwiki-source-6e612a8a6f7d729d059f3093
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
-    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
-  - id: openwiki-source-13b48922f1b929b52f4a0233
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
     resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
-  - id: openwiki-source-f5339d55c401403e74eef9ec
-    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-8564baaf10e1673a998e5188
     resource: repo://scripts/ci/terragrunt-apply.sh
   - id: openwiki-source-181c84b7cc75d240ee7654cc
@@ -38,10 +34,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # GitOps Flow
@@ -56,6 +52,9 @@ flowchart LR
 ```
 
 Reviewed source separates infrastructure registration from runtime reconciliation.
+
+The [monorepo layout review](../../docs/kubernetes-monorepo-layout-review.md)
+proposes folder boundaries and lists the paths a future move would affect.
 
 The trusted pull-request Terragrunt plan streams its human-readable output in
 Actions. Secret values are marked sensitive in Terraform, while saved plans and
@@ -72,6 +71,22 @@ resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
+
+Terragrunt and private-access catalog applies reuse [Deployment Checks](../../.github/workflows/deployment-checks.yml)
+to validate the exact current `main` checkout before production access.
+Protected apply uses the existing deployment commands and their exit codes.
+Both output streams are discarded on the public runner. Diagnose failures from
+a private operator session. See the [CI/CD runbook](../../docs/ci-cd.md#security-model).
+A green skipped PR plan or targeted apply does not prove the full pipeline works;
+retain actual live-plan and full-apply run evidence for the tested revisions.
+
+The shared scope helper reads Git paths from the repository root even when
+called inside an app directory. Unknown AzureAD inventory conservatively selects
+its full scope, retaining credential checks. Deleted-unit reconciliation stops
+if either inventory or the deletion diff cannot be read; neither plan nor apply
+consumes a partial list. Valid empty inventories and historical unit identities
+remain supported. The [scope comparison runbook](../../docs/ci-cd.md)
+describes validation and recovery through source or checkout repair.
 
 The protected production apply checks the current `main` commit before each
 state write. The root Terragrunt `before_hook` repeats the check for every unit
@@ -96,9 +111,13 @@ GitHub-hosted runners cannot reach that API through Octelium. The repository
 unit, saved plan, policy check, and normal Terragrunt state remain authoritative;
 no ad hoc Kubernetes mutation or GitHub kubeconfig secret is introduced.
 
-Renovate owns repo-declared workload image updates through reviewed pull
-requests. Static policy requires every committed image to keep a digest pin;
-live-only Argo CD parameter overrides are not steady state.
+Renovate owns unenrolled workload image updates through reviewed pull requests.
+Explicit `image_update` enrollment instead keeps an operator-selected mutable tag
+in Git and lets native ImageUpdater own only runtime image overrides. Exact
+package/file Renovate exceptions and Harbor provenance checks enforce that
+boundary. Terraform preserves those fields with lifecycle and computed-field
+handling. Source edits use the paused `image_update_handoff` procedure without
+copying a hash into code; see the [operator guide](../../docs/argocd-image-updater.md).
 
 Cordium's parent Application owns normal network, secret, and host
 prerequisites. At Sync wave 1 it creates the `cordium-bootstrap` child
@@ -148,19 +167,16 @@ DNS, tailnet settings, and contacts into encrypted state before applying reviewe
 changes. It also owns three scoped CI auth keys. A separate private OAuth client
 authenticates this unit; the Kubernetes operator client remains limited to its
 runtime scopes, and CI cannot administer its own tailnet grants.
-Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
-fixed publisher; committed generation changes drive 60-day rotation of keys
-with 90-day expiry. The three unused federated identities remain protected until
-the final migration retirement, after signed-key CI acceptance.
-Follow its [private saved-plan runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+Committed generation changes drive 60-day rotation of the scoped auth keys,
+which expire after 90 days.
+Follow its [private saved-plan runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
 Terragrunt Apply on exact current `main` and check Argo's observed revision.
 Application registration order alone does not establish certificate, proxy,
-Funnel, or application readiness. The fixed ingress signer verifies the three
-operator-owned proxy identities before signing them; ordinary node approval
-does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
+Funnel, or application readiness. Verify the operator-owned proxy identity,
+policy grants and actual traffic. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
@@ -169,13 +185,14 @@ for the 26 approved non-apex names from the original migration set. The
 resolver serves all 29 current private names, including two later staged
 Enterprise names. The cutover preserves the public apex, mail, certificate
 validation, and unrelated public names. It follows the separate
-`tailnet-dns` Application reaching Synced/Healthy, signing its Tailscale DNS
+`tailnet-dns` Application reaching Synced/Healthy, verifying its Tailscale DNS
 proxy, and the owner setting its observed IP as a restricted tailnet nameserver.
 The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
 stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
 old native catalog, credentials, and CI transport through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
-does not claim that traffic has moved or old native Services have been retired.
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). The cutover runbook
+records the October 25 public DNS retirement; that evidence does not retire
+the retained native Services or their credentials.
 
 ## Important Paths
 
@@ -269,7 +286,7 @@ existing hostname to private mesh addresses through the guarded
 [DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
 route. The app's internal PostSync bootstrap creates its first administrator,
 followed by a verified database backup; both setup API aliases remain blocked. See the
-[Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+[Fleet rollout](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not
 prove runtime readiness. A dependency is ready only when Argo CD reports the
@@ -290,13 +307,33 @@ Synced/Healthy platform dependencies, established CRDs, Ready secret store and
 storage class before any repair/import/apply. It selects only the exact
 Langfuse Application; it does not widen the Terragrunt filter or advance the
 full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
-[deployment and readiness gates](../../clusters/homelab/apps/langfuse/README.md#validation).
+[deployment and readiness gates](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#validation).
 
-Deleted workflow-owned units use temporary configurations at their original
-backend paths. Their generated providers retain the state key-provider and
-encryption-method identities, so retirement can read encrypted state and apply
-only the reviewed, policy-checked destroy plan. Retained secret and backup data
-remain protected by their existing ownership and policy gates.
+Pull request previews for deleted units use temporary configurations at the
+original backend paths. They inherit AES-GCM state and saved-plan encryption
+from [`IaC/root.hcl`](../../IaC/root.hcl) and preserve the original KMS
+key-provider metadata identity with `encrypted_metadata_alias`.
+
+For production retirement, the [apply runner](../../scripts/ci/terragrunt-apply.sh)
+uses `--filter-affected` and `--filter-allow-destroy` to plan from the last successful full apply
+revision. It checks the saved plan's JSON against current Conftest policy
+before applying the same binary plan. Previously unencrypted records require
+the adoption described in the [state encryption guide](../../docs/state-encryption.md).
+Existing policy gates protect retained secret and backup data.
+
+## CI unit selection
+
+Both pipelines use [affected-unit discovery](../../scripts/ci/terragrunt-affected-units.py).
+Terragrunt compares the PR merge base or the last successful full apply with
+the checked-out revision. The pipelines run affected units at exact paths in
+the checkout so Conftest can inspect their saved plans. PR plans exclude
+secret-bearing units, and retirements keep their separate state checks.
+
+The [plan runner](../../scripts/ci/terragrunt-plan.sh) preserves dependency order
+with two concurrent Argo CD units and four AzureAD units, reuses local sources,
+and enables partial-parse caching. The workflow persists only OpenTofu provider
+binaries, never state or plans. See [plan performance](../../docs/ci-cd.md#plan-performance)
+for cache behavior, validation, and rollback.
 
 ## Provider Scope
 

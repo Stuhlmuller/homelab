@@ -733,6 +733,11 @@ class EnterpriseReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "failed"):
             OCE.should_deploy(agent, revision, {**status, "status": "failed"}, "cfg_one", 2)
         self.assertTrue(OCE.should_deploy(agent, revision, status, "cfg_one", 3))
+        with self.assertRaisesRegex(OCE.Blocked, "evidence"):
+            OCE.should_deploy(agent, revision, status, "cfg_one", True)
+        with self.assertRaisesRegex(OCE.Blocked, "generation"):
+            OCE.should_deploy(agent, {**revision, "configurationGeneration": True},
+                              status, "cfg_one", 2)
         with self.assertRaisesRegex(OCE.Blocked, "identity"):
             OCE.should_deploy({**agent, "activeRevisionId": "rev_other"}, revision,
                               status, "cfg_one", 3)

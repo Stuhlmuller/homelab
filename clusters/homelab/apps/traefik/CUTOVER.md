@@ -7,20 +7,23 @@ pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 
 ## Current tailnet DNS cutover
 
-The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
-29 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
-routing. Confirm its signed proxy, observed Service IP, and direct UDP/TCP
+The separate [tailnet resolver](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md) serves all
+30 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
+routing. Confirm its proxy, observed Service IP, and direct UDP/TCP
 answers:
 
 ```sh
-python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1 +noall +comments +answer
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1 +noall +comments +answer
 ```
+
+Use the full [direct resolver verification](../../../../docs/networking-tailnet-ingress.md#direct-resolver-verification) procedure for approved-name, identity and answer checks.
 
 Confirm the owner enabled that IP as the restricted `stinkyboi.com` nameserver
 in tailnet DNS, with **Use with exit node** when needed. An ordinary client's OS
-DNS path must answer all 29 names privately. The
+DNS path must answer all 30 names privately. The
 [current public cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
-then removes only A/AAAA/CNAME records for the 26 approved non-apex app
+defines the public absence boundary for A/AAAA/CNAME records for the 26 approved non-apex app
 subdomains. It preserves the public apex, mail and DNS-01 records, Cloudflare
 zone, four legacy public endpoints, and unrelated names. Confirm existing
 HTTPS, Fleet, Harbor node pulls, native clients, and Funnel restrictions first.
@@ -42,36 +45,22 @@ off-tailnet checks:
 mkdir -p -m 700 ~/.local/state/homelab
 scripts/tailscale-private-dns.sh --retire-private --dry-run \
   --baseline-out ~/.local/state/homelab/app-subdomain-retirement.json
-# Complete and review the private JSON evidence before execution.
-scripts/tailscale-private-dns.sh --retire-private --execute \
-  --expected-sha REVIEWED_MAIN_SHA \
-  --evidence ~/.local/state/homelab/app-subdomain-retirement.json
 ```
 
-Set `REVIEWED_MAIN_SHA` to the exact merged `git rev-parse HEAD`. Review the
-preview's 26-name record IDs and largest previous TTL. Before the first DELETE,
-the helper blocks relevant child-zone NS delegation and effective public
-answers from broader wildcards or CNAME chains. It does not traverse child
-zones. It compares the selected Cloudflare API zone's nameservers with the
-parent delegation and rejects failed or non-authoritative TTL replies. A
-final full-field target reread catches changes during inspection. A changed
-target baseline or incomplete evidence blocks execution.
-After the reported TTL from the last deletion, verify no public A/AAAA/CNAME
-answers for all 26 names and a concrete
-Cordium child, while public apex, unrelated names, Cloudflare delegation,
-cert-manager DNS-01 readiness, and both Traefik and Istio Certificates remain
-healthy. See the linked quickstart for exact read-only checks. Investigate a
-partial run before retrying through the same helper and evidence. Resolver
-recovery restores the declared Service or signed proxy through the reviewed
-path; it never republishes retired public app addresses.
+Review the preview's exact 26-name record IDs, largest previous TTL, public-zone
+delegation and wildcard/CNAME conflicts. Keep all private evidence outside git.
+The current retirement execution path cannot complete its required private-DNS
+validation, so this guide provides read-only preparation only. A successful
+preview or direct query is not permission to bypass that executable validation.
+
+For names already retired, verify public A/AAAA/CNAME absence after the recorded
+TTL, while public apex, mail, unrelated names, delegation, DNS-01 and Certificates
+remain healthy. Restore a failed private resolver through reviewed Argo/Terragrunt
+state; do not republish retired app addresses.
 
 ## Before execution
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
-Keep Tailnet Lock enabled. Connect the existing trusted Mac's saved Tailscale
-profile, then preview and execute `scripts/tailscale-ingress-sign.py` as described
-in the [signing runbook](README.md#tailnet-lock). All fixed proxy identities must
-be signed before mesh/Funnel acceptance; Kubernetes readiness alone is insufficient.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
 Ready, and the private ingress Service publishes the unique online
 `homelab-ingress.tail67beb.ts.net` peer. Before DNS changes, reconnect the Mac's
@@ -169,7 +158,7 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    Policy Bot's safe GET preflight requires the POST-only hook's `404` plus one
    valid backend `X-Request-ID`; the unrouted root must return `404` without that
    header. This proves routing only, not HMAC acceptance. See the
-   [pinned application behavior](../policy-bot/README.md#validation).
+   [pinned application behavior](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#validation).
    After naturally occurring deliveries, require fresh success:
 
    ```sh
@@ -197,7 +186,7 @@ reviewed main `e0da1da6`; Argo and the certificate were healthy.
 
 The same peer's IPv6 address refused connections. This is the supported boundary
 of the current single-stack IPv4 Service/kernel proxy, not an IPv6 acceptance.
-The signed operator API proxy's IPv6 remained reachable from the same Mac.
+The operator API proxy's IPv6 remained reachable from the same Mac.
 Publish only Service-derived A records, with AAAA empty; see the
 [IP-family contract and primary sources](../../../../docs/networking-tailnet-ingress.md#dns-model).
 
@@ -244,12 +233,74 @@ bypass readiness or issue an ad hoc reboot.
 ## Final retirement
 
 Require all private app checks, an off-LAN Fleet device check-in (use the
-[one-shot iPhone verifier](../fleet/README.md#rollout-and-validation)), Harbor
+[one-shot iPhone verifier](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation)), Harbor
 pulls, migrated CI,
 fresh signed callback deliveries, and Cordium execution/reconnection before a
 separate retirement change. That change removes old application/native catalog
 routes, obsolete credentials, the Cloudflare Tunnel, and finally legacy DNS.
 This preparation DNS helper has no legacy-route retirement action.
+
+### Legacy application bypass
+
+The old Istio gateway and Octelium ingress dataplane are ClusterIP Services.
+An unrelated in-cluster Pod can call their app hosts directly, bypassing the
+tailnet listener. Flannel does not enforce the declared NetworkPolicies, so a
+new policy alone would not close this path. The 18-app retirement set is the
+17 Istio-backed public Octelium WEB Services plus direct Bazarr; Mastodon,
+Fleet, Cordium, OpenClaw Enterprise, native API, and callbacks have separate
+caller gates and remain outside this set.
+
+Before removing a route, run the read-only source inventory:
+
+```sh
+nix develop --command python3 -I scripts/ci/legacy-ingress-retirement-check.py
+```
+
+It checks that each candidate has a direct private Traefik route and private
+DNS declaration, and reports remaining catalog, Cloudflared, VirtualService,
+and gateway wildcard sources. A passing inventory is not live acceptance.
+From a real mesh client, open every app URL and exercise its authenticated
+workflow; verify Harbor login and image pulls separately. Record the client,
+time, response, and merged revision. Keep Fleet's off-LAN check-in, Cordium
+execution/reconnection, signed callbacks, native API, and Mastodon federation
+as independent gates.
+
+Only after the 18 app callers are accepted, submit a reviewed GitOps/catalog
+change that removes those public WEB entries, their Cloudflared app hosts, and
+their 17 Istio application VirtualService files and Kustomization entries.
+Replace the Istio gateway's broad `*.stinkyboi.com` host with the exact hosts
+still served by its retained control, Fleet, Mastodon, Cordium, and callback
+routes. The catalog reconciler does not prune Services: use the reviewed-main
+`scripts/octelium-service-retire.py` for each removed Service, then read back
+the live catalog. Keep the old control and callback routes until their own
+acceptance gates pass. Mastodon needs a private Traefik route and split public
+federation path enforcement before its old route can retire.
+
+After Argo sync and native Service retirement, run the source closure gate:
+
+```sh
+nix develop --command python3 -I scripts/ci/legacy-ingress-retirement-check.py --retired
+```
+
+Then test from an unrelated existing Pod, for example `media/radarr`. The
+Istio request keeps the target Host and SNI while connecting to the gateway:
+
+```sh
+gateway=istio-ingressgateway.istio-system.svc.cluster.local
+kubectl -n media exec deploy/radarr -- curl -ksS --max-time 8 \
+  --connect-to "grafana.stinkyboi.com:443:${gateway}:443" \
+  -D - https://grafana.stinkyboi.com/
+kubectl -n media exec deploy/radarr -- curl -sS --max-time 8 \
+  -H 'Host: grafana.stinkyboi.com' -D - \
+  http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080/
+```
+
+Repeat for representative protected hosts and Bazarr through Octelium. The
+response must not expose the target app or offer its old Octelium login route;
+inspect headers, redirect, and body rather than trusting a status code alone.
+Verify the same app still works through private Traefik from the authorized
+client. A source-only pass cannot establish live denial, and the Mastodon and
+control paths must keep working.
 
 Until then, preserve Enterprise PVCs, Cordium state, existing credentials, and
 owned Mac backups. Roll back through reviewed desired-state changes or the

@@ -15,6 +15,7 @@ class Timeout(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="static-timeout-") as folder:
             root = Path(folder)
             for name in ("scripts/ci", "IaC/homelab/us-west-2/operator/github-actions-role-policy",
+                         "IaC/homelab/us-west-2/operator/tailscale-access",
                          "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy",
                          "IaC/terragrunt-catalog/units/live/aws-ssm-parameters", "bin"):
                 (root / name).mkdir(parents=True)
@@ -23,8 +24,12 @@ class Timeout(unittest.TestCase):
                          "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
                 shutil.copyfile(ROOT / name, root / name)
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
+                         "cordium-genesis-recovery-test.py",
                          "openclaw-retirement-status-test.py",
                          "openclaw-enterprise-operations-test.py",
+                         "openclaw-legacy-netns-preflight-test.py",
+                         "openclaw-discord-cache-publication-test.py",
+                         "openclaw-legacy-netns-preflight-test.py",
                          "openclaw-enterprise-resume-test.py",
                          "openclaw-enterprise-journal-operator-test.py",
                          "openclaw-enterprise-operator-image-test.py",
@@ -49,6 +54,8 @@ class Timeout(unittest.TestCase):
                          "renovate-acceptance-final-report-test.py",
                          "renovate-acceptance-ledger-cleanup-test.py",
                          "tailnet-dns-test.py",
+                         "codex-cloud-signer-test.py",
+                         "codex-cloud-signer-manifest-test.py",
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-postgres-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",
@@ -60,6 +67,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-test.py",
                          "openclaw-enterprise-active-test.py",
                          "openclaw-enterprise-recovery-test.py",
+                         "tailnet-dns-chart-test.py",
                          "platform-maintenance-test.py",
                          "platform-maintenance-stage-test.py",
                          "platform-maintenance-credentials-test.py",

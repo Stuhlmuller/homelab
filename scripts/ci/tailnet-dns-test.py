@@ -2,6 +2,7 @@
 """Validate the reviewed private DNS source and its pinned Helm render."""
 
 import copy
+import hashlib
 import json
 import re
 import subprocess
@@ -13,14 +14,22 @@ VALUES = ROOT / "clusters/homelab/apps/traefik/values.yaml"
 ROUTES = ROOT / "clusters/homelab/apps/traefik/routes.yaml"
 DNS_VALUES = ROOT / "clusters/homelab/platform/tailnet-dns/values.yaml"
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
-CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
-CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
+CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz"
+CHART_PACKAGE_SHA256 = "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
+CHART_CATALOG = ROOT / "scripts/config/harbor-helm-charts.json"
+CHART_INVENTORY = ROOT / "scripts/config/harbor-image-charts.json"
+ARGO_SELF_MANAGEMENT = ROOT / "clusters/homelab/argocd/self-management"
+HARBOR_CHART_REPOSITORY = "harbor.stinkyboi.com/mirror/helm"
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
          "sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4")
 CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
 OCE_RULE = r"^agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com$"
 WILDCARD_RULES = {CORDIUM_RULE: "*.cordium.stinkyboi.com",
                   OCE_RULE: "*.agents.oce.stinkyboi.com"}
+VIEW_WILDCARDS = {
+    "*.cordium.stinkyboi.com": r"^[^.]+\\.cordium\\.stinkyboi\\.com\\.$",
+    "*.agents.oce.stinkyboi.com": r"^[^.]+\\.agents\\.oce\\.stinkyboi\\.com\\.$",
+}
 HOST = re.compile(r"Host\(`([^`]+)`\)")
 HOST_REGEXP = re.compile(r"HostRegexp\(`([^`]+)`\)")
 NAME = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*stinkyboi\.com")
@@ -36,7 +45,7 @@ def load_yaml(path):
         ["yq", "ea", "-o=json", "-I=0", "select(document_index == 0)", str(path)], text=True))
 
 
-def approved_names(values, routes, inventory, *, initial=False):
+def approved_names(values, routes, inventory):
     services = values["service"]
     selected = [name for name, service in services.items()
                 if service.get("labels", {}).get("homelab.rst.io/private-dns") == "approved"]
@@ -65,9 +74,6 @@ def approved_names(values, routes, inventory, *, initial=False):
         routed.extend(WILDCARD_RULES[value] for value in regexps)
     require(len(routed) == len(set(routed)), "duplicate private HTTPS route name")
     require(set(names) == set(routed), "private Service DNS names differ from HTTPS route names")
-    if initial:
-        require(set(names) == set(inventory["hostnames"]) and len(names) == len(inventory["hostnames"]),
-                "initial handoff must match the reviewed private hostname inventory")
     return set(names)
 
 
@@ -79,25 +85,56 @@ def expect_reject(values, routes, inventory, message):
     raise AssertionError(message)
 
 
-def mutation_checks(values, routes, inventory):
+def private_view_contract(names, dns_values):
+    plugins = dns_values["servers"][0]["plugins"]
+    view = next(plugin for plugin in plugins if plugin["name"] == "view")
+    expression = view["configBlock"]
+    require(expression.startswith("expr type() in ['A', 'AAAA'] && (")
+            and expression.endswith(")"), "private view must select approved A/AAAA only")
+    exact_match = re.search(r"name\(\) in \[([^\]]+)\]", expression)
+    require(exact_match is not None, "private view needs an exact-name allowlist")
+    skeleton = re.sub(r"name\(\) matches '[^']+'", "WILDCARD",
+                      re.sub(r"name\(\) in \[[^\]]+\]", "NAMES", expression))
+    require(skeleton == "expr type() in ['A', 'AAAA'] && ( NAMES || WILDCARD || WILDCARD)",
+            "private view contains an unexpected route condition")
+    exact_names = re.findall(r"'([^']+)'", exact_match.group(1))
+    wildcards = re.findall(r"name\(\) matches '([^']+)'", expression)
+    require(len(exact_names) == len(set(exact_names))
+            and set(exact_names) == {name + "." for name in names if "*" not in name},
+            "private view exact names differ from the approved Service annotation")
+    require(len(wildcards) == len(set(wildcards))
+            and set(wildcards) == {VIEW_WILDCARDS[name] for name in names if "*" in name},
+            "private view wildcards differ from the approved Service annotation")
+    require(not any(plugin["name"] == "forward" for plugin in plugins)
+            and "fallthrough" not in next(plugin for plugin in plugins
+                                         if plugin["name"] == "k8s_gateway")["configBlock"],
+            "private A/AAAA must not fall through to public DNS")
+
+
+def mutation_checks(values, routes, inventory, dns_values):
     added_values, added_routes = copy.deepcopy(values), copy.deepcopy(routes)
     added_values["service"]["private"]["annotations"]["coredns.io/hostname"] += ",probe.stinkyboi.com"
     added_routes["http"]["routers"]["probe"] = {
         "entryPoints": ["websecure"], "rule": "Host(`probe.stinkyboi.com`)"}
     approved_names(added_values, added_routes, inventory)
     try:
-        approved_names(added_values, added_routes, inventory, initial=True)
+        private_view_contract(approved_names(added_values, added_routes, inventory), dns_values)
     except ValueError:
         pass
     else:
-        raise AssertionError("future addition passed the one-time migration check")
-
+        raise AssertionError("new private name passed without a DNS view update")
     renamed_values, renamed_routes = copy.deepcopy(values), copy.deepcopy(routes)
     renamed_values["service"]["private"]["annotations"]["coredns.io/hostname"] = (
         renamed_values["service"]["private"]["annotations"]["coredns.io/hostname"]
         .replace("affine.stinkyboi.com", "new-affine.stinkyboi.com"))
     renamed_routes["http"]["routers"]["affine"]["rule"] = "Host(`new-affine.stinkyboi.com`)"
     approved_names(renamed_values, renamed_routes, inventory)
+    try:
+        private_view_contract(approved_names(renamed_values, renamed_routes, inventory), dns_values)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("renamed private name passed without a DNS view update")
 
     removed_values, removed_routes = copy.deepcopy(values), copy.deepcopy(routes)
     removed_values["service"]["private"]["annotations"]["coredns.io/hostname"] = (
@@ -105,6 +142,12 @@ def mutation_checks(values, routes, inventory):
         .replace("affine.stinkyboi.com,", ""))
     del removed_routes["http"]["routers"]["affine"]
     approved_names(removed_values, removed_routes, inventory)
+    try:
+        private_view_contract(approved_names(removed_values, removed_routes, inventory), dns_values)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("removed private name passed without a DNS view update")
 
     expect_reject(added_values, routes, inventory, "DNS name without private route passed")
     added_values["service"]["private"]["annotations"]["coredns.io/hostname"] += ",probe.stinkyboi.com"
@@ -142,16 +185,52 @@ def mutation_checks(values, routes, inventory):
             "OCE wildcard must match only opaque Agent hosts")
 
 
+def chart_source_contract():
+    matches = [row for row in json.loads(CHART_INVENTORY.read_text())
+               if row["source"] == "IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl"]
+    require(len(matches) == 1 and
+            (matches[0]["chart"], matches[0]["targetRevision"], matches[0]["repoURL"])
+            == ("k8s-gateway", "4.0.0", HARBOR_CHART_REPOSITORY),
+            "resolver must use the reviewed Harbor chart")
+    project = load_yaml(ARGO_SELF_MANAGEMENT / "appproject.yaml")
+    require(HARBOR_CHART_REPOSITORY in project["spec"]["sourceRepos"],
+            "homelab project must allow the Harbor chart repository")
+    secret = load_yaml(ARGO_SELF_MANAGEMENT / "harbor-helm-repository.yaml")
+    repository = secret["spec"]["target"]["template"]["data"]
+    require(repository["url"] == HARBOR_CHART_REPOSITORY and repository["type"] == "helm"
+            and repository["enableOCI"] == "true",
+            "Argo CD must use its Helm OCI repository configuration")
+
+
+def render_pinned_chart():
+    """Render the same package the protected Harbor publisher verifies."""
+    catalog = json.loads(CHART_CATALOG.read_text())
+    matches = [row for row in catalog["charts"] if row["chart"] == "k8s-gateway"
+               and row["version"] == "4.0.0"
+               and row["repository"] == "codeberg.org/k8s-gateway/charts"]
+    require(len(matches) == 1 and matches[0]["sha256"] == CHART_PACKAGE_SHA256,
+            "reviewed chart 4.0.0 catalog hash changed")
+    require(CHART_PACKAGE.is_file()
+            and hashlib.sha256(CHART_PACKAGE.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
+            "reviewed chart 4.0.0 package is missing or changed")
+    command = ["helm", "template", "tailnet-dns", str(CHART_PACKAGE),
+               "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
+    try:
+        rendered = subprocess.run(command, text=True, capture_output=True,
+                                  check=False, timeout=20)
+    except subprocess.TimeoutExpired:
+        raise ValueError("pinned chart template timed out; private Helm output withheld") from None
+    require(rendered.returncode == 0,
+            "pinned chart template failed; private Helm output withheld")
+    return rendered.stdout
+
+
 def rendered_contract():
     dns_values = load_yaml(DNS_VALUES)
     servers = dns_values["servers"]
     require(len(servers) == 2 and all(s["servicePort"] == 53 for s in servers),
             "both resolver views must expose DNS port 53")
-    command = ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
-               "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-    chart = subprocess.run(command, text=True, capture_output=True, check=True)
-    require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
-    rendered = chart.stdout
+    rendered = render_pinned_chart()
     documents = json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
     resources = {(doc["kind"], doc["metadata"]["name"]): doc for doc in documents}
@@ -180,18 +259,22 @@ def rendered_contract():
 
     corefile = resources["ConfigMap", "tailnet-dns-k8s-gateway"]["data"]["Corefile"]
     blocks = corefile.split(".:1053 {")
+    view_expression = next(plugin for plugin in dns_values["servers"][0]["plugins"]
+                           if plugin["name"] == "view")["configBlock"]
     require(len(blocks) == 3 and "view private-addresses" in blocks[1]
-            and "expr type() in ['A', 'AAAA']" in blocks[1]
+            and view_expression in blocks[1]
             and "view " not in blocks[2] and "k8s_gateway" not in blocks[2],
-            "A/AAAA private view or public non-address forwarding changed")
+            "approved private view or public catch-all changed")
     require("k8s_gateway stinkyboi.com" in blocks[1]
             and "resources Service" in blocks[1]
             and "serviceLabelSelectors homelab.rst.io/private-dns=approved" in blocks[1]
             and "loadBalancerAddressPreference ip" in blocks[1]
-            and "fallthrough" in blocks[1]
+            and "fallthrough" not in blocks[1]
             and "ttl 30" in blocks[1]
-            and all("forward . 1.1.1.1 1.0.0.1" in block and "cache 30" in block
-                    for block in blocks[1:]), "private source or public forwarding changed")
+            and "forward" not in blocks[1]
+            and "forward . 1.1.1.1 1.0.0.1" in blocks[2]
+            and all("cache 30" in block for block in blocks[1:]),
+            "private fail-closed source or public forwarding changed")
     role = resources["ClusterRole", "tailnet-dns-k8s-gateway"]
     allowed = {"customresourcedefinitions", "services", "namespaces", "endpointslices"}
     granted = {resource for rule in role["rules"] for resource in rule["resources"]}
@@ -201,18 +284,25 @@ def rendered_contract():
 
 
 def main():
-    args = set(sys.argv[1:])
-    require(args <= {"--declarations", "--initial-migration"},
-            "usage: tailnet-dns-test.py [--declarations] [--initial-migration]")
+    args = sys.argv[1:]
+    require(args in ([], ["--declarations"], ["--render"]),
+            "usage: tailnet-dns-test.py [--declarations | --render]")
+    if args == ["--render"]:
+        sys.stdout.write(render_pinned_chart())
+        return
+    chart_source_contract()
     values = load_yaml(VALUES)
     routes = load_yaml(ROUTES)
     inventory = json.loads(INVENTORY.read_text())
+    dns_values = load_yaml(DNS_VALUES)
     label_sources = {path for path in (ROOT / "clusters/homelab").rglob("*")
                      if path.suffix in {".yaml", ".yml"}
                      and "homelab.rst.io/private-dns:" in path.read_text()}
     require(label_sources == {VALUES}, "another cluster source declares the private DNS selector")
-    approved_names(values, routes, inventory, initial="--initial-migration" in args)
-    mutation_checks(values, routes, inventory)
+    names = approved_names(values, routes, inventory)
+    require("adguard.stinkyboi.com" in names, "AdGuard private name is missing")
+    private_view_contract(names, dns_values)
+    mutation_checks(values, routes, inventory, dns_values)
     if "--declarations" not in args:
         rendered_contract()
     print("Private DNS publication and resolver contract passed")

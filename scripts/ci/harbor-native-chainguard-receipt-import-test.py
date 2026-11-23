@@ -8,6 +8,7 @@ import io
 import json
 import tempfile
 import unittest
+from unittest.mock import Mock
 import zipfile
 from pathlib import Path
 
@@ -126,9 +127,12 @@ class ReceiptImportTests(unittest.TestCase):
         self.plans = IMPORT.native_plans(self.config)
         plan = self.plans["chainguard-python"]
         scan = {
-            "schema_version": 1, "kind": "native-chainguard-scan-v1", "image_id": plan["image_id"],
+            "schema_version": 2, "kind": "native-chainguard-scan-v2", "image_id": plan["image_id"],
             "config_digest": plan["config_digest"], "destination_digest": plan["source_digest"],
             "platforms": {"linux/amd64": AMD64, "linux/arm64": ARM64},
+            "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
             "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
         }
         self.receipt = NATIVE.receipt_for(plan, SHA, self.raw, self.raw, self.raw, scan)
@@ -211,6 +215,52 @@ class ReceiptImportTests(unittest.TestCase):
                 self.config, self.api({base_sha: base, head_sha: state}, {IMPORT.STATE_PATH, "docs/extra.md"}),
                 base_sha, head_sha,
             )
+
+    def test_queued_event_uses_current_main_when_open_and_premerge_base_when_merged(self):
+        head, current_main = "c" * 40, "d" * 40
+        event = {"number": 1879, "repository": {"full_name": IMPORT.REPOSITORY},
+                 "pull_request": {"head": {"sha": head}}}
+        pull = {"number": 1879, "state": "open", "merged": False, "head": {"sha": head},
+                "base": {"sha": SHA, "ref": "main", "repo": {"full_name": IMPORT.REPOSITORY}}}
+        client = Mock()
+        client.json.return_value = pull
+        self.assertEqual(IMPORT.event_base(client, event, current_main), current_main)
+        client.json.assert_called_once_with(f"/repos/{IMPORT.REPOSITORY}/pulls/1879")
+        pull.update(state="closed", merged=True)
+        self.assertEqual(IMPORT.event_base(client, event, current_main), SHA)
+        cases = [
+            {"head": {"sha": "e" * 40}},
+            {"merged": False},
+            {"base": {"sha": SHA, "ref": "other", "repo": {"full_name": IMPORT.REPOSITORY}}},
+            {"base": {"sha": SHA, "ref": "main", "repo": {"full_name": "other/repository"}}},
+            {"base": {"sha": "invalid", "ref": "main", "repo": {"full_name": IMPORT.REPOSITORY}}},
+        ]
+        for change in cases:
+            with self.subTest(change=change):
+                client.json.return_value = {**pull, **change}
+                with self.assertRaises(IMPORT.ImportError):
+                    IMPORT.event_base(client, event, current_main)
+
+    def test_merged_event_still_checks_new_receipt_against_protected_artifact(self):
+        receipts, provenance = IMPORT.verify_artifact(self.api(), IMPORT.REPOSITORY, RUN_ID, SHA, self.plans)
+        base = {"schema_version": 1, "receipts": {}}
+        state = IMPORT.imported_state(base, receipts, provenance)
+        head, current_main = "c" * 40, "d" * 40
+        event = {"number": 1879, "repository": {"full_name": IMPORT.REPOSITORY},
+                 "pull_request": {"head": {"sha": head}}}
+        pull = {"number": 1879, "state": "closed", "merged": True, "head": {"sha": head},
+                "base": {"sha": SHA, "ref": "main", "repo": {"full_name": IMPORT.REPOSITORY}}}
+        event_client = Mock()
+        event_client.json.return_value = pull
+        verification_base = IMPORT.event_base(event_client, event, current_main)
+        client = self.api({SHA: base, head: state, current_main: state}, {IMPORT.STATE_PATH})
+        self.assertEqual(IMPORT.verify_pull_request(self.config, client, verification_base, head),
+                         ["chainguard-python"])
+        self.assertTrue(any("/artifacts/" in call for call in client.calls))
+        state["receipts"]["chainguard-python"]["provenance"]["artifact_sha256"] = "sha256:" + "0" * 64
+        client = self.api({SHA: base, head: state, current_main: state}, {IMPORT.STATE_PATH})
+        with self.assertRaises(IMPORT.ImportError):
+            IMPORT.verify_pull_request(self.config, client, verification_base, head)
 
     def test_main_push_skips_only_equal_native_receipts_at_exact_revisions(self):
         base_sha, head_sha = SHA, "c" * 40

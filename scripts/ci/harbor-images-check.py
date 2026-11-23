@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+ARGOCD_BOOTSTRAP = "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
@@ -46,6 +47,22 @@ NATIVE_RECEIPT_IMPORT_SPEC = importlib.util.spec_from_file_location(
 )
 NATIVE_RECEIPT_IMPORT = importlib.util.module_from_spec(NATIVE_RECEIPT_IMPORT_SPEC)
 NATIVE_RECEIPT_IMPORT_SPEC.loader.exec_module(NATIVE_RECEIPT_IMPORT)
+RUNTIME_POLICY_SPEC = importlib.util.spec_from_file_location(
+    "argocd_image_updater_policy", Path(__file__).with_name("argocd-image-updater-policy.py")
+)
+RUNTIME_POLICY = importlib.util.module_from_spec(RUNTIME_POLICY_SPEC)
+RUNTIME_POLICY_SPEC.loader.exec_module(RUNTIME_POLICY)
+BOOTSTRAP_SPEC = importlib.util.spec_from_file_location(
+    "harbor_bootstrap", ROOT / "clusters/homelab/apps/harbor/bootstrap.py"
+)
+BOOTSTRAP = importlib.util.module_from_spec(BOOTSTRAP_SPEC)
+BOOTSTRAP_SPEC.loader.exec_module(BOOTSTRAP)
+REPOSITORY_COMPONENT = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+PROXY_IMAGE = re.compile(
+    rf"harbor\.stinkyboi\.com/(?P<project>[^/]+)/"
+    rf"{REPOSITORY_COMPONENT}(?:/{REPOSITORY_COMPONENT})+"
+    r"(?::[\w][\w.-]{0,127})?@(?P<digest>sha256:[0-9a-f]{64})", re.ASCII
+)
 
 
 def normalize(image):
@@ -74,6 +91,14 @@ def mirror_reference(image):
     if ":" in repository.rsplit("/", 1)[-1]:
         repository = repository.rsplit(":", 1)[0]
     return repository + "@" + digest
+
+
+def proxy_digest(image):
+    """Recognize digest-pinned images served by one of the declared caches."""
+    match = PROXY_IMAGE.fullmatch(image)
+    if match and match["project"] in BOOTSTRAP.PROXY_CACHES:
+        return match["digest"]
+    return None
 
 
 def declared_images(value):
@@ -125,6 +150,29 @@ def yaml_documents(paths):
         ["yq", "ea", "-o=json", "-I=0",
          '[., (.. | select(tag == "!!map" and has("helm")) | .helm.values | select(tag == "!!str") | from_yaml)]',
          *map(str, paths)], text=True))
+
+
+def runtime_unmirrored(paths, known_mirrors, known, known_tags, allowed):
+    """Retain source identity so one enrollment cannot exempt another file."""
+    entries = json.loads(subprocess.check_output(
+        ["yq", "ea", "-o=json", "-I=0",
+         '[{"path": filename, "document": .}, (.. | select(tag == "!!map" and has("helm")) | .helm.values | select(tag == "!!str") | {"path": filename, "document": from_yaml})]',
+         *map(str, paths)], text=True))
+    missing = set()
+    for entry in entries:
+        path = str(Path(entry["path"]).relative_to(ROOT))
+        for image in declared_images(entry["document"])[0]:
+            if image.startswith("harbor.stinkyboi.com/homelab/"):
+                continue  # Native receipt validation remains unchanged below.
+            if proxy_digest(image):
+                continue
+            if image.startswith("harbor.stinkyboi.com/mirror/"):
+                if mirror_reference(image) in known_mirrors or RUNTIME_POLICY.permits(allowed, path, image, known_tags):
+                    continue
+            elif catalog_reference(image) in known | known_tags:
+                continue
+            missing.add(normalize(image))
+    return sorted(missing)
 
 
 def manifest_paths():
@@ -182,6 +230,13 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+        for repository, chart, revision in re.findall(
+            r'repoURL\s*=\s*"oci://([^"\s]+)/([^/"\s]+)"\s*'
+            r'path\s*=\s*"\."\s*targetRevision\s*=\s*"([^"]+)"\s*helm\s*=',
+            stack.read_text(),
+        ):
+            charts.append({"source": str(stack.relative_to(ROOT)), "repoURL": repository,
+                           "chart": chart, "targetRevision": revision})
     enterprise = ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
     if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
         match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
@@ -191,7 +246,7 @@ def chart_sources():
         repository, path, revision = match.groups()
         charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
                        "chart": "git:" + path, "targetRevision": revision})
-    bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
+    bootstrap = ROOT / ARGOCD_BOOTSTRAP
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
                    "chart": fields["chart"], "targetRevision": fields["chart_version"]})
@@ -383,6 +438,21 @@ def ownership_errors():
             for destination in sorted(destinations - disabled)]
 
 
+def argocd_bootstrap_image_error(catalog):
+    bootstrap = (ROOT / ARGOCD_BOOTSTRAP).read_text()
+    tags = re.findall(
+        r'global\s*=\s*\{\s*(?:#[^\n]*\n\s*)*image\s*=\s*\{\s*tag\s*=\s*"([^"]+)"',
+        bootstrap,
+    )
+    if len(tags) != 1:
+        return f"{ARGOCD_BOOTSTRAP}: expected one literal global.image.tag"
+    image = f"quay.io/argoproj/argocd:{tags[0]}"
+    if not any(re.fullmatch(re.escape(image) + r"@sha256:[0-9a-f]{64}", item["source"])
+               for item in catalog):
+        return f"{ARGOCD_BOOTSTRAP}: missing digest-pinned Harbor source for {image}"
+    return None
+
+
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
@@ -395,29 +465,29 @@ def check():
     paths = manifest_paths()
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
-    cluster_paths = [path for path in paths if path.is_relative_to(ROOT / "clusters")]
-    cluster_docs = yaml_documents(cluster_paths) if cluster_paths else []
-    cluster_images = declared_images(cluster_docs)[0] | embedded_yaml_images(cluster_docs)
-    public_cluster_images = sorted(image for image in cluster_images
-                                   if not image.startswith("harbor.stinkyboi.com/"))
-    unpinned_cluster_images = sorted(image for image in cluster_images
-                                     if image.startswith("harbor.stinkyboi.com/")
-                                     and "@sha256:" not in image)
     declared_native = native_references_by_path(paths)
     # Direct Harbor mirror references must retain the reviewed digest. Upstream
     # provenance refs may use a reviewed tag because Talos resolves them through
-    # the strict Harbor mirror path.
+    # the strict Harbor mirror path. Proxy cache pulls need no prior publication.
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and not proxy_digest(image)
                      and (mirror_reference(image) not in known_mirrors
                           if image.startswith("harbor.stinkyboi.com/mirror/")
                           else catalog_reference(image) not in known | known_tags))
-    missing_digests = sorted(digests - known_digests - {
+    try:
+        runtime_owned = RUNTIME_POLICY.load(ROOT)
+    except (ValueError, subprocess.SubprocessError) as error:
+        raise SystemExit(f"Invalid Image Updater ownership: {error}") from error
+    if runtime_owned:
+        missing = runtime_unmirrored(paths, known_mirrors, known, known_tags, runtime_owned)
+    cache_digests = {digest for image in images if (digest := proxy_digest(image))}
+    missing_digests = sorted(digests - known_digests - cache_digests - {
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
-    errors.extend("Non-Harbor Argo image: " + image for image in public_cluster_images)
-    errors.extend("Unpinned Argo image: " + image for image in unpinned_cluster_images)
+    if bootstrap_error := argocd_bootstrap_image_error(catalog):
+        errors.append(bootstrap_error)
     errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
@@ -465,7 +535,7 @@ def check():
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Harbor catalog covers {len(images)} declared image references; chart inventory matches; "
+    print(f"Harbor catalog and proxy checks cover {len(images)} declared image references; chart inventory matches; "
           f"fixed app scopes match required images: {scope_counts}")
 
 

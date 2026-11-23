@@ -5,13 +5,13 @@ locals {
 inputs = {
   defaults = local.shared.argocd_defaults
   dependencies = [
-    "../aws-ssm-parameters",
-    "external-secrets",
-    "cert-manager",
-    "istio",
-    "octelium",
-    "octelium-public",
-    "platform-storage"
+    "../../../shared/aws-ssm-parameters",
+    "../../external-secrets/argocd",
+    "../../cert-manager/argocd",
+    "../../istio/argocd",
+    "../../octelium/argocd",
+    "../../octelium-public/argocd",
+    "../../platform-storage/argocd"
   ]
   spec = {
     syncPolicy = {
@@ -32,7 +32,7 @@ inputs = {
       },
       {
         name  = "storage"
-        value = "clusters/homelab/apps/fleet/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md"
       }
     ]
   }

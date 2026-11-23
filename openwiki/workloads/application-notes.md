@@ -6,23 +6,29 @@ tags: ["workloads", "apps", "platform"]
 sources:
   - id: openwiki-source-1a1a01e3db3c30a111cb3145
     resource: repo://clusters/homelab/apps/openclaw/assistant/config.json
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
-generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
+  - id: openwiki-source-8412fea3ae511bb478ea11c7
+    resource: repo://clusters/homelab/apps/sonarr/values.yaml
+  - id: openwiki-source-4ca0ce872f200b18ae467a0e
+    resource: repo://docs/arr-playback-policy.md
+  - id: openwiki-source-f46a174a7f12aaf8ef457c59
+    resource: repo://scripts/arr-playback-policy.py
+  - id: openwiki-source-10d0925efe2a75750e1903c5
+    resource: repo://scripts/config/arr-playback-policy.json
+generated: { by: "codex", at: "2026-10-29T22:24:46.227Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:10:58.872Z
+    at: 2026-10-29T22:24:46.227Z
 ---
 
 # Application Notes
 
 Canonical sources:
 
-- [`clusters/homelab/apps/README.md`](../../clusters/homelab/apps/README.md)
-- `clusters/homelab/apps/*/README.md`
-- `clusters/homelab/platform/*/README.md`
+- [`clusters/homelab/apps/README.md`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/README.md)
+- Workload manifests under `clusters/homelab/apps/`
+- Platform manifests under `clusters/homelab/platform/`
 - [Workload Inventory](inventory.md) for ownership, namespaces, dependencies, and state
 
 ## Shared Rules
@@ -64,9 +70,25 @@ Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
 ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
 operator security flags, rollback and UI namespace selection. Validate rollout
 with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
-Live recovery remains unverified until the GitOps change rolls out. Grafana's
-frontend-settings endpoint also returned 401; dashboard integration is a separate
-follow-up requiring its existing authentication contract to be checked.
+Grafana's frontend-settings endpoint also returned 401; dashboard integration
+is a separate follow-up requiring its existing authentication contract to be
+checked.
+
+On 2026-10-27, the Kiali CR reported `Failure` while the operator rejected a
+ServiceAccount label derived from `deployment.image_version` containing
+`v2.26.0@sha256:`. No server Deployment or endpoints existed, so the private
+`kiali.stinkyboi.com` route returned 502 despite working DNS and ingress.
+The repository fix puts the bare mirror digest in `image_version` and `sha256`
+in `image_digest`, as required by the
+[Kiali installation FAQ](https://kiali.io/docs/faq/installation/). The static
+gate checks that the digest matches the Harbor catalog. After merge, Argo
+reported Synced/Healthy, the server Deployment reached 1/1 Ready,
+and the private route returned HTTPS 200. The Kiali graph returned 76 active
+edges over ten minutes. The previous checker also queried Prometheus through
+the Kubernetes API server proxy; that path reset even for readiness while
+Kiali's permitted in-mesh query worked. The checker now requires active graph
+edges without that proxy path. The Prometheus mesh policy's identity allowlist
+is the leading explanation for the reset; ztunnel logs did not confirm it.
 
 ## Dispatcharr
 
@@ -94,7 +116,7 @@ username or password, consistent with first-run state. Preserve both existing
 data and PostgreSQL claims during setup. Transport and Octelium authentication
 are verified; first-admin/provider setup and functional acceptance remain open.
 Follow the loopback-only human setup procedure in
-`clusters/homelab/apps/dispatcharr/README.md`; do not broaden
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/dispatcharr/README.md); do not broaden
 public setup access or create an administrator through a shell command.
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
@@ -259,7 +281,7 @@ Re-measure after 48 hours of healthy runtime before raising a limit or relaxing
 affinity.
 
 Use [Workload Inventory](inventory.md) as the current cross-workload summary and read the named
-source README before changing an application.
+source manifests before changing an application.
 
 The September 6 [Deluge CPU Audit — 2026-09-05](../operations/deluge-cpu-audit-2026-09-05.md) isolates Gluetun's
 sustained 300m use mostly to its main process while VPN and RPC health remain
@@ -271,7 +293,7 @@ removal require separate reviewed Recreate rollouts; live profiling is unverifie
 ## Prometheus
 
 Prometheus owns the durable notification path from in-cluster alert rules to
-Alertmanager, Discord, and OpenClaw. It selects repo-owned `ServiceMonitor`
+Alertmanager and its native Discord receiver. It selects repo-owned `ServiceMonitor`
 objects and repo-owned `PrometheusRule` objects in the `monitoring` namespace
 without requiring Helm release labels, so cross-workload alert coverage can
 live beside the responsible application manifests.
@@ -304,10 +326,46 @@ linuxserver default config init script stays disabled. The validated one-time
 NFS migration resources are removed. Keep the legacy NFS claim as the nightly
 archive and rollback target; only the backup CronJob mounts it.
 
+Sonarr requests `192Mi` and permits `512Mi` of memory. Two October 29 OOM
+restarts at the former `256Mi` limit interrupted compatibility repairs; one
+left a partial copy that native recovery completed from the preserved download.
+The [import memory runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/sonarr/README.md#import-memory)
+requires a single validated copy import after GitOps rollout, with memory,
+restart and node-pressure checks every 30 seconds through completion plus two
+minutes, bounded at ten minutes. Verify the replacement, retained source and
+Plex catalog before resuming serialized repairs. Stop on another OOM, restart
+or node memory-pressure event; keep source downloads for recovery.
+
+## QNAP media playback policy
+
+The existing QNAP TS-451+ uses a Celeron J1900. October 28 Plex logs showed
+HEVC Main 10 being decoded in software and converted to H.264 for a local Roku
+at only 0.39–0.57 times real time, causing buffering. An earlier release also
+carried HEVC and Dolby Vision/HDR labels; its exact failure is absent from the
+retained logs. Sonarr/Radarr had no codec filters, so resolution alone admitted
+both downloads.
+
+The [shared policy](../../scripts/config/arr-playback-policy.json) requires
+explicit H.264/AVC labels, SDR and at most 1080p. It rejects HEVC, AV1, VP9,
+HDR, high bit depth and disc/remux labels, caps eligible quality definitions
+at 30 MiB/min through 720p and 60 MiB/min at 1080p, and preserves stricter
+limits and safe profile choices. Profiles with no safe choices receive an HD
+fallback while retaining their IDs. Every existing profile requires the managed
+custom format; new profiles need reconciliation.
+
+The [operator helper](../../scripts/arr-playback-policy.py) previews by default.
+Execution requires clean current `main`, a private before-state snapshot, and
+live API readback. It changes settings only. Release labels and indexer sizes
+can be wrong or absent, and client settings or subtitles can still force
+conversion; these limits do not guarantee playback. The completed H.264 archive
+in Sonarr's import queue has a separate extraction blocker. See the
+[runbook](../../docs/arr-playback-policy.md) for diagnosis, apply and rollback,
+credential-safe inspection, and the pending coordinated Prowlarr key rotation.
+Actual Roku playback remains an acceptance check after settings converge.
 
 ## Bazarr
 
-[Bazarr's runbook](../../clusters/homelab/apps/bazarr/README.md) owns the
+[Bazarr's runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) owns the
 English subtitle policy, Sonarr/Radarr bootstrap, provider setup, and acceptance
 checks. Both media roots match their source applications, so no path mapping is
 needed. The app shares `zimaboard-0` with the local source config claims; its

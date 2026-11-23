@@ -16,9 +16,10 @@ submit reviewed homelab source only.
 
 ## Protected delivery
 
-Human approval must explicitly cover installing this profile on zimaboard-0
-and zimaboard-1, selecting it only for the nix-builder container, and one
-additional bounded publication attempt. Preparation alone is not approval.
+The operator helper limits installation to zimaboard-0 and zimaboard-1 and
+binds the selected profile to the nix-builder container. Its executable
+preflight and the CI fixtures enforce that scope; this page adds no separate
+human approval or publication-release gate.
 
 1. Merge the profile, scoped operator helper, tests and this runbook through
    normal signed protected PR checks/review. Update affected OpenWiki pages

@@ -2,6 +2,8 @@
 name: Lint
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
 permissions: {}
 concurrency:
   group: super-linter-${{ github.event.pull_request.number || github.ref }}
@@ -14,7 +16,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
+        uses: chainguard-actions/actions-checkout@37298d8de412b35988dd165ffae45f45b329d365 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false

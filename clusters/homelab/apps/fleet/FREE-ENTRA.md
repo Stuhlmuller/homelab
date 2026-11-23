@@ -43,7 +43,7 @@ enrolled device.
 
 The first deployed browser test failed with `account_disabled`. Fleet accepted
 the signed identity but matched the external Microsoft-account owner's personal
-email to the password-only recovery account. The [SAML module](../../../../IaC/terragrunt-catalog/modules/azuread-saml-application/README.md)
+email to the password-only recovery account. The [SAML module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/azuread-saml-application/README.md)
 therefore declares a dedicated, stable Graph claims mapping from
 `userprincipalname` to SAML NameID, preserving basic claims and the existing
 signing key. Keep the recovery account password-only and the organizational UPN
@@ -53,33 +53,15 @@ result privately; a successful plan or settings readback cannot establish
 login success. No paid feature, static shared NameID, tenant-owner conversion
 or license bypass is used.
 
-The proposed owner conversion keeps the existing Entra object ID while moving
-its sign-in UPN to `rodman@stuhlmuller.net`. Fleet, Grafana and Octelium owner
-references use that immutable ID. Before a separate conversion, verify an
-independent cloud-only recovery Global Administrator and run the read-only
-`entra-owner-conversion.py prepare` transaction from signed current `main`.
-This conversion is currently blocked: `stuhlmuller.net` is federated with
-Google Workspace, while Microsoft requires a nonfederated UPN domain for
+The one-off owner-conversion procedure and its prepare/attest helper have been
+removed. Fleet, Grafana and Octelium retain immutable owner object-ID references.
+The proposed `rodman@stuhlmuller.net` conversion remains unresolved:
+`stuhlmuller.net` is federated with Google Workspace, while Microsoft requires a
+nonfederated UPN domain for
 [cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
-`prepare` must reject the federated domain. A separate reviewed change must
-reconcile the protected federation or select a managed target and update this
-transaction and its SAML dependencies before any conversion attempt.
-After an authorized Entra admin-center conversion, clear the recovery
-administrator's Azure CLI session, sign in as the converted owner, and attest
-with the same signed main SHA and private receipt directory:
-
-```sh
-az account clear
-az login --tenant <TENANT_ID> --use-device-code  # Sign in as rodman@stuhlmuller.net.
-python3 -I scripts/entra-owner-conversion.py attest \
-  --expected-sha <FULL_CURRENT_SIGNED_MAIN_SHA> \
-  --receipt-directory <PRIVATE_0700_DIRECTORY>
-```
-
-The helper checks Graph `/me` against the immutable owner ID and target UPN;
-verify the actual sign-in route separately. The recovery-admin unit
-is disabled by default. See the [provider runbook](../../../../docs/entra-terraform-provider.md)
-for the exact prepare and attest contract; this PR does not perform conversion.
+Any future identity change needs a new implementation that accounts for the
+federation and a tested independent recovery administrator. Cleanup does not
+convert the owner, alter federation, or enable the disabled recovery-admin unit.
 
 For Fleet console SAML, keep `rodman@stinkyboi.com` as a local recovery
 administrator and precreate `rodman@stuhlmuller.net` as SSO-only. The
@@ -311,7 +293,7 @@ nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fle
 ```
 
 For the `stuhlmuller.net` pilot, first follow the two-stage
-[custom-domain operator module](../../../../IaC/terragrunt-catalog/modules/entra-domain-verification/README.md):
+[custom-domain operator module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-domain-verification/README.md):
 read the existing domain with verification disabled, publish its exact returned
 TXT through the DNS owner's reviewed code path, then enable verification in a
 separate reviewed commit. Only after its `Managed`, verified, non-default status

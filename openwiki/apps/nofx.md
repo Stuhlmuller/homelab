@@ -7,22 +7,14 @@ workload_status: active
 updated: 2026-10-17
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:11:12.391Z
+    at: 2026-10-29T05:33:11.026Z
 sources:
   - id: openwiki-source-b7385f58821387de7a16f687
     resource: repo://clusters/homelab/apps/nofx/deployment.yaml
   - id: openwiki-source-d190dbce4c50934f34b78ce1
     resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
-  - id: openwiki-source-0c82b9435bacd6517f58e533
-    resource: repo://clusters/homelab/apps/nofx/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
-  - id: openwiki-source-e26a7307e86732ce7e6a34b6
-    resource: repo://clusters/homelab/apps/traefik/routes.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
 generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
@@ -295,7 +287,7 @@ upstream save handler's credential logging and trader reload.
 The upstream dashboard's generic 404 label can also mean a trader failed to load;
 patch `0011` addresses this as described below. Source evidence, simulation
 setup, rollback, and validation commands are in the
-[NOFX README](../../clusters/homelab/apps/nofx/README.md).
+[NOFX README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nofx/README.md).
 
 The private credential workflow reports fixed command stages and allowlisted
 error categories while withholding captured output. This distinguishes registry
@@ -400,7 +392,7 @@ database read-only inside the existing backend. Its temporary executable reports
 aggregate counters only; no credential material leaves the container. Synthetic
 tests cover successful, corrupt, wrong-key, legacy, empty, nested, and whitespace
 values and verify rejected writes with unchanged fixture bytes. See the
-[operator commands](../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis).
+[operator commands](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis).
 The locked Nix development shell explicitly supplies Go 1.25 and Python for
 this operator path; no ambient language runtime is required.
 Live inspection requires an explicit reviewed main SHA matching local HEAD and
@@ -443,7 +435,7 @@ overrides were set. Those results do not establish an invalid OKX key: local
 header rejection and Go transport failures both occur before an HTTP status.
 The checker now distinguishes invalid header bytes and reports only a fixed,
 allowlisted request-error category, never raw errors. Use the
-[operator runbook](../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
+[operator runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
 before choosing a repair.
 
 The `78852f13` follow-up confirmed valid credential-header bytes but still

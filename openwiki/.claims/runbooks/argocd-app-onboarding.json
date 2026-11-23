@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:776bd5f51d08b74cf84fa581a4b16fdf1471fcf803a370382b50c23e042eca60",
+  "pageVersion": "sha256:766597283d93361b7660fbab8bc5a7a9e3c145a2968af22cf39a54de03ab11d5",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
@@ -34,15 +34,15 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+          "version": "repo-file-v1:sha256:cf444c3fba8f1c4a64e598cb16f68d62eb3da36b8847d2e57ba03558d9a6fc40"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -77,20 +77,20 @@
       "statement": "The legacy OpenClaw Argo Application remains registered, but its gateway is declared with zero replicas and its backup CronJob is suspended while the read-only recovery reader remains.",
       "evidence": [
         {
-          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw/stack.hcl",
-          "version": "repo-file-v1:sha256:5c382f0e488b8bf57b4f709c5f18b6365905749bf3a5829e8f3dd7ae9f174f30"
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:fc9fd8d992eb3fea38427952a4a520af57c01ebd13ab9340d87e395e5d843042"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L1-L16",
+          "version": "repo-lines-v1:sha256:08d22a35b08df9b6c039abc1835949671875275885c94ad2c7c4a325974abdb0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4M2IzODQwYjRjZTI3YmJjYzIxZTc2NjRkYTQ2NGQ5Y2JjNTFhNTljZDE3MTJhYjY2YmQwNjM3OTc5NzM1YmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmOTBjZGZkNTRjNWE1M2UzNDgwMDI3NGZiZDA3OTBhYzRjNmFiZmIyYjFjOGY3NzQyMjI2NjdiZTUwMzA4NWQifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/runtime-backup.yaml",
-          "version": "repo-file-v1:sha256:101a0723bb4e1760f41f76d8fab29b8717c085dbaa321f3fe24e510b0e9ff205"
+          "resource": "repo://clusters/homelab/apps/openclaw/runtime-backup.yaml#L1-L15",
+          "version": "repo-lines-v1:sha256:48b0cc8a9b9665bffa4f5814b6437ed03fec278d8260d2754a53a61fdcfd7b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3NjA1YmQ4MjIxM2I5N2NkMjA1MTA0MDFjYTA5MTJmZjdmODljMTc0NGNhY2ExNDMwMDlkOTVkNjA0ZjlkOWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxYTliNDcxZmVhNmQ5YTAwZmUxNzNjMzhiZDg3ZjhjMzEzMDA1ZTc2OTA3YmE5ZWZiMTFmODRkMWNkMjBhNWIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml",
-          "version": "repo-file-v1:sha256:c6a2547f77461a6c9d6e5b7a25d032febad5f3b6d40a803105d128532d767a6a"
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L1-L9",
+          "version": "repo-lines-v1:sha256:f31ac1af6b750c1db4775703cdcdc1bd6d9d074af14012c1ba6b28fe600d2d14:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwODVlNTAxMzU4ZDRlZDg2YmViOGE1ZTAwNGQ2NmZlMmFmMGVkZDJhYjcxMzNmODQyZDk1N2VlNjA0M2Q0OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTg3ZjcyYmUzNGJiZjA3NTYzZTdiNjNiYzQ0YzRiNTcyYjkxMTcyN2YzNDMyNzNmMTdkZmNhN2FkMDY4YmNkMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjk3MmYzMWM3YTE5NTk2ODRhNTMzNDdjNTdlNmIyZWNiMjU3ODVmY2E0YzY0MDY1ZmMzYjVkMmJjZDM1MGIxNiJ9"
         }
       ]
     },
@@ -100,7 +100,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
@@ -108,7 +108,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bfb4c6c5ef44d69ea1b23ecfc46ccd569e52a81e1b53358b2287245e1101a24d"
+          "version": "repo-file-v1:sha256:0a046ab21c441248e44560fa55b954220c6efb2d2a8bc984b236bf33a31eb214"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -119,6 +119,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T12:00:26.315Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

@@ -1,0 +1,43 @@
+{
+  "upstream_version": "v0.0.37",
+  "revision": "49b2be8e26d6d34c9afaa21fa33108d2e82f8955",
+  "archive_sha256": "2b95efae90cd01de97dd9809739d24b0ad2ccaded6e86e308f71733b690b3de8",
+  "go_version": "1.27.3",
+  "go_archives": {
+    "go1.27.3.darwin-arm64.tar.gz": "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2",
+    "go1.27.3.linux-amd64.tar.gz": "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
+    "go1.27.3.linux-arm64.tar.gz": "a06e99309dbcbdca1a8ccd2282c3ee146e55930886e26b4f1193269587165f49"
+  },
+  "ca_image": "docker.io/rancher/local-path-provisioner@sha256:c3f2c60ee2490eb83ac00101d7e239fd8c20a5b8b4038e2dfc36a7e66fe99c08",
+  "ca_sha256": "b8d837841b88bfaa1a0fa827cbca8e2576418dd47c9fc4bb7f1f9d89c83111b9",
+  "trivy_version": "0.72.0",
+  "modules": {
+    "golang.org/x/net": {
+      "version": "v0.60.0",
+      "sum": "h1:79p50tfZlm0J9YfoDsSi639qSXNGVwEzOPLCxM2FsYU="
+    },
+    "golang.org/x/text": {
+      "version": "v0.42.0",
+      "sum": "h1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI="
+    },
+    "github.com/klauspost/compress": {
+      "version": "v1.18.7",
+      "sum": "h1:aUyZsS4kH3QTKurYhAOwAHxllVPnOthb3vPfnF1Ehjw="
+    }
+  },
+  "image_tag": "v0.0.37-homelab.1",
+  "trivy_releases": {
+    "trivy_0.72.0_macOS-ARM64.tar.gz": {
+      "archive_sha256": "88f208680dc05da2b459e19b4f5aa2b4dc7c2117892ba4aab2ae63baba330016",
+      "executable_sha256": "7f8266768e8ba12d17800c67725613855737e9afcfb681ce11f55d7b86632672"
+    },
+    "trivy_0.72.0_Linux-64bit.tar.gz": {
+      "archive_sha256": "bbb64b9695866ce4a7a8f5c9592002c5961cab378577fa3f8a040df362b9b2ea",
+      "executable_sha256": "0e69edd134a3c338baa1a6806920773615d682b18cbc6a0cba2a3b658ef9b63e"
+    },
+    "trivy_0.72.0_Linux-ARM64.tar.gz": {
+      "archive_sha256": "2ca2c023109c2db6b2b77366b6717291452d4531167377d95c79547f0c8e3467",
+      "executable_sha256": "829aca12d32bc3cee0b01cbb76197e9377790c6b78eb67a703d8033bcf7b3c3d"
+    }
+  }
+}

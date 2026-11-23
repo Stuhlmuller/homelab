@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["istio", "platform-multus", "octelium-storage"]
+  dependencies = ["../../istio/argocd", "../../platform-multus/argocd", "../../octelium-storage/argocd"]
   spec = {
     destination = {
       namespace = "istio-system"

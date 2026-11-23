@@ -41,6 +41,11 @@ class HarborPublicationGates(unittest.TestCase):
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
         self.prometheus_mirror_manifest = None
+        self.uptime_kuma_mirror_manifest = None
+        self.adguard_mirror_manifest = None
+        self.cilium_mirror_manifest = None
+        self.kagent_mirror_manifest = None
+        self.canary_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -67,7 +72,7 @@ class HarborPublicationGates(unittest.TestCase):
         script.write_text("#!/bin/sh\n" + body)
         script.chmod(0o700)
 
-    def run_helper(self, mode="publish"):
+    def run_helper(self, mode="publish", *, tailnet=False):
         (self.root / "scripts/config/harbor-images.json").write_text(json.dumps(self.mirror_manifest))
         fleet_manifest_path = self.root / "scripts/config/harbor-fleet-images.json"
         if self.fleet_mirror_manifest is None:
@@ -119,8 +124,33 @@ class HarborPublicationGates(unittest.TestCase):
             prometheus_path.unlink(missing_ok=True)
         else:
             prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
+        uptime_kuma_path = self.root / "scripts/config/harbor-uptime-kuma-images.json"
+        if self.uptime_kuma_mirror_manifest is None:
+            uptime_kuma_path.unlink(missing_ok=True)
+        else:
+            uptime_kuma_path.write_text(json.dumps(self.uptime_kuma_mirror_manifest))
+        adguard_path = self.root / "scripts/config/harbor-adguard-images.json"
+        if self.adguard_mirror_manifest is None:
+            adguard_path.unlink(missing_ok=True)
+        else:
+            adguard_path.write_text(json.dumps(self.adguard_mirror_manifest))
+        cilium_path = self.root / "scripts/config/harbor-cilium-images.json"
+        if self.cilium_mirror_manifest is None:
+            cilium_path.unlink(missing_ok=True)
+        else:
+            cilium_path.write_text(json.dumps(self.cilium_mirror_manifest))
+        kagent_path = self.root / "scripts/config/harbor-kagent-images.json"
+        if self.kagent_mirror_manifest is None:
+            kagent_path.unlink(missing_ok=True)
+        else:
+            kagent_path.write_text(json.dumps(self.kagent_mirror_manifest))
+        canary_path = self.root / "scripts/config/harbor-image-updater-canary.json"
+        if self.canary_mirror_manifest is None:
+            canary_path.unlink(missing_ok=True)
+        else:
+            canary_path.write_text(json.dumps(self.canary_mirror_manifest))
         result = subprocess.run(
-            ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
+            ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode] + (["--tailscale"] if tailnet else []),
             cwd=self.root,
             env=self.env,
             capture_output=True,
@@ -136,8 +166,8 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr + self.public_status)
         return result
 
-    def rejected(self, mode="publish"):
-        result = self.run_helper(mode)
+    def rejected(self, mode="publish", *, tailnet=False):
+        result = self.run_helper(mode, tailnet=tailnet)
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls.exists(), "A refusal path reached a credential or service command")
         return result
@@ -146,10 +176,12 @@ class HarborPublicationGates(unittest.TestCase):
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
                         core=False, cordium=False, enterprise=False,
-                        forward_start_delay=0):
+                        forward_start_delay=0, canary=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        if canary:
+            names = ["busybox"]
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
         if enterprise:
@@ -159,6 +191,7 @@ class HarborPublicationGates(unittest.TestCase):
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
+            **({"canary_variant": canary} if canary else {}),
             **({"mediaType": "application/vnd.oci.image.index.v1+json"} if oci_index else {})}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
@@ -308,8 +341,6 @@ class HarborPublicationGates(unittest.TestCase):
                         print("private restarted-forward readiness fixture", file=sys.stderr)
                         raise SystemExit(7)
                 print("401", end="")
-            elif command == "sleep":
-                assert args[0].isdigit()
             elif command == "aws":
                 assert args[0] == "ssm", "No cloud signing calls allowed"
                 print("private-test-credential-must-never-appear")
@@ -370,6 +401,9 @@ class HarborPublicationGates(unittest.TestCase):
                                 "mirror-alias-verify-missing": "manifest unknown; connection reset",
                                 "mirror-alias-verify-digest": "digest mismatch; connection reset",
                             })
+                    if reference.endswith(":issue-1846-canary") and reference not in published:
+                        print("manifest unknown", file=sys.stderr)
+                        raise SystemExit(1)
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
@@ -520,7 +554,8 @@ class HarborPublicationGates(unittest.TestCase):
                         reference = target
                         path = root / "published-images.json"
                         published = json.loads(path.read_text()) if path.exists() else {}
-                        published[reference] = FIXTURE["manifests"][reference]
+                        selected = source if reference.endswith(":issue-1846-canary") else reference
+                        published[reference] = FIXTURE["manifests"][selected]
                         path.write_text(json.dumps(published))
                 elif args[:2] == ["image", "digest"]:
                     assert json.loads(config.read_text()) == {"username": "robot$mirror+pull"}
@@ -546,10 +581,18 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "sleep", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
+        # Readiness polling calls sleep up to 90 times. Record each delay
+        # without launching a Python interpreter for every simulated wait.
+        self.executable("sleep", f"""test "$#" -eq 1 || exit 96
+case "$1" in
+    ''|*[!0-9]*) exit 96 ;;
+esac
+printf '{{"command": "sleep", "args": ["%s"]}}\\n' "$1" >>'{self.calls}'
+""")
         shutil.copyfile(ROOT / "scripts/ci/install-kubeconfig.sh", self.root / "scripts/ci/install-kubeconfig.sh")
 
     def assert_cleaned(self):
@@ -615,6 +658,7 @@ class HarborPublicationGates(unittest.TestCase):
             {"images": [valid, valid]},
             {"images": [valid], "destination": "other"},
             {"images": [{**valid, "destination": "other"}]},
+            {"images": [{"source": "docker.io/library/busybox:issue-1846-canary@sha256:" + "a" * 64}]},
             {"images": [{"source": "docker.io/library/busybox:latest"}]},
             {"images": [{"source": "localhost/internal@sha256:" + "a" * 64}]},
             {"images": [{"source": "codeberg.org.evil/k8s-gateway/k8s_gateway:1.9.0@sha256:" + "a" * 64}]},
@@ -625,6 +669,107 @@ class HarborPublicationGates(unittest.TestCase):
             with self.subTest(catalog=catalog):
                 self.mirror_manifest = catalog
                 self.rejected(mode="mirror")
+
+    def test_image_updater_canary_rejects_other_artifacts_before_credentials(self):
+        source = "docker.io/library/busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+        first = {"source": source}
+        second = {"source": "docker.io/library/busybox@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"}
+        self.mirror_manifest = {"images": [first, second]}
+        for entries in ([], [first, second], [{"source": source.replace("busybox", "alpine")}],
+                        [{"source": source[:-1] + "0"}], [{**first, "destination": "shared:latest"}]):
+            with self.subTest(entries=entries):
+                self.canary_mirror_manifest = {"images": entries}
+                self.rejected("mirror-image-updater-canary", tailnet=True)
+        self.canary_mirror_manifest = {"images": [first]}
+        self.rejected("mirror-image-updater-canary")
+        self.mirror_manifest = self.canary_mirror_manifest = {"images": [second]}
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
+        del self.env["RUNNER_TEMP"]
+        accepted = self.rejected("mirror-image-updater-canary", tailnet=True)
+        self.assertIn("RUNNER_TEMP must be set", accepted.stderr)
+
+    def test_image_updater_canary_pulls_before_a_single_alias_write(self):
+        helper = self.root / "scripts/ci/harbor-publish.sh"
+        original = helper.read_text()
+        destination = "harbor.stinkyboi.com/mirror/docker.io/library/busybox"
+        published = self.root / "published-images.json"
+        previous = None
+        for variant, fixture_digest in (
+            ("A", "sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"),
+            ("B", "sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"),
+        ):
+            with self.subTest(variant=variant):
+                self.tailnet_mocks(resume=True, canary=variant)
+                digest = self.published_digests["busybox"]
+                self.canary_mirror_manifest = {"images": [{"source": f"docker.io/library/busybox@{digest}"}]}
+                # Substitute local artifact content while preserving both scoped-digest checks.
+                code = original.replace(fixture_digest, digest, 1)
+                if previous:
+                    prior_digest, prior_publication = previous
+                    code = code.replace(
+                        "sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e",
+                        prior_digest, 1)
+                    helper.write_text(code)
+                    result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                    self.assertNotEqual(result.returncode, 0, "B needs an established A")
+                    self.assertFalse(published.exists())
+                    self.calls.write_text("")
+                    published.write_text(prior_publication)
+                helper.write_text(code)
+                if not previous:
+                    checked_main = self.root / "checked-main"
+                    self.executable("git", f"""if [ "$1" = ls-remote ]; then
+  if [ -e {str(checked_main)!r} ]; then printf '%s\n' {'0' * 40}; exit 0; fi
+  touch {str(checked_main)!r}
+fi
+printf '%s\n' {SHA}
+""")
+                    result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                    self.assertNotEqual(result.returncode, 0, "main advanced before the alias write")
+                    self.assertIn("phase=alias-copy", self.public_status)
+                    self.assertFalse(published.exists())
+                    self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+                    self.calls.write_text("")
+                    self.executable("git", f"printf '%s\n' {SHA}\n")
+                result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+                copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+                self.assertEqual(len(copies), 1)
+                self.assertTrue(copies[0][-1].startswith("dir:"))
+                self.assertEqual(copies[0][-2], f"docker://{destination}@{digest}")
+                self.assert_mirror_copy_credentials(copies)
+                self.assertEqual([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]],
+                                 [["image", "copy", f"{destination}@{digest}", f"{destination}:issue-1846-canary"]])
+                calls = map(json.loads, self.calls.read_text().splitlines())
+                copy_order = [call["command"] for call in calls if
+                              (call["command"] == "skopeo" and call["args"][0] == "copy") or
+                              (call["command"] == "regctl" and call["args"][:2] == ["image", "copy"])]
+                self.assertEqual(copy_order, ["skopeo", "regctl"])
+
+                self.assertIn(f"{destination}:issue-1846-canary@{digest}\n",
+                              (self.root / "summary").read_text())
+
+                publication = published.read_text()
+                self.calls.write_text("")
+                result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+                self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+                self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+                self.assertFalse(any(args[0] == "copy" and args[-1].startswith("docker://")
+                                     for args in self.calls_for("skopeo")))
+                self.assertEqual(published.read_text(), publication)
+                previous = (digest, publication)
+
+        self.tailnet_mocks(resume=True, canary="A")
+        self.calls.write_text("")
+        published.write_text(publication)
+        self.canary_mirror_manifest = {"images": [{"source": f"docker.io/library/busybox@{prior_digest}"}]}
+        result = self.run_helper("mirror-image-updater-canary", tailnet=True)
+        self.assertNotEqual(result.returncode, 0, "A must not overwrite B")
+        self.assertIn("phase=alias-lookup", self.public_status)
+        self.assertFalse(any(args[:2] == ["image", "copy"] for args in self.calls_for("regctl")))
+        self.assertFalse(any(args[0] == "copy" and args[-1].startswith("docker://")
+                             for args in self.calls_for("skopeo")))
+        self.assertEqual(published.read_text(), publication)
 
     def test_dns_scope_declares_one_fixed_reviewed_image(self):
         source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
@@ -680,7 +825,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -705,7 +850,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -732,6 +877,112 @@ class HarborPublicationGates(unittest.TestCase):
         self.rejected(mode="mirror-prometheus:quay.io/prometheus/prometheus")
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-prometheus")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
+        source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
+        selected = json.loads((ROOT / "scripts/config/harbor-uptime-kuma-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}]})
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+
+    def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
+        source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("7554d", "7554e")}]},
+                      {"images": [{"source": source.replace("louislam/uptime-kuma", "louislam/other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.uptime_kuma_mirror_manifest = scope
+                self.rejected(mode="mirror-uptime-kuma")
+        self.uptime_kuma_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-uptime-kuma")
+        self.mirror_manifest = {"images": [valid]}
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-uptime-kuma")
+                self.env[key] = previous
+        self.rejected(mode="mirror-uptime-kuma:quay.io/prometheus/prometheus")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-uptime-kuma")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_adguard_scope_declares_fixed_reviewed_images(self):
+        source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
+        init = {'source': 'docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d'}
+        selected = json.loads((ROOT / "scripts/config/harbor-adguard-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}, init]})
+        for entry in selected["images"]:
+            self.assertIn(entry, catalog["images"])
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+
+    def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
+        source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
+        init = {'source': 'docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d'}
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid, init]}
+        for scope in (None, {"images": []}, {"images": [valid]}, {"images": [init]}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("e2e1b", "e2e1c")}, init]},
+                      {"images": [valid, {"source": init["source"].replace("218761", "218762")}]},
+                      {"images": [{"source": source.replace("adguard/adguardhome", "adguard/other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.adguard_mirror_manifest = scope
+                self.rejected(mode="mirror-adguard")
+        self.adguard_mirror_manifest = {"images": [valid, init]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-adguard")
+        self.mirror_manifest = {"images": [valid, init]}
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-adguard")
+                self.env[key] = previous
+        self.rejected(mode="mirror-adguard:quay.io/prometheus/prometheus")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-adguard")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_cilium_scope_requires_the_complete_reviewed_bundle(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-cilium-images.json").read_text())
+        self.assertEqual(len(selected["images"]), 3)
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        for entry in selected["images"]:
+            self.assertIn(entry, catalog["images"])
+        self.mirror_manifest = selected
+        self.cilium_mirror_manifest = {"images": selected["images"][:-1]}
+        self.rejected(mode="mirror-cilium")
+        self.cilium_mirror_manifest = selected
+        self.mirror_manifest = {"images": selected["images"][:-1]}
+        self.rejected(mode="mirror-cilium")
+        self.mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-cilium")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_kagent_scope_requires_the_complete_catalog_bundle(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-kagent-images.json").read_text())
+        self.assertEqual(len(selected["images"]), 6)
+        self.mirror_manifest = selected
+        self.kagent_mirror_manifest = {"images": selected["images"][:-1]}
+        self.rejected(mode="mirror-kagent")
+        self.kagent_mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-kagent")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
@@ -964,11 +1215,16 @@ class HarborPublicationGates(unittest.TestCase):
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
 
-    def test_renovate_scope_has_seven_reviewed_digests(self):
+    def test_renovate_scope_has_eight_reviewed_sources(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
-        self.assertEqual(len(selected), 7)
+        self.assertEqual(len(selected), 8)
         self.assertTrue(all(item in catalog for item in selected))
+        self.assertEqual(len({item["source"].split("@", 1)[0] for item in selected}), len(selected))
+        for item in selected:
+            alias = item["source"].split("@", 1)[0]
+            self.assertEqual(next(entry["source"] for entry in reversed(catalog)
+                                  if entry["source"].split("@", 1)[0] == alias), item["source"])
         self.assertEqual(sum(item["source"].startswith("ghcr.io/renovatebot/renovate:")
                              for item in selected), 1)
 
@@ -1924,6 +2180,60 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
+    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+        self.transport_mocks(mirror=True, failure=failure, **kwargs)
+        self.env.pop("OCTELIUM_AUTH_TOKEN", None)
+        self.env.pop("KUBE_API_SERVER_URL", None)
+        self.calls.touch(exist_ok=True)
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
+        self.executable("curl", f"""exec python3 - "$@" <<'PYMOCK'
+import json,sys
+from pathlib import Path
+args=sys.argv[1:]
+assert "--insecure" not in args and "--resolve" not in args
+assert args[-1] == "https://harbor.stinkyboi.com/v2/"
+with Path({str(self.calls)!r}).open("a") as f:
+    f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+print({status!r},end="")
+PYMOCK
+""")
+
+    def test_tailnet_mirror_needs_no_kubernetes_or_host_mutation(self):
+        self.tailnet_mocks()
+        config = self.root / "home/.kube/config"
+        config.parent.mkdir(parents=True)
+        config.write_text("existing inert kubeconfig")
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertEqual(self.calls_for("sudo"), [])
+        self.assertFalse((self.root / "host-route").exists())
+        self.assertEqual(config.read_text(), "existing inert kubeconfig")
+        self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr)
+        self.assertTrue(self.calls_for("skopeo"))
+
+    def test_tailnet_challenge_failure_stops_before_credentials(self):
+        for status in ("200", "403"):
+            with self.subTest(status=status):
+                self.tailnet_mocks(status=status)
+                result = self.run_helper("mirror", tailnet=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.calls_for("aws"), [])
+                self.assertEqual(self.calls_for("kubectl"), [])
+
+    def test_tailnet_authenticated_retry_rechecks_https_without_forward(self):
+        self.tailnet_mocks(failure="mirror-pull-once")
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertGreaterEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual(self.calls_for("kubectl"), [])
+
+    def test_tailnet_mode_rejects_another_workflow(self):
+        self.tailnet_mocks()
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/unrelated.yml@refs/heads/main"
+        self.assertNotEqual(self.run_helper("mirror", tailnet=True).returncode, 0)
+        self.assertEqual(self.calls_for("aws"), [])
+
     def test_kubeconfig_failure_cleans_partial_credentials(self):
         self.transport_mocks(failure="kubeconfig")
         result = self.run_helper()
@@ -2089,14 +2399,120 @@ class MirrorProjectQueue(unittest.TestCase):
                 "yq", "-o=json", ".", str(ROOT / ".github/workflows" / name),
             ], text=True))
         mirror = workflow("harbor-mirror.yml")["jobs"]["mirror"]
+        canary_group = "harbor-mirror-image-updater-canary-production"
+        ordinary_group = "harbor-mirror-production"
         self.assertEqual(mirror["concurrency"], {
-            "group": "harbor-mirror-production", "cancel-in-progress": False,
+            "group": "${{ inputs.image_scope == 'image-updater-canary' && "
+                     f"'{canary_group}' || '{ordinary_group}' }}}}",
+            "cancel-in-progress": False,
         })
         for name in ("nofx-images.yml", "harbor-core-images.yml"):
             jobs = workflow(name)["jobs"]
             private = [job["concurrency"]["group"] for job in jobs.values() if "concurrency" in job]
             self.assertIn("harbor-packages-production", private)
-            self.assertNotIn(mirror["concurrency"]["group"], private)
+            self.assertTrue({canary_group, ordinary_group}.isdisjoint(private))
+
+
+class TailnetMirrorWorkflow(unittest.TestCase):
+    def test_production_only_tailnet_wiring(self):
+        path = ROOT / ".github/workflows/harbor-mirror.yml"
+        workflow = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(path)], text=True))
+        self.assertEqual(set(workflow["on"]), {"workflow_dispatch"})
+        job = workflow["jobs"]["mirror"]
+        self.assertEqual(job["environment"]["name"], "homelab-production")
+        steps = {step["name"]: step for step in job["steps"]}
+        join = steps["Join Production Tailnet"]
+        self.assertEqual(join["env"], {"TAILSCALE_AUTH_KEY": "${{ secrets.TAILSCALE_AUTH_KEY }}"})
+        self.assertEqual(join["run"].count("--accept-routes"), 1)
+        self.assertIn("--accept-routes=false --accept-dns=true", join["run"])
+        self.assertIn('--auth-key=file:/dev/stdin', join["run"])
+        self.assertIn('.Self.Tags == ["tag:homelab-ci-apply"]', join["run"])
+        self.assertEqual(steps["Leave Production Tailnet"]["if"], "always() && steps.join.outcome != 'skipped'")
+        self.assertNotIn("OCTELIUM", path.read_text())
+        copy = steps["Copy And Verify Fixed Public Digests"]
+        for line in copy["run"].splitlines():
+            if "bash scripts/ci/harbor-publish.sh mirror" in line:
+                self.assertTrue(line.endswith(" --tailscale"))
+
+    def test_native_enrollment_and_cleanup_without_services(self):
+        workflow = json.loads(subprocess.check_output([
+            "yq", "-o=json", ".", str(ROOT / ".github/workflows/harbor-mirror.yml"),
+        ], text=True))
+        steps = {s["name"]: s for s in workflow["jobs"]["mirror"]["steps"]}
+        phases = ["Verify Current Main Commit Before Credentials", "Install Verified Tailscale Client",
+                  "Join Production Tailnet", "Configure AWS Credentials", "Copy And Verify Fixed Public Digests",
+                  "Leave Production Tailnet"]
+        self.assertEqual([name for name in steps if name in phases], phases)
+        for name in phases[1:-1]:
+            self.assertNotIn("if", steps[name])  # GitHub skips these steps after failure.
+        self.assertNotIn("env", steps["Leave Production Tailnet"])
+
+        # Intercept every privileged command. Only the fake daemon creates a local socket.
+        for failure in ("", "enroll", "wrong-tag", "crash", "logout", "stop", "cleanup"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory(dir="/tmp") as temporary:
+                root = Path(temporary)
+                state = root / "tailscale-state"
+                state.mkdir()
+                sudo = root / "sudo"
+                sudo.write_text(textwrap.dedent("""\
+                    #!/usr/bin/env python3
+                    import json, os, pathlib, shutil, socket, sys
+                    root = pathlib.Path(os.environ["RUNNER_TEMP"])
+                    state = root / "tailscale-state"
+                    args = sys.argv[1:]
+                    if args[:2] == ["timeout", "20"]:
+                        args = args[2:]
+                    name, arguments = pathlib.Path(args[0]).name, args[1:]
+                    assert "TAILSCALE_AUTH_KEY" not in os.environ
+                    assert all("inert-wrapped-fixture" not in v for v in os.environ.values())
+                    with (root / "calls").open("a") as log:
+                        print(json.dumps([name, *arguments]), file=log)
+                    failure = os.environ["FAIL_AT"]
+                    if name == "systemd-run":
+                        sock = socket.socket(socket.AF_UNIX)
+                        sock.bind(str(state / "tailscaled.sock"))
+                    elif name == "tailscale" and "up" in arguments:
+                        assert sys.stdin.read() == "inert-wrapped-fixture"
+                        print("private-fixture-diagnostic", file=sys.stderr)
+                        sys.exit(failure == "enroll")
+                    elif name == "tailscale" and "status" in arguments:
+                        tag = "other" if failure == "wrong-tag" else "homelab-ci-apply"
+                        print(json.dumps({"BackendState":"Running", "Self":{"Tags":["tag:"+tag]}}))
+                    elif name == "tailscale" and "logout" in arguments:
+                        sys.exit(failure == "logout")
+                    elif name == "systemctl" and arguments == ["stop", "harbor-mirror-tailscaled"]:
+                        sys.exit(failure in ("stop", "crash"))
+                    elif name == "tailscaled" and arguments == ["--cleanup"]:
+                        sys.exit(failure == "cleanup")
+                    elif name == "rm" and arguments == ["-rf", "--", str(state)]:
+                        shutil.rmtree(state)
+                    else:
+                        sys.exit("unexpected invocation")
+                    """))
+                sudo.chmod(0o700)
+                env = {"PATH": str(root) + os.pathsep + os.environ["PATH"], "RUNNER_TEMP": str(root),
+                       "GITHUB_RUN_ID": "11", "GITHUB_RUN_ATTEMPT": "2", "FAIL_AT": failure,
+                       "key": "inherited-export", "SHELLOPTS": "allexport"}
+                fixture_value = "inert-wrapped-fixture"
+                def execute(name, extra):
+                    result = subprocess.run(["bash", "-c", steps[name]["run"]], env=env | extra,
+                                            capture_output=True, text=True, timeout=10)
+                    for private in (fixture_value, "private-fixture-diagnostic"):
+                        self.assertNotIn(private, result.stdout + result.stderr)
+                    return result.returncode
+                joined = execute("Join Production Tailnet", {"TAILSCALE_AUTH_KEY": fixture_value})
+                self.assertEqual(joined == 0, failure not in ("enroll", "wrong-tag"))
+                if failure == "crash":
+                    (state / "tailscaled.sock").unlink()
+                left = execute("Leave Production Tailnet", {})
+                self.assertEqual(left == 0, failure not in ("logout", "stop", "cleanup", "crash"))
+                calls = [json.loads(line) for line in (root / "calls").read_text().splitlines()]
+                self.assertEqual(calls[1], ["tailscale", "--socket=" + str(state / "tailscaled.sock"), "up",
+                    "--auth-key=file:/dev/stdin", "--hostname=harbor-mirror-11-2", "--accept-routes=false",
+                    "--accept-dns=true", "--timeout=2m"])
+                self.assertEqual([c[0] for c in calls[-3:]], ["systemctl", "tailscaled", "rm"])
+                self.assertEqual(any("logout" in c for c in calls), failure != "crash")
+                self.assertFalse(state.exists())
 
 
 class MirrorWorkflowStatusPin(unittest.TestCase):

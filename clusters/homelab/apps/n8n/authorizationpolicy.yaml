@@ -16,3 +16,23 @@ spec:
               - cluster.local/ns/traefik/sa/traefik
               - cluster.local/ns/octelium-client/sa/octelium-client
               - cluster.local/ns/automation/sa/n8n
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: uptime-kuma-5678
+  namespace: automation
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: n8n
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/monitoring/sa/uptime-kuma
+    to:
+    - operation:
+        ports:
+        - '5678'

@@ -43,8 +43,8 @@ publication database.
 The chart's LoadBalancer Service uses `loadBalancerClass: tailscale`, exposes both UDP/TCP 53, and has a fixed `homelab-dns` hostname.
 [Tailscale operator ingress](https://tailscale.com/docs/kubernetes-operator/ingress) supports layer-3 TCP and UDP exposure. Reuse the operator-owned `tag:homelab-ingress`: the existing
 `autogroup:member` wildcard grant already permits member traffic to port 53, so no policy mutation is needed. The DNS Service, hostname and tailnet IP remain distinct from Traefik's proxy. The current
-Tailnet Lock signer must verify/sign the new operator proxy before the IP is offered. Restricted CI tags receive no new DNS grant. Two stateless resolver replicas protect the CoreDNS process, while
-the single operator-managed proxy remains an availability dependency. Recovery uses Argo and the existing signing path; no PVC or backup is needed for DNS answers.
+The operator proxy identity and reachability must be verified before offering its IP. Restricted CI tags receive no new DNS grant. Two stateless resolver replicas protect the CoreDNS process, while
+the single operator-managed proxy remains an availability dependency. Recovery uses Argo and the declared operator path; no PVC or backup is needed for DNS answers.
 
 **Alternative considered**: ProxyGroup HA adds another operating dependency; the first rollout uses one resolver endpoint with a documented read-only direct-query check and recovery path. A global
 tailnet nameserver would redirect unrelated domains and expand blast radius. Use [restricted split DNS](https://tailscale.com/docs/reference/dns-in-tailscale) for `stinkyboi.com`, and enable the
@@ -71,7 +71,7 @@ prove current live DNS.
 ## Remaining runtime evidence gates
 
 - Current public DNS records and their maximum TTL; do not infer live state from the JSON inventory.
-- Actual DNS Service IP, peer identity, signed Tailnet Lock state, UDP/TCP 53 reachability and all 27 direct private answers.
+- Actual DNS Service IP, peer identity, UDP/TCP 53 reachability and all 27 direct private answers.
 - Normal OS resolver behavior and existing HTTPS/critical client checks after the owner updates tailnet DNS.
 - Off-tailnet users of the apex and Cordium wildcard before public retirement.
 - Image publication receipt and live Argo/Talos pull health before resolver rollout.

@@ -102,7 +102,7 @@ deny contains msg if {
 deny contains msg if {
 	funnel_enabled
 	not reviewed_funnel_ingress
-	msg := "Tailscale Funnel is restricted to the two reviewed Traefik callback Ingresses"
+	msg := "Tailscale Funnel is restricted to the reviewed Traefik callback Ingresses"
 }
 
 funnel_enabled if {
@@ -118,7 +118,7 @@ funnel_enabled if {
 reviewed_funnel_ingress if {
 	input.kind == "Ingress"
 	input.metadata.namespace == "traefik"
-	input.metadata.name in {"n8n-webhook", "policy-bot-hook"}
+	input.metadata.name in {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "codex-signer"}
 	input.metadata.annotations["homelab.rst.io/access-plane"] == "tailscale"
 	input.metadata.annotations["homelab.rst.io/public-callback"] == "true"
 	input.metadata.annotations["tailscale.com/tags"] == "tag:homelab-funnel"
@@ -152,6 +152,7 @@ deny contains msg if {
 	public_external_route
 	not octelium_access_plane
 	not reviewed_funnel_ingress
+	not internal_waypoint_gateway
 	kind := object.get(input, "kind", "<unknown>")
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("%s %q exposes a public route and must declare homelab.rst.io/access-plane=octelium", [kind, name])
@@ -212,6 +213,14 @@ deny contains msg if {
 	retry := object.get(sync_policy, "retry", {})
 	object.get(retry, "limit", -1) != 0
 	msg := "Application cordium-bootstrap must disable retries so every genesis attempt gets a fresh operation timeout"
+}
+
+deny contains msg if {
+	cordium_bootstrap_application
+	sync_policy := object.get(object.get(input, "spec", {}), "syncPolicy", {})
+	automated := object.get(sync_policy, "automated", {})
+	object.get(automated, "enabled", null) != false
+	msg := "Application cordium-bootstrap must keep automated sync paused during bootstrap identity recovery"
 }
 
 deny contains msg if {
@@ -355,6 +364,15 @@ octelium_access_plane if {
 	object.get(annotations, "homelab.rst.io/access-plane", "") == "octelium"
 }
 
+internal_waypoint_gateway if {
+	input.apiVersion == "gateway.networking.k8s.io/v1"
+	input.kind == "Gateway"
+	input.metadata.namespace == "istio-egress"
+	input.metadata.annotations["networking.istio.io/service-type"] == "ClusterIP"
+	input.spec.gatewayClassName == "istio-waypoint"
+	input.spec.listeners == [{"name": "mesh", "port": 15008, "protocol": "HBONE"}]
+}
+
 public_external_route if {
 	input.kind == "VirtualService"
 	gateway := object.get(object.get(input, "spec", {}), "gateways", [])[_]
@@ -371,17 +389,18 @@ public_external_route if {
 }
 
 external_secret_allowed_prefixes := {
-	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
+	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/kagent/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
-	"argocd": {"/homelab/argocd/"},
-	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key"},
+	"argocd": {"/homelab/argocd/", "/homelab/harbor/mirror-robot-pull-password"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},
 	"harbor": {"/homelab/harbor/"},
+	"kagent": {"/homelab/kagent/litellm-token", "/homelab/kagent/postgres-password"},
 	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
-	"monitoring": {"/homelab/grafana/"},
+	"monitoring": {"/homelab/grafana/", "/homelab/uptime-kuma/admin-password"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
 	"openclaw-agents": {"/homelab/openclaw-enterprise/model-api-key"},
@@ -400,6 +419,8 @@ deny contains msg if {
 	allowed := external_secret_allowed_prefixes[namespace]
 	key := external_secret_remote_keys(input)[_]
 	not remote_ref_key_allowed(key, allowed)
+	not codex_signer_secret_key(key)
+	not adguard_secret_key(key)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
 }
@@ -456,4 +477,57 @@ external_secret_remote_keys(secret) := keys if {
 		key != ""
 	]
 	keys := array.concat(array.concat(data_keys, extract_keys), find_keys)
+}
+
+codex_signer_secret_key(key) if {
+	input.metadata.namespace == "automation"
+	input.metadata.name == "codex-cloud-signer"
+	key in {
+		"/homelab/tailscale/codex-cloud-signer/auth-key",
+		"/homelab/tailscale/codex-cloud-signer/oauth-client-id",
+		"/homelab/tailscale/codex-cloud-signer/oauth-client-secret",
+		"/homelab/tailscale/codex-cloud-signer/webhook-secret",
+	}
+}
+
+# Kuma state writers and readers share one high UID; only the bounded initial
+# mount ownership command may be root. This also validates rendered Helm Pods.
+kuma_pod_spec := input.spec.template.spec if {
+	input.metadata.namespace == "monitoring"
+	input.metadata.name in {"uptime-kuma", "uptime-kuma-first-backup-v1", "uptime-kuma-restore-verification-v1"}
+	input.kind in {"Deployment", "Job"}
+}
+
+kuma_pod_spec := input.spec.jobTemplate.spec.template.spec if {
+	input.metadata.namespace == "monitoring"
+	input.metadata.name == "uptime-kuma-backup"
+	input.kind == "CronJob"
+}
+
+deny contains "Kuma runtime identity must remain UID/GID/fsGroup 10001" if {
+	spec := kuma_pod_spec
+	some key in {"runAsUser", "runAsGroup", "fsGroup"}
+	object.get(object.get(spec, "securityContext", {}), key, null) != 10001
+}
+
+deny contains "Kuma containers must inherit or preserve high runtime identity" if {
+	spec := kuma_pod_spec
+	non_ownership_init := [c | c := object.get(spec, "initContainers", [])[_]; c.name != "01-ownership"]
+	containers := array.concat(object.get(spec, "containers", []), non_ownership_init)
+	some container in containers
+	some key in {"runAsUser", "runAsGroup"}
+	object.get(object.get(container, "securityContext", {}), key, 10001) != 10001
+}
+
+deny contains "Kuma ownership init must only own the initial data mount root" if {
+	spec := kuma_pod_spec
+	some container in object.get(spec, "initContainers", [])
+	container.name == "01-ownership"
+	container.command != ["sh", "-ec", "chown 10001:10001 /app/data; chmod 0700 /app/data"]
+}
+
+adguard_secret_key(key) if {
+	input.metadata.namespace == "automation"
+	input.metadata.name == "adguard-config"
+	key == "/homelab/adguard/admin-password"
 }

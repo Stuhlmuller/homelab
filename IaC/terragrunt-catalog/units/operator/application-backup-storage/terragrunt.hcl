@@ -8,7 +8,7 @@ terraform {
 }
 
 locals {
-  destination = read_terragrunt_config("${get_repo_root()}/IaC/application-backup-storage.hcl").inputs
+  destination = read_terragrunt_config("${get_repo_root()}/IaC/homelab/us-west-2/operator/application-backup-storage.hcl").inputs
 }
 
 generate "aws_provider" {
@@ -26,6 +26,15 @@ inputs = {
   bucket_name         = local.destination.bucket
   expected_account_id = local.destination.account_id
   aws_region          = local.destination.region
+  # Reserved for a future reviewed publisher. No workflow assumes this role.
+  publisher = {
+    role_name     = "homelab-oce-recovery-publisher"
+    object_prefix = "openclaw-enterprise/new/"
+    subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+    workflow      = "OpenClaw Enterprise Recovery Publication"
+    ref           = "refs/heads/main"
+    repository_id = 973476220
+  }
   tags = merge(include.root.locals.default_tags, {
     Name    = "homelab-application-backups"
     Purpose = "application-offsite-backup"

@@ -5,12 +5,12 @@ locals {
 inputs = {
   defaults = local.shared.argocd_defaults
   dependencies = [
-    "../aws-ssm-parameters",
-    "external-secrets",
-    "cert-manager",
-    "istio",
-    "octelium-public",
-    "platform-storage"
+    "../../../shared/aws-ssm-parameters",
+    "../../external-secrets/argocd",
+    "../../cert-manager/argocd",
+    "../../istio/argocd",
+    "../../octelium-public/argocd",
+    "../../platform-storage/argocd"
   ]
   spec = {
     info = [
@@ -20,7 +20,7 @@ inputs = {
       },
       {
         name  = "runbook"
-        value = "clusters/homelab/apps/mastodon/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md"
       }
     ]
   }

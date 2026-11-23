@@ -16,23 +16,17 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
-  - id: openwiki-source-01fc0bedc522f2abd58d6698
-    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
@@ -47,10 +41,21 @@ sources:
 generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # AWS SSM Secret References
+
+## Bulldozer GitHub App
+
+The [Bulldozer contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bulldozer/README.md)
+declares the `/homelab/bulldozer/github-app/` SSM SecureStrings for
+`integration-id`, `webhook-secret`, and `private-key`. Terragrunt generates the webhook secret;
+the protected `bulldozer-credential.yml` workflow writes the App ID and private
+key from homelab Actions environment secrets after the placeholders exist.
+`bulldozer-config` projects them into files with `refreshPolicy: OnChange`.
+Keep the Deployment at zero replicas until credentials, Funnel routing, and
+the GitHub App webhook are ready; then activate it through reviewed GitOps.
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 
@@ -69,7 +74,7 @@ after the repository-managed bootstrap secret is available.
 
 ## Renovate App transfer and role retirement
 
-The [Renovate runbook](../../clusters/homelab/apps/renovate/README.md) declares
+The [Renovate runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md) declares
 two fixed SSM parameters for the existing GitHub App issuer and private key.
 The [2026-10-19 operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
 records a successful companion transfer: both parameters reached version 2,
@@ -98,7 +103,7 @@ supplied. The placeholder blocks activation and provider acceptance until a
 real key is transferred, projected, and tested. See the
 [canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 
-The dormant [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+The dormant [foundation](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares eight retained `OnChange` ExternalSecret targets across
 `openclaw-system` and `openclaw-agents`. `occ-database` templates separate
 application and migration URLs from generated passwords; both require

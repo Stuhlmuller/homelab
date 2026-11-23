@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
 terragrunt_filter_head_ref() {
-  local head_ref="${TERRAGRUNT_FILTER_HEAD_SHA:-${APPLY_HEAD_SHA:-${GITHUB_SHA:-HEAD}}}"
-
-  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-    head_ref="HEAD"
-  fi
-
-  printf '%s\n' "$head_ref"
+  printf '%s\n' "${TERRAGRUNT_FILTER_HEAD_SHA:-${APPLY_HEAD_SHA:-${GITHUB_SHA:-HEAD}}}"
 }
 
 terragrunt_generate_stack() {
@@ -62,12 +56,14 @@ terragrunt_stack_units() {
 terragrunt_stack_units_at_ref() {
   local ref="$1"
   local path_prefix="${2:-}"
+  local source
 
   if ! git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
     return 0
   fi
 
-  git show "${ref}:IaC/terragrunt.stack.hcl" | terragrunt_stack_units "$path_prefix"
+  source="$(git show "${ref}:IaC/terragrunt.stack.hcl")" || return 1
+  terragrunt_stack_units "$path_prefix" <<<"$source"
 }
 
 terragrunt_stack_unit_paths() {
@@ -80,218 +76,80 @@ terragrunt_stack_unit_paths_at_ref() {
   local unit_path
   local app
   local stack_files
+  local source
+  local unit_paths
+  local repo_root
+  local paths=()
 
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
   if git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
-    terragrunt_stack_units_at_ref "$ref" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
+    source="$(terragrunt_stack_units_at_ref "$ref")" || return 1
+    sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p' <<<"$source"
     return
   fi
 
-  if ! stack_files="$(git ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2 | grep '/terragrunt.stack.hcl$')" ||
-    [[ -z "$stack_files" ]]; then
+  stack_files="$(git -C "$repo_root" ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2)" || return 1
+  stack_files="$(sed -n '\#/terragrunt.stack.hcl$#p' <<<"$stack_files")"
+  if [[ -z "$stack_files" ]]; then
     echo "No Terragrunt stacks found at ${ref}; refusing deleted-unit detection." >&2
     return 1
   fi
 
   while IFS= read -r stack_file; do
+    source="$(git show "${ref}:${stack_file}")" || return 1
+    unit_paths="$(sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p' <<<"$source")"
     while IFS= read -r unit_path; do
+      [[ -n "$unit_path" ]] || continue
       case "$stack_file:$unit_path" in
         */apps/*/terragrunt.stack.hcl:argocd)
           app="${stack_file#IaC/homelab/us-west-2/apps/}"
-          printf 'IaC/live/argocd-apps/%s\n' "${app%/terragrunt.stack.hcl}"
+          paths+=("IaC/live/argocd-apps/${app%/terragrunt.stack.hcl}")
           ;;
         */apps/*/terragrunt.stack.hcl:azuread)
           app="${stack_file#IaC/homelab/us-west-2/apps/}"
-          printf 'IaC/live/azuread-applications/%s\n' "${app%/terragrunt.stack.hcl}"
+          paths+=("IaC/live/azuread-applications/${app%/terragrunt.stack.hcl}")
           ;;
-        */apps/fleet/terragrunt.stack.hcl:pilot-user) printf 'IaC/live/azuread-applications/fleet-pilot-user\n' ;;
-        */apps/langfuse/terragrunt.stack.hcl:blob-storage) printf 'IaC/live/langfuse-blob-storage\n' ;;
-        */shared/terragrunt.stack.hcl:*) printf 'IaC/live/%s\n' "$unit_path" ;;
-        */bootstrap/terragrunt.stack.hcl:*) printf 'IaC/bootstrap/%s\n' "$unit_path" ;;
-        */operator/terragrunt.stack.hcl:*) printf 'IaC/operator/%s\n' "$unit_path" ;;
+        */apps/fleet/terragrunt.stack.hcl:pilot-user) paths+=("IaC/live/azuread-applications/fleet-pilot-user") ;;
+        */apps/langfuse/terragrunt.stack.hcl:blob-storage) paths+=("IaC/live/langfuse-blob-storage") ;;
+        */shared/terragrunt.stack.hcl:*) paths+=("IaC/live/$unit_path") ;;
+        */bootstrap/terragrunt.stack.hcl:*) paths+=("IaC/bootstrap/$unit_path") ;;
+        */operator/terragrunt.stack.hcl:*) paths+=("IaC/operator/$unit_path") ;;
         *) echo "Unknown Terragrunt unit in ${stack_file}: ${unit_path}" >&2; return 1 ;;
       esac
-    done < <(git show "${ref}:${stack_file}" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p')
+    done <<<"$unit_paths"
   done <<<"$stack_files"
-}
-
-terragrunt_azuread_stack_changed() {
-  local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
-  local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
-  local base_root_source
-  local head_root_source
-  local base_stack_units
-  local head_stack_units
-
-  if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
-    return 0
-  fi
-
-  if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
-    return 0
-  fi
-
-  if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
-    return 0
-  fi
-
-  if ! git diff --quiet "$base_sha" "$head_sha" -- \
-    IaC/homelab/account.hcl \
-    IaC/homelab/us-west-2/region.hcl \
-    IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl \
-    IaC/homelab/us-west-2/apps/fleet/azuread \
-    IaC/homelab/us-west-2/apps/grafana/terragrunt.stack.hcl \
-    IaC/homelab/us-west-2/apps/grafana/azuread \
-    IaC/homelab/us-west-2/apps/octelium/terragrunt.stack.hcl \
-    IaC/homelab/us-west-2/apps/octelium/azuread \
-    IaC/terragrunt-catalog/units/live/azuread-applications \
-    IaC/terragrunt-catalog/modules/azuread-saml-application \
-    IaC/terragrunt-catalog/modules/azuread-family-user; then
-    return 0
-  fi
-
-  if git cat-file -e "${base_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null &&
-    git cat-file -e "${head_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
-    [[ "$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" != "$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')" ]] && return 0
-  fi
-
-  if ! base_stack_units="$(terragrunt_stack_unit_paths_at_ref "$base_sha" | grep '^IaC/live/azuread-applications/' || true)" ||
-    ! head_stack_units="$(terragrunt_stack_unit_paths_at_ref "$head_sha" | grep '^IaC/live/azuread-applications/' || true)"; then
-    return 0
-  fi
-
-  if [[ "$base_stack_units" != "$head_stack_units" ]]; then
-    return 0
-  fi
-
-  if ! base_root_source="$(git show "${base_sha}:IaC/root.hcl")" ||
-    ! head_root_source="$(git show "${head_sha}:IaC/root.hcl")"; then
-    return 0
-  fi
-
-  [[ "$base_root_source" != "$head_root_source" ]]
-}
-
-# The AzureAD collection contains both application registrations and the
-# device pilot user. Unrelated operator-only modules must not make a normal
-# deployment plan or apply that collection wholesale.
-terragrunt_azuread_plan_inputs_changed() {
-  local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
-  local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
-
-  if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]] ||
-    ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
-    ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
-    return 0
-  fi
-
-  ! git diff --quiet "$base_sha" "$head_sha" -- \
-    flake.nix \
-    flake.lock \
-    policy/terraform.rego \
-    scripts/ci/terragrunt-filter-base.sh \
-    scripts/ci/terragrunt-plan.sh
-}
-
-terragrunt_azuread_changed_filter() {
-  local include_plan_inputs="${1:-false}"
-
-  if terragrunt_azuread_stack_changed ||
-    { [[ "$include_plan_inputs" == "true" ]] && terragrunt_azuread_plan_inputs_changed; }; then
-    printf '*/azuread\n'
-  else
-    printf '*/azuread | [main...HEAD]\n'
+  if ((${#paths[@]} > 0)); then
+    printf '%s\n' "${paths[@]}"
   fi
 }
 
-terragrunt_azuread_pilot_filter() {
-  local suffix=' | [main...HEAD]'
-  if terragrunt_azuread_stack_changed; then suffix=''; fi
-  printf 'fleet/pilot-user%s\n' "$suffix"
+# Run Git discovery once. Exact paths from its output can be replayed in the
+# current checkout for saved plans, or excluded from a scoped retirement run.
+terragrunt_affected_units() {
+  local default_branch
+  default_branch="$(git rev-parse --abbrev-ref origin/HEAD 2>/dev/null)" || default_branch=""
+  if [[ -n "$default_branch" && "$default_branch" != "origin/main" ]]; then
+    echo "Terragrunt --filter-affected requires the repository default branch to be main." >&2
+    return 1
+  fi
+  if [[ "$(git rev-parse --verify --quiet main)" != "$TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF" ||
+    "$(git rev-parse --verify --quiet HEAD)" != "$TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF" ]]; then
+    echo "Terragrunt --filter-affected requires local main and HEAD to match the comparison commits." >&2
+    return 1
+  fi
+  python3 -I "$(dirname "${BASH_SOURCE[0]}")/terragrunt-affected-units.py"
 }
 
-terragrunt_argocd_changed_filter() {
-  local include_plan_inputs="${1:-false}"
-  if terragrunt_stack_changed 'IaC/homelab/us-west-2/apps' "$include_plan_inputs"; then
-    printf '*/argocd\n'
-  else
-    printf '*/argocd | [main...HEAD]\n'
-  fi
+terragrunt_unit_affected() {
+  grep -Fxq "$1" <<<"$2"
 }
 
-terragrunt_stack_changed() {
-  local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
-  local generated_group="${1:-}"
-  local include_plan_inputs="${2:-false}"
-  local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
-  local repo_root
-  local paths=(
-    IaC/terragrunt.stack.hcl
-    IaC/homelab/us-west-2
-    IaC/stack-defaults.hcl
-    IaC/
-    IaC/terragrunt-catalog
-    IaC/terragrunt-catalog/modules
-    IaC/root.hcl
-    IaC/kubernetes-provider.hcl
-  )
-
-  if [[ "$include_plan_inputs" == "true" ]]; then
-    paths+=(
-      flake.nix
-      flake.lock
-      policy/terraform.rego
-      scripts/ci/terragrunt-filter-base.sh
-      scripts/ci/terragrunt-plan.sh
-      scripts/ci/terragrunt-apply.sh
-    )
-  fi
-
-  if [[ -n "$generated_group" ]]; then
-    paths+=("$generated_group")
-  fi
-
-  if ! repo_root="$(git rev-parse --show-toplevel)"; then
-    return 0
-  fi
-
-  if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
-    return 0
-  fi
-
-  if [[ -z "$head_ref" ]]; then
-    head_ref="$(terragrunt_filter_head_ref)"
-  fi
-
-  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
-    return 0
-  fi
-
-  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-    return 0
-  fi
-
-  ! git -C "$repo_root" diff --quiet "$base_ref" "$head_ref" -- "${paths[@]}"
-}
-
-terragrunt_changed_filter() {
-  local all_filter="$1"
-  local include_plan_inputs="${2:-false}"
-  local generated_group="${all_filter%/*}"
-
-  if terragrunt_stack_changed "$generated_group" "$include_plan_inputs"; then
-    printf '*\n'
-  else
-    printf '%s | [main...HEAD]\n' "$all_filter"
-  fi
+terragrunt_active_unit_affected() {
+  [[ -f "$1/terragrunt.hcl" ]] && terragrunt_unit_affected "$1" "$2"
 }
 
 terragrunt_argocd_app_filter() {
   local unit="${TERRAGRUNT_ARGOCD_APP:-}"
-
-  if [[ -z "$unit" ]]; then
-    terragrunt_argocd_changed_filter
-    return
-  fi
 
   if [[ ! "$unit" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ || ! -f "${unit}/argocd/terragrunt.hcl" ]]; then
     echo "Unknown Argo CD Application unit: ${unit}" >&2
@@ -327,6 +185,12 @@ terragrunt_filter_base_ref() {
 
   if [[ -z "$base_ref" && -n "${GITHUB_BASE_REF:-}" ]]; then
     base_ref="origin/${GITHUB_BASE_REF}"
+    # A queued PR merge may predate new units on main; those are not PR retirements.
+    if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]] &&
+      ! base_ref="$(git merge-base "$base_ref" "$(terragrunt_filter_head_ref)")"; then
+      echo "No common ancestor is available for the Terragrunt PR comparison; refusing deleted-unit detection." >&2
+      return 1
+    fi
   fi
 
   if [[ -z "$base_ref" && "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]]; then
@@ -349,8 +213,8 @@ terragrunt_filter_base_ref() {
 }
 
 prepare_terragrunt_filter_base() {
-  local base_ref
-  local head_ref
+  local base_ref base_sha
+  local head_ref head_sha
 
   if ! base_ref="$(terragrunt_filter_base_ref)"; then
     echo "No usable Terragrunt --filter-affected base ref is available; refusing to skip deleted-unit detection." >&2
@@ -359,52 +223,69 @@ prepare_terragrunt_filter_base() {
 
   head_ref="$(terragrunt_filter_head_ref)"
 
-  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
+  if ! base_sha="$(git rev-parse --verify --quiet "${base_ref}^{commit}")"; then
     echo "Terragrunt --filter-affected base ${base_ref} is unavailable; refusing to skip deleted-unit detection." >&2
     return 1
   fi
 
-  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+  if ! head_sha="$(git rev-parse --verify --quiet "${head_ref}^{commit}")"; then
     echo "Terragrunt --filter-affected head ${head_ref} is unavailable." >&2
     return 1
   fi
 
-  export TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF="$base_ref"
-  export TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="$head_ref"
+  export TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF="$base_sha"
+  export TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="$head_sha"
 
   if [[ "${CI:-}" != "true" ]]; then
     return 0
   fi
 
-  git switch --detach --quiet "$head_ref"
-
-  git branch --force main "$base_ref"
+  git switch --detach --quiet "$head_sha" || return 1
+  git branch --force main "$base_sha" || return 1
+  # Terragrunt 1.2 selects the default branch through origin/HEAD when present.
+  if git show-ref --verify --quiet refs/remotes/origin/main; then
+    git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+  else
+    return 0
+  fi
 }
 
 terragrunt_deleted_unit_paths() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
   local head_stack_unit_paths
+  local base_stack_unit_paths
+  local deleted_files
+  local candidates
+  local unit_dir
+  local repo_root
+  local deleted_paths=()
 
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
-    return 0
+    echo "Unable to determine deleted-unit base; refusing reconciliation." >&2
+    return 1
   fi
 
   if [[ -z "$head_ref" ]]; then
-    head_ref="$(terragrunt_filter_head_ref)"
+    head_ref="$(terragrunt_filter_head_ref)" || return 1
   fi
 
-  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
-    echo "::warning::Terragrunt deleted-unit base ${base_ref} is unavailable; skipping deleted-unit destroy detection."
-    return 0
+  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null ||
+    ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+    echo "Deleted-unit comparison revision is unavailable; refusing reconciliation." >&2
+    return 1
   fi
 
-  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-    echo "::warning::Terragrunt deleted-unit head ${head_ref} is unavailable; skipping deleted-unit destroy detection."
-    return 0
-  fi
-
-  head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")"
+  # Capture all fallible Git reads before emitting any deletion candidate.
+  head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")" || return 1
+  base_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$base_ref")" || return 1
+  deleted_files="$(git -C "$repo_root" diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl')" || return 1
+  while IFS= read -r unit_dir; do
+    [[ -n "$unit_dir" ]] || continue
+    deleted_paths+=("${unit_dir%/terragrunt.hcl}")
+  done <<<"$deleted_files"
+  candidates="$(printf '%s\n' "$base_stack_unit_paths" "${deleted_paths[@]}" | sort -u)" || return 1
 
   while IFS= read -r unit_dir; do
     # Catalog templates and operator-owned state are outside the CI apply scope.
@@ -416,15 +297,28 @@ terragrunt_deleted_unit_paths() {
       continue
     fi
     printf '%s\n' "$unit_dir"
-  done < <(
-    {
-      git diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl' \
-        | sed 's#/terragrunt\.hcl$##'
-      comm -23 \
-        <(terragrunt_stack_unit_paths_at_ref "$base_ref" | sort) \
-        <(printf '%s\n' "$head_stack_unit_paths" | sed '/^$/d' | sort)
-    } | sort -u
-  )
+  done <<<"$candidates"
+}
+
+# Resolve a stable backend identity to the configuration path at the base.
+terragrunt_deleted_unit_source() {
+  local unit_dir="$1"
+  local base_sha="$TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF"
+  local source_dir
+
+  source_dir="$unit_dir"
+  if ! git cat-file -e "${base_sha}:${unit_dir}/terragrunt.hcl" 2>/dev/null &&
+     ! git cat-file -e "${base_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+    case "$unit_dir" in
+      IaC/live/argocd-apps/*) source_dir="IaC/homelab/us-west-2/apps/${unit_dir##*/}/argocd" ;;
+      IaC/live/azuread-applications/fleet-pilot-user) source_dir="IaC/homelab/us-west-2/apps/fleet/pilot-user" ;;
+      IaC/live/azuread-applications/*) source_dir="IaC/homelab/us-west-2/apps/${unit_dir##*/}/azuread" ;;
+      IaC/live/langfuse-blob-storage) source_dir="IaC/homelab/us-west-2/apps/langfuse/blob-storage" ;;
+      IaC/live/*) source_dir="IaC/homelab/us-west-2/shared/${unit_dir#IaC/live/}" ;;
+      IaC/bootstrap/*) source_dir="IaC/homelab/us-west-2/bootstrap/${unit_dir#IaC/bootstrap/}" ;;
+    esac
+  fi
+  printf '%s\n' "$source_dir"
 }
 
 terragrunt_create_deleted_unit_destroy_stack() {
@@ -490,30 +384,6 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "3.9.0"
-    }
-  }
-
-  # Match the key-provider identity and method used by the owning modules.
-  # Backend SSE alone cannot read OpenTofu client-encrypted state.
-  encryption {
-    key_provider "aws_kms" "main" {
-      kms_key_id = "${local.root_config.locals.kms_key_id}"
-      key_spec   = "${local.root_config.locals.kms_key_spec}"
-      region     = "${local.root_config.locals.kms_region}"
-    }
-
-    method "aes_gcm" "main" {
-      keys = key_provider.aws_kms.main
-    }
-
-    state {
-      method   = method.aes_gcm.main
-      enforced = true
-    }
-
-    plan {
-      method   = method.aes_gcm.main
-      enforced = true
     }
   }
 }

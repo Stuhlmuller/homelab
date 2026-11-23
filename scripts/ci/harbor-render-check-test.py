@@ -68,6 +68,27 @@ def volume_pod(kind, name):
 
 
 class HarborRenderPrerequisites(unittest.TestCase):
+    def test_proxy_cache_adapter_must_be_in_both_rendered_allowlists(self):
+        core = resource("ConfigMap", "harbor-core")
+        bootstrap = resource("ConfigMap", "harbor-bootstrap")
+        cache_key = "PERMITTED_REGISTRY_TYPES_FOR_PROXY_CACHE"
+        adapter_key = "REPLICATION_ADAPTER_WHITELIST"
+        core["data"] = {cache_key: "docker-hub,docker-registry",
+                        adapter_key: "docker-hub,docker-registry"}
+        bootstrap["data"] = {
+            "bootstrap.py": 'PROXY_CACHES = {"proxy-quay": ("https://quay.io", "docker-registry")}',
+        }
+        resources = [core, bootstrap]
+        self.assertEqual(CHECK.proxy_cache_adapter_errors(resources), [])
+        for key in (cache_key, adapter_key):
+            with self.subTest(key=key):
+                invalid = copy.deepcopy(resources)
+                invalid[0]["data"][key] = "docker-hub"
+                self.assertIn("proxy-quay", CHECK.proxy_cache_adapter_errors(invalid)[0])
+        bootstrap["data"]["bootstrap.py"] = bootstrap["data"]["bootstrap.py"].replace(
+            '"docker-registry"', '"quay"')
+        self.assertIn("rendered allowlists: quay", CHECK.proxy_cache_adapter_errors(resources)[0])
+
     def test_required_volume_resources_must_exist(self):
         for kind in CHECK.PREREQUISITES:
             with self.subTest(kind=kind):
@@ -295,8 +316,8 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_CATALOG),
             ) if plan["image_id"] == "chainguard-python")
             receipt = {
-                "schema_version": 1,
-                "kind": "native-chainguard-v1",
+                "schema_version": 2,
+                "kind": "native-chainguard-v2",
                 "repository_sha": "a" * 40,
                 "config_digest": plan["config_digest"],
                 "image_id": plan["image_id"],
@@ -306,7 +327,10 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 "destination_digest": plan["source_digest"],
                 "platforms": {"linux/amd64": "sha256:" + "a" * 64,
                               "linux/arm64": "sha256:" + "b" * 64},
-                "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+                "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
+            "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
                 "consumer_access": True,
             }
             state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))

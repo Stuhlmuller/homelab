@@ -10,35 +10,29 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-4b551d11e16fb851a8676ce2
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-20275bab1ec480742e28a50f
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
   - id: openwiki-source-8918085c21c3a103803f7fbe
     resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-c0340a70f42e716d4daed12a
+    resource: repo://clusters/homelab/apps/renovate/cache-init.cjs
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-69fb134c80ee4cb4ba2ed124
+    resource: repo://clusters/homelab/apps/renovate/local-cache-pvc.yaml
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
-  - id: openwiki-source-01fc0bedc522f2abd58d6698
-    resource: repo://clusters/homelab/apps/renovate/README.md
-  - id: openwiki-source-b8e8b7405b7234a1ce62dc56
-    resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
+  - id: openwiki-source-aa130e9d46ea963100bed0b3
+    resource: repo://clusters/homelab/platform/storage/renovate-cache-local.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
-  - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
-    resource: repo://docs/storage-nfs.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
@@ -50,6 +44,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-039f74d4187431e0344dd883
+    resource: repo://scripts/ci/renovate-cache-stats-log-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -60,12 +56,14 @@ sources:
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-ec40e0ee801281b6064f8319
+    resource: repo://specs/004-run-renovate-in-cluster/reliability-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-30T03:10:21.033Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-30T03:10:21.033Z
 ---
 
 # Storage And State
@@ -77,7 +75,7 @@ pruned the inspection Pod while all writers remained stopped, then restored
 Valkey and Langfuse in a separate revision. Valkey loaded the repaired AOF,
 and four fresh attributed generations reached Langfuse. Keep the original
 archive and all PVCs; an independent restore drill remains unverified. See the
-[Langfuse recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+[Langfuse recovery runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 LiteLLM's prepared UI-key migration adds `ai/data-litellm-postgres-0`, a 20 GiB
 NFS claim for its dedicated PostgreSQL database. Preserve logical dumps, volume
@@ -87,7 +85,7 @@ that marker during restore: it prevents startup from recreating revoked keys.
 Live native key listing, revocation and per-key traced gateway generations
 passed; browser UI rendering, native caller actions and database restore
 remain pending. See the
-[LiteLLM runbook](../../clusters/homelab/apps/litellm/README.md).
+[LiteLLM runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
 
 During the final October 10 check, `zimaboard-2` became unreachable and its
 terminating `n8n-postgres-0` left n8n at 0/1 Ready while both Argo Applications
@@ -145,6 +143,11 @@ Unmounted claims are outside that metric inventory. Grafana's current PVC rule
 state remains unverified because its admin API returned HTTP 401, although the
 unchanged alert query returned real data below its threshold.
 
+The application and etcd backup destinations live beside the
+[operator stack](../../IaC/homelab/us-west-2/operator/terragrunt.stack.hcl).
+Langfuse's [blob destination](../../IaC/homelab/us-west-2/apps/langfuse/blob-storage.hcl)
+lives beside its workload stack.
+
 The dedicated [etcd offsite storage](../operations/etcd-offsite-storage.md) operator
 unit declares a private, versioned S3 bucket with independently owned retention.
 Its reviewed saved plan applied on 2026-09-07 with seven additions and no
@@ -173,7 +176,7 @@ The server and dump client both allow 512 MiB packets for MDM package data.
 Database restore also needs the stable Fleet server
 key and enrolled platform identities. These copies share the QNAP failure domain;
 offsite coverage and an isolated restore drill remain unverified. See the
-[Fleet backup and restore contract](../../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+[Fleet backup and restore contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 When the [AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 is used, Fleet command data and backups can also contain client VPN keys.
 Removing a device profile does not erase historical backups or revoke the
@@ -220,11 +223,20 @@ control-plane node and its system disk. GitOps explicitly declares the retained
 `data-media-postgres-0` claim with `Prune=false,Delete=false`, so clean bootstrap
 creates the backup target independently of the active StatefulSet.
 
+Before placing or expanding retained local state, check per-node `/var` free
+bytes, inodes, depletion rate and recent node I/O pressure in the
+[EPHEMERAL monitoring runbook](../../docs/talos-ephemeral-monitoring.md).
+Device latency, error and wear telemetry remains a separate acceptance item.
+
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
 `zimaboard-0`, while using retained NFS claims as nightly archive targets. Their media paths still use static PV/PVC pairs against the
 QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
+
+Radarr and Sonarr prepare their media directories with wave `-1` Argo CD Sync
+hooks after the wave `-2` claims and network policies. Argo CD deletes each
+successful directory Job and Pod; the retained PV/PVC pairs preserve media data.
 
 Bazarr follows the media config pattern: retained local config/SQLite state on
 `zimaboard-0`, a separate retained NFS backup claim, and existing `media-tv` and
@@ -233,7 +245,7 @@ beside the media files and belong to the NAS media backup scope; config/database
 archives alone do not protect captions. The init container reads Sonarr/Radarr
 local config claims read-only to obtain their API keys; the runtime container
 does not mount those claims. See the
-[Bazarr runbook](../../clusters/homelab/apps/bazarr/README.md) for backup,
+[Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) for backup,
 recovery, and live acceptance gates.
 
 Read-only inspection during Bazarr onboarding on 2026-10-04 found registered
@@ -242,7 +254,7 @@ export squashes every NFS client to guest, so container groups cannot repair
 this. The preview-first `scripts/nas-media-permissions.py` helper limits owner-side
 permission repair to registered Arr paths, requires reviewed current `main` and
 a private original-mode journal, and can queue Arr rescans afterward. Follow the
-[NAS access procedure](../../clusters/homelab/apps/bazarr/README.md#nas-media-access)
+[NAS access procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md#nas-media-access)
 and verify the imported library afterward. Future owner-side media copies must
 preserve guest traversal/read access and directory write access for sidecars.
 
@@ -279,7 +291,10 @@ ready, but they must not be treated as production-ready until:
   Prometheus and Alertmanager through a backed-up, fenced migration to
   supported repo-owned block or local storage. Map each retained PV before
   owner-approved cleanup. Add a declared QNAP management path before disabling
-  NFSv2, and first confirm no other client needs it.
+  NFSv2, and first confirm no other client needs it. The [NFS runbook](../../docs/storage-nfs.md#nas-configuration)
+  tracks this prerequisite under [#868](https://github.com/Stuhlmuller/homelab/issues/868);
+  the narrow Renovate volume/export exception does not authorize a manual
+  QTS protocol change.
 
 ## Stateful Apps
 
@@ -341,18 +356,29 @@ success marker, cached archive and receipt hashes, restored database report,
 source identity and zero production writers, and prepared a separate private
 NAS scratch recovery tree. This is a partial T014 copy receipt, not an old-image
 boot or compatible recovery proof.
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+produces a public npm content-cache tar, dependency lock, and digest manifest
+without legacy state or credentials. Its
+[CI proof](../../.github/workflows/openclaw-discord-offline-cache.yml)
+deletes those artifacts after a fresh `--network none` install and runtime
+inspection. A later recovery operation still needs reviewed private publication,
+digest-checked transfer, and a compatible boot from separate writable copies
+behind an enforced offline boundary; this cache proof does not accept T014.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
 gateway had a writable root, so its overlay may have changed those targets;
 their original contents remain unclassified until compared with retained
-evidence. Three dangling external targets also remain unclassified. T014 still
+evidence. The October 25 report classifies 37 links: 27 contained, nine external and
+one missing within the archived roots. The three external `/home` cache
+targets are absent in the reader; the separate NAS skill target was already
+dangling in the original mount. Their former purpose remains unknown. T014 still
 needs their disposition, a separate writable UID 1000 local-state copy, an
 isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
-The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+The dormant [Enterprise foundation](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
 nonrotating private key. Preserve that Secret with any eventual database
 recovery set. Its Argo Application is declared with automatic sync disabled but
@@ -402,7 +428,7 @@ Splitting API, worker and the full Envoy planning allowance to `zimaboard-1`
 would leave only 122 MiB against its observed memory margin before peaks.
 No existing node has an admitted Enterprise storage and isolated-canary
 placement.
-The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+The separate dormant [chart candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
@@ -413,7 +439,7 @@ pending; the candidate does not adopt legacy OpenClaw state.
 The inactive reconciler needs a private durable journal at
 `/private/openclaw-enterprise/journal.json` for pending API intent and resource
 IDs across retries. Its journal claim must remain separate from the writable
-bootstrap claim. The [staged operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+bootstrap claim. The [staged operator bundle](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a retained 1Gi journal PVC and local StorageClass, but no static PV,
 node placement or active GitOps registration; the claim is not live or admitted.
 The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
@@ -433,6 +459,14 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
+The [one-shot PostgreSQL checkpoint](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+has a protected CI capture-and-restore path. When CI cluster access is down,
+a clean exact-main operator checkout can capture and verify the S3 object
+version, leaving a pending receipt. A separate protected workflow then checks
+that exact S3 version and source-identity metadata and restores it in a
+networkless Docker container. The restore job has no Kubernetes access, so it
+does not independently recheck live PVC/PV state. Only its matching final
+receipt qualifies as a PostgreSQL move safety copy, not whole-service recovery.
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.
@@ -447,7 +481,7 @@ storage. Hash-verified originals remain separate from the repaired AOF. At
 that stage no live replacement was enabled; the later approved promotion and
 restart are recorded above. General backup and independent restore coverage
 remain unverified. See the
-[capture runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+[capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
 The resource-store manifest in `clusters/homelab/apps/octelium-enterprise`
@@ -484,6 +518,32 @@ artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
+On 2026-11-01, read-only inspection found one selected but unready Enterprise
+resource-store Pod. The source and live Deployment/PVC match; DuckDB WAL replay
+reports a missing schema. Keep the failed WAL and checkpoint. A new
+repository-owned one-shot recovery needs an immutable PVC capture and offline
+candidate validation first; do not edit the live PVC manually. See the
+[Enterprise README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md)
+and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
+
+The Enterprise Application uses selective sync so an inspector-only change
+can leave the in-sync store Deployment untouched.
+
+The November 1 resource-store capture candidate is dormant under
+`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
+activated and observed Ready before a separate GitOps fence reduces only
+`octeliumee-rscstore` to zero replicas. The source-owned capture helper requires
+Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
+namespaced PodList without another claim mount, and stable whole-PVC tar hashes
+before and after transfer. It includes any current WAL, dated quarantines and
+recovery markers. `scripts/application-backup.py` then publishes both archive
+parts and the private capture receipt to the existing versioned application
+backup bucket; exact-version readback and isolated file extraction are required
+before recovery review. The proof command itself fetches fresh S3 versions;
+local receipt files alone do not qualify. This is a prepared path, not a
+deployed backup or a DuckDB reopen proof. No WAL file is changed or store
+writer resumed by this stage. See the [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
@@ -511,6 +571,25 @@ termination grace remain.
 
 ### Pending n8n PostgreSQL upgrade
 
+After the statistics-storage fix deployed, n8n on `zimaboard-0` still failed
+database DNS lookups while unrelated node controllers restarted under high
+CPU, memory, and I/O pressure. A temporary
+[n8n node selector](../../clusters/homelab/apps/n8n/values.yaml) places it on
+`zimaboard-1`; its NFS PVC has no node affinity and remains unchanged. The
+single-writer `Recreate` strategy is preserved. This contains the application
+outage rather than repairing the overloaded node; remove the selector after
+node recovery and capacity verification, and verify DNS after relocation.
+
+The 2026-11-17 investigation found n8n database ping timeouts alongside
+PostgreSQL 14 collector warnings and a collector waiting on file I/O. Database
+connections were mostly idle and CPU/memory use was low. The
+[database StatefulSet](../../clusters/homelab/apps/n8n-postgres/statefulset.yaml)
+places transient collector statistics on a bounded memory-backed `emptyDir`
+instead of NFS. Durable data and WAL stay on the original PVC. This targets
+collector stalls; it does not establish that all NFS latency is resolved.
+Remove `stats_temp_directory` during the future major upgrade: PostgreSQL 15+
+uses shared-memory statistics and no longer accepts that setting.
+
 On 2026-10-05 PDT, `n8n-postgres` was still pinned to PostgreSQL 14.23 while
 n8n reported PostgreSQL 14 as unsupported (17+ supported; 16 compatibility
 only). Availability recovered, but schedule a reviewed major-version migration:
@@ -518,12 +597,37 @@ take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
 instead of changing the major image in place, then verify SQL, n8n readiness,
 and the public webhook before retiring the old PVC.
 
+The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+renders the Deployment at zero replicas only when a reviewed GitOps revision
+adds it to Helm `valueFiles`; the active stack omits it. A future paired
+checkpoint must verify that Argo CD synced the exact fence revision, no n8n
+writer Pods or Jobs remain, PostgreSQL is Ready, and both PVC/PV bindings stay
+fixed across the dump and PVC archive. An off-NAS receipt and isolated restore
+are still required before a separate GitOps revision restores one n8n replica.
+The staged [one-shot paired checkpoint](../../.github/workflows/n8n-paired-checkpoint.yml)
+uses an excluded [read-only reader Job](../../clusters/homelab/apps/n8n/checkpoint-reader.job.yaml)
+under a temporary deny-all NetworkPolicy
+only after those gates pass. Its protected script binds four PVC/PV UIDs,
+reconciles run-named resources by owner token and UID even if create loses its
+response, and requires foreground Job deletion plus confirmed reader-Pod
+absence before policy removal or a success receipt.
+An API outage that leaves either resource keeps the fence in place until the
+[run-bound cleanup helper](../../scripts/n8n-paired-residual-cleanup.sh)
+verifies current main, the fence, observed resource UIDs and owner/spec, then
+removes the Job and its Pods before the deny-all policy. A mismatch leaves the
+fence and policy in place. The checkpoint script
+uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
+downloads and restores both in disposable runner storage, then publishes a
+checksum-bound manifest. This is source preparation, not a completed backup;
+activation still needs a separate reviewed fence revision and successful live
+receipt.
+
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
 `SELECT 1` instead of treating socket acceptance as usable database service.
 The active `media-postgres-local` StatefulSet mounts only local storage. The
 `media-postgres-recovery` overlay fences the writer and backup schedule before
-a logical restore. See `clusters/homelab/apps/media-postgres/README.md` for the
+a logical restore. See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/media-postgres/README.md) for the
 failure mode and operator response.
 
 `octelium-postgres` keeps the 30-minute startup window but uses a 90-second
@@ -602,6 +706,16 @@ path.
 The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
 the CronJob's archive listing validation.
 
+During torrent-catalog rebuilding, the
+[recovery script](../../clusters/homelab/apps/deluge/recover-torrent-catalog.py)
+checks current fast-resume data before opening retained archives. Fallback
+snapshots are tried newest first; unreadable, truncated, and invalid snapshots
+are skipped. A complete match for every torrent is still required before any
+state is replaced. The
+[recovery fixture](../../scripts/ci/deluge-catalog-recovery-test.py)
+checks current-source priority, truncated-archive fallback, and refusal of
+incomplete recovery.
+
 Radarr and Sonarr use retained static 10 Gi `hostPath` config volumes at
 `/var/lib/radarr` and `/var/lib/sonarr`, pinned to `zimaboard-0`. Their guarded
 `Recreate` cutovers copied the retained NFS config trees and recovered invalid
@@ -674,7 +788,7 @@ use Acer's unverified storage or reduce retention to bypass those requirements.
 Recover the database and corresponding blobs together, retaining the SSM
 encryption key and signing certificate. NFS copies share the QNAP failure
 domain; off-NAS registry backup and an isolated restore drill remain open.
-See `clusters/homelab/apps/harbor/README.md` for the concrete restore contract.
+See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md) for the concrete restore contract.
 
 Harbor image signing adds the `harbor-image-signing` Kubernetes Secret to the
 etcd recovery set. Its private key is absent from Harbor PostgreSQL dumps and
@@ -685,22 +799,41 @@ the public key independently for historical signature verification. See
 
 ## Renovate cache
 
-Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
-private-package, and repository caches; its working files stay on ephemeral
-storage. The cache includes private package metadata, so restrict access to the
-volume and logs. It is replaceable and has no backup requirement. Argo CD does
-not prune the PVC. Before requesting a GitHub token, each run flushes a small
-write to the claim so a full or unwritable cache fails visibly. The `20Gi`
-request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
-PVCs or enforce their requested size. A full export needs restored NAS capacity
-through a declared path; increasing the PVC request cannot restore writes.
-No verified QNAP `/homelab` capacity-restoration operation is declared. An
+Renovate's declared active cache is the retained `renovate-cache-local` claim
+in `automation`, explicitly bound to the platform-owned static PV on `acer` at
+`/var/lib/renovate-cache`. Datasource, private-package, repository, and tool caches
+persist; working files stay ephemeral. The old `renovate-cache` NFS claim remains
+declared for rollback. Cache contents include private metadata, so restrict
+access to the volume and logs. Both claims and the local PV resist Argo pruning.
+The cache is rebuildable and unbacked, with no local node failover. Its advertised
+20 GiB neither reserves space nor enforces a quota on Talos `EPHEMERAL`; never
+run a capacity-fill drill there. Before GitHub token exchange, the existing
+write probe fails a full or unwritable claim. Increasing either PVC's request
+does not restore backing capacity; the NFS provisioner also cannot resize claims.
+If the active filesystem fills, suspend and drain through reviewed GitOps,
+restore capacity through a declared path, then resume.
+
+The bounded initializer changes only mount-root ownership/mode to UID 12021 and
+`0700`, accepting populated caches without traversal or deletion. Only it runs
+as root with `CHOWN`/`FOWNER`; it mounts no App Secret or API token. The main
+process remains non-root. Both containers share Pod networking. Platform storage
+and Renovate reconcile independently, so verify both Applications and exact
+binding before accepting scheduled runs. `Forbid` remains on the same CronJob;
+existing Jobs retain their original claim. Rollback suspends/drains, restores
+the old claim/placement, and removes the local-only initializer before NFS use.
+Memory requests fitting on `acer` do not reserve the unchanged 4 GiB limit;
+observe node pressure during the first local runs.
+
+No verified QNAP `/homelab` capacity-restoration operation is declared. The
+staged static PV and separate PVC target a dedicated 20 GiB QTS thick volume
+exported as `/renovate-cache`; both remain outside active Kustomizations until
+the authorized NAS setup and exact volume/export verification pass. An
 isolated tmpfs `ENOSPC` drill can test failure visibility and later normal
 PVC use, but cannot prove recovery from a full NAS export. T024/T042 and
 writer cutover remain blocked on a declared capacity path and direct recovery
 evidence. For corruption, suspend the CronJob, clear only cache contents with
 a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
-runbook](../../clusters/homelab/apps/renovate/README.md).
+runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the
@@ -713,15 +846,91 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
+The full dry-run config now uses default log levels. The completed timing
+investigation temporarily promoted package get/set statistics and file-cache
+cleanup start/GC/end messages. They separate completed backend timings from
+cleanup but do not identify a mutex holder or time an upstream request. Raw
+records may carry repository context, so publish only numeric aggregates and
+keep Pod logs restricted. The
+[pinned fixture](../../scripts/ci/renovate-cache-stats-log-test.mjs) retains its
+own remaps for historical reproduction; runtime config contains none. Their
+removal changes neither cache freshness nor storage.
+
+The [reliability receipt](../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
+records signed local-cache delivery and distinct October 30 02:00/03:00 UTC
+scheduled Pods using the same retained PV/PVC. Both initializers and main
+containers exited zero; each discovered repository started and finished once,
+covering all nine with no error or mutex markers. Runtime fell from the
+00:00/01:00 NFS baselines' 1,679/1,566 seconds to 304/267 seconds, and cleanup
+from 518.455/415.454 seconds to 13.299/13.720 seconds. The repeat removed
+607 orphaned contents, so the improvement also held on the populated cache.
+Observed node conditions stayed Ready without pressure; sampled working-set
+peaks were about 1.61 GiB under the unchanged 4 GiB limit.
+
+Storage and node placement changed together, and contents and operation counts
+differed. These results establish scoped runtime improvement, not isolated NFS
+causality or the historical mutex holder. The image, resources, default TTLs,
+schedule, deadline, and full dry-run mode stayed unchanged. Speed or retained
+binding alone cannot prove same-key reuse; capacity recovery, writer cutover,
+and seven-day migration acceptance remain separate.
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
 proposed RPO/RTO, private secret dependencies, version-specific S3 publication,
-paired capture contract, synthetic fixtures, retention and rollout/rollback.
-Octelium/media source dumps remain on QNAP; the new dedicated application bucket,
-IAM profiles, operator schedule and freshness rules are candidates only. The
+paired capture contract, synthetic fixtures, and retention.
+Octelium/media source dumps remain on QNAP. The shared S3 destination and manual
+publication commands support independent recovery. The
 publisher never expires retained data. AFFiNE/Multica adapters require a reviewed
 writer fence; they do not automate capture. Other workload gaps remain explicit.
 Operator-managed independent backups are unverified. Real-data drills require
-HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
+HOME-3 containment and separate approval.
 No operational RPO/RTO or application recovery is proven by synthetic tests.
+
+## Uptime Kuma state
+
+[Kuma storage](../../clusters/homelab/apps/uptime-kuma/local-storage.yaml)
+declares retained `uptime-kuma-local`, a 5Gi local SQLite/config PVC on `acer`
+at `/var/lib/uptime-kuma`. Recreate and a single reconciler preserve the writer
+boundary; the hostPath capacity is not an enforced quota. NFS is only the
+5Gi `uptime-kuma-backups` archive destination, never the live SQLite database.
+
+[The backup implementation](../../clusters/homelab/apps/uptime-kuma/backup.py)
+uses SQLite's online backup through a read-only source mount, integrity checks,
+a bounded local scratch volume and atomic checksummed archive/manifest bundles.
+It excludes mounted secrets and rejects unsafe paths/symlinks. The initial Job
+waits for catalog coverage and nonempty history; the CronJob runs at 04:20
+`America/Los_Angeles`, forbids overlap and retains 14 successful bundles.
+
+Restore verification reads an unchanged archive into emptyDir and records
+original identity/history evidence. Before native startup it transactionally
+pauses clone monitors, disables notifications/defaults/maintenance and update/
+tunnel startup, then independently verifies every postcondition. History hashes
+stream in deterministic order. The dedicated restore identity has no API token,
+production grants or production PVC. Native login and read-only identity/history
+checks run on loopback with a restricted child environment; the created clone
+is discarded afterward. Declared deny-all policies are additional defense:
+current Flannel and the staged enforcer do not prove packet isolation.
+
+The [runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/uptime-kuma/README.md) distinguishes
+this version-bound execution fence from a network sandbox or production restore.
+Recovery requires a reviewed writer-fenced operation with matching schema/image.
+Local disk and NAS are separate failure domains, not HA or off-site recovery;
+nominal RPO is 24 hours plus scheduling delay. Declared jobs and local proof do
+not establish deployed backup success or a completed production restore drill.
+
+## AdGuard state reconstruction
+
+[AdGuard](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/adguard/README.md#isolated-recovery-verification)
+keeps one Recreate writer on a retained 1Gi `nfs-default` work claim. The claim
+stores filter cache. Git plus the protected SSM administrator credential own
+settings; each startup reconstructs the writable configuration in memory and
+replaces transient UI edits. A fresh empty-cache instance requires a successful
+filter download. The isolated recovery helper tests replacement and fresh restore
+in local scratch containers, recording source and credential versions privately.
+It never mounts production claims. Preserve independent AWS/encrypted-state
+recovery access; a retained PVC alone is not proof of recoverable credentials.
+Live private routing and normal-client acceptance are separate checks.
+
+The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
+limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
+PostgreSQL and Redis serve inbound clients without initiating egress.

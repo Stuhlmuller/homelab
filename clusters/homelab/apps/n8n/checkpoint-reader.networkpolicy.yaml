@@ -1,0 +1,12 @@
+# Staged only. The protected checkpoint workflow creates this policy before
+# checkpoint-reader.job.yaml and removes it after the Job is gone.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-checkpoint-reader
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: n8n-checkpoint-reader
+  policyTypes: [Ingress, Egress]

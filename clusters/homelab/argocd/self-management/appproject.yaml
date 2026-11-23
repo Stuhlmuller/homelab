@@ -17,6 +17,7 @@ spec:
     - https://charts.crossplane.io/stable
     - https://grafana-community.github.io/helm-charts
     - https://helm.goharbor.io
+    - https://helm.cilium.io
     - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
@@ -28,8 +29,12 @@ spec:
     - https://prometheus-community.github.io/helm-charts
     - ghcr.io/adinhodovic/charts
     - ghcr.io/berriai
+    - oci://ghcr.io/kagent-dev/kagent/helm/kagent
+    - oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
     - ghcr.io/langfuse/langfuse-k8s/charts
     - ghcr.io/multica-ai/charts
+    - harbor.stinkyboi.com/mirror/helm
+    # Keep the current source permitted until the protected Application update.
     - codeberg.org/k8s-gateway/charts
     - docker.io/envoyproxy
   destinations:
@@ -43,6 +48,8 @@ spec:
       namespace: automation
     - server: https://kubernetes.default.svc
       namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: cilium-secrets
     - server: https://kubernetes.default.svc
       namespace: cordium
     - server: https://kubernetes.default.svc
@@ -62,7 +69,11 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: istio-system
     - server: https://kubernetes.default.svc
+      namespace: istio-egress
+    - server: https://kubernetes.default.svc
       namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: kagent
     - server: https://kubernetes.default.svc
       namespace: langfuse
     - server: https://kubernetes.default.svc
@@ -85,6 +96,8 @@ spec:
       namespace: octelium-public
     - server: https://kubernetes.default.svc
       namespace: octelium-storage
+    - server: https://kubernetes.default.svc
+      namespace: openwiki
     - server: https://kubernetes.default.svc
       namespace: storage
     - server: https://kubernetes.default.svc

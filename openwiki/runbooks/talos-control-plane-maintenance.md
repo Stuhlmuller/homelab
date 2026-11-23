@@ -8,8 +8,6 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
-  - id: openwiki-source-2d8396976c82220440798f1a
-    resource: repo://clusters/homelab/apps/n8n/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
@@ -37,7 +35,7 @@ sources:
 generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:00:26.315Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -47,6 +45,10 @@ Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../docs/talos-
 The declared Talos minor-version and Kubernetes upgrade ladder is wired in
 source but inactive. Keep the historical patch audits separate from the
 unpassed placement, recovery, publication, and live upgrade gates below.
+
+The incident-specific November 2 worker helper and its fixtures have been
+removed. That cleanup does not establish incident recovery; current incidents
+need fresh evidence and the maintained [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
 The [routine etcd backup runbook](../../docs/talos-etcd-backup.md) owns
 `scripts/talos-etcd-backup.py`: authenticated snapshot download to a private
@@ -159,7 +161,7 @@ affinity, requests 512 MiB, and permits 2 GiB on a worker with 1.28 GiB
 allocatable. After the webhook migration, measure its steady and peak use and
 review placement or its memory budget through GitOps. Its `Recreate` rollout
 can register active hooks at startup, so verify the
-[callback route](../../clusters/homelab/apps/n8n/README.md) before restarting it.
+[callback route](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md) before restarting it.
 
 Other capacity follow-up remains after recovery. `zimaboard-1` scheduled requests
 were 82% of allocatable memory but limits were 627%; OpenClaw and the active

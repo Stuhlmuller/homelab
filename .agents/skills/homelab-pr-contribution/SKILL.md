@@ -1,11 +1,11 @@
 ---
 name: homelab-pr-contribution
-description: Prepare a homelab fix, upgrade, or app change as a reviewable pull request with the right source ownership, focused validation, and documentation. Use for creating a PR; use protected-prs for merging and release-verification for deployment.
+description: Prepare a homelab fix, upgrade, or app change as a reviewable pull request with the right source ownership, focused validation, and documentation. Use for creating a PR, then hand off to protected-prs for default delivery; use release-verification for deployment.
 ---
 
 # Homelab PR Contribution
 
-Inspect the owning source, callers, tests, and affected workload README. Consult
+Inspect the owning source, callers, tests, and affected runbook. Consult
 [the task route](../../../openwiki/quickstart.md) when the user asks for wiki
 context or source inspection leaves an important architecture or dependency
 uncertainty. Keep desired state
@@ -27,13 +27,22 @@ plan for IaC, strict validation for Talos, and the relevant script fixture for
 code. Run the repository static gate when available; record any unavailable
 gate. Check `git diff --check` and inspect the final diff for secret material.
 
-Update the workload README or runbook and affected OpenWiki context when the
+Update the workload runbook and affected OpenWiki context when the
 change alters operations, contracts, or topology. Follow
-[wiki maintenance](../../../openwiki/operations/wiki-maintenance.md); do not
-hand-edit generated wiki pages.
+[wiki maintenance](../../../openwiki/operations/wiki-maintenance.md) and the
+repository's authored-page policy. Do not hand-edit generated Claims, indexes,
+provenance, or run state.
 
 Create a signed conventional commit and a PR with a conventional title. Include
 the reason, affected path, validation evidence, and rollout or rollback
-implications. Keep PR readiness distinct from deployment. When asked to merge,
-use [protected PRs](../homelab-protected-prs/SKILL.md); when asked to deploy,
-use [release verification](../homelab-release-verification/SKILL.md).
+implications. Record parent PRs and a concrete ready condition for any draft.
+A parent waiting on repair requires follow-through; it is not an indefinite
+reason to leave the child draft. Keep source readiness distinct from later
+activation, while preserving gates for merges that change live desired state.
+
+Continue through [protected PRs](../homelab-protected-prs/SKILL.md) by default,
+including necessary dependency repair within the user's task scope. Stop at
+PR preparation only when the user requested that limit. Use existing task
+authorization; do not ask again for routine delivery steps it already covers.
+For authorized deployment, continue through
+[release verification](../homelab-release-verification/SKILL.md).

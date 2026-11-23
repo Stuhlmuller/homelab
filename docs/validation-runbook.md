@@ -7,20 +7,26 @@ GitHub Actions now runs the same validation path for pull requests and
 post-merge applies. See `docs/ci-cd.md` for required GitHub environment
 secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 
+`scripts/ci/static-checks.sh` puts Terragrunt downloads and backend-free
+OpenTofu initialization metadata in a unique mode-0700 directory under `/tmp`,
+including Terragrunt launched by child checks. It removes that directory on
+success, failure, or handled termination. This cache location changes no
+desired-state inputs. The artifact scanner remains strict: pre-existing
+plan/state files inside the checkout still fail validation and require private
+inspection; the static gate does not delete or exempt them.
+
 ## Pre-Mutation Checks
 
 ```sh
 nix run .#validate
-cd IaC
-cd live/aws-ssm-parameters
-terragrunt plan
-cd ../..
-terragrunt stack run --filter-affected --parallelism 1 --source-update plan -no-color
+nix develop --command bash scripts/ci/terragrunt-plan.sh
 ```
 
-Expected result: the Argo CD Application units affected by `main...HEAD` are
-planned, their dependencies remain ordered by Terragrunt `dependencies` blocks,
-and unaffected units are skipped by the run queue.
+Expected result: affected allowed units are planned and policy-checked, their
+dependencies remain ordered, and unrelated units are skipped. Shared IaC changes
+and dirty local checkouts retain full coverage. See [plan performance](ci-cd.md#plan-performance)
+for generated-stack selection and provider caching. Secret-bearing units use
+the separate protected apply validation path.
 
 Render or dry-run GitOps sources:
 
@@ -91,7 +97,7 @@ argocd app get platform-storage
 ```
 
 Private ingress also requires healthy `tailscale` and `traefik` Applications,
-signed mesh peers and valid canonical TLS. Follow the
+online mesh peers and valid canonical TLS. Follow the
 [staged ingress acceptance](../clusters/homelab/apps/traefik/CUTOVER.md); existing
 Octelium routes remain only until replacement acceptance.
 
@@ -152,7 +158,7 @@ curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/
 Expected result: the internal host serves normal Policy Bot UI routes, details
 redirect to `/api/github/auth`, and a safe public hook GET returns `404` with
 one valid backend `X-Request-ID`; root returns `404` without it. This checks
-routing only. Require the [guarded App URL change and fresh signed delivery](../clusters/homelab/apps/policy-bot/README.md#routes).
+routing only. Require the [guarded App URL change and fresh signed delivery](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/policy-bot/README.md#routes).
 
 Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
@@ -189,7 +195,7 @@ kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
 Require a Ready local Pod on `acer`, only that Pod in the Service endpoints,
 all six application databases, writable SQL access, and a verified scheduled
 backup. Test indexer searches in Prowlarr, Sonarr and Radarr. Use the
-[database restore procedure](../clusters/homelab/apps/media-postgres/README.md#backup-and-restore)
+[database restore procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/media-postgres/README.md#backup-and-restore)
 for recovery; preserve both claims.
 
 For Radarr access lockout checks, validate that the auth-normalized
@@ -212,7 +218,7 @@ itself, a lockout signal.
 n8n must also wait for `n8n-postgres` to sync and become healthy. Verify the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, the StatefulSet,
 the PVC, and an authenticated connection to the `n8n` database documented in
-`clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n-postgres/README.md) before treating n8n as migrated
 to PostgreSQL.
 
 n8n startup probes use `/healthz`, while readiness and liveness use the
@@ -224,7 +230,7 @@ pool stays closed after a database interruption. A pod that is Ready while
 n8n advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel
 and Traefik; its editor keeps the canonical private mesh URL. Converge Funnel
 before n8n restarts. Existing GitHub registrations move separately through the
-[fixed two-hook helper](../clusters/homelab/apps/n8n/README.md#access-contract),
+[fixed two-hook helper](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#access-contract),
 which uses safe OPTIONS probes and requires fresh delivery receipts.
 
 ```sh
