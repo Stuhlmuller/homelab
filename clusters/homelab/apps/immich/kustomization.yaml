@@ -17,3 +17,6 @@ configMapGenerator:
   - name: immich-postgres-init
     files:
       - 99-immich.sql
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: '-2'
