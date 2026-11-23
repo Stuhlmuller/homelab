@@ -10,8 +10,9 @@ the same package hash reviewed in `scripts/config/harbor-helm-charts.json`.
 The corresponding Codeberg OCI chart manifest digest remains pinned as
 `sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7`.
 
-The test prefers the public OCI chart and verifies its manifest digest. If the
-registry fetch fails in a recognized way, it verifies this exact package hash
-before rendering the same values and asserting the same Kubernetes resource
-contract. A changed or missing package fails closed. The upstream project is
-licensed under Apache-2.0; its license text is included as `k8s-gateway-LICENSE`.
+The DNS contract and runtime fixture render this package after verifying its
+SHA-256. The protected Harbor chart publisher pulls the upstream package,
+verifies the same hash, and repeats the check with a reader pull from the
+private mirror used by Argo CD. Missing or changed bytes fail validation.
+The upstream project is licensed under Apache-2.0; its license text is included
+as `k8s-gateway-LICENSE`.

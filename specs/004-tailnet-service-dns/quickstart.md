@@ -9,13 +9,11 @@ answers and approval.
 
 ## Local prerequisites and render
 
-Use the reviewed checkout, Helm, Kustomize, Python 3, `dig`, `kubectl`, Terragrunt and the repo's Nix toolchain. The DNS image must have a verified Harbor publication receipt before merging its consuming Argo source.
+Use the reviewed checkout, Helm, Kustomize, Python 3, `dig`, `kubectl`, Terragrunt and the repo's Nix toolchain. The DNS image and chart must have verified Harbor publication receipts before merging their consuming Argo source.
 
 ```sh
 python3 -I scripts/ci/tailnet-dns-test.py
-helm template tailnet-dns oci://codeberg.org/k8s-gateway/charts/k8s-gateway \
-  --version 4.0.0 --namespace tailnet-dns \
-  -f clusters/homelab/platform/tailnet-dns/values.yaml >/tmp/tailnet-dns-render.yaml
+python3 -I scripts/ci/tailnet-dns-test.py --render >/tmp/tailnet-dns-render.yaml
 kustomize build clusters/homelab/platform/tailnet-dns >/tmp/tailnet-dns-platform.yaml
 nix flake check --no-build --all-systems
 bash scripts/ci/nix-checks.sh
