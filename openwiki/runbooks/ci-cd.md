@@ -306,7 +306,7 @@ isolation.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
-Cordium runner bootstrap is staged as separate exact-main workflows for
+Cordium runner bootstrap is staged as separate workflows from reviewed main for
 credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
