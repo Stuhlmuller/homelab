@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache [--tailscale for public mirrors only]' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant [--tailscale for public mirrors only]' >&2
   exit 2
 }
 tailnet_https=false
@@ -99,6 +99,9 @@ elif [[ "$mode" == mirror-kagent ]]; then
 elif [[ "$mode" == mirror-bazel-cache ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-bazel-cache-images.json
+elif [[ "$mode" == mirror-home-assistant ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-home-assistant-images.json
 elif [[ "$mode" == mirror-image-updater-canary ]]; then
   mode=mirror
   canary_publication=true
@@ -158,6 +161,9 @@ if [[ "$mode" == mirror ]]; then
   fi
   if [[ "$manifest" == scripts/config/harbor-prometheus-images.json ]]; then
     jq --exit-status '.images == [{"source":"quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+    jq --exit-status '.images == [{"source":"ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f"}]' "$manifest" >/dev/null
   fi
   if [[ "$manifest" == scripts/config/harbor-bazel-cache-images.json ]]; then
     jq --exit-status '.images == [{"source":"quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"}]' "$manifest" >/dev/null
