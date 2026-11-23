@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deluge-vpn-canary
+  namespace: media
+  annotations:
+    checkov.io/skip1: CKV_K8S_23=The bounded firewall and path-health helpers need root to retain NET_ADMIN across subprocesses.
+    checkov.io/skip2: CKV_K8S_25=Only the networking helpers have NET_ADMIN and only the loopback DNS resolver has NET_BIND_SERVICE.
+    checkov.io/skip3: CKV_K8S_40=The bounded WireGuard and nftables helpers need UID 0. The echo container runs as UID 65532.
+    checkov.io/skip4: CKV_K8S_43=Inactive source is pinned to the published digest in the Kustomize image override before GitOps registration.
+    checkov.io/skip5: CKV2_K8S_6=The same default-deny firewall as Deluge starts before the canary echo process.
+    checkov.io/skip6: CKV_K8S_8=Kubelet restarts exited processes. A lost tunnel gates readiness and leaves the surviving tunnel running.
+    checkov.io/skip7: CKV_K8S_15=The canary uses the same immutable image and pull policy as the gateways.
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/name: deluge-vpn-canary}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: deluge-vpn-canary}
+      annotations:
+        homelab.rst.io/vpn-transit-revision: "1"
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: deluge-vpn-harbor-pull
+      nodeSelector: {kubernetes.io/hostname: zimaboard-0}
+      dnsPolicy: None
+      dnsConfig: {nameservers: [127.0.0.1]}
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+        - name: vpn-guard
+          image: &vpnImage harbor.stinkyboi.com/homelab/homelab-deluge-vpn:staged
+          imagePullPolicy: IfNotPresent
+          command: [python3, /opt/deluge-vpn/network.py, client-init]
+          securityContext: &networkSecurity
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsUser: 0
+            capabilities:
+              drop: [ALL]
+              add: [NET_ADMIN]
+          resources:
+            requests: {cpu: 50m, memory: 24Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          volumeMounts:
+            - {name: transit, mountPath: /vpn/transit, readOnly: true}
+      containers:
+        - name: vpn-health
+          image: *vpnImage
+          imagePullPolicy: IfNotPresent
+          command: [python3, /opt/deluge-vpn/health.py]
+          securityContext:
+            <<: *networkSecurity
+            capabilities:
+              drop: [ALL]
+              add: [NET_ADMIN, NET_BIND_SERVICE]
+          volumeMounts:
+            - {name: transit, mountPath: /vpn/transit, readOnly: true}
+          readinessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - import urllib.request; urllib.request.urlopen('http://127.0.0.1:9999/', timeout=1).close()
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 1
+          resources:
+            requests: {cpu: 75m, memory: 48Mi}
+            limits: {cpu: 300m, memory: 128Mi}
+        - name: echo
+          image: *vpnImage
+          imagePullPolicy: IfNotPresent
+          command:
+            - python3
+            - -c
+            - |
+              import selectors
+              import socket
+
+              port = 5983
+              token = b'deluge-vpn-canary\n'
+              poll = selectors.DefaultSelector()
+              for address in ('172.31.61.2', '172.31.62.2'):
+                  poll.register(socket.create_server((address, port)), selectors.EVENT_READ, 'tcp')
+                  udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                  udp.bind((address, port))
+                  poll.register(udp, selectors.EVENT_READ, 'udp')
+              while True:
+                  for key, _ in poll.select():
+                      listener = key.fileobj
+                      if key.data == 'udp':
+                          data, sender = listener.recvfrom(128)
+                          if data == token:
+                              listener.sendto(data, sender)
+                      else:
+                          client, _ = listener.accept()
+                          with client:
+                              client.settimeout(0.5)
+                              try:
+                                  with client.makefile('rb') as request:
+                                      if request.readline(128) == token:
+                                          client.sendall(token)
+                              except OSError:
+                                  pass
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: [ALL]
+          readinessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - import socket; socket.create_connection(('172.31.61.2', 5983), timeout=1).close(); socket.create_connection(('172.31.62.2', 5983), timeout=1).close()
+            timeoutSeconds: 2
+          resources:
+            requests: {cpu: 10m, memory: 24Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+      volumes:
+        - name: transit
+          secret: {secretName: deluge-vpn-client-transit, defaultMode: 256}

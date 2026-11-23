@@ -388,6 +388,7 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
+| deluge active-active | `deluge-vpn-harbor-pull` | `deluge-vpn-harbor-pull` | `/homelab/deluge/harbor-pull-password` (generated Harbor pull alias) |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password` |
 | mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
@@ -611,26 +612,35 @@ generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
 the Octelium native IdentityProvider activation to
 `scripts/octelium-entra-oidc.sh`.
 
-Deluge stores only VPN WireGuard material in SSM. Only the full
-`/homelab/deluge/vpn/wireguard-config` remains readable by External Secrets;
-the six retired split-profile parameters are non-readable state tombstones.
-Sonarr, Radarr, and Prowlarr store only their PostgreSQL password contract in
-SSM through `media-postgres-arr-env`. Each app writes that value into the
-upstream-supported `config.xml` PostgreSQL fields during pod startup;
-application passwords, API keys, indexers, and app integrations still live on
-the persistent `/config` volumes and are managed through each app after first
-login. The `deluge-vpn` ExternalSecret reads the full AirVPN WireGuard profile
-from `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`.
-Gluetun runs this profile through the `custom` WireGuard provider so it uses
-the exact selected AirVPN peer instead of rotating through provider metadata.
-The custom endpoint must be an IP address at startup, but AirVPN profiles can
-contain a DNS name; the Deluge `config-wireguard` init container resolves that
-endpoint to an IPv4 address before Gluetun starts. The ExternalSecret uses
-`refreshPolicy: OnChange`; after replacing the profile in SSM, bump
-`homelab.rst.io/wireguard-profile-ssm-version` in both
-`clusters/homelab/apps/deluge/externalsecret.yaml` and
-`clusters/homelab/apps/deluge/values.yaml` so External Secrets refreshes the
-Kubernetes Secret and GitOps rolls the Deluge pod.
+### Deluge VPN
+
+The live `deluge-vpn` ExternalSecret reads
+`/homelab/deluge/vpn/wireguard-config` as `wg0.conf`. Gluetun's native AirVPN
+provider uses the profile's private key, preshared key, and IPv4 interface
+address. Its bundled AirVPN metadata supplies the server. After updating SSM,
+bump `homelab.rst.io/wireguard-profile-ssm-version` on both the ExternalSecret
+and pod template so the Secret refreshes and Deluge rolls. Six retired
+split-profile parameters remain non-readable state tombstones.
+
+The staged active-active profile declares the following additional
+SecureString contracts for each literal path name `a` and `b`.
+
+| Parameter suffix under `/homelab/deluge/vpn/<path>/` | Content | Consumer |
+| --- | --- | --- |
+| `airvpn-profile` | AirVPN WireGuard export with numeric IPv4 endpoint | Gateway for that path |
+| `gateway-transit` | JSON with `private` gateway key and `peer_public` Deluge key | Gateway for that path |
+| `client-transit` | JSON with `private` Deluge key and `peer_public` gateway key | Deluge network init and health controller |
+
+Each gateway uses a distinct AirVPN device and transit keypair. Deluge uses
+a distinct transit keypair per path. The staged ExternalSecrets use
+`refreshPolicy: OnChange`. Rotate a single gateway at a time and bump its
+ExternalSecret and pod-template annotations together. Keep the original
+`deluge-vpn` contract available during rollback. See the
+[staging and acceptance procedure](deluge-active-active-vpn.md).
+
+Sonarr, Radarr, and Prowlarr use the PostgreSQL password contract in
+`media-postgres-arr-env`. Application passwords, API keys, and integrations
+remain on the respective /config volumes.
 
 n8n stores its Terragrunt-generated first-boot encryption key in SSM. The app
 and workflow-migration init container receive that value as

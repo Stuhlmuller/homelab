@@ -9,6 +9,8 @@ resources:
   - octelium-proxy-prometheusrules.yaml
   - argocd-servicemonitors.yaml
   - deluge-servicemonitor.yaml
+  - deluge-vpn-prometheusrules.yaml
+  - deluge-vpn-servicemonitor.yaml
   - istio-podmonitors.yaml
   - externalsecret.yaml
   - namespace.yaml
