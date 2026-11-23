@@ -96,7 +96,7 @@ if [[ "$stage" == network-preflight ]]; then
   exit 0
 fi
 
-bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/homelab/us-west-2/operator/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-[0-9]{12}-us-east-1$ ]] || exit 1
 [[ "$(aws s3api get-bucket-versioning --bucket "$bucket" --query Status --output text)" == Enabled ]] || exit 1
 [[ "$(aws s3api get-bucket-encryption --bucket "$bucket" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == 'aws:kms' ]] || exit 1

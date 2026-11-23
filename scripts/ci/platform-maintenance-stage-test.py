@@ -6,6 +6,7 @@ import hashlib
 import ipaddress
 import json
 import os
+import re
 import runpy
 import shutil
 import subprocess
@@ -21,6 +22,12 @@ SHA = "a" * 40
 
 
 class PlatformStageTests(unittest.TestCase):
+    def test_workflow_pins_current_stage_script(self):
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        script = re.escape(STAGE.relative_to(ROOT).as_posix())
+        pins = re.findall(rf"sha256sum --check --status <<<'([0-9a-f]{{64}})  {script}'", workflow)
+        self.assertEqual(pins, [hashlib.sha256(STAGE.read_bytes()).hexdigest()])
+
     def run_stage(self, stage, canary_node=None):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
