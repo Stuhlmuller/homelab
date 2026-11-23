@@ -391,37 +391,36 @@ def kubernetes_tag_artifact(client, repository, expected_digest, immutable=False
         raise BootstrapError("Kubernetes mirror tag does not match the reviewed digest or lock")
 
 
-def kubernetes_immutable_rule(repository, project_id):
-    return {"project_id": project_id, "priority": 0, "disabled": False,
+def mirror_immutable_rule(repository, tag, project_id):
+    return {"project_id": positive_id(project_id), "priority": 0, "disabled": False,
             "action": "immutable", "template": "immutable_template",
-            "tag_selectors": [{"kind": "doublestar", "decoration": "matches", "pattern": KUBERNETES_TAG}],
+            "tag_selectors": [{"kind": "doublestar", "decoration": "matches", "pattern": tag}],
             "scope_selectors": {"repository": [
                 {"kind": "doublestar", "decoration": "repoMatches", "pattern": repository}]}}
 
 
-def reconcile_kubernetes_tag_lock(client, project_id):
-    if not KUBERNETES_TAG_LOCK_ENABLED:
-        return
-    project_id = positive_id(project_id)
-    if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
-           for digest in KUBERNETES_TAG_DIGESTS.values()):
-        raise BootstrapError("Kubernetes mirror digest pin is invalid")
-    # Inspect every alias before the first write: an existing wrong alias must remain repairable.
-    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
-        kubernetes_tag_artifact(client, repository, digest)
+def reconcile_mirror_tag_locks(client, project_id):
+    locks = [mirror_immutable_rule("helm/**", "**", project_id)]
+    if KUBERNETES_TAG_LOCK_ENABLED:
+        if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+               for digest in KUBERNETES_TAG_DIGESTS.values()):
+            raise BootstrapError("Kubernetes mirror digest pin is invalid")
+        # Inspect every alias before the first write: a wrong alias must remain repairable.
+        for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+            kubernetes_tag_artifact(client, repository, digest)
+            locks.append(mirror_immutable_rule(repository, KUBERNETES_TAG, project_id))
     path = "/projects/mirror/immutabletagrules"
-    rules = read_pages(client, path, {}, max_count=15)
+    rules = read_immutable_rules(client, path)
     planned = []
-    for repository in KUBERNETES_TAG_DIGESTS:
-        desired = kubernetes_immutable_rule(repository, project_id)
+    for desired in locks:
         matches = [rule for rule in rules if rule.get("tag_selectors") == desired["tag_selectors"] and
                    rule.get("scope_selectors") == desired["scope_selectors"]]
         if len(matches) > 1:
-            raise BootstrapError("Kubernetes mirror tag lock is ambiguous")
+            raise BootstrapError("Harbor mirror tag lock is ambiguous")
         rule = matches[0] if matches else None
         if rule and any(rule.get(key) != value for key, value in desired.items()
                         if key not in ("disabled", "project_id")):
-            raise BootstrapError("Kubernetes mirror tag lock differs from reviewed policy")
+            raise BootstrapError("Harbor mirror tag lock differs from reviewed policy")
         planned.append((desired, rule))
     if len(rules) + sum(rule is None for _, rule in planned) > 15:
         raise BootstrapError("Harbor immutability rule capacity is exhausted")
@@ -432,12 +431,19 @@ def reconcile_kubernetes_tag_lock(client, project_id):
                                json_response=False)
         else:
             client.request("POST", path, desired, expected=(201,), json_response=False)
-        rules = read_pages(client, path, {}, max_count=15)
+        rules = read_immutable_rules(client, path)
         if sum(all(rule.get(key) == value for key, value in desired.items()
                    if key != "project_id") for rule in rules) != 1:
-            raise BootstrapError("Kubernetes mirror tag lock readback failed")
-    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
-        kubernetes_tag_artifact(client, repository, digest, immutable=True)
+            raise BootstrapError("Harbor mirror tag lock readback failed")
+    if KUBERNETES_TAG_LOCK_ENABLED:
+        for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+            kubernetes_tag_artifact(client, repository, digest, immutable=True)
+
+
+def read_immutable_rules(client, path):
+    # Harbor can omit zero-value fields in the Swagger response.
+    return [{"disabled": False, "priority": 0, **rule}
+            for rule in read_pages(client, path, {}, max_count=15)]
 
 
 def robot_name(name, project_name):
@@ -655,7 +661,7 @@ def reconcile(client, robot_passwords, replication_policy=None):
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
-    reconcile_kubernetes_tag_lock(client, projects["mirror"]["project_id"])
+    reconcile_mirror_tag_locks(client, projects["mirror"]["project_id"])
     if replication_policy is not None:
         reconcile_replication(client, replication_policy)
     reconcile_proxy_caches(client)

@@ -199,7 +199,7 @@ class FirewallCleanupTests(unittest.TestCase):
                 git("reset", "--hard", "HEAD~1")
                 anchor = git("rev-parse", "HEAD")
                 for name in (
-                        "IaC/application-backup-storage.hcl",
+                        "IaC/homelab/us-west-2/operator/application-backup-storage.hcl",
                         "IaC/unrelated-unit/stack.hcl",
                         "clusters/unrelated-app/kustomization.yaml",
                         "scripts/unrelated-helper.py",

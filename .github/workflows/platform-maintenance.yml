@@ -171,7 +171,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'ee994058c05213e979497d81e7c949c335c27722fecc42a44f8e9fa5ea004d40  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'a7118ba8bb684fda79a4cd135e49196946ad96a58fb11379d7f10ac722c286ab  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
