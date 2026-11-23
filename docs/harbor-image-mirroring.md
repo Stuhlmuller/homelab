@@ -294,6 +294,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
+   The scoped and full catalogs use chunked uploads for Home Assistant.
    For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
    inventory selects only the reviewed Home Assistant Container image and
    uses all-platform copy and authenticated pull verification. The Home Assistant
