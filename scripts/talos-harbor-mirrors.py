@@ -74,20 +74,25 @@ def prepull_registry_runtime(node, execute, expected, talosconfig):
 
 def prepull_active_harbor_runtime(node, execute, expected, talosconfig):
     images = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+    other_runtime = {"docker.io/library/postgres:18.6-bookworm",
+                     "docker.io/library/python:3.14.7-alpine3.23",
+                     "ghcr.io/sigstore/cosign/cosign:v3.0.6"}
     selected = [item["source"] for item in images if re.fullmatch(
-        r"docker\.io/goharbor/[a-z-]+:v2\.15\.2@sha256:[0-9a-f]{64}", item["source"])]
+        r"docker\.io/goharbor/[a-z-]+:v2\.15\.2@sha256:[0-9a-f]{64}", item["source"])
+        or item["source"].split("@", 1)[0] in other_runtime]
     expected_names = {"harbor-core", "harbor-exporter", "harbor-jobservice", "harbor-portal",
                       "harbor-registryctl", "nginx-photon", "registry-photon",
                       "trivy-adapter-photon", "valkey-photon"}
-    if {source.split("/")[-1].split(":")[0] for source in selected} != expected_names or len(selected) != 9:
+    if ({source.split("/")[-1].split(":")[0] for source in selected} != expected_names |
+            {"postgres", "python", "cosign"} or len(selected) != 12):
         raise RuntimeError("The reviewed active Harbor runtime image scope changed")
     client = ("talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", node)
     if execute:
         verify_main(expected)
     for source in selected:
         target = "harbor.stinkyboi.com/mirror/" + source
-        repository, digest = target.split(":v2.15.2@", 1)
-        alias = repository + "@" + digest
+        repository, digest = target.split("@", 1)
+        alias = repository.rsplit(":", 1)[0] + "@" + digest
         listed = {line.split()[1] for line in run(*client, "image", "list").splitlines()[1:] if len(line.split()) > 1}
         if target not in listed and alias not in listed:
             if not execute:

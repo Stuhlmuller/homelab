@@ -687,7 +687,7 @@ class RolloutTest(unittest.TestCase):
 
 
 class RegistryPrepullTest(unittest.TestCase):
-    def test_active_harbor_pre_pull_requires_nine_verified_targets(self):
+    def test_active_harbor_pre_pull_requires_all_twelve_verified_targets(self):
         aliases = set()
         pulls = []
 
@@ -704,7 +704,10 @@ class RegistryPrepullTest(unittest.TestCase):
         with patch.object(rollout, "run", run), patch.object(rollout, "verify_main") as verify:
             rollout.prepull_active_harbor_runtime("10.1.0.199", True, SHA, Path("/private/talosconfig"))
             verify.assert_called_once_with(SHA)
-        self.assertEqual(len(pulls), 9)
+        self.assertEqual(len(pulls), 12)
+        self.assertTrue(any("/library/postgres:" in image for image in pulls))
+        self.assertTrue(any("/library/python:" in image for image in pulls))
+        self.assertTrue(any("/cosign/cosign:" in image for image in pulls))
         self.assertTrue(all(image.startswith("harbor.stinkyboi.com/mirror/") and
                             "@sha256:" in image for image in pulls))
 

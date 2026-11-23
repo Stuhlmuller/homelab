@@ -179,7 +179,7 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: In
-          values: [image-rewrite-canary]
+          values: [octelium, monitoring, ai]
     rules:
       - apiGroups: [""]
         apiVersions: [v1]

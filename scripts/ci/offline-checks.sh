@@ -149,6 +149,7 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/harbor-chart-publish.py --check
 python3 -I scripts/ci/harbor-chart-publish-test.py
 python3 -I scripts/ci/image-rewrite-check.py
+python3 -I scripts/ci/harbor-generated-rollout-test.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/network-policy-candidate-report-test.py
 python3 -I scripts/ci/crossplane-retirement-check-test.py

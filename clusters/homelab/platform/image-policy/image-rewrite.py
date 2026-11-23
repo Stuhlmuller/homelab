@@ -43,6 +43,8 @@ def destinations(catalog):
             result[key] = dest
         result[normalize(source)] = dest
         result[repository_digest(source)] = dest
+        mirrored_digest = repository_digest(dest)
+        result[mirrored_digest] = mirrored_digest
     return result
 
 
@@ -57,10 +59,10 @@ def mutate(review, mapping):
         for index, container in enumerate(pod.get("spec", {}).get(group, [])):
             source = container["image"]
             target = mapping.get(normalize(source))
-            if target is None and "@" in source:
-                target = mapping.get(repository_digest(source))
             if target is None and source in mapping.values():
                 continue
+            if target is None and "@" in source:
+                target = mapping.get(repository_digest(source))
             if target is None:
                 return {"apiVersion": "admission.k8s.io/v1", "kind": "AdmissionReview", "response": {
                     "uid": uid, "allowed": False, "status": {"message": "unreviewed image: " + source}}}

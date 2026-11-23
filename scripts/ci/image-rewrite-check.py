@@ -50,6 +50,14 @@ assert check({"containers": short, "initContainers": source, "ephemeralContainer
 assert check({"containers": short, "ephemeralContainers": short}, subresource="ephemeralcontainers") == [
     {"op": "replace", "path": "/spec/ephemeralContainers/0/image", "value": target}]
 assert check({"containers": target}) == []
+kiali = next(item["source"] for item in selected["images"]
+             if item["source"].startswith("quay.io/kiali/kiali:"))
+kiali_mirror = mapping[module.normalize(kiali)]
+kiali_digest = module.repository_digest(kiali_mirror)
+assert check({"containers": kiali_mirror}) == []
+assert check({"containers": kiali_digest}) == []
+check({"containers": kiali_digest.split("@", 1)[0] + "@sha256:" + "0" * 64}, allowed=False)
+check({"containers": kiali_digest.replace("/kiali/kiali@", "/kiali/unreviewed@")}, allowed=False)
 check({"containers": "harbor.stinkyboi.com/homelab/custom@sha256:" + "a" * 64}, allowed=False)
 check({"containers": "unreviewed.example/app:1"}, allowed=False)
 check({"initContainers": short + "@sha256:" + "0" * 64}, allowed=False)
@@ -63,7 +71,7 @@ resources = json.loads(subprocess.check_output(
     ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
 webhook = next(doc for doc in resources if doc.get("kind") == "MutatingWebhookConfiguration")["webhooks"][0]
 assert webhook["failurePolicy"] == "Fail" and webhook["timeoutSeconds"] <= 5
-assert webhook["namespaceSelector"]["matchExpressions"][0]["values"] == ["image-rewrite-canary"]
+assert webhook["namespaceSelector"]["matchExpressions"][0]["values"] == ["octelium", "monitoring", "ai"]
 assert webhook["rules"][0]["resources"] == ["pods"] and webhook["rules"][0]["operations"] == ["CREATE"]
 assert webhook["rules"][1]["resources"] == ["pods/ephemeralcontainers"] and webhook["rules"][1]["operations"] == ["UPDATE"]
 deployment = next(doc for doc in resources if doc.get("kind") == "Deployment"
