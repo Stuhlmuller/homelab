@@ -935,6 +935,13 @@ Current-main source staging also applies the fresh private pull prerequisite to
 both retained NOFX subjects; its anonymous source download and alias checks
 remain independent of this fixed core-only mode.
 
+The Photon security rebuild updated curl, curl-libs and expat-libs. The
+protected publisher recorded a zero-match runtime audit, a complete
+authenticated pull and signature verification for the new image. The
+[Harbor Helm values](../../clusters/homelab/apps/harbor/values.yaml) select
+that exact tag and digest.
+[Protected publication](https://github.com/Stuhlmuller/homelab/actions/runs/45104169857)
+
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
 [PR #1128](https://github.com/Stuhlmuller/homelab/pull/1128) at
