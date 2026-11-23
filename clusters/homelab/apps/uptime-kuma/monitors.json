@@ -170,6 +170,13 @@
       ]
     },
     {
+      "id": "image-updater-busybox-canary",
+      "lifecycle": "suspended",
+      "source": "clusters/homelab/apps/image-updater-busybox-canary/deployment.yaml",
+      "reason": "Disposable canary has zero replicas and paused image enrollment before the verified artifact A publication.",
+      "monitorIds": []
+    },
+    {
       "id": "istio",
       "lifecycle": "active",
       "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",

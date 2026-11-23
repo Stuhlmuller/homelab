@@ -17,6 +17,21 @@ images, _ = check.declared_images({"image": {"registry": "harbor.stinkyboi.com",
                                                "repository": "mirror/docker.io/library/busybox",
                                                "tag": "1.38", "sha": sha}})
 assert images == {"harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@sha256:" + sha}
+# A selected BusyBox digest grants only the exact reserved workload selector.
+canary_path = "clusters/homelab/apps/image-updater-busybox-canary/deployment.yaml"
+canary_source = "docker.io/library/busybox@sha256:" + sha
+canary_selector = "docker.io/library/busybox:issue-1846-canary"
+with tempfile.TemporaryDirectory() as directory:
+    original_root = check.ROOT
+    check.ROOT = Path(directory)
+    inventory = check.ROOT / "scripts/config/harbor-image-updater-canary.json"
+    inventory.parent.mkdir(parents=True)
+    inventory.write_text(json.dumps({"images": [{"source": canary_source}]}))
+    assert check.runtime_tags(canary_path, set(), {canary_source}) == {canary_selector}
+    assert check.runtime_tags("clusters/homelab/apps/other/deployment.yaml", set(), {canary_source}) == set()
+    assert check.runtime_tags(canary_path, set(), set()) == set()
+    check.ROOT = original_root
+
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:

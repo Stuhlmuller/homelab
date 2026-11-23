@@ -152,6 +152,22 @@ def yaml_documents(paths):
          *map(str, paths)], text=True))
 
 
+def runtime_tags(path, known_tags, known):
+    """Scope the publisher's BusyBox alias to the sole canary workload."""
+    if path != "clusters/homelab/apps/image-updater-busybox-canary/deployment.yaml":
+        return known_tags
+    inventory = ROOT / "scripts/config/harbor-image-updater-canary.json"
+    if not inventory.is_file():
+        return known_tags
+    sources = json.loads(inventory.read_text()).get("images")
+    if isinstance(sources, list) and len(sources) == 1 and isinstance(sources[0], dict):
+        source = sources[0].get("source")
+        if (isinstance(source, str) and re.fullmatch(r"docker\.io/library/busybox@sha256:[0-9a-f]{64}", source)
+                and source in known):
+            return known_tags | {"docker.io/library/busybox:issue-1846-canary"}
+    return known_tags
+
+
 def runtime_unmirrored(paths, known_mirrors, known, known_tags, allowed):
     """Retain source identity so one enrollment cannot exempt another file."""
     entries = json.loads(subprocess.check_output(
@@ -167,7 +183,9 @@ def runtime_unmirrored(paths, known_mirrors, known, known_tags, allowed):
             if proxy_digest(image):
                 continue
             if image.startswith("harbor.stinkyboi.com/mirror/"):
-                if mirror_reference(image) in known_mirrors or RUNTIME_POLICY.permits(allowed, path, image, known_tags):
+                if mirror_reference(image) in known_mirrors or RUNTIME_POLICY.permits(
+                    allowed, path, image, runtime_tags(path, known_tags, known)
+                ):
                     continue
             elif catalog_reference(image) in known | known_tags:
                 continue

@@ -87,6 +87,10 @@ class CatalogTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
         sources = {a["source"] for a in self.catalog["apps"]}
+        sources.update(
+            str(path.relative_to(CHECK.ROOT))
+            for path in (CHECK.ROOT / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl")
+        )
         sources.update(s["cadenceSource"] for m in self.catalog["monitors"] for s in m.get("sourceSignals", []))
         sources.add("specs/20261116-210437-uptime-kuma/inventory-evidence.md")
         for source in sources:
