@@ -7,7 +7,8 @@ bookmarks. The workload is stateless.
 
 Homepage lists opt-in Kubernetes Ingresses using its projected service account.
 Add `gethomepage.dev/enabled: "true"` to an Ingress and use Homepage annotations
-for its display name, group, icon and other metadata. The
+for its display name, group, icon and other metadata. Only grant annotation
+write access to people trusted to configure Homepage widgets. The
 `compass-discovery` IngressClass has no traffic controller. Its records in
 `ingress-discovery.yaml` provide explicit HTTPS links for apps whose traffic
 is routed by Istio or the Traefik file provider. They are marked external

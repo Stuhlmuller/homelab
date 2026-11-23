@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: homepage
+  namespace: monitoring
 spec:
   replicas: 1
   revisionHistoryLimit: 2
@@ -15,11 +16,12 @@ spec:
         app.kubernetes.io/instance: compass
     spec:
       serviceAccountName: homepage
+      automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -53,16 +55,37 @@ spec:
               cpu: 50m
               memory: 128Mi
             limits:
+              cpu: 500m
               memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
           volumeMounts:
             - name: config
               mountPath: /app/config
               readOnly: true
+            - name: kubernetes-api
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: homepage-config
+        - name: kubernetes-api
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        fieldPath: metadata.namespace

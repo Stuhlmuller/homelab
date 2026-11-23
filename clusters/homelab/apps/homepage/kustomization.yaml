@@ -6,6 +6,7 @@ resources:
   - authorizationpolicy.yaml
   - deployment.yaml
   - ingress-discovery.yaml
+  - networkpolicy.yaml
   - rbac.yaml
   - service.yaml
   - virtualservice.yaml
