@@ -1,0 +1,471 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: terminal-image-cleanup
+  namespace: kube-system
+automountServiceAccountToken: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: terminal-image-cleanup
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: terminal-image-cleanup
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 10.96.0.1/32}
+        - ipBlock: {cidr: 10.1.0.199/32}
+      ports:
+        - {protocol: TCP, port: 443}
+        - {protocol: TCP, port: 6443}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: terminal-image-cleanup
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    checkov.io/skip1: CKV_K8S_38=This hook needs its token scoped to the reviewed pod names.
+spec:
+  activeDeadlineSeconds: 180
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: terminal-image-cleanup
+        app.kubernetes.io/part-of: homelab
+    spec:
+      serviceAccountName: terminal-image-cleanup
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: cleanup
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          command: [python3, -I, -B, /cleanup/terminal-pod-cleanup.py]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          volumeMounts:
+            - {name: cleanup, mountPath: /cleanup, readOnly: true}
+      volumes:
+        - name: cleanup
+          configMap:
+            name: terminal-image-cleanup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: affine
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - affine-85bf59bff7-7mnww
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: affine
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: ai
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - multica-backend-9b658988d-x8b9t
+      - multica-frontend-6f4d97f68b-bh9wk
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: ai
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: argocd
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - argocd-applicationset-controller-5f945f8b66-pj527
+      - argocd-dex-server-7c969694b7-6c8n5
+      - argocd-notifications-controller-85fcb968f8-8hbsv
+      - argocd-redis-6c6699d6c4-tjg8w
+      - argocd-repo-server-6cfc595898-895gx
+      - argocd-server-6d64bd85bc-knfdj
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: automation
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - policy-bot-7fbcb8bb5d-jml2j
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: automation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: cordium-storage
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - cordium-local-path-provisioner-5bd4d75d54-ks52s
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: cordium-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: crossplane-system
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - crossplane-f749467c5-9qspd
+      - crossplane-rbac-manager-56cc7c5496-4qgm9
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: crossplane-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: external-secrets
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - external-secrets-7fcdbd8d79-wc7nc
+      - external-secrets-cert-controller-7b7858f6f-n8bhg
+      - external-secrets-webhook-66f565986c-68lxn
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: external-secrets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: istio-system
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - istio-ingressgateway-58b79c77d8-7rjwm
+      - kiali-operator-849b95cbcb-r4z7f
+      - octelium-api-ingressgateway-67ff7f9979-drjm8
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: istio-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: monitoring
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - prometheus-kube-prometheus-operator-6f9c7d9f6d-zkvbd
+      - prometheus-kube-state-metrics-7f994bdb65-vhlk7
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: nofx
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - nofx-backend-6bc94dddcd-zxj5z
+      - nofx-frontend-58447b764f-hgl65
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: nofx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: octelium
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - emergency-octelium-admin-api-84d656df5c-4sqcs
+      - emergency-octelium-affine-public-65b5ddd44-r9msb
+      - emergency-octelium-argocd-public-8585599ccf-mcj4g
+      - emergency-octelium-auth-api-7b96d7cdb4-7nqwl
+      - emergency-octelium-compass-public-78c4f9cf97-nwhkk
+      - emergency-octelium-console-public-9c5887b87-mqzs9
+      - emergency-octelium-cordium-public-86b68848c5-wncmz
+      - emergency-octelium-deluge-public-76854c8b5-ffn54
+      - emergency-octelium-dispatcharr-public-8f7b47896-24phd
+      - emergency-octelium-grafana-public-6d45c49f6f-zjhsk
+      - emergency-octelium-ingress-58d47c46b-dkmcv
+      - emergency-octelium-kiali-public-56ddb56997-lrmjp
+      - emergency-octelium-kubernetes-api-ci-6db76c7d87-4gtc2
+      - emergency-octelium-litellm-public-75756b67c8-44kk9
+      - emergency-octelium-login-84c588c7c8-cxgq9
+      - emergency-octelium-multica-public-785b56df44-pk4v8
+      - emergency-octelium-n8n-public-587fcb98b5-tbgjg
+      - emergency-octelium-nofx-public-75c548b98-62724
+      - emergency-octelium-octovigil-66cbb877d4-pxdk6
+      - emergency-octelium-openclaw-public-6d5d457c64-rt6d6
+      - emergency-octelium-policy-bot-public-5d8ff49559-2xpfd
+      - emergency-octelium-portal-6598cdd644-9rhv9
+      - emergency-octelium-prowlarr-public-57b8884496-dhcdg
+      - emergency-octelium-radarr-public-8459dddb75-qvv5s
+      - emergency-octelium-sonarr-public-7bf5c7b4d8-9fmrr
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: octelium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: octelium-client
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - octelium-demo-5b657d94dc-pt6cf
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: octelium-client
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: storage
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - nfs-subdir-external-provisioner-576d4bf49-g9pkf
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: terminal-image-cleanup
+  namespace: tailscale
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, delete]
+    resourceNames:
+      - operator-657bd87c74-rrcd9
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: terminal-image-cleanup
+  namespace: tailscale
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: terminal-image-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: terminal-image-cleanup
+    namespace: kube-system
