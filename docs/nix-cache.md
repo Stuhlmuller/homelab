@@ -7,9 +7,10 @@ tracked source tree, fixture commands, pinned tools, and platform determine
 the derivation; Git commit metadata does not. Testing before a signed commit
 therefore remains reusable when the committed files match.
 
-[`offline-checks.sh`](../scripts/ci/offline-checks.sh) runs the offline tests.
-It generates Terragrunt units as fixtures without initializing providers or
-making authenticated cloud or cluster requests.
+[`offline-checks.sh`](../scripts/ci/offline-checks.sh) runs the offline tests,
+shell fixtures, and source contracts. It generates Terragrunt units once for
+the fixtures without initializing providers or making authenticated cloud or
+cluster requests.
 [`conftest-policies.sh`](../scripts/ci/conftest-policies.sh) owns the second
 check. Provider initialization/validation, Helm chart downloads, Git-sensitive
 secret scanning, security scanners, live plans, and cluster acceptance still

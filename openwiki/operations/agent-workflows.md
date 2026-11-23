@@ -66,6 +66,13 @@ an actual scheduled wakeup before describing a task as unattended.
 [Research decisions](../../docs/autonomous-development-research.md) distinguish
 documented mechanisms, author claims and deferred integration work.
 
+When an issue surfaces, pause in the originating thread and share design
+feedback. Recommend a reusable root-cause fix using official upstream patterns
+and explain the trade-offs of any existing workaround. Wait for the human's
+decision before resuming. The [agent harness](../../AGENTS.md#root-cause-fixes-and-reusable-design)
+defines this workflow, including the requirement to preserve CI and deployment
+checks.
+
 ## Reference Coding
 
 Before nontrivial code with a relevant upstream or peer implementation, search
@@ -96,10 +103,10 @@ artifact templates and review gates. Feature selection is stored in
 `.specify/feature.json`; helpers ignore `SPECIFY_INIT_DIR`, `SPECIFY_FEATURE`,
 and `SPECIFY_FEATURE_DIRECTORY` inherited from the shell. Run commands from
 the intended checkout and edit `feature_directory` in that file to switch
-features. `.specify/memory/constitution.md` remains an
-unfilled template; use `speckit-constitution` to establish project principles
-before relying on constitution checks. Repository `AGENTS.md` remains the
-operational guide.
+features. The [Homelab Constitution](../../.specify/memory/constitution.md)
+defines the project principles used in constitution checks. Use
+`speckit-constitution` to amend them and keep the repository's `AGENTS.md`
+operational guidance in sync.
 
 Spec Kit updates must pass the existing Super-Linter Markdown and ShellCheck
 rules; imported upstream files are not exempt. Run

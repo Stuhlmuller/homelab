@@ -12,6 +12,8 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
     resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
 generated: { by: "codex", at: "2026-10-20T18:25:19.174Z" }

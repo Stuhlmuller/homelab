@@ -141,27 +141,6 @@ class PrivatePlanStageTest(unittest.TestCase):
         self.assertIn('--report-format json', runner)
         self.assertIn('"${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color', runner)
 
-    def test_changed_azuread_inputs_never_skip_for_missing_credentials(self):
-        runner = PLAN_RUNNER.read_text()
-        section = runner.split('echo "::group::AzureAD application registration plan"\n', 1)[1]
-        section = section.split('\necho "::endgroup::"', 1)[0]
-        for stack_changed, inputs_changed, expected_code in (
-            (True, False, 1), (False, True, 1), (False, False, 0)
-        ):
-            with self.subTest(stack_changed=stack_changed, inputs_changed=inputs_changed):
-                script = ('set -euo pipefail\n'
-                          'azuread_credentials_available() { return 1; }\n'
-                          'azuread_plan_filters=()\n'
-                          f'terragrunt_azuread_stack_changed() {{ return {0 if stack_changed else 1}; }}\n'
-                          f'terragrunt_azuread_plan_inputs_changed() {{ return {0 if inputs_changed else 1}; }}\n'
-                          + section)
-                result = subprocess.run(["bash", "-c", script], text=True,
-                                        capture_output=True, timeout=5, check=False)
-                self.assertEqual(result.returncode, expected_code, result.stderr)
-                self.assertEqual("Skipping AzureAD" in result.stdout, expected_code == 0)
-                if expected_code:
-                    self.assertIn("AzureAD credentials are required", result.stderr)
-
     def test_scope_diff_failure_cannot_skip_live_plan(self):
         workflow = WORKFLOW.read_text()
         scope = textwrap.dedent(workflow.split(
@@ -186,21 +165,34 @@ class PrivatePlanStageTest(unittest.TestCase):
             self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
             self.assertFalse(output.exists())
 
-    def test_provider_cache_excludes_state_paths_and_credentials(self):
-        workflow = json.loads(subprocess.check_output(
+    def test_provider_cache_contract_rejects_state_paths_and_extra_credentials(self):
+        source = HELPER.with_name("offline-checks.sh").read_text()
+        gate = source.split('echo "::group::Terragrunt pull request gate"', 1)[1]
+        gate = gate.split("scope_body_sha256=", 1)[0]
+        original = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".", str(WORKFLOW)], text=True))
-        caches = [step for step in workflow["jobs"]["terragrunt-plan"]["steps"]
-                  if step.get("name") == "Cache Terragrunt Providers"]
-        self.assertEqual(len(caches), 1)
-        cache = caches[0]
-        self.assertRegex(cache["uses"], r"^actions/cache@[0-9a-f]{40}$")
-        self.assertEqual(cache["with"]["path"], "~/.cache/terragrunt/providers")
-        self.assertIsNone(cache.get("env"))
+        for mutation in (None, "path", "action", "credentials"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                document = json.loads(json.dumps(original))
+                cache = next(step for step in document["jobs"]["terragrunt-plan"]["steps"]
+                             if step["name"] == "Cache Terragrunt Providers")
+                if mutation == "path":
+                    cache["with"]["path"] = "IaC/**/.terragrunt-cache"
+                elif mutation == "action":
+                    cache["uses"] = "actions/cache@main"
+                elif mutation == "credentials":
+                    cache["env"] = {"EXTRA_CREDENTIAL": "fixture"}
+                target = Path(tmp) / ".github/workflows/terragrunt-plan.yml"
+                target.parent.mkdir(parents=True)
+                target.write_text(json.dumps(document))
+                result = subprocess.run(["bash", "-euo", "pipefail", "-c", gate],
+                                        cwd=tmp, capture_output=True, text=True, timeout=15)
+                self.assertEqual(result.returncode == 0, mutation is None, result.stderr)
 
     def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
         workflow = WORKFLOW.read_text()
         run = workflow.split("      - name: Run Live Terragrunt Plan\n", 1)[1]
-        run = run.split("\n  terragrunt-plan-skipped:", 1)[0]
+        run = run.split("\n  terragrunt-gate:", 1)[0]
         self.assertIn("HOMELAB_AZUREAD_PLAN_REPORT_FILE=\"$azuread_report\" nix develop --command bash <<'EOF'", run)
         self.assertNotIn('private_log', run)
         self.assertNotIn('details withheld', run)
