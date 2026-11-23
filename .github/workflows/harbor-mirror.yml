@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Immich/Kuma/AdGuard/Cilium/kagent/Image Updater canary/Bazel cache/Home Assistant/Homepage inventories with exact destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Immich/Kuma/AdGuard/Cilium/kagent/Image Updater canary/Bazel cache/Home Assistant/Homepage/Argo CD inventories with exact destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, immich, uptime-kuma, adguard, cilium, kagent, image-updater-canary, bazel-cache, home-assistant, homepage]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, immich, uptime-kuma, adguard, cilium, kagent, image-updater-canary, bazel-cache, home-assistant, homepage, argocd]
 
 permissions: {}
 
@@ -105,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|immich|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|immich|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage|argocd) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -234,6 +234,9 @@ jobs:
             homepage)
               bash scripts/ci/harbor-publish.sh mirror-homepage --tailscale
               ;;
+            argocd)
+              bash scripts/ci/harbor-publish.sh mirror-argocd --tailscale
+              ;;
             image-updater-canary)
               bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
               ;;
@@ -241,7 +244,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0e762bbfbd20b6dc9ee4c3ae1dbbaf4a82e794ed493da70f3821cb8bb52b7a5f  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'736d9db2b9f29a0f272d08ddf1371618a9411dc87d27430ab9ee18ec5c9201e6  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

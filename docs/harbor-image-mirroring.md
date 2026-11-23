@@ -890,3 +890,18 @@ gh workflow run harbor-mirror.yml --ref main \
 
 The scope selects the exact Homepage v2.8.0 image from the full catalog.
 Require the workflow's complete authenticated pull before merging the cutover.
+
+## Argo CD patch publication scope
+
+Publish the reviewed Argo CD v3.4.14 digest through the existing protected
+mirror before applying the bootstrap unit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=argocd
+```
+
+The scope checks the exact v3.4.14 manifest and completes an authenticated
+Harbor pull. Keep the previous v3.4.2 image available for rollback. Review
+the separate bootstrap plan and confirm the patched components are ready
+after apply. See [issue #1948](https://github.com/Stuhlmuller/homelab/issues/1948).
