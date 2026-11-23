@@ -30,6 +30,8 @@ spec:
     spec:
       serviceAccountName: immich
       automountServiceAccountToken: false
+      # The immich Service would inject a URL into the numeric IMMICH_PORT setting.
+      enableServiceLinks: false
       securityContext:
         runAsUser: 10001
         runAsGroup: 10001
