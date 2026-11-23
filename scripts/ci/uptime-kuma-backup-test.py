@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Failure boundaries of checked SQLite snapshots; no running Kuma required."""
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 import importlib.util
 import io
@@ -12,7 +13,6 @@ import tarfile
 import tempfile
 import threading
 import tracemalloc
-import time
 import unittest
 from unittest.mock import patch
 
@@ -75,33 +75,45 @@ class Backups(unittest.TestCase):
         self.db.execute("CREATE TABLE payload(value BLOB)")
         self.db.executemany("INSERT INTO payload VALUES(?)", [(b"x" * 512,)] * 10000)
         self.db.commit()
-        stop = threading.Event()
-        started = threading.Event()
-        writes = []
+        source_db = self.source / "kuma.db"
+        first_batch = threading.Event()
+        connect = sqlite3.connect
 
-        def write():
-            connection = sqlite3.connect(self.source / "kuma.db")
-            try:
-                while not stop.is_set():
-                    connection.execute("INSERT INTO heartbeat VALUES(2)")
-                    connection.commit()
-                    writes.append(1)
-                    started.set()
-                    time.sleep(0.001)
-            finally:
-                connection.close()
+        def write_after_first_batch():
+            if not first_batch.wait(10):
+                raise AssertionError("backup did not copy a partial batch")
+            with closing(connect(source_db)) as connection:
+                connection.execute("INSERT INTO heartbeat VALUES(2)")
+                connection.commit()
 
-        writer = threading.Thread(target=write)
-        writer.start()
-        started.wait(5)
-        try:
-            result = self.snapshot()
-            self.assertGreater(result["heartbeats"], 1)
-            self.assertGreater(len(writes), 1)
-            B.restore(self.dest, self.root / "restore")
-        finally:
-            stop.set()
-            writer.join(5)
+        class ObservedReader(sqlite3.Connection):
+            def backup(self, target, *, progress, **options):
+                def interleave_write(status, remaining, total):
+                    if status == sqlite3.SQLITE_OK and remaining and not first_batch.is_set():
+                        # Commit between sqlite3_backup_step calls, then let the copy finish.
+                        first_batch.set()
+                        writer.result(timeout=10)
+                    progress(status, remaining, total)
+
+                return super().backup(target, progress=interleave_write, **options)
+
+        def connect_with_probe(database, *args, **kwargs):
+            if database == f"file:{source_db}?mode=ro":
+                kwargs["factory"] = ObservedReader
+            return connect(database, *args, **kwargs)
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            writer = pool.submit(write_after_first_batch)
+            with patch.object(B.sqlite3, "connect", side_effect=connect_with_probe):
+                result = self.snapshot()
+            writer.result(timeout=10)
+
+        self.assertEqual(result["heartbeats"], 2)
+        restored = self.root / "restore"
+        B.restore(self.dest, restored)
+        with closing(connect(restored / "kuma.db")) as database:
+            self.assertEqual(database.execute("SELECT id FROM heartbeat ORDER BY id").fetchall(), [(1,), (2,)])
+            self.assertEqual(database.execute("SELECT count(*) FROM payload").fetchone()[0], 10000)
 
     def test_partial_catalog_configuration_not_published(self):
         self.db.execute("ALTER TABLE monitor ADD COLUMN description TEXT")
