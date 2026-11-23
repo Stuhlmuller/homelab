@@ -105,21 +105,35 @@ export function stripFrontmatter(body) {
     const end = body.indexOf("\n---", 3);
     return end === -1 ? body : body.slice(body.indexOf("\n", end + 1) + 1);
 }
-/**
- * Resolve a relative link (`rel`) against a page's directory (`baseDir`) into a
- * normalized wiki path, collapsing `.` and `..` segments. Used to turn in-page
- * markdown links into node ids for in-app navigation.
- */
-export function normalize(baseDir, rel) {
-    const parts = (baseDir ? baseDir.split("/") : []).concat(rel.split("/"));
-    const out = [];
-    for (const part of parts) {
-        if (part === "" || part === ".")
-            continue;
-        if (part === "..")
-            out.pop();
-        else
-            out.push(part);
+const REPOSITORY_FILES = "https://github.com/Stuhlmuller/homelab/blob/main/";
+const WIKI_FILES = REPOSITORY_FILES + "openwiki/";
+
+export function readerLink(page, href) {
+    // Preserve explicit external links and existing host-root paths.
+    if (!href || /^(?:[a-z][a-z0-9+.-]*:|[\\/])/i.test(href))
+        return null;
+    const source = page.split("/").map(encodeURIComponent).join("/");
+    const url = new URL(href, WIKI_FILES + source + ".md");
+    if (!url.href.startsWith(REPOSITORY_FILES))
+        return null;
+    const isWikiPage = url.href.startsWith(WIKI_FILES) && url.pathname.endsWith(".md");
+    try {
+        const id = isWikiPage ? decodeURIComponent(url.href.slice(WIKI_FILES.length).split(/[?#]/, 1)[0].slice(0, -3)) : null;
+        return { url: url.href, id, fragment: decodeURIComponent(url.hash.slice(1)) };
+    } catch {
+        return null;
     }
-    return out.join("/");
+}
+
+export function findHeading(headings, fragment) {
+    const seen = new Set();
+    return Array.from(headings).find((heading) => {
+        const base = heading.textContent.trim().toLowerCase()
+            .replace(/[^\p{L}\p{N}_\s-]/gu, "").replace(/\s/g, "-");
+        let slug = base;
+        for (let number = 1; seen.has(slug); number++)
+            slug = `${base}-${number}`;
+        seen.add(slug);
+        return slug === fragment;
+    });
 }
