@@ -616,10 +616,12 @@ An API outage that leaves either resource keeps the fence in place until the
 verifies current main, the fence, observed resource UIDs and owner/spec, then
 removes the Job and its Pods before the deny-all policy. A mismatch leaves the
 fence and policy in place. The checkpoint script
-uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
-downloads and restores both in disposable runner storage, then publishes a
-checksum-bound manifest. The successful live checkpoint receipt records
-completion of the backup and isolated restore.
+stages the same immutable PostgreSQL image from its public upstream before
+capturing the volumes. It uploads the PostgreSQL dump and PVC tar as exact
+versioned SSE-KMS objects, downloads and restores both in disposable runner
+storage, then publishes a checksum-bound manifest. The successful receipt
+records the backup and isolated restore. A failed run reports a fixed phase
+label while keeping command output private.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
