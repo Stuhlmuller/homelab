@@ -29,13 +29,11 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: kube-system
+              kubernetes.io/metadata.name: tailnet-dns
           podSelector:
             matchLabels:
-              k8s-app: kube-dns
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: tailnet-dns
+              app.kubernetes.io/instance: tailnet-dns
+              app.kubernetes.io/name: k8s-gateway
       ports:
         - {protocol: UDP, port: 53}
         - {protocol: TCP, port: 53}
@@ -45,9 +43,3 @@ spec:
       ports:
         - {protocol: UDP, port: 53}
         - {protocol: TCP, port: 53}
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16]
-      ports:
-        - {protocol: TCP, port: 443}
