@@ -178,39 +178,58 @@ class RootPolicyTest(unittest.TestCase):
                 target = fixture / "IaC" / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(root / "IaC" / name, target)
-            for path, legacy_key in (
-                ("operator/application-backup-storage", "operator/application-backup-storage"),
-                ("operator/application-backup-storage-sibling", None),
-                ("operator/etcd-backup-storage", None),
-                ("shared/aws-ssm-parameters", "live/aws-ssm-parameters"),
-                ("shared/aws-ssm-parameters-sibling", None),
-            ):
-                unit = fixture / "IaC/homelab/us-west-2" / path
-                unit.mkdir(parents=True)
-                if path.startswith("shared/"):
-                    shutil.copyfile(root / "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-                                    unit / "terragrunt.hcl")
-                else:
-                    (unit / "terragrunt.hcl").write_text('include "root" { path = find_in_parent_folders("root.hcl") }\n')
-                data = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))
-                encryption = data["remote_state"]["encryption"]
-                self.assertEqual(encryption["key_provider"], "aws_kms")
-                self.assertEqual(encryption["encrypted_metadata_alias"], "key_provider.aws_kms.main")
-                if legacy_key:
-                    self.assertEqual(encryption["fallback"], {"method": "unencrypted"})
-                    self.assertNotIn("enforced", encryption)
-                    self.assertEqual(data["remote_state"]["config"]["key"],
-                                     f"IaC/homelab/{legacy_key}/terraform.tfstate")
-                else:
-                    self.assertTrue(encryption["enforced"])
-                    self.assertNotIn("fallback", encryption)
+            legacy_units = {
+                "apps/langfuse/blob-storage": "live/langfuse-blob-storage",
+                "operator/application-backup-storage": "operator/application-backup-storage",
+                "operator/entra-google-workspace-federation": "operator/entra-google-workspace-federation",
+                "operator/etcd-backup-storage": "operator/etcd-backup-storage",
+                "operator/github-actions-role-policy": "operator/github-actions-role-policy",
+                "operator/state-bucket-encryption": "operator/state-bucket-encryption",
+                "shared/aws-ssm-parameters": "live/aws-ssm-parameters",
+                "shared/kubernetes-secrets/external-secrets-aws-ssm-auth":
+                    "live/kubernetes-secrets/external-secrets-aws-ssm-auth",
+            }
+            ssm_unit = "shared/aws-ssm-parameters"
+            strict_units = (
+                "apps/langfuse/argocd",
+                "operator/application-backup-storage-sibling",
+                "operator/etcd-backup-storage-sibling",
+                "shared/aws-ssm-parameters-sibling",
+                "shared/kubernetes-secrets/sibling",
+            )
+            for name in (*legacy_units, *strict_units):
+                with self.subTest(unit=name):
+                    unit = fixture / "IaC/homelab/us-west-2" / name
+                    unit.mkdir(parents=True)
+                    target = unit / "terragrunt.hcl"
+                    if name in (ssm_unit, f"{ssm_unit}-sibling"):
+                        shutil.copyfile(
+                            root / "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+                            target,
+                        )
+                    else:
+                        target.write_text('include "root" { path = find_in_parent_folders("root.hcl") }\n')
+                    data = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))
+                    encryption = data["remote_state"]["encryption"]
+                    self.assertEqual(encryption["key_provider"], "aws_kms")
+                    self.assertEqual(encryption["encrypted_metadata_alias"], "key_provider.aws_kms.main")
+                    if name in legacy_units:
+                        self.assertEqual(encryption["fallback"], {"method": "unencrypted"})
+                        self.assertNotIn("enforced", encryption)
+                        self.assertEqual(data["remote_state"]["config"]["key"],
+                                         f"IaC/homelab/{legacy_units[name]}/terraform.tfstate")
+                    else:
+                        self.assertTrue(encryption["enforced"])
+                        self.assertNotIn("fallback", encryption)
             account = fixture / "IaC/homelab/account.hcl"
             account.write_text(account.read_text().replace('account_name = "homelab"', 'account_name = "other"'))
-            for path in ("operator/application-backup-storage", "shared/aws-ssm-parameters"):
-                unit = fixture / "IaC/homelab/us-west-2" / path
-                encryption = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))["remote_state"]["encryption"]
-                self.assertTrue(encryption["enforced"])
-                self.assertNotIn("fallback", encryption)
+            for name in legacy_units:
+                with self.subTest(unit=name, account="other"):
+                    unit = fixture / "IaC/homelab/us-west-2" / name
+                    data = json.loads(run(unit, "terragrunt", "--log-disable", "render", "--json", "--write=false"))
+                    encryption = data["remote_state"]["encryption"]
+                    self.assertTrue(encryption["enforced"])
+                    self.assertNotIn("fallback", encryption)
 
     def test_shared_root_owns_compatible_encryption_and_backend(self):
         root = Path(__file__).resolve().parents[2]

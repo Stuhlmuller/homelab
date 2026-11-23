@@ -241,7 +241,7 @@ def recover(config_factory, password, image, blocked='doubleclick.net'):
 
 
 def credential():
-    accounts = re.findall(r'account_id\s*=\s*"(\d{12})"', (ROOT / 'IaC/application-backup-storage.hcl').read_text())
+    accounts = re.findall(r'account_id\s*=\s*"(\d{12})"', (ROOT / 'IaC/homelab/us-west-2/operator/application-backup-storage.hcl').read_text())
     CHECK.require(len(accounts) == 1, 'Declared homelab AWS account is ambiguous')
     account = CHECK.run(['aws', 'sts', 'get-caller-identity', '--query', 'Account', '--output', 'text']).strip()
     CHECK.require(account == accounts[0], 'Recovery AWS account differs from the homelab account')

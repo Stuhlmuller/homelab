@@ -169,7 +169,9 @@ checks remain fresh.
   publishes `Codex Code Review` for the exact PR head. It passes only when the
   Codex GitHub App reports a completed code review with zero findings for that
   SHA. Findings fail the status. Missing, stale, or incomplete reviews keep it
-  pending. Push fixes and request `@codex review` if automatic review has not
+  pending. The publisher uses a lightweight runner and cancels older runs for
+  the same PR because each invocation reads the current head and review receipt.
+  Push fixes and request `@codex review` if automatic review has not
   run. Dispatch the verification workflow with the PR number to re-read an
   existing review. `github-iac` owns enforcement of the status on `main`.
   Remove the requirement there before retiring the publisher.
@@ -194,9 +196,11 @@ checks remain fresh.
   and blocks branch deletion and force pushes. The required checks in ruleset
   `14700233` are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
   `analyze-actions`, and `Terragrunt Gate`. `github-iac` owns this ruleset.
-- The live Terragrunt plan job retains its Actions development-shell cache.
-  Static jobs use the signed binary cache instead of restoring an
-  arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
+- The live Terragrunt plan and `validate` jobs reuse Nix dependencies from
+  GitHub Actions caches. Offline validation uses the signed binary cache.
+  The `validate` repository job on `main` populates the Actions cache after
+  offline verification and successful validation.
+  See [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
 - GitHub token permissions default to none. Jobs opt in to `contents: read`,
   and live Terragrunt jobs request `id-token: write`. No credentialed plan job
   can write to pull requests or another public GitHub surface.

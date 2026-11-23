@@ -3,7 +3,7 @@ include "root" {
 }
 
 terraform {
-  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/entra-domain-verification"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/entra-domain-attestation"
 }
 
 generate "msgraph_provider" {
@@ -15,6 +15,5 @@ EOF
 }
 
 inputs = {
-  domain_name   = "stuhlmuller.net"
-  verify_domain = true
+  domain_name = "stuhlmuller.net"
 }

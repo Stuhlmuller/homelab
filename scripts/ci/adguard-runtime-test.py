@@ -188,7 +188,7 @@ class Runtime:
 
 
 class AdGuardRuntimeTests(unittest.TestCase):
-    def test_initialized_admin_and_bounded_memory_query_history(self):
+    def test_initialized_admin_query_history_and_persisted_statistics(self):
         check_spec = importlib.util.spec_from_file_location(
             "adguard_check", Path(__file__).resolve().parents[1] / "adguard-check.py")
         check = importlib.util.module_from_spec(check_spec)
@@ -212,7 +212,8 @@ class AdGuardRuntimeTests(unittest.TestCase):
                               for name in ("53/udp", "53/tcp", "3000/tcp")}
         self.runtime.wait_ready()
         self.assertEqual(self.runtime.api("querylog?limit=1")["data"], [])
-        self.assertEqual(self.runtime.api("stats")["num_dns_queries"], 0)
+        self.assertGreaterEqual(self.runtime.api("stats")["num_dns_queries"],
+                                self.config["querylog"]["size_memory"] + 2)
         self.assertEqual(docker("exec", self.runtime.container, "find", "/work", "-name", "querylog*.json*"), "")
 
     def test_active_filter_api_contract(self):

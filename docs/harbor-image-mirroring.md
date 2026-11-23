@@ -5,6 +5,30 @@
 Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
 Source publication does not authorize key installation or a live dispatch.
 
+## Pull-through cache projects
+
+Harbor's PostSync bootstrap reconciles three private cache projects for public
+upstream images. Authenticate to Harbor with a principal that has pull access to
+the cache project, then use the project's repository prefix.
+
+| Upstream | Example Harbor reference |
+| --- | --- |
+| Docker Hub | `harbor.stinkyboi.com/proxy-dockerhub/library/nginx:1.28` |
+| GitHub Container Registry | `harbor.stinkyboi.com/proxy-ghcr/stefanprodan/podinfo:6.9.0` |
+| Quay | `harbor.stinkyboi.com/proxy-quay/prometheus/prometheus:latest` |
+
+Harbor fetches uncached references on the first pull without a catalog entry or
+publication workflow. For Kubernetes, use the workload's approved digest and a
+namespace-scoped pull secret. The caches connect to the upstreams anonymously
+with TLS verification. New projects inherit Harbor's seven-day retention
+policy. Automatic scanning is enabled. Check the scan and SBOM separately from
+pull verification.
+
+After Harbor syncs, verify each project's privacy and endpoint. Make a complete
+authenticated pull of a digest absent from that cache, verify the manifest and
+blobs, then confirm the artifact is listed in Harbor. Migrate workloads using
+the current `mirror` prefix once the workload has pull authorization and the
+cache path has been verified.
 
 ## Helm charts
 
@@ -16,6 +40,12 @@ fetches those upstream packages, checks their identity and bytes, and pushes
 them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
 separate mirror reader robot and compares the package SHA-256. A retry checks
 existing artifacts before pushing; a mismatched artifact stops publication.
+
+Harbor bootstrap reconciles one immutable-tag rule for `helm/**` in the
+`mirror` project. After Argo CD reports that the bootstrap hook succeeded at
+the merged revision, inspect a published chart tag with Harbor's artifact
+API and verify that Harbor reports it immutable. The publication workflow
+verifies package bytes with the independent reader.
 
 Publish and verify all chart packages before changing Argo CD sources. Argo CD
 uses the repository Secret in `clusters/homelab/argocd/self-management` and its
@@ -171,10 +201,12 @@ Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
 publisher requires a fresh strict-TLS/401 registry challenge. The protected
-public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
-retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
-temporary OCI directory and forces a recursive check of nested manifests and
-blobs on each attempt.
+public mirror uses direct Tailscale HTTPS and retries a failed connection
+up to twice after one- and two-second delays. TLS errors and unexpected HTTP
+responses still stop immediately. Legacy private-publication callers retain
+their Kubernetes port-forward lifecycle until their separate cutover.
+The publisher retains completed content in one temporary OCI directory and
+forces a recursive check of nested manifests and blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
 exhausted HTTP 5xx reads keep the public `server-error` category. The complete
 pull and root digest checks remain mandatory.
@@ -237,6 +269,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   For Immich onboarding, use `image_scope=immich` to publish the server,
+   VectorChord PostgreSQL, and Valkey from the fixed Immich inventory.
+
    For Uptime Kuma onboarding, use `image_scope=uptime-kuma`. The fixed
    `scripts/config/harbor-uptime-kuma-images.json` contains only Kuma 2.5.11 at
    its reviewed multi-platform digest. Require complete authenticated pulls
@@ -259,8 +294,15 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
+   The scoped and full catalogs use chunked uploads for Home Assistant.
+   For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
+   inventory selects only the reviewed Home Assistant Container image and
+   uses all-platform copy and authenticated pull verification. The Home Assistant
+   publisher sends blobs larger than 16 MiB using 16 MiB registry upload chunks.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
+   `image-updater-canary`, `bazel-cache`, or `home-assistant`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -299,6 +341,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    After this catalog change merges, dispatch
    it at exact current `main` and require eight complete authenticated
    pulls before merging any consuming Renovate PR.
+
+   For the n8n upgrade, use `image_scope=n8n` to publish and fully verify the
+   single versioned digest in `scripts/config/harbor-n8n-images.json`.
+   This scope keeps n8n publication independent of the shared Renovate batch.
 
    The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
    `afc7e2d` and `7d38526` pins remain for existing consumers.
@@ -400,8 +446,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures recheck the private Harbor TLS registry
-   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Transient authenticated pull failures, including HTTP/2 peer stream resets,
+   recheck the private Harbor TLS registry challenge before retrying Docker
+   manifests or OCI indexes. The direct
    Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
@@ -832,3 +879,28 @@ consumer references. A missing blob, failed download or digest mismatch stops
 publication acceptance and withholds signing/output references. This verifies
 transport completeness; private vulnerability review and original workload
 behavior remain separate release gates.
+
+## Homepage publication scope
+
+Publish the pinned Homepage image using the reviewed current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=homepage
+```
+
+The scope selects the exact Homepage v2.8.0 image from the full catalog.
+Require the workflow's complete authenticated pull before merging the cutover.
+
+## AFFiNE publication scope
+
+Publish the reviewed AFFiNE 0.27.4 image using the current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=affine
+```
+
+The scope selects the exact digest used by the AFFiNE application and migration
+container. Require the workflow's complete authenticated Harbor pull before
+merging the rollout.

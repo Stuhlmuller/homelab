@@ -367,14 +367,50 @@ Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
+remaining fixture groups concurrently. The offline Nix result requires each
+group's result. The n8n fixtures use the inputs listed in `flake.nix` and
+publish a separate signed result for reuse across unrelated changes.
 See [signed offline validation](../../docs/nix-cache.md).
 
+The offline Nix gate also runs the pinned XERJ release against the Octelium
+Enterprise manifest on an authenticated loopback node. It requires a committed
+catalog and a searchable result sorted by the dotted upgrade annotation.
+It also checks that MCP can query the running node and leaves it stopped
+after the operator shuts it down.
+See [XERJ reference coding](../../docs/xerj-reference-coding.md) for the
+workstation index migration.
+
+The required Codex review status is published on a lightweight GitHub runner.
+A new publisher run for the same PR replaces the prior run and reads the
+latest PR head and trusted review receipt. See the
+[CI/CD security model](../../docs/ci-cd.md#security-model).
+
 For Descheduler values or chart changes, run
-`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
-rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
-exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. Live revision, argument and execution-cadence
-acceptance remain separate; see the [workload notes](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/descheduler/README.md).
+`bash scripts/ci/descheduler-cadence-check.sh`. During staging it verifies
+chart `0.33.0` renders one suspended CronJob and no Deployment. It applies
+the same chart overrides to both the repaired values and a pre-repair values
+fixture. Update the check alongside the pinned chart when upgrading. The same render feeds
+`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
+enabled strategy, valid LowNodeUtilization thresholds and the existing
+DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
+cycle. The protected live-plan job runs
+[`descheduler-release-check.py`](../../scripts/ci/descheduler-release-check.py)
+for runtime and gate changes. It requires the Argo values source to track
+`main` and explicit chart overrides for `kind=CronJob` and `suspend=true`.
+After protected staging, verify the exact reconciled revision, a suspended
+CronJob, and zero live Descheduler Pods. A separate activation change needs a
+repo-owned protected manual gate that binds the exact activation revision and
+checks fresh node, Pod, lease, Job and kubelet evidence immediately before
+removing the suspension. The prepared capacity
+helper fails on stale timestamps, changed inventory, or unknown demand; an
+earlier PR check cannot authorize later eviction. NodeFit remains a subset of
+scheduler checks; this helper does not establish N-1 capacity or later cycles. Missing
+strategy configuration prevents profile construction even while the Pod remains Ready.
+After activation, verify the live revision, 30-minute interval and two
+cycles without profile-construction errors. Zero evictions is acceptable.
+The pinned [chart defaults](https://github.com/kubernetes-sigs/descheduler/blob/v0.33.0/charts/descheduler/values.yaml#L125-L136)
+use CPU, memory and Pod thresholds of 20% with 50% targets.
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:
 Argo applied `07672f6d13114a6e695c28339dd99e401c840972`, then compared its
@@ -907,8 +943,8 @@ trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. An unreadable base diff fails the static job before it can emit a
 successful skip decision; the offline fixture exercises this failure. The
-aggregate checks static success and the expected live plan result. It logs the
-reason for a skipped live plan. Keep the
+aggregate uses `ubuntu-slim` to check static success and the expected live plan
+result. It logs the reason for a skipped live plan. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
@@ -922,8 +958,17 @@ credentials stay scoped to the one live step.
 The `validate` runtime checks for image admission, network enforcement, and
 Harbor Core run on `main` pushes. In PRs,
 [`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
-the exact event diff, including removed paths, for each check's inputs. An
-unavailable diff runs the full runtime suite.
+the exact event diff, including removed paths, for each check's inputs. If the
+shallow checkout lacks the event base commit, the script fetches that commit.
+An unavailable diff runs the full runtime suite.
+
+The `validate` repository and runtime jobs share a GitHub Actions Nix store
+cache keyed by runner OS, architecture, and the two flake files. Successful
+`main` repository jobs populate it after signed offline verification. Check
+the `Cache Nix Store` or `Restore Nix Store Cache` step on a later run with the
+same key to verify reuse. Revert the cache steps and their matching workflow
+hash to roll back.
+See [cache trust and freshness](../../docs/nix-cache.md#ci-trust-and-freshness).
 
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
@@ -941,8 +986,20 @@ current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
 and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
 and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
-receipt records the failed phase or route-check result, including any overlapping
-prefix. A successful result requires the checksum-verified receipt.
+receipt records which credential check, transport setup, inventory read, or
+route comparison failed. A route comparison records any overlapping prefix.
+Transport output stays out of the receipt. A successful result requires the
+checksum-verified receipt.
+
+After Cilium coexistence is Synced and Healthy, use Platform Maintenance
+`stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
+Verify healthy Cilium, Envoy, Flannel, and Multus rollouts and confirm AdGuard
+and Harbor core are Ready on surviving nodes. The stage runs a server-side
+drain dry run, rechecks Harbor before eviction, and verifies that Harbor core
+remains Ready after the drain. It leaves the worker cordoned and drained.
+Verify authenticated registry pulls and tailnet DNS before the separate cutover.
+If evacuation fails, confirm the worker's cordon and eviction state. Keep
+cutover paused and review a protected scheduling recovery before retrying.
 
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
@@ -1089,6 +1146,8 @@ Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
 database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+Before removing a reader policy, the cleanup gate requires a complete empty
+Kubernetes PodList with a server resource version for the run's owner label.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run
@@ -1714,12 +1773,17 @@ initialization: existing backend metadata or Terragrunt's S3 checks can still
 require AWS access. Use an isolated module copy for offline validation when
 that access is unavailable; do not silently switch a later plan to local state.
 
-Explicit stack validation:
+Full IaC planning with operator credentials:
 
 ```sh
 cd IaC
-terragrunt stack run plan
+terragrunt run plan -all
 ```
+
+[`.terragrunt-filters`](../../IaC/.terragrunt-filters) excludes catalog templates
+from the run queue. All generated deployment units, including operator units,
+remain in scope. Keep full plan output private because it includes units that
+read secrets.
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
@@ -2904,17 +2968,18 @@ It reports plan readiness without applying or recording a cutover receipt.
 
 ### Source-only Application stack refactors
 
-The Mastodon release preflight treats an edit confined to its `stack.hcl` as
-source-only only when real Terragrunt generation/rendering at the merge base and
-PR head proves identical module files, declared inputs, backend/provider config,
-and normalized dependency edges. Changed workload files, missing evidence, or
-any runtime-contract difference retain the existing Synced/Healthy, backup and
-restore requirements. The comparison also evaluates shared roots and templates,
-so changing them cannot conceal a changed Application manifest. Negative tests
-cover manifest, dependency, backend, provider and module changes. Shared-only
-root/template/module edits also trigger the live preflight. Equivalence supports
-only the current local Application root module: unsupported JSON or generated
-variables, indirect file/module inputs, extra arguments and hooks fail closed.
+The Mastodon release preflight can prove equivalence for a `stack.hcl` change or
+an `IaC/root.hcl` change without Mastodon-specific edits. Terragrunt generation
+and rendering at the merge base and PR head must produce identical module
+files, declared inputs, backend and provider config, and normalized dependency
+edges. Changed workload files, missing evidence, or any runtime contract
+difference retain the Synced/Healthy, backup, and restore requirements.
+The comparison also evaluates shared roots and templates. Negative tests cover
+manifest, dependency, backend, provider, and module changes. Shared
+root, template, and module edits trigger protected preflight. Equivalence
+supports the current local Application root module. Unsupported JSON or
+generated variables, indirect file or module inputs, extra arguments, and hooks
+fail closed.
 The existing apply guard is matched exactly and its script contents are compared.
 
 On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main

@@ -71,16 +71,21 @@ def snapshot(source, destination, catalog, retain=14, scratch_directory=None):
             data = Path(scratch)
             db = data / "kuma.db"
             # Existing writer owns WAL/SHM. mode=ro never creates or changes production state.
-            with closing(sqlite3.connect(f"file:{source / 'kuma.db'}?mode=ro", uri=True, timeout=10)) as reader:
-                with closing(sqlite3.connect(db)) as writer:
+            with closing(sqlite3.connect(db)) as writer:
+                with closing(sqlite3.connect(f"file:{source / 'kuma.db'}?mode=ro", uri=True, timeout=10)) as reader:
                     deadline = time.monotonic() + 120
 
                     def progress(status, remaining, total):
                         if time.monotonic() > deadline:
                             raise TimeoutError("snapshot-timeout")
 
+                    if reader.execute("PRAGMA journal_mode").fetchone()[0] == "wal":
+                        # Pin the WAL read snapshot across backup steps so external commits
+                        # cannot restart the copy. Release it before checking the backup.
+                        reader.execute("BEGIN")
+                        reader.execute("SELECT rootpage FROM sqlite_schema LIMIT 1").fetchone()
                     reader.backup(writer, pages=256, progress=progress, sleep=0.05)
-                    writer.execute("PRAGMA journal_mode=DELETE")
+                writer.execute("PRAGMA journal_mode=DELETE")
             counts = summary(db)
             expected = {m["key"] for m in json.loads(Path(catalog).read_text()).get("monitors", [])}
             if expected:

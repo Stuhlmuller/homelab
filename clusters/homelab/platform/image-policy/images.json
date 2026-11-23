@@ -346,6 +346,9 @@
       "source": "docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab"
     },
     {
+      "source": "docker.io/valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd"
+    },
+    {
       "source": "docker.io/valkey/valkey@sha256:dbb2de90cb7a60c4f3f7e8d73fcaab69a94c557bb08a064108fa5d5b1814086e"
     },
     {
@@ -359,6 +362,9 @@
     },
     {
       "source": "gcr.io/etcd-development/etcd:v3.6.5@sha256:042ef9c02799eb9303abf1aa99b09f09d94b8ee3ba0c2dd3f42dc4e1d3dce534"
+    },
+    {
+      "source": "ghcr.io/gethomepage/homepage:v2.8.0@sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"
     },
     {
       "source": "ghcr.io/actions/actions-runner:2.338.0@sha256:4ffadc0002b2581327e06101fc8c06cd189232baf79fe561fac9caeb76f5e807"
@@ -377,6 +383,18 @@
     },
     {
       "source": "ghcr.io/external-secrets/external-secrets:v2.0.1@sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f"
+    },
+    {
+      "source": "ghcr.io/external-secrets/external-secrets:v2.15.0@sha256:6888f243e5f8f7592c6d7fae2a5547c9e33531441b47b53807b9093b25a00e31"
+    },
+    {
+      "source": "ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f"
+    },
+    {
+      "source": "ghcr.io/immich-app/immich-server:v3.4.2@sha256:fc880c1bf665b4aab1e74c15e56ab871225989cd546536e6b77e771869af06bd"
+    },
+    {
+      "source": "ghcr.io/immich-app/postgres:18-vectorchord1.1.1@sha256:f7388adc1e3414800a71506528917f4f5615249f5fe7a872b1e1431e01b72ad7"
     },
     {
       "source": "ghcr.io/jkroepke/kube-webhook-certgen:1.8.2@sha256:e133b64c08377a107298ac3352504bd3cd21f13282bc2aac099a88a7888b3f54"
@@ -598,6 +616,9 @@
       "source": "ghcr.io/toeverything/affine@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f"
     },
     {
+      "source": "ghcr.io/toeverything/affine@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099"
+    },
+    {
       "source": "lscr.io/linuxserver/deluge:18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9"
     },
     {
@@ -619,6 +640,9 @@
       "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
     },
     {
+      "source": "quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"
+    },
+    {
       "source": "quay.io/cilium/cilium-envoy:v1.39.6-1794557904-dee711ff0e84b106edd0abcdd71961af1b870359@sha256:bdef13043ebaa7b9dcd8e3a86be41080bb5369e017cd759a12daf89e2b8fafe7"
     },
     {
@@ -631,16 +655,31 @@
       "source": "quay.io/jetstack/cert-manager-acmesolver@sha256:d8d948a9fa0fb9eeb9fd2432dee4945cc202c840ee25a733f0b238fd89fe5cbb"
     },
     {
+      "source": "quay.io/jetstack/cert-manager-acmesolver:v1.20.5@sha256:ad8df9de893f0200eec00f288550ddd82b99f84aa4085b8dc0339758bb119fac"
+    },
+    {
       "source": "quay.io/jetstack/cert-manager-cainjector@sha256:06ad347fe0dc2eb84cc355c26f6752e05e87dceb6447f5cd29b963dd66dfd8bd"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-cainjector:v1.20.5@sha256:d08d2695ad3714ba42a04c07f3a15fef6e1accd02716a5ac66ba1fa8f99afca6"
     },
     {
       "source": "quay.io/jetstack/cert-manager-controller@sha256:6c13d61e0348a5bc3477f8ea9a928624300b30d19b1c72a7d2b90372fc713db4"
     },
     {
+      "source": "quay.io/jetstack/cert-manager-controller:v1.20.5@sha256:62df7490e10bc668edc34d4083a5439b4b684073eb78ddadf58cf35e655d8298"
+    },
+    {
       "source": "quay.io/jetstack/cert-manager-startupapicheck@sha256:b0c9a2c18d02f3c40a9e091a6fe9afdf39cbf7fb2d9acc18c9881c21c625f2dc"
     },
     {
+      "source": "quay.io/jetstack/cert-manager-startupapicheck:v1.20.5@sha256:edbbd82da8e9110bc2f2ee8b4a6ef0155cbc097c0dbc0b85f8b6cd2f8c96edb3"
+    },
+    {
       "source": "quay.io/jetstack/cert-manager-webhook@sha256:a61e817632cebed3bb59a189327e786fa3fdd7597167d994a1848d98fd55848f"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-webhook:v1.20.5@sha256:85367b4b5a6662e5a05c0f2465815e2dd9e4eb1957a2123be2b20f9de5135252"
     },
     {
       "source": "quay.io/kiali/kiali-operator:v2.26.0@sha256:ca2e4c356e946849883f42e9c9fe41080145cb442f93200cfca4e55a89a62039"

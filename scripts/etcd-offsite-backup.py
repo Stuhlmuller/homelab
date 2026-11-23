@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-CONFIG = Path(__file__).resolve().parents[1] / "IaC/etcd-backup-storage.hcl"
+CONFIG = Path(__file__).resolve().parents[1] / "IaC/homelab/us-west-2/operator/etcd-backup-storage.hcl"
 RECEIPT = "publication.json"
 FILES = ("etcd.snapshot", "manifest.json")
 spec = importlib.util.spec_from_file_location(
