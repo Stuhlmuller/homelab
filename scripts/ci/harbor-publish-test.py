@@ -2213,7 +2213,7 @@ printf '%s\n' {SHA}
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
-    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+    def tailnet_mocks(self, status="401", failure=None, challenge_failures=(), **kwargs):
         self.transport_mocks(mirror=True, failure=failure, **kwargs)
         self.env.pop("OCTELIUM_AUTH_TOKEN", None)
         self.env.pop("KUBE_API_SERVER_URL", None)
@@ -2225,8 +2225,13 @@ from pathlib import Path
 args=sys.argv[1:]
 assert "--insecure" not in args and "--resolve" not in args
 assert args[-1] == "https://harbor.stinkyboi.com/v2/"
-with Path({str(self.calls)!r}).open("a") as f:
+calls=Path({str(self.calls)!r})
+previous=sum(json.loads(line)["command"]=="curl" for line in calls.read_text().splitlines())
+with calls.open("a") as f:
     f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+if previous + 1 in {challenge_failures!r}:
+    print("curl: (7) Failed to connect to Harbor", file=sys.stderr)
+    sys.exit(7)
 print({status!r},end="")
 PYMOCK
 """)
@@ -2260,6 +2265,25 @@ PYMOCK
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertGreaterEqual(len(self.calls_for("curl")), 2)
         self.assertEqual(self.calls_for("kubectl"), [])
+
+    def test_tailnet_pull_recovers_when_registry_challenge_briefly_refuses_connection(self):
+        self.tailnet_mocks(failure="mirror-pull-once", challenge_failures=(2,))
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.calls_for("curl")), 3)
+        self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertTrue((self.root / "summary").exists())
+
+    def test_tailnet_pull_stops_after_bounded_registry_challenge_failures(self):
+        self.tailnet_mocks(failure="mirror-pull-once", challenge_failures=(2, 3, 4))
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 7, result.stderr)
+        self.assertEqual(len(self.calls_for("curl")), 4)
+        self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-failed\n", self.public_status)
+        self.assert_cleaned()
 
     def test_tailnet_mode_rejects_another_workflow(self):
         self.tailnet_mocks()

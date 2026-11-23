@@ -436,8 +436,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    receipt.
    Transient authenticated pull failures, including HTTP/2 peer stream resets,
    recheck the private Harbor TLS registry challenge before retrying Docker
-   manifests or OCI indexes. The direct
-   Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
+   manifests or OCI indexes. The direct Tailscale mirror allows three TLS
+   challenge attempts for transient connection failures. It stops immediately
+   when the registry returns an unexpected HTTP status. Hard authentication,
+   missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.

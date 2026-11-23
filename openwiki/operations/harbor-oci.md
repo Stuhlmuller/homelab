@@ -707,6 +707,10 @@ availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
 
+The direct Tailscale mirror gives transient TLS connection failures up to
+three registry challenge attempts. An unexpected HTTP status ends the check,
+and authenticated pulls still require the exact catalog digest.
+
 ### Harbor 2.15.4 catalog prerequisite
 
 The [full image catalog](../../scripts/config/harbor-images.json) stages all nine
