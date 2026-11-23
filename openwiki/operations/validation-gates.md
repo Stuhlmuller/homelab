@@ -369,7 +369,8 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
 remaining fixture groups concurrently. The offline Nix result requires each
-group's result.
+group's result. The n8n fixtures use the inputs listed in `flake.nix` and
+publish a separate signed result for reuse across unrelated changes.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The offline Nix gate also runs the pinned XERJ release against the Octelium
@@ -985,8 +986,10 @@ current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
 and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
 and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
-receipt records the failed phase or route-check result, including any overlapping
-prefix. A successful result requires the checksum-verified receipt.
+receipt records which credential check, transport setup, inventory read, or
+route comparison failed. A route comparison records any overlapping prefix.
+Transport output stays out of the receipt. A successful result requires the
+checksum-verified receipt.
 
 After Cilium coexistence is Synced and Healthy, use Platform Maintenance
 `stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
@@ -1121,13 +1124,14 @@ Funnel path retains Traefik's plain-text 404 under safe OPTIONS. It sends no
 webhook and does not prove HMAC validation or workflow execution; verify a real
 workflow run separately before retiring the old unsigned hook. Run
 `python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
-The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+The [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
-the active values render one Deployment replica and the fence overlay renders
-zero, with no migration Job in either render. Its
+the baseline values render one Deployment replica, and the stack includes
+the overlay that renders zero, with no migration Job in either render. Its
 [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
-before a paired capture; source rendering alone is not a live backup.
+before a paired capture. The checkpoint receipt verifies the live backup
+and isolated restore.
 The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
 is manual and exact-main. It pins the capture script, restore helper,
 excluded reader Job, and deny-all policy by SHA-256 before AWS or Octelium
@@ -1143,6 +1147,8 @@ Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
 database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+Before removing a reader policy, the cleanup gate requires a complete empty
+Kubernetes PodList with a server resource version for the run's owner label.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run

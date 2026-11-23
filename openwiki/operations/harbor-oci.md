@@ -169,13 +169,11 @@ authenticated pull verification before applying a new bootstrap image tag.
 
 ## Historical pod image entries
 
-Argo CD can list images from retained terminal pods. The one-time
-[terminal image cleanup](../../clusters/homelab/platform/image-policy/terminal-pod-cleanup.yaml)
-is limited to reviewed ReplicaSet pod names in the listed namespaces. It checks
-for an upstream reference and at least 30 days since completion. The Job leaves
-active pods, recent failures, and Job history in place. After the operation,
-check that the reviewed pods are gone and prune the cleanup identities and
-configuration through GitOps.
+Argo CD can list images from retained terminal pods. A one-time GitOps Job
+removed 51 reviewed terminal ReplicaSet pods with upstream references after
+their 30-day retention period. Argo CD reported the hook succeeded, and a
+subsequent Kubernetes inventory found none of the reviewed pods. The cleanup
+preserved active pods, recent failures, and Job history.
 
 ## Helm chart publication
 
@@ -609,6 +607,10 @@ anonymous upstream reads, immutable digest checks and complete authenticated
 Harbor pulls with the dedicated mirror reader. They use the same fixed
 destination repositories.
 
+Homepage uses the fixed [Homepage inventory](../../scripts/config/harbor-homepage-images.json)
+at reviewed current main. The scope checks the v2.8.0 digest against the full
+catalog and requires a complete authenticated pull before the cutover.
+
 Bazarr uses `image_scope=bazarr` with the fixed
 `scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
 BusyBox init image. CI compares that subset with the Kustomize render and
@@ -934,6 +936,13 @@ activate the held consumer, or clear shared recovery/advisory gates.
 Current-main source staging also applies the fresh private pull prerequisite to
 both retained NOFX subjects; its anonymous source download and alias checks
 remain independent of this fixed core-only mode.
+
+The Photon security rebuild updated curl, curl-libs and expat-libs. The
+protected publisher recorded a zero-match runtime audit, a complete
+authenticated pull and signature verification for the new image. The
+[Harbor Helm values](../../clusters/homelab/apps/harbor/values.yaml) select
+that exact tag and digest.
+[Protected publication](https://github.com/Stuhlmuller/homelab/actions/runs/45104169857)
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
