@@ -1243,9 +1243,9 @@ single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must still show
-one `octeliumee-rscstore` replica and no inspector; the candidate inspector
-resource and fence component render only when added to a temporary copy of the
-app Kustomization. See the [capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+one `octeliumee-rscstore` replica, the inspector Pod, and its exact-label
+NetworkPolicy. The fence component renders only when added to the app
+Kustomization. See the [capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
 ```sh
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
@@ -1848,9 +1848,10 @@ that route is the failed dependency, restore reviewed
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
-Terragrunt Plan serializes runs per PR and keeps them queued while an earlier
-run finishes. Interrupting OpenTofu while it holds an S3 backend lock can leave
-a stale lock that blocks later plans. Terragrunt Apply keeps its separate
+Terragrunt Plan serializes protected live jobs per PR. Static checks for a
+new revision can start while an older live plan is running. Interrupting
+OpenTofu while it holds an S3 backend lock can leave a stale lock that blocks
+later plans. Terragrunt Apply keeps its separate
 production lock and queues each pending apply, subject to GitHub's queue limit.
 
 ## Live Rollout Rule

@@ -269,6 +269,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   For Immich onboarding, use `image_scope=immich` to publish the server,
+   VectorChord PostgreSQL, and Valkey from the fixed Immich inventory.
+
    For Uptime Kuma onboarding, use `image_scope=uptime-kuma`. The fixed
    `scripts/config/harbor-uptime-kuma-images.json` contains only Kuma 2.5.11 at
    its reviewed multi-platform digest. Require complete authenticated pulls
@@ -291,13 +294,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
+   The scoped and full catalogs use chunked uploads for Home Assistant.
    For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
    inventory selects only the reviewed Home Assistant Container image and
    uses all-platform copy and authenticated pull verification. The Home Assistant
    publisher sends blobs larger than 16 MiB using 16 MiB registry upload chunks.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
+   `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
    `image-updater-canary`, `bazel-cache`, or `home-assistant`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
@@ -887,3 +891,32 @@ gh workflow run harbor-mirror.yml --ref main \
 
 The scope selects the exact Homepage v2.8.0 image from the full catalog.
 Require the workflow's complete authenticated pull before merging the cutover.
+
+## AFFiNE publication scope
+
+Publish the reviewed AFFiNE 0.27.4 image using the current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=affine
+```
+
+The scope selects the exact digest used by the AFFiNE application and migration
+container. Require the workflow's complete authenticated Harbor pull before
+merging the rollout.
+
+## Argo CD patch publication scope
+
+Use the existing protected mirror to publish and verify the reviewed
+Argo CD v3.4.14 digest independently of the full catalog.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=argocd
+```
+
+This artifact-specific check verifies the exact v3.4.14 manifest and
+completes an authenticated Harbor pull. Keep v3.4.2 available for rollback.
+[Issue #1948](https://github.com/Stuhlmuller/homelab/issues/1948) requires a
+successful `image_scope=all` publication before the reviewed bootstrap
+apply. Confirm the patched components are ready after apply.

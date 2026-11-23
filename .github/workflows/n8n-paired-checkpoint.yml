@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '08b89f4d53c10bf0d9a3bbd9e7bb2948996de4b6d99d6f58c6d7d060b2fc7d08' scripts/ci/n8n-paired-checkpoint.sh \
+            'b1b7153af4e12fa11066a9a87294046f45568cc5b901aea708ea2a99138cdb74' scripts/ci/n8n-paired-checkpoint.sh \
             'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
             '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
             '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |
@@ -109,7 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '08b89f4d53c10bf0d9a3bbd9e7bb2948996de4b6d99d6f58c6d7d060b2fc7d08' scripts/ci/n8n-paired-checkpoint.sh \
+            'b1b7153af4e12fa11066a9a87294046f45568cc5b901aea708ea2a99138cdb74' scripts/ci/n8n-paired-checkpoint.sh \
             'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
             '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
             '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |
@@ -178,6 +178,21 @@ jobs:
             exit 1
           fi
           echo "n8n paired checkpoint passed; private diagnostics withheld."
+
+      - name: Report Paired Checkpoint Failure Phase
+        if: failure()
+        run: |
+          phase_file="${RUNNER_TEMP}/n8n-paired-checkpoint-failure-phase"
+          trap 'rm -f "$phase_file"' EXIT
+          phase="source-validation"
+          if [[ -f "$phase_file" ]]; then
+            IFS= read -r phase <"$phase_file" || phase=unknown
+          fi
+          case "$phase" in
+            source-validation|restore-image|capture|reader-cleanup|archive-validation|archive-publication|pvc-readback|database-start|database-restore|fence-recheck|manifest-publication|isolation-cleanup) ;;
+            *) phase=unknown ;;
+          esac
+          echo "n8n paired checkpoint failure phase: ${phase}"
 
       - name: Publish Sanitized Paired Receipt
         run: |

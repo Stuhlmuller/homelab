@@ -20,6 +20,12 @@
   {
     "chart": "app-template",
     "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/homelab/us-west-2/apps/home-assistant/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
     "source": "IaC/homelab/us-west-2/apps/n8n/stack.hcl",
     "targetRevision": "4.4.0"
   },

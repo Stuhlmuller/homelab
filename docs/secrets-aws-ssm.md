@@ -367,6 +367,7 @@ cluster CA is intentionally rotated.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |
+| Immich | `immich/immich-postgres-admin`, `immich/immich-postgres-app` | `admin-password`, `app-password` | `/homelab/immich/postgres-admin-password`, `/homelab/immich/postgres-app-password` (generated) |
 | Uptime Kuma | `monitoring/uptime-kuma-admin` | `uptime-kuma-admin` / `admin-password` | `/homelab/uptime-kuma/admin-password` (generated) |
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | argocd | `harbor-helm-repository` | `harbor-helm-repository` | `/homelab/harbor/mirror-robot-pull-password` |

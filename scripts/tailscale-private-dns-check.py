@@ -23,7 +23,7 @@ MESH = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a
 MIGRATION_NAMES_SHA256 = "4c4ce2ef575a18a2e18e6cc782a12228fc92fb4f3908c1ccc6a80da52f730b59"
 OCE_NAMES = ["console.oce.stinkyboi.com", "*.agents.oce.stinkyboi.com"]
 # Post-migration private additions never enter the fixed public-retirement set.
-PRIVATE_ONLY_NAMES = OCE_NAMES + ["uptime-kuma.stinkyboi.com"]
+PRIVATE_ONLY_NAMES = OCE_NAMES + ["uptime-kuma.stinkyboi.com", "immich.stinkyboi.com"]
 CRITICAL_PATHS = {"fleet_setup_denied", "harbor_node_pulls", "native_api", "cordium_reconnect", "public_callbacks"}
 APEX = "stinkyboi.com"
 ADDRESS_TYPES = {"A", "AAAA", "CNAME"}

@@ -1,0 +1,81 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: immich-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: '-2'
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: immich-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: immich-postgres
+    app.kubernetes.io/part-of: immich
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  claimRef:
+    name: immich-postgres-local
+    namespace: immich
+  hostPath:
+    path: /var/lib/immich-postgres
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: immich-postgres-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-postgres-local
+  namespace: immich
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: immich-postgres
+    app.kubernetes.io/part-of: immich
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: immich-postgres-local
+  volumeMode: Filesystem
+  volumeName: immich-postgres-local
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: immich
+  name: immich-library
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: '-2'
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 250Gi

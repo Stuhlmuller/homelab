@@ -1065,6 +1065,9 @@ case "$IMAGE_SCOPE" in
   prometheus)
     bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
     ;;
+  immich)
+    bash scripts/ci/harbor-publish.sh mirror-immich --tailscale
+    ;;
   uptime-kuma)
     bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
     ;;
@@ -1086,6 +1089,12 @@ case "$IMAGE_SCOPE" in
   homepage)
     bash scripts/ci/harbor-publish.sh mirror-homepage --tailscale
     ;;
+  affine)
+    bash scripts/ci/harbor-publish.sh mirror-affine --tailscale
+    ;;
+  argocd)
+    bash scripts/ci/harbor-publish.sh mirror-argocd --tailscale
+    ;;
   image-updater-canary)
     bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
     ;;
@@ -1093,7 +1102,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'45792c40ee74c5c862290a5f49d852ba294a6caef3fb941c707e514b28c09a20  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'9e131ec8fee1ac7fc6038737852f90b3f97ed2293f810529824cbec24b8f01bb  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1197,7 +1206,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "a2f8f34f2a1e679e2eed731a7f2fc5351153bac296d06a8aa438570ac3debe2a"
+	crypto.sha256(json.marshal(canonical)) == "e5cfe23d01a760764717db308f877b16dbbfdcc7378afb938984ff86c3327e92"
 }
 
 tailnet_workflow_requested if {
