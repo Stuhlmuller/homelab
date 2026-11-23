@@ -36,18 +36,22 @@
       xerjArchives = {
         aarch64-darwin = {
           target = "aarch64-apple-darwin";
+          assetId = "765590688";
           hash = "sha256-Xxaxfc9Gq7Vm7DOg9HM7RZwPvCKfzQ9YqeataY831Y4=";
         };
         x86_64-darwin = {
           target = "x86_64-apple-darwin";
+          assetId = "765590694";
           hash = "sha256-4mQlKPuO9Wj/krAWakoQtQmtJlVo6Ei1datNnvE6LGQ=";
         };
         aarch64-linux = {
           target = "aarch64-unknown-linux-musl";
+          assetId = "765530466";
           hash = "sha256-zTrPOzfX+UIVe+uwXvpCIWUbJfB7GKhb7qy1dXZH6k8=";
         };
         x86_64-linux = {
           target = "x86_64-unknown-linux-musl";
+          assetId = "765531502";
           hash = "sha256-FijuQBqaEhFWzDgJUPnUiSPm6FZFiuHmZI8O8Y23tpM=";
         };
       };
@@ -74,10 +78,7 @@
             src = ./builds/openwiki;
             npmDepsHash = "sha256-jz+cp/j9RCcW+v9idCrdvrXOOo5OXiBUSD26Ld1qQuk=";
             dontNpmBuild = true;
-            nativeBuildInputs = [
-              pkgs.makeWrapper
-              pkgs.patch
-            ];
+            nativeBuildInputs = [ pkgs.makeWrapper pkgs.patch ];
             installPhase = ''
               runHook preInstall
               mkdir -p "$out/libexec/openwiki" "$out/bin"
@@ -98,18 +99,11 @@
             version = terragruntVersion;
             src = pkgs.fetchurl {
               urls = [
-                "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${
-                  terragruntBinaries.${system}.target
-                }"
-                "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/${
-                  terragruntBinaries.${system}.assetId
-                }"
+                "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${terragruntBinaries.${system}.target}"
+                "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/${terragruntBinaries.${system}.assetId}"
               ];
               # The API asset route serves bytes only with this media type.
-              curlOptsList = [
-                "-H"
-                "Accept: application/octet-stream"
-              ];
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
               inherit (terragruntBinaries.${system}) hash;
             };
             dontUnpack = true;
@@ -125,7 +119,11 @@
             pname = "xerj";
             version = xerjVersion;
             src = pkgs.fetchurl {
-              url = "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz";
+              urls = [
+                "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz"
+                "https://api.github.com/repos/xerj-org/xerj/releases/assets/${archive.assetId}"
+              ];
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
               inherit (archive) hash;
             };
             nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -242,34 +240,22 @@
               '';
         in
         rec {
-          openwiki-setup =
-            pkgs.runCommand "homelab-openwiki-setup-test"
-              {
-                nativeBuildInputs = [
-                  pkgs.nodejs
-                  pkgs.git
-                ];
-              }
-              ''
-                node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
-                mkdir "$out"
-                printf 'passed\n' > "$out/result"
-              '';
-          xerj-autoindex =
-            pkgs.runCommand "homelab-xerj-autoindex-test"
-              {
-                nativeBuildInputs = [
-                  pkgs.python3
-                  self.packages.${system}.xerj
-                ];
-                __darwinAllowLocalNetworking = true;
-              }
-              ''
-                python3 -I ${./scripts/ci/xerj-autoindex-check.py} \
-                  ${./clusters/homelab/apps/octelium-enterprise/resources.yaml}
-                mkdir "$out"
-                printf 'passed\n' > "$out/result"
-              '';
+          openwiki-setup = pkgs.runCommand "homelab-openwiki-setup-test" {
+            nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
+          } ''
+            node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
+          xerj-autoindex = pkgs.runCommand "homelab-xerj-autoindex-test" {
+            nativeBuildInputs = [ pkgs.python3 self.packages.${system}.xerj ];
+            __darwinAllowLocalNetworking = true;
+          } ''
+            python3 -I ${./scripts/ci/xerj-autoindex-check.py} \
+              ${./clusters/homelab/apps/octelium-enterprise/resources.yaml}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
           n8n-offline-tests = check "homelab-offline-n8n" n8nSource "bash scripts/ci/offline-checks.sh --n8n";
           offline-tests =
             let
