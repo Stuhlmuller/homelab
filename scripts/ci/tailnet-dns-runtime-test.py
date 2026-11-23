@@ -16,8 +16,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
-CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
-VALUES = ROOT / "clusters/homelab/platform/tailnet-dns/values.yaml"
+CHART_CHECK = Path(__file__).with_name("tailnet-dns-test.py")
 TRAEFIK_VALUES = ROOT / "clusters/homelab/apps/traefik/values.yaml"
 SIDECAR_IP = "100.101.102.103"
 PUBLIC_A = "192.0.2.55"
@@ -37,16 +36,12 @@ def load_yaml(path):
 
 
 def rendered_corefile():
-    chart = subprocess.run(
-        ["helm", "template", "tailnet-dns", CHART, "--version", "4.0.0",
-         "--namespace", "tailnet-dns", "-f", str(VALUES)],
-        check=True, text=True, capture_output=True)
-    check("sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
-          in chart.stderr, "pinned chart digest changed")
+    rendered = subprocess.check_output(
+        ["python3", "-I", str(CHART_CHECK), "--render"], text=True)
     query = 'select(.kind == "ConfigMap" and .metadata.name == "tailnet-dns-k8s-gateway") | .data.Corefile'
     return json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", query, "-"],
-        input=chart.stdout, text=True))
+        input=rendered, text=True))
 
 
 def dns_response(query, seen):
