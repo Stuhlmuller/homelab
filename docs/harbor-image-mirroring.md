@@ -875,3 +875,15 @@ consumer references. A missing blob, failed download or digest mismatch stops
 publication acceptance and withholds signing/output references. This verifies
 transport completeness; private vulnerability review and original workload
 behavior remain separate release gates.
+
+## Homepage publication scope
+
+Publish the pinned Homepage image using the reviewed current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=homepage
+```
+
+The scope selects the exact Homepage v2.8.0 image from the full catalog.
+Require the workflow's complete authenticated pull before merging the cutover.

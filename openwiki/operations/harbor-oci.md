@@ -607,6 +607,10 @@ anonymous upstream reads, immutable digest checks and complete authenticated
 Harbor pulls with the dedicated mirror reader. They use the same fixed
 destination repositories.
 
+Homepage uses the fixed [Homepage inventory](../../scripts/config/harbor-homepage-images.json)
+at reviewed current main. The scope checks the v2.8.0 digest against the full
+catalog and requires a complete authenticated pull before the cutover.
+
 Bazarr uses `image_scope=bazarr` with the fixed
 `scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
 BusyBox init image. CI compares that subset with the Kustomize render and

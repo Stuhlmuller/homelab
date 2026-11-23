@@ -62,11 +62,14 @@ tracked in [Secrets And Identity](../architecture/secrets-and-identity.md).
 Argo CD includes retained terminal pods in the Application image summary. The
 Compass Deployment and its ready pod use the Harbor image in the
 [chart values](../../clusters/homelab/apps/compass/values.yaml). The
-[sync hook](../../clusters/homelab/apps/compass/retired-pod-cleanup.yaml)
-removes the historical pod only after matching its finished phase, ReplicaSet,
-and old image. Its delete request checks the UID and resource version returned
-by Kubernetes. Verify that the pod is absent, the Deployment is ready, and
-Argo CD has dropped the old entry, then remove the one-time hook and its RBAC.
+[tracked Job](../../clusters/homelab/apps/compass/retired-pod-cleanup.yaml)
+gives Argo CD a missing resource to reconcile. A hook-only change left the
+application Synced without creating the Job. The Job checks the historical
+pod's finished phase, ReplicaSet, and old image before deleting it with UID
+and resource-version preconditions. Keep the completed Job until GitOps
+removes it so self-heal does not recreate it. Verify Job completion, pod
+absence, a ready Deployment, and the updated Argo CD image summary before
+removing the Job and its RBAC.
 
 ## Kiali mesh visibility
 
