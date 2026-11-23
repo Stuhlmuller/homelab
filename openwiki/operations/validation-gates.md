@@ -1144,6 +1144,8 @@ Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
 database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+Before removing a reader policy, the cleanup gate requires a complete empty
+Kubernetes PodList with a server resource version for the run's owner label.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run
