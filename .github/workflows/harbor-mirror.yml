@@ -241,7 +241,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'a42ab35b543c409d2b71371808569a3d6a7fa7aa50eaf7cde76f7a0b9cef9917  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0e762bbfbd20b6dc9ee4c3ae1dbbaf4a82e794ed493da70f3821cb8bb52b7a5f  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -251,7 +251,7 @@ jobs:
 
       - name: Retain Only Encrypted Failure Diagnostic
         if: failure()
-        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2-r0
         with:
           name: harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/harbor-publication-error.gpg

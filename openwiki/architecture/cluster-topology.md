@@ -262,7 +262,7 @@ For the outage of both labeled dataplane nodes,
 uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
 Octovigil authorization service, Portal, login, Auth API, admin API,
 CI Kubernetes API, and 18 public WEB Service proxies. The
-public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
+public set is AFFiNE, Argo CD, Homepage (at `compass.stinkyboi.com`), Cordium, the Enterprise
 console, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, Multica, n8n, NOFX,
 OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr. Existing Service selector
 labels restore these paths without a new Service, ingress, port, node label, or

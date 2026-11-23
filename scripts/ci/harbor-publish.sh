@@ -340,12 +340,25 @@ fi
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 start_private_forward() {
-  local attempt ready status
+  local attempt ready status probe_exit
   if "$tailnet_https"; then
-    status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
-      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
-      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]
-    return
+    for attempt in 1 2 3; do
+      if status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
+        --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+        2>"$scratch/readiness.log")"; then
+        [[ "$status" == 401 ]]
+        return
+      else
+        probe_exit=$?
+      fi
+      # A failed connection can be transient. TLS errors and unexpected HTTP
+      # responses still fail immediately on the same private route.
+      if [[ "$probe_exit" != 7 || "$attempt" == 3 ]]; then
+        return "$probe_exit"
+      fi
+      sleep "$attempt"
+    done
+    return 1
   fi
   for attempt in 1 2 3; do
     timeout --signal=TERM --kill-after=5s "$forward_timeout" \
@@ -408,6 +421,11 @@ if [[ "$mode" == mirror ]]; then
   REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
     regctl registry login harbor.stinkyboi.com --user "robot\$mirror+publisher" \
     --pass-stdin --skip-check <"$scratch/mirror-publisher-password" >/dev/null
+  # Keep large Home Assistant layer uploads bounded to individual requests.
+  if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+    REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+      regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216
+  fi
   rm -f -- "$scratch/mirror-publisher-password"
 
   # Keep the publisher credential on destination writes only. This distinct
@@ -564,7 +582,12 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if skopeo copy --all --preserve-digests --src-no-creds \
+        if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+            2>"$scratch/mirror-error"
+          oci_index_copy=true
+        elif skopeo copy --all --preserve-digests --src-no-creds \
             --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
             "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
           :

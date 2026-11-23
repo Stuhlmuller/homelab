@@ -4,37 +4,21 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["../../cert-manager/argocd", "../../istio/argocd", "../../prometheus/argocd"]
+  dependencies = ["../../istio/argocd"]
   spec = {
     destination = {
       namespace = "monitoring"
     }
     sources = [
       {
-        repoURL        = "ghcr.io/adinhodovic/charts"
-        chart          = "compass"
-        path           = "."
-        targetRevision = "0.6.0"
-        helm = {
-          releaseName = "compass"
-          valueFiles  = ["$values/clusters/homelab/apps/compass/values.yaml"]
-        }
-      },
-      {
         repoURL        = local.shared.repo_url
-        path           = "."
-        targetRevision = local.shared.target_revision
-        ref            = "values"
-        directory = {
-          include = ".argocd-values-ref-placeholder.yaml"
-        }
-      },
-      {
-        repoURL        = local.shared.repo_url
-        path           = "clusters/homelab/apps/compass"
+        path           = "clusters/homelab/apps/homepage"
         targetRevision = local.shared.target_revision
       }
     ]
+    syncPolicy = {
+      syncOptions = ["CreateNamespace=true", "ServerSideApply=true", "PruneLast=true"]
+    }
     info = [
       {
         name  = "ingress"
@@ -42,7 +26,7 @@ inputs = {
       },
       {
         name  = "state"
-        value = "stateless Kubernetes service discovery dashboard"
+        value = "Homepage stateless dashboard with Kubernetes Ingress discovery"
       }
     ]
   }
