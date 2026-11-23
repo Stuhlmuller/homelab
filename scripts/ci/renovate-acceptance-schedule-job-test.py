@@ -21,7 +21,7 @@ class ScheduleJob(unittest.TestCase):
         self.assertIn("readOnlyRootFilesystem: true", job)
         self.assertIn("runAsUser: 12021", job)
         self.assertIn("kubernetes.io/hostname: acer", job)
-        self.assertRegex(job, r"image: docker\.io/library/python:3\.13-bookworm@sha256:[0-9a-f]{64}")
+        self.assertRegex(job, r"image: harbor\.stinkyboi\.com/mirror/docker\.io/library/python:([0-9a-f]{64})@sha256:\1")
         self.assertIn("command: [python3, -I, -B, /usr/local/bin/renovate-acceptance-schedule-assemble.py]", job)
         self.assertIn("REPLACE_WITH_REVIEWED_UTC_HOUR", job)
         self.assertRegex(job, r"mountPath: /schedule\n\s+subPath: private/schedule\n\s+readOnly: true")

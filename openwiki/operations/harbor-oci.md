@@ -1349,6 +1349,15 @@ Pods and the exit of old upstream Pods. A retry waits on the existing rollout
 marker before advancing. Check Job completion and the live Pod inventory after
 sync. Argo tracks the resource separately from its long-running work.
 
+The [explicit Argo cutover runbook](../../docs/harbor-image-mirroring.md#explicit-argo-workload-cutover)
+covers publication, the rendered image check and the generated Pod rollout.
+The [audit ledger](../../docs/harbor-argo-image-audit.md) counts current and
+historical Argo-owned Pods separately. The [render check](../../scripts/ci/harbor-rendered-images-check.py)
+verifies chart packages and checks images in Pod templates, hooks and generator
+settings. Its exceptions identify the exact existing upstream references used
+for bootstrap and recovery, including Harbor's upstream dependencies, the
+Traefik listener and Istio ztunnel.
+
 The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
 and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
 stopped during the second upstream copy used for PostgreSQL tag aliases (17.5,

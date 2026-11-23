@@ -769,11 +769,15 @@ Harbor owns private `homelab` custom images and the public upstream-only
 completed-scan critical-CVE counts per project for Grafana; it is read-only,
 uses the existing file-mounted Harbor administrator credential, and emits no
 artifact, digest, or CVE labels. The [Talos mirror rollout](../../docs/harbor-image-mirroring.md)
-covers Helm/operator-generated workloads and system images; publication must
-precede node cutover or new consumer versions.
+covers Helm/operator-generated workloads and system-image transport. Publish
+and verify images before updating consumers. The Argo render check verifies
+chart packages and workload image references. Its exact exceptions retain the
+upstream images used by the registry bootstrap and recovery paths.
+The [Argo image audit ledger](../../docs/harbor-argo-image-audit.md) records
+current and historical Pod references separately for cutover verification.
 The staged scoped rewrite handles newly created Octelium, monitoring and AI
-Pods. The Octelium Enterprise Application also declares a one-at-a-time Sync
-hook to replace existing controller-owned service-proxy Pods only after its
+Pods. The Octelium Enterprise Application also declares a suspended Job that can replace controller-owned service-proxy Pods
+in sequence after its
 server dry-run confirms admission rewrites the reviewed image. Live hook and
 current-Pod acceptance remain pending.
 New builds use a local signing Job and the cert-manager-owned

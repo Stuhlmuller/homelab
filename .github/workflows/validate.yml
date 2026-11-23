@@ -185,6 +185,22 @@ jobs:
             nix develop --command kubectl kustomize "$overlay" >/dev/null
           done
 
+      - name: Audit rendered Argo workload images
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
+            base_sha="$(jq -er '.pull_request.base.sha | select(test("^[0-9a-f]{40}$"))' "${GITHUB_EVENT_PATH}")"
+            if git diff --quiet --no-renames "$base_sha" HEAD -- clusters IaC \
+              flake.nix flake.lock .github/workflows/validate.yml \
+              scripts/config/harbor-image-charts.json scripts/config/harbor-helm-charts.json \
+              scripts/config/harbor-rendered-upstream.json scripts/ci/harbor-chart-publish.py \
+              'scripts/ci/harbor-rendered-images-check*.py'; then
+              exit 0
+            fi
+          fi
+          nix develop --command python3 scripts/ci/harbor-rendered-images-check-test.py
+          nix develop --command python3 scripts/ci/harbor-rendered-images-check.py
+
       - name: Check whitespace
         run: |
           base_sha="$(jq -er --arg event "${GITHUB_EVENT_NAME}" '

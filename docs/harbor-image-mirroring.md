@@ -121,12 +121,14 @@ Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
 
-Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
-project. Repository and Pod image names retain upstream provenance; their bytes
-come from `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>`.
-This covers Helm defaults, init containers, hooks, injected sidecars,
-operator-created Pods, Kubernetes static Pods, pause, kubelet and etcd without
-adding an admission webhook or rewriting controller-generated resources.
+Talos/containerd can redirect upstream system-image pulls to the Harbor
+`mirror` project. Argo-owned workload references instead name
+`harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>@sha256:<digest>`
+directly. The `homelab` project remains the destination for custom images.
+The scoped admission webhook rewrites reviewed controller-generated Pods in
+`octelium`, `monitoring`, and `ai`, including hardcoded Helm test hooks; unknown
+images are rejected. Argo CD's own control plane and Talos static/system images
+are outside this workload cutover.
 
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
@@ -625,6 +627,30 @@ that same in-cluster registry: bootstrap their upstream images first, then
 enable the private hostname route and any separately reviewed strict mirrors.
 Cached restarts do not prove cold bootstrap. This change has no image-cache
 deletion or workload restart path.
+
+## Explicit Argo workload cutover
+
+The render check verifies the full Argo chart inventory, downloads each
+approved chart package, and checks its reviewed SHA-256 before rendering.
+It checks each release with its declared namespace and Helm values. It also
+renders the Kustomize sources and inspects Pod templates, hooks, and controller
+settings that generate images. [The checked exceptions](../scripts/config/harbor-rendered-upstream.json)
+name the source, release, namespace, workload, image slot and exact reference.
+Remove the exception in the same PR when a workload moves to Harbor.
+
+Harbor's upstream bootstrap and recovery images, the Traefik listener that
+serves Harbor, and Istio ztunnel remain explicitly reviewed. They allow Harbor
+to recover when its registry or the ambient route is unavailable. Harbor Core
+uses its separately published private image and retains the upstream recovery
+reference documented below.
+
+Use the protected catalog workflow to verify source and destination digests,
+platform coverage and an authenticated pull before a consumer rollout. The
+[cutover audit ledger](harbor-argo-image-audit.md) records current and
+historical Pod counts. For generated Octelium Pods, verify the namespace-scoped
+admission service and its CA, then run the separately declared rollout stage
+and confirm that each generated Deployment and ready Pod uses the mirrored
+digest.
 
 ## Initial secret plan scope
 
