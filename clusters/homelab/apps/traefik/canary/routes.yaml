@@ -3,8 +3,8 @@ http:
   routers:
     immich:
       entryPoints: [websecure]
-      # First administrator setup is available through an operator port-forward.
-      rule: Host(`immich.stinkyboi.com`) && !PathRegexp(`(?i)^/+api/+auth/+admin-sign-up(/|$)`)
+      # First administrator setup and pre-admin restore require an operator port-forward.
+      rule: Host(`immich.stinkyboi.com`) && !PathRegexp(`(?i)^/+api/+(auth/+admin-sign-up|admin/+database-backups/+start-restore)(/|$)`)
       middlewares: [reject-ambiguous-paths]
       service: immich
       tls: {}

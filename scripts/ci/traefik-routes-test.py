@@ -112,13 +112,20 @@ class RouteTests(unittest.TestCase):
         self.assertEqual([name for name, route in ROUTERS.items()
                           if "fleet.stinkyboi.com" in route["rule"]], ["fleet"])
 
-    def test_immich_first_admin_is_only_available_to_cluster_operators(self):
+    def test_immich_setup_routes_are_only_available_to_cluster_operators(self):
         router = ROUTERS["immich"]
         self.assertEqual(router["rule"], "Host(`immich.stinkyboi.com`) && "
-                         "!PathRegexp(`(?i)^/+api/+auth/+admin-sign-up(/|$)`)")
+                         "!PathRegexp(`(?i)^/+api/+(auth/+admin-sign-up|"
+                         "admin/+database-backups/+start-restore)(/|$)`)")
         self.assertEqual(router["middlewares"], ["reject-ambiguous-paths"])
         self.assertEqual([name for name, route in ROUTERS.items()
                           if "immich.stinkyboi.com" in route["rule"]], ["immich"])
+        blocked = re.compile(re.search(r"PathRegexp\(`(.*)`\)", router["rule"])[1])
+        for path in ("/api/auth/admin-sign-up", "/API//auth/admin-sign-up/",
+                     "/api/admin/database-backups/start-restore"):
+            self.assertIsNotNone(blocked.search(path))
+        for path in ("/api/auth/login", "/api/server/ping", "/api/assets"):
+            self.assertIsNone(blocked.search(path))
 
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()

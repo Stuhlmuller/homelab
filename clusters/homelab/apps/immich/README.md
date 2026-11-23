@@ -12,7 +12,7 @@ the private network use the normal Immich server.
 
 Use [Immich](https://immich.stinkyboi.com) on the homelab tailnet. The
 same URL works in the mobile app. Traefik's private route excludes
-first-admin registration. A cluster operator creates the first admin
+first-admin registration and the pre-admin restore endpoint. A cluster operator creates the first admin
 from a workstation with the homelab Kubernetes context.
 
 ```sh
