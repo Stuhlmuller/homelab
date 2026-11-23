@@ -957,8 +957,9 @@ credentials stay scoped to the one live step.
 The `validate` runtime checks for image admission, network enforcement, and
 Harbor Core run on `main` pushes. In PRs,
 [`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
-the exact event diff, including removed paths, for each check's inputs. An
-unavailable diff runs the full runtime suite.
+the exact event diff, including removed paths, for each check's inputs. If the
+shallow checkout lacks the event base commit, the script fetches that commit.
+An unavailable diff runs the full runtime suite.
 
 The `validate` repository and runtime jobs share a GitHub Actions Nix store
 cache keyed by runner OS, architecture, and the two flake files. Successful
