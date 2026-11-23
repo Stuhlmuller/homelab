@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: immich
+  name: immich-postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: '-1'
+spec:
+  selector:
+    app.kubernetes.io/name: immich-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: immich
+  name: immich-postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: '-1'
+    checkov.io/skip1: CKV_K8S_40=The directory ownership init container runs as root on the dedicated local PVC.
+    checkov.io/skip2: CKV_K8S_25=Only the ownership init container adds CHOWN and FOWNER.
+spec:
+  serviceName: immich-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: immich-postgres
+    spec:
+      serviceAccountName: immich-postgres
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: own-local-directory
+          image: harbor.stinkyboi.com/mirror/ghcr.io/immich-app/postgres:18-vectorchord1.1.1@sha256:f7388adc1e3414800a71506528917f4f5615249f5fe7a872b1e1431e01b72ad7
+          imagePullPolicy: Always
+          command: [sh, -ec, 'chown 999:999 /data; chmod 0700 /data']
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, FOWNER]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 32Mi}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /data
+      containers:
+        - name: postgres
+          image: harbor.stinkyboi.com/mirror/ghcr.io/immich-app/postgres:18-vectorchord1.1.1@sha256:f7388adc1e3414800a71506528917f4f5615249f5fe7a872b1e1431e01b72ad7
+          imagePullPolicy: Always
+          # Use the upstream PostgreSQL entrypoint and the settings below. The
+          # Immich wrapper writes configuration under /etc on startup.
+          command: [/usr/local/bin/docker-entrypoint.sh]
+          args: [postgres, -c, shared_preload_libraries=vchord.so]
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_DB
+              value: immich
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/immich-secrets/admin-password
+            - name: POSTGRES_INITDB_ARGS
+              value: --data-checksums
+            - name: PGDATA
+              value: /var/lib/postgresql/18/docker
+          ports:
+            - name: postgres
+              containerPort: 5432
+          startupProbe:
+            exec:
+              command: [pg_isready, -h, 127.0.0.1, -U, postgres, -d, immich]
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: [pg_isready, -h, 127.0.0.1, -U, postgres, -d, immich]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: [pg_isready, -h, 127.0.0.1, -U, postgres, -d, immich]
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d/99-immich.sql
+              subPath: 99-immich.sql
+              readOnly: true
+            - name: credentials
+              mountPath: /run/immich-secrets
+              readOnly: true
+            - name: socket
+              mountPath: /var/run/postgresql
+            - name: shared-memory
+              mountPath: /dev/shm
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: immich-postgres-local
+        - name: initdb
+          configMap:
+            name: immich-postgres-init
+        - name: credentials
+          projected:
+            defaultMode: 0440
+            sources:
+              - secret:
+                  name: immich-postgres-admin
+              - secret:
+                  name: immich-postgres-app
+        - name: socket
+          emptyDir: {}
+        - name: shared-memory
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi

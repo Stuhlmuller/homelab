@@ -904,3 +904,19 @@ gh workflow run harbor-mirror.yml --ref main \
 The scope selects the exact digest used by the AFFiNE application and migration
 container. Require the workflow's complete authenticated Harbor pull before
 merging the rollout.
+
+## Argo CD patch publication scope
+
+Use the existing protected mirror to publish and verify the reviewed
+Argo CD v3.4.14 digest independently of the full catalog.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=argocd
+```
+
+This artifact-specific check verifies the exact v3.4.14 manifest and
+completes an authenticated Harbor pull. Keep v3.4.2 available for rollback.
+[Issue #1948](https://github.com/Stuhlmuller/homelab/issues/1948) requires a
+successful `image_scope=all` publication before the reviewed bootstrap
+apply. Confirm the patched components are ready after apply.

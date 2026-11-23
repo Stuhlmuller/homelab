@@ -92,10 +92,11 @@ run because the results apply to an earlier revision. Branch and path filters
 still decide which workflows start. Push, scheduled and manually dispatched
 runs use separate groups where they share a workflow with these PR checks.
 
-Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
-queues runs per PR, and Terragrunt Apply and release publication queue jobs
-behind their existing locks. GitHub allows up to 100 pending entries per
-concurrency group with `queue: max`. Terragrunt Apply Request runs
+Terragrunt and Release runs are exempt from supersession. Terragrunt static
+checks can start for each PR revision while the preceding live plan runs.
+Protected live plans still queue per PR. Terragrunt Apply and release
+publication queue jobs behind their existing locks. GitHub allows up to 100
+pending entries per concurrency group with `queue: max`. Terragrunt Apply Request runs
 independently. GitHub manages scheduling for Code Quality scans.
 
 ## Release publication

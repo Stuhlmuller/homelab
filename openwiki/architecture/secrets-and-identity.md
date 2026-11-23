@@ -1040,3 +1040,12 @@ to a verified, execution-fenced disposable copy, never setup or reconciliation.
 NetworkPolicy declarations alone are not enforced isolation on this cluster.
 See [the source runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/uptime-kuma/README.md) for
 clone startup safeguards and the distinction from production recovery.
+
+
+## Immich database credentials
+
+[Immich](../../clusters/homelab/apps/immich/README.md) uses two generated SSM
+parameters. External Secrets projects separate files for the PostgreSQL
+administrator and the database owner. The web server mounts only the database
+owner credential. The administrator credential is scoped to PostgreSQL
+initialization and the logical backup job.

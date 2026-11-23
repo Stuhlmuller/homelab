@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant || "$1" == mirror-homepage || "$1" == mirror-affine) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant|mirror-homepage|mirror-affine [--tailscale for public mirrors only]' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant || "$1" == mirror-homepage || "$1" == mirror-affine || "$1" == mirror-argocd) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant|mirror-homepage|mirror-affine|mirror-argocd [--tailscale for public mirrors only]' >&2
   exit 2
 }
 tailnet_https=false
@@ -108,6 +108,9 @@ elif [[ "$mode" == mirror-homepage ]]; then
 elif [[ "$mode" == mirror-affine ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-affine-images.json
+elif [[ "$mode" == mirror-argocd ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-argocd-images.json
 elif [[ "$mode" == mirror-image-updater-canary ]]; then
   mode=mirror
   canary_publication=true
@@ -183,6 +186,9 @@ if [[ "$mode" == mirror ]]; then
   fi
   if [[ "$manifest" == scripts/config/harbor-affine-images.json ]]; then
     jq --exit-status '.images == [{"source":"ghcr.io/toeverything/affine@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-argocd-images.json ]]; then
+    jq --exit-status '.images == [{"source":"quay.io/argoproj/argocd:v3.4.14@sha256:487168f017d1d969e0378e665156633e517be6a86bfb139a935fa3d43f627560"}]' "$manifest" >/dev/null
   fi
   if [[ "$manifest" == scripts/config/harbor-homepage-images.json ]]; then
     jq --exit-status '.images == [{"source":"ghcr.io/gethomepage/homepage:v2.8.0@sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"}]' "$manifest" >/dev/null

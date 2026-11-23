@@ -943,6 +943,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .on.pull_request.branches == ["main"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
+    .concurrency == null and
     (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
     .jobs["static-policy"].steps[0].with["fetch-depth"] == 0 and
@@ -954,6 +955,13 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     ($conftest[0].run | contains("bash scripts/ci/nix-checks.sh --policy")) and
     ($conftest[0].run | contains("git show origin/main:scripts/config/nix-cache.json")) and
     .jobs["terragrunt-plan"].needs == ["static-policy"] and
+    .jobs["terragrunt-plan"].concurrency == {
+      "group": "terragrunt-plan-${{ github.event.pull_request.number }}",
+      "cancel-in-progress": false,
+      "queue": "max"
+    } and
+    .jobs["static-policy"].concurrency == null and
+    .jobs["terragrunt-gate"].concurrency == null and
     (.jobs["terragrunt-plan"].if |
       contains("github.event.pull_request.head.repo.full_name == github.repository") and
       contains("needs.static-policy.outputs.requires-live-plan == '\''true'\''")) and
@@ -1179,7 +1187,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 4893ac0dfd22e0bfd114dd252f2bfe9578bcf7831597f5c1ffb89aa946169d40
+.github/workflows/harbor-mirror.yml 62f591bfe5e42405ad60306e1847a3822af8326a533325214f2842e3f94a5dfe
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
@@ -1200,7 +1208,7 @@ done <<'EOF'
 .github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml 2e77323aaf87b025378659ce023119e29671c0cefb7ff8ba824a0d78f4945d7e
+.github/workflows/terragrunt-plan.yml fd14da374b313d09e6cd4789c96d0f1a7c7370c70d412a2e9ef829cf7ca8c76f
 .github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
 EOF
 echo "::endgroup::"

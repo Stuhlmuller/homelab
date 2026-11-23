@@ -631,6 +631,7 @@ def robot_matches(robot, desired):
 
 def reconcile(client, robot_passwords, replication_policy=None):
     # Finish the relevant read-only identity and schema checks before writing.
+    print("Harbor bootstrap is checking project and robot policies.", flush=True)
     config, _ = client.request("GET", "/configurations")
     current = config_values(config)
     projects = {}
@@ -689,10 +690,12 @@ def reconcile(client, robot_passwords, replication_policy=None):
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
+    print("Harbor bootstrap is reconciling tag locks, replication, and proxy caches.", flush=True)
     reconcile_mirror_tag_locks(client, projects["mirror"]["project_id"])
     if replication_policy is not None:
         reconcile_replication(client, replication_policy)
     reconcile_proxy_caches(client)
+    print("Harbor bootstrap is checking image scan and SBOM backfill.", flush=True)
     backfill_scans(client)
     print("Harbor homelab is private, mirror is public; project-scoped robots reconciled.")
 
@@ -731,6 +734,7 @@ def main():
                 if str(error) != "Harbor API connection failed" or attempt == 11:
                     raise
             time.sleep(5)
+        print("Harbor bootstrap verified API readiness.", flush=True)
         reconcile(client, passwords, read_replication_policy())
     except BootstrapError as error:
         print(f"Harbor bootstrap failed: {error}", file=sys.stderr)

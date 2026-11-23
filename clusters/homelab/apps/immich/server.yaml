@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: immich
+  name: immich
+spec:
+  selector:
+    app.kubernetes.io/name: immich
+  ports:
+    - name: http
+      port: 2283
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: immich
+  name: immich
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: immich
+    spec:
+      serviceAccountName: immich
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: server
+          image: harbor.stinkyboi.com/mirror/ghcr.io/immich-app/immich-server:v3.4.2@sha256:fc880c1bf665b4aab1e74c15e56ab871225989cd546536e6b77e771869af06bd
+          imagePullPolicy: Always
+          env:
+            - name: IMMICH_CONFIG_FILE
+              value: /etc/immich/immich.json
+            - name: DB_HOSTNAME
+              value: immich-postgres
+            - name: DB_USERNAME
+              value: immich
+            - name: DB_DATABASE_NAME
+              value: immich
+            - name: DB_PASSWORD_FILE
+              value: /run/immich-secrets/app-password
+            - name: REDIS_HOSTNAME
+              value: immich-valkey
+            - name: HOME
+              value: /tmp
+          ports:
+            - name: http
+              containerPort: 2283
+          startupProbe:
+            httpGet: {path: /api/server/ping, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /api/server/ping, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /api/server/ping, port: http}
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            requests: {cpu: 250m, memory: 768Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: library
+              mountPath: /data
+            - name: config
+              mountPath: /etc/immich
+              readOnly: true
+            - name: credentials
+              mountPath: /run/immich-secrets
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: library
+          persistentVolumeClaim:
+            claimName: immich-library
+        - name: config
+          configMap:
+            name: immich-config
+        - name: credentials
+          secret:
+            secretName: immich-postgres-app
+        - name: tmp
+          emptyDir:
+            sizeLimit: 512Mi

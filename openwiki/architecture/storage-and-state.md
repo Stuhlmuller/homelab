@@ -942,3 +942,11 @@ PostgreSQL and Redis serve inbound clients without initiating egress.
 retained local claim on `zimaboard-0` for configuration, credentials, and the
 SQLite recorder. The documented backup and recovery path uses Home Assistant
 archives downloaded and stored off the node.
+
+## Immich
+
+[Immich](../../clusters/homelab/apps/immich/README.md) stores media on the retained
+QNAP claim and keeps PostgreSQL on a separate retained local volume on `acer`.
+Nightly logical dumps on the QNAP claim protect against database node loss.
+Recovery after NAS loss requires a separately stored database dump and matching
+media copy. Valkey is ephemeral and interrupted queue work may need requeuing.
