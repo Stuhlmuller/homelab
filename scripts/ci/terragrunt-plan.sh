@@ -15,10 +15,6 @@ export TG_USE_PARTIAL_PARSE_CONFIG_CACHE=true
 export TG_PROVIDER_CACHE_DIR="${TG_PROVIDER_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/terragrunt/providers}"
 mkdir -p "$TG_PROVIDER_CACHE_DIR"
 
-plan_unit_selected() {
-  grep -Fxq "$1" <<<"$selected_plan_units"
-}
-
 azuread_credentials_available() {
   [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_TENANT_ID:-}" ]] || return 1
   case "${ARM_USE_OIDC:-false}" in
@@ -98,13 +94,22 @@ plan_deleted_terragrunt_units() {
   local snapshot_dir
   local unit_dir
   local snapshot_unit_dir
-  local state_list_file
+  local source_dir state_list_file
 
   if ((${#unit_dirs[@]} == 0)); then
     return 0
   fi
 
   for unit_dir in "${unit_dirs[@]}"; do
+    source_dir="$(terragrunt_deleted_unit_source "$unit_dir")"
+    if ! terragrunt_unit_affected "$source_dir" "$affected_units"; then
+      echo "Terragrunt did not discover deleted unit ${source_dir}; refusing retirement plan." >&2
+      return 1
+    fi
+    if [[ "$unit_dir" == IaC/live/azuread-applications/* ]] && ! azuread_credentials_available; then
+      echo "AzureAD credentials are required for deleted AzureAD units." >&2
+      return 1
+    fi
     snapshot_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-plan.XXXXXX")"
     cleanup_dirs+=("$snapshot_dir")
     terragrunt_create_deleted_unit_destroy_stack "$snapshot_dir" "$unit_dir"
@@ -144,19 +149,18 @@ plan_deleted_terragrunt_units() {
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 clear_plan_artifacts IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage
-selected_plan_units="$(python3 -I "$script_dir/terragrunt-plan-units.py" \
-  --base "$TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF" --head "$TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF")"
+affected_units="$(terragrunt_affected_units)"
 argocd_plan_filters=()
 azuread_plan_filters=()
 while IFS= read -r unit; do
+  [[ -f "$unit/terragrunt.hcl" ]] || continue
   case "$unit" in
-    */apps/*/argocd) argocd_plan_filters+=(--filter "./${unit#IaC/homelab/us-west-2/apps/}") ;;
-    */apps/*/azuread|*/apps/fleet/pilot-user) azuread_plan_filters+=(--filter "./${unit#IaC/homelab/us-west-2/apps/}") ;;
+    IaC/homelab/us-west-2/apps/*/argocd) argocd_plan_filters+=(--filter "./${unit#IaC/homelab/us-west-2/apps/}") ;;
+    IaC/homelab/us-west-2/apps/*/azuread|IaC/homelab/us-west-2/apps/fleet/pilot-user) azuread_plan_filters+=(--filter "./${unit#IaC/homelab/us-west-2/apps/}") ;;
   esac
-done <<<"$selected_plan_units"
-printf 'Selected PR plan units:\n%s\n' "${selected_plan_units:-none}"
+done <<<"$affected_units"
 
-if plan_unit_selected IaC/homelab/us-west-2/bootstrap/argocd; then
+if terragrunt_active_unit_affected IaC/homelab/us-west-2/bootstrap/argocd "$affected_units"; then
   echo "::group::Argo CD bootstrap plan"
   (
     cd IaC/homelab/us-west-2/bootstrap/argocd
@@ -166,7 +170,7 @@ if plan_unit_selected IaC/homelab/us-west-2/bootstrap/argocd; then
   render_plan_json_if_present "IaC/homelab/us-west-2/bootstrap/argocd"
 fi
 
-if plan_unit_selected IaC/homelab/us-west-2/operator/application-backup-storage; then
+if terragrunt_active_unit_affected IaC/homelab/us-west-2/operator/application-backup-storage "$affected_units"; then
   echo "::group::OpenClaw legacy offsite bucket plan"
   (
     cd IaC/homelab/us-west-2/operator/application-backup-storage
@@ -192,7 +196,7 @@ echo "::endgroup::"
 
 while IFS= read -r unit_file; do
   unit_dir="$(dirname "$unit_file")"
-  if plan_unit_selected "$unit_dir"; then
+  if terragrunt_active_unit_affected "$unit_dir" "$affected_units"; then
     render_plan_json_if_present "$unit_dir" >/dev/null
   fi
 done < <(find IaC/homelab/us-west-2/apps -mindepth 3 -maxdepth 3 -name terragrunt.hcl -path '*/argocd/terragrunt.hcl' -print | sort)
@@ -225,13 +229,13 @@ if azuread_credentials_available; then
 
   while IFS= read -r unit_file; do
     unit_dir="$(dirname "$unit_file")"
-    if plan_unit_selected "$unit_dir"; then
+    if terragrunt_active_unit_affected "$unit_dir" "$affected_units"; then
       render_plan_json_if_present "$unit_dir" >/dev/null
     fi
   done < <(find IaC/homelab/us-west-2/apps -mindepth 3 -maxdepth 3 -name terragrunt.hcl \( -path '*/azuread/terragrunt.hcl' -o -path '*/pilot-user/terragrunt.hcl' \) -print | sort)
 else
-  if ((${#azuread_plan_filters[@]} > 0)) || terragrunt_azuread_stack_changed || terragrunt_azuread_plan_inputs_changed; then
-    echo "AzureAD credentials are required because the AzureAD stack or its plan inputs changed, or the diff could not be determined." >&2
+  if ((${#azuread_plan_filters[@]} > 0)); then
+    echo "AzureAD credentials are required for affected AzureAD units." >&2
     exit 1
   fi
   echo "::warning::Skipping AzureAD application registration plan because client/tenant IDs and a complete GitHub OIDC session (or explicit client-secret authentication) are not configured for this plan run."

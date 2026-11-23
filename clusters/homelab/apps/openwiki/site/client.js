@@ -1,4 +1,4 @@
-import { colorsForTypes, escapeHtml, hexA, matchesFilter, nodeRadius, normalize, shouldShowNodeLabel, signature, stripFrontmatter, } from "./client-lib.js";
+import { colorsForTypes, escapeHtml, hexA, findHeading, matchesFilter, nodeRadius, readerLink, shouldShowNodeLabel, signature, stripFrontmatter, } from "./client-lib.js";
 // --- Module state -----------------------------------------------------------
 /**
  * The full wiki graph as last fetched from /api/graph.
@@ -329,16 +329,16 @@ function hoverHighlight(node) {
  * Intentionally does NOT move the camera: clicking a node to read it should
  * never yank the graph out from under you. Pan/zoom stay where you left them.
  */
-function selectNode(id) {
+function selectNode(id, fragment = "") {
     current = id;
     hoverId = null;
     neighborsOf(nodeById.get(id));
-    renderReader(id);
+    renderReader(id, fragment);
 }
 /**
  * Render the reader panel for a page. DOM-only: never moves the camera.
  */
-function renderReader(id) {
+function renderReader(id, fragment = "") {
     const n = byId(id);
     if (!n)
         return;
@@ -375,6 +375,13 @@ function renderReader(id) {
     rewriteLinks(n);
     renderMermaid();
     $("#detail").scrollTop = 0;
+    if (fragment) {
+        const body = $("#detail .md");
+        const explicitAnchor = Array.from(body.querySelectorAll("a[id], a[name]"))
+            .find((anchor) => anchor.id === fragment || anchor.getAttribute("name") === fragment);
+        const target = explicitAnchor ?? findHeading(body.querySelectorAll("h1, h2, h3, h4, h5, h6"), fragment);
+        target?.scrollIntoView();
+    }
     $("#detail")
         .querySelectorAll(".chip")
         .forEach((c) => c.addEventListener("click", () => {
@@ -385,25 +392,19 @@ function renderReader(id) {
     refreshSidebarActive();
 }
 /**
- * Turn in-page markdown links that resolve to a node into in-app navigation.
+ * Open exported wiki pages in the reader and link other repository files to GitHub.
  */
 function rewriteLinks(node) {
-    const dir = node.id.includes("/")
-        ? node.id.slice(0, node.id.lastIndexOf("/"))
-        : "";
-    $("#detail")
-        .querySelectorAll(".md a")
-        .forEach((a) => {
-        const href = a.getAttribute("href") ?? "";
-        if (!href.endsWith(".md") && !href.includes(".md#"))
+    $("#detail").querySelectorAll(".md a").forEach((anchor) => {
+        const target = readerLink(node.id, anchor.getAttribute("href") ?? "");
+        if (!target)
             return;
-        const clean = href.split("#")[0];
-        const target = normalize(dir, clean).replace(/\.md$/, "");
-        if (byId(target)) {
-            a.classList.add("wikilink");
-            a.addEventListener("click", (e) => {
-                e.preventDefault();
-                selectNode(target);
+        anchor.href = target.url;
+        if (target.id && byId(target.id)) {
+            anchor.classList.add("wikilink");
+            anchor.addEventListener("click", (event) => {
+                event.preventDefault();
+                selectNode(target.id, target.fragment);
             });
         }
     });

@@ -313,6 +313,9 @@
       "source": "docker.io/palantirtechnologies/policy-bot:1.41.2@sha256:a35545fe6ac75e2429352e6f8d4baa92ce16d4e524b10a3711031c2ff79841a5"
     },
     {
+      "source": "docker.io/palantirtechnologies/policy-bot:1.42.1@sha256:1d9a1be9ffc3b7c807dc694f2de9bd057b662d5f07787c5b22e0c5624184fc63"
+    },
+    {
       "source": "docker.io/pgvector/pgvector:0.8.1-pg16-bookworm@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337"
     },
     {
@@ -611,6 +614,9 @@
     },
     {
       "source": "quay.io/argoproj/argocd:v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
+    },
+    {
+      "source": "quay.io/argoproj/argocd:v3.4.14@sha256:487168f017d1d969e0378e665156633e517be6a86bfb139a935fa3d43f627560"
     },
     {
       "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"

@@ -219,8 +219,9 @@ control-plane node and its system disk. GitOps explicitly declares the retained
 creates the backup target independently of the active StatefulSet.
 
 Before placing or expanding retained local state, check per-node `/var` free
-bytes, inodes and depletion rate in the
+bytes, inodes, depletion rate and recent node I/O pressure in the
 [EPHEMERAL monitoring runbook](../../docs/talos-ephemeral-monitoring.md).
+Device latency, error and wear telemetry remains a separate acceptance item.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to

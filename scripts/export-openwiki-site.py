@@ -34,6 +34,12 @@ def main():
             cwd=staging,
             check=True,
         )
+        subprocess.run(
+            ["git", "apply", "--no-index", "--unidiff-zero", "-p0",
+             str(ROOT / "scripts/openwiki-viewer-navigation.patch")],
+            cwd=output,
+            check=True,
+        )
         graph = json.loads((output / "graph.json").read_bytes())
         assert any(node["id"] == "quickstart" for node in graph["nodes"]), "Missing wiki quickstart"
         # Build timestamps would change the generated ConfigMap on identical inputs.
