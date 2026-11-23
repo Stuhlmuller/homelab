@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+
+resources:
+  - authorizationpolicy.yaml
+  - deployment.yaml
+  - ingress-discovery.yaml
+  - networkpolicy.yaml
+  - rbac.yaml
+  - service.yaml
+  - virtualservice.yaml
+
+configMapGenerator:
+  - name: homepage-config
+    files:
+      - settings.yaml=config/settings.yaml
+      - kubernetes.yaml=config/kubernetes.yaml
+    literals:
+      - bookmarks.yaml=[]
+      - services.yaml=[]
+      - widgets.yaml=[]
+      - docker.yaml={}
+      - custom.css=
+      - custom.js=
