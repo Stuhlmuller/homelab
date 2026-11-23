@@ -2338,20 +2338,26 @@ printf '%s\n' {SHA}
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
-    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+    def tailnet_mocks(self, status="401", failure=None, readiness_failures=None, **kwargs):
         self.transport_mocks(mirror=True, failure=failure, **kwargs)
         self.env.pop("OCTELIUM_AUTH_TOKEN", None)
         self.env.pop("KUBE_API_SERVER_URL", None)
         self.calls.touch(exist_ok=True)
         self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
         self.executable("curl", f"""exec python3 - "$@" <<'PYMOCK'
-import json,sys
+import json, sys
 from pathlib import Path
-args=sys.argv[1:]
+args = sys.argv[1:]
 assert "--insecure" not in args and "--resolve" not in args
 assert args[-1] == "https://harbor.stinkyboi.com/v2/"
-with Path({str(self.calls)!r}).open("a") as f:
+calls = Path({str(self.calls)!r})
+attempt = 1 + sum(json.loads(line)["command"] == "curl" for line in calls.read_text().splitlines())
+with calls.open("a") as f:
     f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+failure = {readiness_failures or {}!r}.get(attempt)
+if failure:
+    print("private tailnet readiness fixture", file=sys.stderr)
+    raise SystemExit(failure)
 print({status!r},end="")
 PYMOCK
 """)
@@ -2379,12 +2385,32 @@ PYMOCK
                 self.assertEqual(self.calls_for("aws"), [])
                 self.assertEqual(self.calls_for("kubectl"), [])
 
-    def test_tailnet_authenticated_retry_rechecks_https_without_forward(self):
-        self.tailnet_mocks(failure="mirror-pull-once")
+    def test_tailnet_authenticated_retry_recovers_after_connection_failure(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7})
         result = self.run_helper("mirror", tailnet=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertGreaterEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual(len(self.calls_for("curl")), 3)
         self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertEqual(self.calls_for("sudo"), [])
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr)
+
+    def test_tailnet_connection_readiness_retries_are_bounded(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7, 3: 7, 4: 7})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 7)
+        self.assertEqual(len(self.calls_for("curl")), 4)
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-failed\n", self.public_status)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr + self.public_status)
+
+    def test_tailnet_tls_error_stops_without_retrying(self):
+        self.tailnet_mocks(readiness_failures={1: 60})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 60)
+        self.assertEqual(len(self.calls_for("curl")), 1)
+        self.assertEqual(self.calls_for("aws"), [])
 
     def test_tailnet_mode_rejects_another_workflow(self):
         self.tailnet_mocks()
