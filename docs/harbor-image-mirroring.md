@@ -890,3 +890,16 @@ gh workflow run harbor-mirror.yml --ref main \
 
 The scope selects the exact Homepage v2.8.0 image from the full catalog.
 Require the workflow's complete authenticated pull before merging the cutover.
+
+## AFFiNE publication scope
+
+Publish the reviewed AFFiNE 0.27.4 image using the current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=affine
+```
+
+The scope selects the exact digest used by the AFFiNE application and migration
+container. Require the workflow's complete authenticated Harbor pull before
+merging the rollout.
