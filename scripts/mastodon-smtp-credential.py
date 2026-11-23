@@ -26,7 +26,6 @@ def command(args):
 def validate_context(validated_sha=None):
     if (os.environ.get('GITHUB_ACTIONS') != 'true'
             or os.environ.get('GITHUB_REPOSITORY') != 'Stuhlmuller/homelab'
-            or os.environ.get('GITHUB_REF') != 'refs/heads/main'
             or os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch'):
         raise RuntimeError('Protected workflow required')
     sha = os.environ.get('GITHUB_SHA', '') if validated_sha is None else validated_sha

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 workflow=.github/workflows/mastodon-public-dns.yml
-[[ "$GITHUB_REPOSITORY" == Stuhlmuller/homelab && "$GITHUB_REF" == refs/heads/main ]]
+[[ "$GITHUB_REPOSITORY" == Stuhlmuller/homelab ]]
 [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
 [[ "$GITHUB_SHA" == "$EXPECTED_SHA" && "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
 

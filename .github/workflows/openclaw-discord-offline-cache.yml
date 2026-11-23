@@ -2,7 +2,6 @@ name: OpenClaw Discord Offline Cache
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, edited]
     paths:
       - .github/workflows/openclaw-discord-offline-cache.yml

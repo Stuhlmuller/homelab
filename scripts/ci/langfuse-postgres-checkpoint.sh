@@ -22,7 +22,6 @@ if [[ "${1:-}" == --local-upload ]]; then
 else
   [[ $# == 0 && "${GITHUB_ACTIONS:-}" == true &&
      "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab &&
-     "${GITHUB_REF:-}" == refs/heads/main &&
      "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
      "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
      "${EXPECTED_PVC_UID:-}" =~ ^[0-9a-f-]{36}$ &&

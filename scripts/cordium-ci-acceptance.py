@@ -14,19 +14,17 @@ import time
 
 MODES = ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "deny-workflow")
 REPOSITORY = "Stuhlmuller/homelab"
-DENIED_REF = "refs/heads/codex/cordium-oidc-denial"
 
 
 def verify_context(mode, environment):
-    ref = DENIED_REF if mode == "deny-ref" else "refs/heads/main"
+    ref = environment.get("GITHUB_REF")
     workflow = "cordium-login-denial.yml" if mode == "deny-workflow" else "cordium-check.yml"
     expected = {
         "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": REPOSITORY,
         "GITHUB_REPOSITORY_OWNER_ID": "252389862", "GITHUB_EVENT_NAME": "workflow_dispatch",
-        "GITHUB_REF": ref,
         "GITHUB_WORKFLOW_REF": f"{REPOSITORY}/.github/workflows/{workflow}@{ref}",
     }
-    if (mode not in MODES or any(environment.get(key) != value for key, value in expected.items())
+    if (mode not in MODES or not ref or any(environment.get(key) != value for key, value in expected.items())
             or not re.fullmatch(r"[0-9a-f]{40}", environment.get("GITHUB_SHA", ""))
             or environment.get("OCTELIUM_INSECURE_TLS") == "true"
             or environment.get("OCTELIUM_AUTH_PROXY_SOCKET")):

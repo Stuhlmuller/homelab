@@ -52,7 +52,6 @@ def kubectl_json(*args):
 def exact_main(expected, environ):
     require(bool(SHA.fullmatch(expected)) and environ.get("GITHUB_ACTIONS") == "true" and
             environ.get("GITHUB_REPOSITORY") == "Stuhlmuller/homelab" and
-            environ.get("GITHUB_REF") == "refs/heads/main" and
             environ.get("GITHUB_SHA") == expected,
             "operator requires the exact protected main dispatch")
     require(command(["git", "rev-parse", "HEAD"]).strip() == expected,

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 [[ $# -eq 0 && "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
-[[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && "${GITHUB_REF:-}" == refs/heads/main ]]
+[[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${EXPECTED_SHA:-}" == "$GITHUB_SHA" ]]
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
 : "${OCTELIUM_AUTH_TOKEN:?The protected CI cluster credential is required}"

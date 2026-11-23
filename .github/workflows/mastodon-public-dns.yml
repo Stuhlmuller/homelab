@@ -38,12 +38,10 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
@@ -67,7 +65,7 @@ jobs:
   credential:
     name: Publish Reviewed Tunnel DNS
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     environment:
@@ -84,11 +82,9 @@ jobs:
 
       - name: Verify Current Main Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           VALIDATED_SHA: ${{ needs.static-policy.outputs.validated_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           [[ "${VALIDATED_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "${VALIDATED_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"

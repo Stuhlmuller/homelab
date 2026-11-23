@@ -17,9 +17,9 @@ concurrency:
 
 jobs:
   deny:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    environment: homelab-cordium-ci
     permissions:
       contents: read
       id-token: write
@@ -27,12 +27,9 @@ jobs:
       - name: Verify Dispatch Commit
         timeout-minutes: 1
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-        run: |
-          test "${ACTUAL_REF}" = "refs/heads/main"
-          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
         timeout-minutes: 2

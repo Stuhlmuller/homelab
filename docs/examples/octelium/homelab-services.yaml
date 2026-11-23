@@ -1028,7 +1028,7 @@ spec:
   authentication:
     identities:
       - identityProvider: homelab-cordium-ci-oidc
-        identifier: repo:Stuhlmuller/homelab:ref:refs/heads/main
+        identifier: repo:Stuhlmuller/homelab:environment:homelab-cordium-ci
   authorization:
     policies:
       - homelab-cordium-ci-execution

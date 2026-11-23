@@ -2,7 +2,6 @@
 name: OpenClaw native config
 on:
   push:
-    branches: [main]
     paths:
       - clusters/homelab/apps/openclaw/values.yaml
       - scripts/ci/openclaw-config-check.py

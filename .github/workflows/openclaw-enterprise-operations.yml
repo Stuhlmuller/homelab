@@ -47,7 +47,6 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           LEGACY_STAGE: ${{ inputs.legacy_stage }}
@@ -57,7 +56,6 @@ jobs:
           CACHE_REF: ${{ inputs.cache_ref }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
             inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
@@ -114,7 +112,7 @@ jobs:
   legacy:
     name: Protected Legacy Retention
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'
+    if: github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
@@ -130,14 +128,12 @@ jobs:
     steps:
       - name: Verify Current Main Commit Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -251,7 +247,7 @@ jobs:
   enterprise:
     name: Protected Enterprise Stage
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'
+    if: github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
@@ -265,14 +261,12 @@ jobs:
     steps:
       - name: Verify Current Main Commit Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -290,14 +284,12 @@ jobs:
 
       - name: Recheck Current Main Commit Before Enterprise Stage
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -314,9 +306,9 @@ jobs:
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
           if ! {
-            sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
-            sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
-            sha256sum --check --status <<<'61a3dd43e7a14a452daa1e4e9f65c68fd6af6d80304fbf80f245f65a0cd90370  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+            sha256sum --check --status <<<'83da6b67e62edd35f755da82ede14e162e15710d5a7f08654a60650ca883517e  scripts/ci/openclaw-enterprise-stage.sh' &&
+            sha256sum --check --status <<<'5375517eb4461325f54736752b8e09cc3734fcf0156adbd56bb431804e0e14b2  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+            sha256sum --check --status <<<'93391ac322fc7cbf63e066a18473dfcfabbf511ceabe5362ad95122cd4d04a17  scripts/ci/openclaw-enterprise-full-sync.sh' &&
             timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
           } >"$private_log" 2>&1; then
             echo '::error::Enterprise stage blocked; private diagnostics withheld.'
@@ -327,7 +319,7 @@ jobs:
   binding:
     name: Protected Enterprise Installation Binding
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'
+    if: github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     concurrency:
@@ -341,14 +333,12 @@ jobs:
     steps:
       - name: Verify Current Main Commit Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -365,14 +355,12 @@ jobs:
 
       - name: Recheck Current Main Commit Before Binding
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 

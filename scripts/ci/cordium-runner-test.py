@@ -436,6 +436,7 @@ class Canary(unittest.TestCase):
         workflow = runner.ROOT / ".github/workflows/cordium-runner-canary.yml"
         job = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(workflow)]))["jobs"]["canary"]
         self.assertEqual(job["runs-on"], ["self-hosted", "Linux", "X64", "cordium-canary"])
+        self.assertEqual(job["environment"], "homelab-cordium-ci")
         guard = job["steps"][0]["run"]
         failure = job["steps"][-1]["run"]
         with tempfile.TemporaryDirectory() as directory:
@@ -443,13 +444,13 @@ class Canary(unittest.TestCase):
             uname.write_text('#!/bin/sh\ncase "$1" in -s) echo Linux;; -m) echo x86_64;; esac\n')
             uname.chmod(0o700)
             environment = {**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
-                           "ACTUAL_REF": "refs/heads/main", "ACTUAL_SHA": SHA, "EXPECTED_SHA": SHA,
+                           "ACTUAL_SHA": SHA, "EXPECTED_SHA": SHA,
                            "RUNNER_ENVIRONMENT": "self-hosted", "RUNNER_NAME": "cordium-abc", "CHECK_MODE": "checks"}
             def execute(script, changes=None):
                 return subprocess.run(["bash", "-c", script], env={**environment, **(changes or {})},
                                       capture_output=True, text=True).returncode
             self.assertEqual(execute(guard), 0)
-            for changes in ({"ACTUAL_REF": "refs/heads/unreviewed"}, {"EXPECTED_SHA": "b" * 40},
+            for changes in ({"EXPECTED_SHA": "b" * 40},
                             {"RUNNER_ENVIRONMENT": "github-hosted"}, {"RUNNER_NAME": "unowned"},
                             {"CHECK_MODE": "arbitrary"}):
                 with self.subTest(changes=changes):

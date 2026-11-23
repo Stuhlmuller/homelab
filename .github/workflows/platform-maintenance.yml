@@ -48,12 +48,10 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           RUN_STAGE: ${{ inputs.stage }}
         run: |
-          test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           if [ "$RUN_STAGE" = ownership-approve ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
@@ -84,7 +82,7 @@ jobs:
   maintenance:
     name: Protected Platform Stage
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     concurrency:
@@ -98,7 +96,6 @@ jobs:
     steps:
       - name: Verify Current Main Commit Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           RUN_STAGE: ${{ inputs.stage }}
@@ -106,7 +103,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           if [ "$RUN_STAGE" = ownership-approve ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
@@ -128,14 +124,12 @@ jobs:
 
       - name: Recheck Current Main Commit Before AWS Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -171,7 +165,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'3f079f91f47a9007e0f8afb7fc312952c8074c7a0c0055214b5e4ab4e6adf731  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

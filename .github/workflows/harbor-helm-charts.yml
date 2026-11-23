@@ -31,7 +31,6 @@ jobs:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
           bash -n scripts/ci/harbor-chart-publish.sh
           nix develop --command python3 -I scripts/ci/harbor-chart-publish.py --check
@@ -39,7 +38,7 @@ jobs:
 
   publish:
     needs: validate
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:

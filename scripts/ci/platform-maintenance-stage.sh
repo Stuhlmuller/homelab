@@ -9,7 +9,7 @@ case "$stage" in
   inspect|cilium-route-preflight|cilium-evacuate-worker|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
-[[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
+[[ "${GITHUB_ACTIONS:-}" == true &&
    "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
    "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 [[ "$GITHUB_SHA" == "$(gh api repos/Stuhlmuller/homelab/branches/main --jq .commit.sha)" ]] || exit 1

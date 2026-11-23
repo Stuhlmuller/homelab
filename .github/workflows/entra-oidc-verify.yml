@@ -18,9 +18,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  authorize:
+    if: github.repository == 'Stuhlmuller/homelab'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment:
+      name: homelab-production
+    steps:
+      - name: Authorize the OIDC verification
+        run: echo 'Environment deployment policy allowed the dispatch.'
+
   verify:
+    needs: authorize
     name: Verify ${{ matrix.identity }} identity
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -39,13 +49,11 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           current_main_sha="$(gh api --hostname github.com repos/Stuhlmuller/homelab/commits/main --jq 'select(.commit.verification.verified == true) | .sha')"
           test "${ACTUAL_SHA}" = "${current_main_sha}"

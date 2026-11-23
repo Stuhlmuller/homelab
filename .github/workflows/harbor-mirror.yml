@@ -28,12 +28,10 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
@@ -67,7 +65,7 @@ jobs:
   mirror:
     name: Copy Reviewed Public Images
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
@@ -99,14 +97,12 @@ jobs:
 
       - name: Verify Current Main Commit Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
           case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|immich|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage|affine|argocd) ;; *) exit 2 ;; esac
-          test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
@@ -247,7 +243,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'aaa51141e513e048776c4501c82bcaf9dcd78065432f1ac8a53e05c4ce8957cd  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'9e131ec8fee1ac7fc6038737852f90b3f97ed2293f810529824cbec24b8f01bb  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

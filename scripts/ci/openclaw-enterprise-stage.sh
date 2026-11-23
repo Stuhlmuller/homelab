@@ -9,7 +9,6 @@ case "$stage" in
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
    "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
-   "${GITHUB_REF:-}" == refs/heads/main &&
    "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]] || exit 2
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || exit 2
 jq -e '

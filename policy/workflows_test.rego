@@ -50,18 +50,18 @@ openclaw_startup_fixture := {
 	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
 	"jobs": {
 		"static-policy": {"runs-on": "ubuntu-24.04", "permissions": {"contents": "read"}, "steps": [
-			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "${ACTUAL_REF}" = refs/heads/main; test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`},
+			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`},
 			{"name": "Check Out Repository"},
 			{"name": "Install Nix"},
 			{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
 		]},
 		"startup": {
 			"needs": ["static-policy"],
-			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"if": "github.repository == 'Stuhlmuller/homelab'",
 			"environment": {"name": "homelab-production"},
 			"permissions": {"contents": "read"},
 			"steps": [
-				{"name": "Verify Current Main Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
+				{"name": "Verify Current Main Before Credentials", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
 				{"name": "Check Out Repository"},
 				{"name": "Install Nix"},
 				{"name": "Create Or Attest Fixed Startup Secret", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_startup_private_run},
@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c",
+		"3f079f91f47a9007e0f8afb7fc312952c8074c7a0c0055214b5e4ab4e6adf731",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -199,7 +199,7 @@ platform_maintenance_fixture := {
 	}}},
 	"jobs": {
 		"static-policy": {"name": "Validate Platform Stage Source", "permissions": {"contents": "read"}, "runs-on": "ubuntu-24.04", "steps": [
-			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}, "run": platform_maintenance_dispatch_check},
+			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}, "run": platform_maintenance_dispatch_check},
 			platform_maintenance_static_checkout,
 			platform_maintenance_install_nix,
 			{"name": "Run Static Checks", "run": platform_maintenance_static_checks},
@@ -212,7 +212,7 @@ platform_maintenance_fixture := {
 			"environment": {"name": "homelab-production"},
 			"concurrency": {"group": "platform-maintenance-production", "cancel-in-progress": false},
 			"permissions": {"contents": "read", "id-token": "write"},
-			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"if": "github.repository == 'Stuhlmuller/homelab'",
 			"steps": [
 				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_owner_main_check_env, "run": platform_maintenance_owner_main_check},
 				platform_maintenance_private_checkout,
@@ -225,8 +225,8 @@ platform_maintenance_fixture := {
 	},
 }
 
-platform_maintenance_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
-platform_maintenance_owner_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+platform_maintenance_main_check_env := {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+platform_maintenance_owner_main_check_env := {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(
@@ -440,7 +440,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	}}},
 	"jobs": {
 	"static-policy": {"permissions": {"contents": "read"}, "steps": [
-		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}, "run": openclaw_dispatch_guard},
+		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}, "run": openclaw_dispatch_guard},
 		{"name": "Check Out Repository"},
 		{"name": "Install Nix"},
 		{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
@@ -452,7 +452,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
 		"timeout-minutes": 360,
 		"permissions": permissions,
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
 		"steps": [
 			{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
@@ -470,22 +470,22 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"runs-on": "ubuntu-24.04",
 		"timeout-minutes": 150,
 		"needs": ["static-policy"],
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'",
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
 		"environment": {"name": "homelab-production"},
 		"permissions": {"contents": "read"},
 		"steps": [
-			{"name": "Verify Current Main Commit Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
+			{"name": "Verify Current Main Commit Before Credentials", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
 			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
-			{"name": "Recheck Current Main Commit Before Enterprise Stage", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
+			{"name": "Recheck Current Main Commit Before Enterprise Stage", "env": {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
 			{"name": "Run Fixed Enterprise Stage", "env": {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_enterprise_stage_run},
 		],
 	},
 	"binding": {
 		"runs-on": "ubuntu-24.04",
 		"needs": ["static-policy"],
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'",
 		"timeout-minutes": 30,
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
 		"environment": {"name": "homelab-production"},
@@ -570,10 +570,10 @@ test_allows_exact_native_receipt_provenance_workflow if {
 }
 
 test_rejects_native_receipt_provenance_with_canceling_concurrency if {
-	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": true}})
+	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance-${{ github.ref }}", "cancel-in-progress": true}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_native_receipt_provenance_with_write_permission if {
@@ -583,7 +583,7 @@ test_rejects_native_receipt_provenance_with_write_permission if {
 	})}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_native_receipt_provenance_with_changed_verifier_step if {
@@ -595,7 +595,7 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_native_receipt_provenance_with_changed_verification_base if {
@@ -609,27 +609,27 @@ test_rejects_native_receipt_provenance_with_changed_verification_base if {
 	violations := deny with input as workflow
 
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
-test_rejects_native_receipt_provenance_without_merged_event_identity_or_premerge_base if {
+test_rejects_native_receipt_provenance_without_bound_run_metadata if {
 	base := native_receipt_provenance_fixture
 	approved_run := base.jobs.verify.steps[1].run
-	every unsafe_run in [
-		replace(approved_run, `verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
-    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"`, `verification_base_sha="$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"`),
-		replace(approved_run, "--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"", "--base-sha \"$base_sha\" --head-sha \"$head_sha\""),
-	] {
-		unsafe_run != approved_run
-		steps := [
-			base.jobs.verify.steps[0],
-			object.union(base.jobs.verify.steps[1], {"run": unsafe_run}),
-		]
-		workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
-		violations := deny with input as workflow
-		some msg in violations
-		contains(msg, "must not use pull_request_target")
-	}
+	unsafe_run := replace(approved_run, `.workflow_run.event == "pull_request"`, `true`)
+	unsafe_run != approved_run
+	steps := [base.jobs.verify.steps[0], object.union(base.jobs.verify.steps[1], {"run": unsafe_run})]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "requires a protected environment")
+}
+
+test_rejects_native_receipt_provenance_without_environment if {
+	base := native_receipt_provenance_fixture
+	workflow := object.union(object.remove(base, {"jobs"}), {"jobs": {"verify": object.remove(base.jobs.verify, {"environment"})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_native_receipt_provenance_with_extra_step if {
@@ -638,7 +638,7 @@ test_rejects_native_receipt_provenance_with_extra_step if {
 	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_native_receipt_provenance_with_head_checkout if {
@@ -653,7 +653,7 @@ test_rejects_native_receipt_provenance_with_head_checkout if {
 	)}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	contains(msg, "requires a protected environment")
 }
 
 test_rejects_public_live_command_output if {
@@ -1045,7 +1045,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "aaa51141e513e048776c4501c82bcaf9dcd78065432f1ac8a53e05c4ce8957cd", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "9e131ec8fee1ac7fc6038737852f90b3f97ed2293f810529824cbec24b8f01bb", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -1224,10 +1224,10 @@ workflow_with_images(docker_action, job_container, service_image) := {
 
 native_receipt_provenance_fixture := {
 	"name": "Verify Native Chainguard Receipt Provenance",
-	"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false},
+	"concurrency": {"group": "native-chainguard-receipt-provenance-${{ github.ref }}", "cancel-in-progress": false},
 	"true": {
-		"push": {"branches": ["main"]},
-		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+		"push": null,
+		"workflow_run": {"workflows": ["Terragrunt Plan"], "types": ["completed"]},
 	},
 	"permissions": {},
 	"jobs": {"verify": native_receipt_provenance_job},

@@ -29,14 +29,15 @@ class ReleaseTests(unittest.TestCase):
             ["yq", "-o=json", ".", str(ROOT / ".github/workflows/release.yml")], text=True,
         ))
         publisher = workflow["jobs"]["release"]
-        self.assertEqual(workflow["on"], {"push": {"branches": ["main"]}})
+        self.assertEqual(workflow["on"], {"push": None})
         self.assertEqual(set(workflow["jobs"]), {"release"})
         self.assertEqual(publisher["concurrency"], {
-            "group": "semantic-release-main",
+            "group": "semantic-release-${{ github.ref }}",
             "cancel-in-progress": False,
             "queue": "max",
         })
         self.assertNotIn("concurrency", workflow)
+        self.assertEqual(publisher["environment"], {"name": "release"})
         self.assertEqual(publisher["steps"][0]["with"]["ref"], "refs/heads/main")
         self.assertLessEqual(publisher["timeout-minutes"], 15)
         install = next(s for s in publisher["steps"] if s["name"] == "Install locked release toolchain")

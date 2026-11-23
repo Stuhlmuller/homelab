@@ -14,8 +14,10 @@ The catalog declares `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
 `https://stinkyboi.com`. Authentication requires the exact repository and
 owner IDs, `main`, the `cordium-check.yml` workflow, and a manual dispatch.
 A catch-all post-authentication denial rejects assertions outside that rule.
-The job intentionally has no GitHub environment: its OIDC subject must remain
-`repo:Stuhlmuller/homelab:ref:refs/heads/main`.
+GitHub's `homelab-cordium-ci` environment admits only deployments from
+`main`. Octelium maps its OIDC subject
+`repo:Stuhlmuller/homelab:environment:homelab-cordium-ci` to the workload
+identity and independently checks the signed ref and workflow claims.
 
 The dedicated workload identity can create, start, inspect, execute in, and
 delete its own workspaces. A priority `-4` denial excludes other Cordium
@@ -98,12 +100,17 @@ cleanup before routing regular jobs to that image.
 
 ## Rollout and acceptance
 
-1. Merge the reviewed transport and CI changes after their checks pass.
+1. Apply the environment policies through github-iac before merging the
+   workflow changes. Allow `main` in `homelab-cordium-ci` and
+   `codex/cordium-oidc-denial` in `homelab-cordium-denial`. Merge the
+   reviewed transport and CI changes after their checks pass.
 2. Follow the [ordered DNS cutover](../clusters/homelab/apps/traefik/CUTOVER.md).
    The legacy public DNS writer and restoration workflow are removed; retain
    the existing carrier until the later CI/native transport change passes
    canonical DNS/API acceptance. Let Argo CD apply the Cordium limits.
 3. Reconcile only the three CI resources with the fixed operator command below.
+   The environment claims cannot authenticate until the workload identity
+   maps the new subject.
    The NOFX native transport helper must already be merged; broad catalog apply
    is not this rollout path.
 4. Dispatch the exact current main commit:
@@ -184,10 +191,11 @@ gh workflow run cordium-check.yml --ref codex/cordium-oidc-denial \
   -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=deny-ref
 ```
 
-This genuine branch context changes the JWT ref, workflow-ref suffix, and
-subject together. The wrapper verifies GitHub's
+This genuine branch context changes the JWT ref and workflow-ref suffix.
+The `homelab-cordium-denial` environment also changes the subject and admits
+only this test branch. The wrapper checks the consistency of GitHub's
 [default ref and workflow variables](https://docs.github.com/en/actions/reference/workflows-and-actions/variables#default-environment-variables)
-before opening transport. The branch subject is not mapped to the CI User.
+before opening transport. The denial environment's subject is unmapped.
 Octelium also
 returns Unauthenticated for provider or key failures and intentionally hides
 details; the client result alone cannot establish claim-rejection causality.

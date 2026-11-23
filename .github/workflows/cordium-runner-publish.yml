@@ -21,12 +21,10 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -42,7 +40,7 @@ jobs:
     name: Publish Reviewed Main Images
     needs:
       - test-build
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.repository == 'Stuhlmuller/homelab' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     concurrency:

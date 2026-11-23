@@ -42,9 +42,10 @@ def command(*args, env=None):
 
 def context():
     expected = {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
-                "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
-                "GITHUB_WORKFLOW_REF": "Stuhlmuller/homelab/.github/workflows/cordium-runner-credentials.yml@refs/heads/main"}
-    if any(os.environ.get(key) != value for key, value in expected.items()):
+                "GITHUB_EVENT_NAME": "workflow_dispatch"}
+    workflow = os.environ.get("GITHUB_WORKFLOW_REF", "").partition("@")[0]
+    if (any(os.environ.get(key) != value for key, value in expected.items())
+            or workflow != "Stuhlmuller/homelab/.github/workflows/cordium-runner-credentials.yml"):
         raise RuntimeError("Run only through the protected current-main runner credential workflow")
     github.verify_reviewed_main(os.environ.get("GITHUB_SHA"))
 

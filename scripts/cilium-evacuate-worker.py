@@ -72,7 +72,6 @@ def main():
     sha = parser.parse_args().expected_sha
     if (not re.fullmatch(r"[0-9a-f]{40}", sha)
             or os.environ.get("GITHUB_ACTIONS") != "true"
-            or os.environ.get("GITHUB_REF") != "refs/heads/main"
             or os.environ.get("GITHUB_SHA") != sha
             or run("git", "rev-parse", "HEAD") != sha):
         raise SystemExit("The exact-main protected workflow is required")

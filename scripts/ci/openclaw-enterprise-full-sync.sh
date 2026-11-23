@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-[[ $# == 0 && "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
+[[ $# == 0 && "${GITHUB_ACTIONS:-}" == true &&
   "${GITHUB_SHA:-}" == "${EXPECTED_SHA:-}" && "${GH_REPO:-}" == Stuhlmuller/homelab &&
   "${EXPECTED_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 2
 [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]] || exit 2

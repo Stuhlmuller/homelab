@@ -852,8 +852,11 @@ See the [provider contract](../../docs/entra-terraform-provider.md) and
 
 ## GitHub Workflow Checks
 
-Repository PR workflows run when the PR targets `main`, including after a
-stacked PR is retargeted to `main`. Existing path filters still apply.
+Repository PR workflows run across base branches and run again when a PR
+is retargeted. Existing path filters still apply. GitHub Actions environments
+control branch eligibility for deploys, status publishers, and releases. The
+`homelab-production` and `release` environments allow only the exact `main`
+branch. See [GitHub configuration](../../docs/ci-cd.md#github-configuration).
 
 When a newer update triggers the same PR check workflow, GitHub cancels its
 older queued or running run. Terragrunt and Release are exempt.
@@ -865,9 +868,9 @@ child fixtures; it does not change infrastructure inputs. The artifact scanner
 still rejects saved plan/state files in ignored checkout paths. See the
 [validation runbook](../../docs/validation-runbook.md).
 
-The required `Terragrunt Gate` covers signed offline Nix checks on every PR
-targeting `main`, including forks and changes that do not need a live plan.
-The `validate / repo` job verifies the same outputs on pushes to `main` and
+The required `Terragrunt Gate` covers signed offline Nix checks on every PR,
+including forks and changes that do not need a live plan.
+The `validate / repo` job verifies the same outputs on pushes and
 runs its other repository checks on both events.
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
@@ -954,17 +957,18 @@ or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
 
 The `validate` runtime checks for image admission, network enforcement, and
-Harbor Core run on `main` pushes. In PRs,
+Harbor Core run on pushes. In PRs,
 [`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
 the exact event diff, including removed paths, for each check's inputs. If the
 shallow checkout lacks the event base commit, the script fetches that commit.
 An unavailable diff runs the full runtime suite.
 
 The `validate` repository and runtime jobs share a GitHub Actions Nix store
-cache keyed by runner OS, architecture, and the two flake files. Successful
-`main` repository jobs populate it after signed offline verification. Check
-the `Cache Nix Store` or `Restore Nix Store Cache` step on a later run with the
-same key to verify reuse. Revert the cache steps and their matching workflow
+cache keyed by runner OS, architecture, and the two flake files. The cache
+publisher runs after successful repository validation in the main-only
+`homelab-production` environment. Check the `Publish Nix Store Cache On Miss`
+or `Restore Nix Store Cache` step on a later run with the same key to verify
+reuse. Revert the cache steps and their matching workflow
 hash to roll back.
 See [cache trust and freshness](../../docs/nix-cache.md#ci-trust-and-freshness).
 
@@ -1900,9 +1904,11 @@ rollout, `check-disabled` verifies its absence. See
 The optional manual `cordium-check.yml` workflow executes the exact reviewed
 main commit inside a disposable Cordium workspace using dedicated GitHub OIDC.
 Its workflow is included in the credentialed-job inventory, normalized hash,
-and exact-dispatch guard. Local lifecycle tests are part of the static gate;
-live execution, cleanup, denied identity/method cases, and audit correlation
-remain acceptance requirements. See [Cordium CI](../../docs/cordium-ci.md).
+and exact-SHA dispatch guard. The `homelab-cordium-ci` GitHub environment
+admits only `main`. The wrong-ref login case uses `homelab-cordium-denial`,
+which admits only the fixed test branch. The static gate runs local lifecycle
+tests. Acceptance also requires live execution, cleanup, denied identity and
+method cases, and audit correlation. See [Cordium CI](../../docs/cordium-ci.md).
 
 Fixed acceptance modes add exact-SHA exit-42 cleanup, read-only ListSpace
 denial, and genuine wrong-ref/workflow assertion cases. Workspace execution

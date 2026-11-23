@@ -4,10 +4,9 @@ set -euo pipefail
 test "$#" -eq 0 || { echo 'Usage: harbor-native-chainguard-receipt.sh (no arguments)' >&2; exit 2; }
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
-[[ "${GITHUB_REF:-}" == refs/heads/main ]]
 [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${EXPECTED_SHA:-}" == "$GITHUB_SHA" ]]
-[[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-native-chainguard-receipt.yml@refs/heads/main ]]
+[[ "${GITHUB_WORKFLOW_REF%%@*}" == Stuhlmuller/homelab/.github/workflows/harbor-native-chainguard-receipt.yml ]]
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
 : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
