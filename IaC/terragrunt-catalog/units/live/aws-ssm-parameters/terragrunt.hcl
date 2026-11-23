@@ -346,6 +346,12 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/bazel-cache/writer-password" = {
+      description = "Writer password for the Homelab Bazel remote cache."
+      generated = {
+        length = 48
+      }
+    }
     "/homelab/cert-manager/cloudflare-api-token" = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder

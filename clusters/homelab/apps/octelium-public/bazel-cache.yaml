@@ -1,0 +1,140 @@
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: bazel-cache-auth
+  namespace: octelium-public
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+    homelab.stuhlmuller.dev/credential-refresh: "1"
+spec:
+  refreshPolicy: OnChange
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: bazel-cache-auth
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      data:
+        htpasswd: '{{ htpasswd "bazel-writer" .writerPassword "bcrypt" }}'
+  data:
+    - secretKey: writerPassword
+      remoteRef:
+        key: /homelab/bazel-cache/writer-password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazel-cache
+  namespace: octelium-public
+  labels:
+    app.kubernetes.io/name: bazel-cache
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bazel-cache
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bazel-cache
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bazel-remote
+          image: harbor.stinkyboi.com/mirror/quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67
+          args:
+            - --dir=/data
+            - --max_size=2
+            - --http_address=0.0.0.0:8080
+            - --grpc_address=none
+            - --htpasswd_file=/auth/htpasswd
+            - --allow_unauthenticated_reads
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: http
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+              ephemeral-storage: 3Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: cache
+              mountPath: /data
+            - name: auth
+              mountPath: /auth
+              readOnly: true
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 3Gi
+        - name: auth
+          secret:
+            secretName: bazel-cache-auth
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazel-cache
+  namespace: octelium-public
+  labels:
+    app.kubernetes.io/name: bazel-cache
+spec:
+  selector:
+    app.kubernetes.io/name: bazel-cache
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bazel-cache
+  namespace: octelium-public
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: bazel-cache
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cloudflared
+              app.kubernetes.io/part-of: octelium-public
+      ports:
+        - port: 8080
+          protocol: TCP

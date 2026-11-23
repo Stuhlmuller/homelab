@@ -1,0 +1,16 @@
+load(":nix_check.bzl", "nix_check_test")
+
+[
+    nix_check_test(
+        name = check,
+        recipe = "@nix_checks//:" + check,
+        tags = ["no-remote-exec", "no-sandbox"],
+        timeout = "long",
+    )
+    for check in [
+        "offline-tests",
+        "manifest-policy",
+        "openwiki-setup",
+        "xerj-autoindex",
+    ]
+]

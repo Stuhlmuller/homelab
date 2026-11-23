@@ -49,7 +49,7 @@ def parameter(name):
 
 
 def ready(site, sha):
-    apps = [site, 'octelium-public']
+    apps = ['octelium-public'] if site == 'bazel-cache' else [site, 'octelium-public']
     data = json.loads(credential.command(['kubectl', '-n', 'argocd', 'get', 'applications',
                                          *apps, '-o', 'json']))
     if len(data.get('items', [])) != len(apps) or {item['metadata']['name'] for item in data['items']} != set(apps):
@@ -101,7 +101,7 @@ def reconcile(token, tunnel, site, sha):
 
 def main(args):
     try:
-        if args not in ([], ['mastodon'], ['openwiki']):
+        if args not in ([], ['mastodon'], ['openwiki'], ['bazel-cache']):
             raise RuntimeError('Unsupported DNS site')
         site = args[0] if args else 'mastodon'
         sha = os.environ.get('VALIDATED_SHA', os.environ.get('GITHUB_SHA', ''))

@@ -380,6 +380,7 @@ cluster CA is intentionally rotated.
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json`, `/homelab/octelium/cloudflare-tunnel-id` |
+| octelium-public | `bazel-cache-auth` | `bazel-cache-auth` (bcrypt htpasswd only) | `/homelab/bazel-cache/writer-password` (generated) |
 | octelium-public | retired Cloudflare zone-setting token; no runtime consumer | none | `/homelab/octelium/cloudflare-zone-settings-token` |
 | octelium | Octelium native Secret `entra-oidc-client-secret` | Octelium IdentityProvider `entra` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |

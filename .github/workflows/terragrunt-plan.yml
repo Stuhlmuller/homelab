@@ -92,7 +92,7 @@ jobs:
             # Bootstrap before the policy lands on main: build without this cache.
             printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
           fi
-          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix run .#bazel-offline -- --policy "$cache_policy"
           nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 
   terragrunt-plan:

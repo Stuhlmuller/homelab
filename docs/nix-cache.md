@@ -194,9 +194,12 @@ after Nix realizes both expected outputs and remaining validation passes.
 `require-sigs` and the build sandbox remain enabled. Missing entries build;
 signature or content corruption fails verification.
 
-The Terragrunt static job verifies the signed outputs with a fresh Nix store.
-The `validate` repository job verifies them on `main` before checking for a
-GitHub Actions cache entry. On `main`, the job looks up the archive without
+The Terragrunt static job and the `validate / repo` push job first try the
+[Homelab Bazel cache](bazel-cache.md). On a Bazel miss, the test invokes Nix,
+which verifies signatures when it substitutes a released result and builds
+missing outputs in the sandbox.
+The `validate` repository job finishes these checks on `main` before looking
+up the GitHub Actions Nix store archive. On `main`, the job looks up the archive without
 downloading it and saves it on a miss after successful validation. The cache
 key includes the runner OS, architecture, and the hash of `flake.nix` and
 `flake.lock`.

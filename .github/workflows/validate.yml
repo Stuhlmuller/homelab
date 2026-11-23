@@ -155,7 +155,7 @@ jobs:
           else
             printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
           fi
-          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix run .#bazel-offline -- --policy "$cache_policy"
 
       # Verify signed offline outputs before restoring any GitHub Actions store archive.
       - name: Cache Nix Store

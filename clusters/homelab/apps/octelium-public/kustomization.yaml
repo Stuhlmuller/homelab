@@ -8,3 +8,4 @@ resources:
   - externalsecret.yaml
   - deployment.yaml
   - networkpolicy.yaml
+  - bazel-cache.yaml
