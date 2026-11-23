@@ -12,6 +12,17 @@ locals {
   kubernetes_config_path = "~/.kube/config"
   default_tags           = read_terragrunt_config(find_in_parent_folders("account.hcl", "${get_repo_root()}/IaC/homelab/account.hcl")).locals.default_tags
 
+  # Remove each exception after the declared apply verifies an encrypted state write.
+  legacy_state_units = [
+    "homelab/us-west-2/apps/langfuse/blob-storage",
+    "homelab/us-west-2/operator/application-backup-storage",
+    "homelab/us-west-2/operator/entra-google-workspace-federation",
+    "homelab/us-west-2/operator/etcd-backup-storage",
+    "homelab/us-west-2/operator/github-actions-role-policy",
+    "homelab/us-west-2/operator/state-bucket-encryption",
+    "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
+  ]
+
   unit_path            = path_relative_to_include()
   app_unit_prefix      = "homelab/us-west-2/apps/"
   shared_unit_prefix   = "homelab/us-west-2/shared/"
@@ -57,9 +68,7 @@ remote_state {
     key_spec                 = local.kms_key_spec
     encrypted_metadata_alias = "key_provider.aws_kms.main"
     }, jsondecode(
-    # CI observed this one pre-existing plaintext state. New writes remain AES-GCM.
-    # Remove the fallback after its first declared encrypted apply is verified.
-    lower(local.project_name) == "homelab" && path_relative_to_include() == "homelab/us-west-2/operator/application-backup-storage" ? jsonencode({
+    lower(local.project_name) == "homelab" && contains(local.legacy_state_units, path_relative_to_include()) ? jsonencode({
       fallback = { method = "unencrypted" }
     }) : jsonencode({ enforced = true })
   ))

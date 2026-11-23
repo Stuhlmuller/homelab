@@ -1232,11 +1232,11 @@ class CredentialExportTest(unittest.TestCase):
         process.assert_called_once()
         self.assertIn("IaC/homelab/us-west-2/apps/fleet/pilot-user", str(process.call_args))
 
-    def test_stuhlmuller_pilot_requires_explicit_selection(self):
-        self.values["user_principal_name"]["value"] = "rodman.mac@stuhlmuller.net"
+    def test_retired_stuhlmuller_handoff_never_reads_state(self):
         status, process = self.run_export(pilot="stuhlmuller")
-        self.assertEqual(status, 0)
-        self.assertIn("IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user", str(process.call_args))
+        self.assertEqual(status, 2)
+        process.assert_not_called()
+        self.assertFalse(self.destination.exists())
 
     def test_existing_file_is_preserved_without_reading_credentials(self):
         self.destination.write_text("existing content")

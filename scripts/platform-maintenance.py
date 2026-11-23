@@ -30,7 +30,7 @@ MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
 
 def receipt_target():
     result = subprocess.run(
-        ["terragrunt", "render", "--config", str(ROOT / "IaC/application-backup-storage.hcl"),
+        ["terragrunt", "render", "--config", str(ROOT / "IaC/homelab/us-west-2/operator/application-backup-storage.hcl"),
          "--json", "--write=false", "--log-disable"],
         capture_output=True, text=True, timeout=30, check=True,
     )

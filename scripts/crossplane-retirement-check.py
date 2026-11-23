@@ -25,10 +25,34 @@ DEFAULTS = {
     "locks.pkg.crossplane.io": ("lock", None),
     "managedresourceactivationpolicies.apiextensions.crossplane.io": ("default", {"activate": ["*"]}),
 }
-CHART_KINDS = {
-    (None, "Secret"), (None, "Service"), (None, "ServiceAccount"), ("apps", "Deployment"),
-    ("rbac.authorization.k8s.io", "ClusterRole"), ("rbac.authorization.k8s.io", "ClusterRoleBinding"),
+# Crossplane 2.3.3 chart rendered with the release and values in the app stack.
+# Chart SHA-256: 327cadea168633b9dcaa71da1852fb308d837dd3f9c8a53410c155257df206c8
+CHART_RESOURCES = {
+    (None, "Secret", NAMESPACE, "crossplane-root-ca"),
+    (None, "Secret", NAMESPACE, "crossplane-tls-client"),
+    (None, "Secret", NAMESPACE, "crossplane-tls-server"),
+    (None, "Service", NAMESPACE, "crossplane-webhooks"),
+    (None, "ServiceAccount", NAMESPACE, "crossplane"),
+    (None, "ServiceAccount", NAMESPACE, "rbac-manager"),
+    ("apps", "Deployment", NAMESPACE, "crossplane"),
+    ("apps", "Deployment", NAMESPACE, "crossplane-rbac-manager"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane-admin"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane-browse"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane-edit"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane-rbac-manager"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane-view"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:aggregate-to-admin"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:aggregate-to-browse"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:aggregate-to-edit"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:aggregate-to-view"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:allowed-provider-permissions"),
+    ("rbac.authorization.k8s.io", "ClusterRole", None, "crossplane:system:aggregate-to-crossplane"),
+    ("rbac.authorization.k8s.io", "ClusterRoleBinding", None, "crossplane"),
+    ("rbac.authorization.k8s.io", "ClusterRoleBinding", None, "crossplane-admin"),
+    ("rbac.authorization.k8s.io", "ClusterRoleBinding", None, "crossplane-rbac-manager"),
 }
+CHART_KINDS = {(group, kind) for group, kind, _, _ in CHART_RESOURCES}
 
 
 def require(condition, message):
@@ -95,6 +119,9 @@ def preflight():
     tracked = app["status"]["resources"]
     require(tracked and all((item.get("group"), item["kind"]) in CHART_KINDS for item in tracked),
             "Argo tracks an unexpected kind")
+    identities = {(item.get("group"), item["kind"], item.get("namespace"), item["name"]) for item in tracked}
+    require(len(tracked) == len(CHART_RESOURCES) and identities == CHART_RESOURCES,
+            "Argo chart resource identities differ from the pinned Crossplane chart")
     expected = {f"{plural}.{group}" for group, plurals in CRDS.items() for plural in plurals}
     crds = [crd for crd in listing("crd") if crossplane_crd(crd)]
     require({crd["metadata"]["name"] for crd in crds} == expected and len(crds) == len(expected)

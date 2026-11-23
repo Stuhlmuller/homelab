@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary [--tailscale for public mirrors only]' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary [--tailscale for public mirrors only]' >&2
   exit 2
 }
 tailnet_https=false
@@ -64,6 +64,9 @@ elif [[ "$mode" == mirror-harbor ]]; then
 elif [[ "$mode" == mirror-renovate ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-renovate-images.json
+elif [[ "$mode" == mirror-n8n ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-n8n-images.json
 elif [[ "$mode" == mirror-chainguard ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-chainguard-images.json
@@ -131,6 +134,10 @@ if [[ "$mode" == mirror ]]; then
       (.source | type == "string" and
         (startswith("docker.io/library/busybox:issue-1846-canary@") | not) and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|codeberg[.]org|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
+  if [[ "$manifest" == scripts/config/harbor-n8n-images.json ]]; then
+    jq --exit-status '(.images | length == 1) and
+      (.images[0].source | test("^ghcr[.]io/n8n-io/n8n:[0-9]+[.][0-9]+[.][0-9]+@sha256:[0-9a-f]{64}$"))' "$manifest" >/dev/null
+  fi
   if [[ "$manifest" == scripts/config/harbor-dns-images.json ]]; then
     jq --exit-status '.images == [{"source":"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}]' "$manifest" >/dev/null
   fi
@@ -407,7 +414,7 @@ if [[ "$mode" == mirror ]]; then
     ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status(:| code:?)?[[:space:]]*4[0-9]{2}|status code:?[[:space:]]*4[0-9]{2}' "$scratch/mirror-error" &&
       { mirror_retryable_server_error ||
         { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
-          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; }; }
+          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded|stream error: stream ID [0-9]+; INTERNAL_ERROR; received from peer' "$scratch/mirror-error"; }; }
   }
   mirror_alias() {
     local source_tag="$1" alias_needs_copy=true attempt lookup_status copy_status read_status observed_digest

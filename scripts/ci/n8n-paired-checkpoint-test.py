@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Fail-closed command boundary checks for the inactive protected checkpoint."""
 
+import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -292,6 +294,12 @@ else:
 
 
 class CheckpointBoundaryTests(unittest.TestCase):
+    def test_both_workflow_jobs_pin_current_checkpoint_script(self):
+        workflow = (ROOT / ".github/workflows/n8n-paired-checkpoint.yml").read_text()
+        script = re.escape(SCRIPT.relative_to(ROOT).as_posix())
+        pins = re.findall(rf"^[ \t]*'([0-9a-f]{{64}})' {script} ", workflow, re.MULTILINE)
+        self.assertEqual(pins, [hashlib.sha256(SCRIPT.read_bytes()).hexdigest()] * 2)
+
     def run_case(self, mode="deployment-active", **overrides):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)

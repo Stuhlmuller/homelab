@@ -18,12 +18,23 @@ inputs = {
         helm = {
           releaseName = "descheduler"
           valueFiles  = ["$values/clusters/homelab/apps/descheduler/values.yaml"]
+          parameters = [
+            {
+              name  = "kind"
+              value = "CronJob"
+            },
+            {
+              name  = "suspend"
+              value = "true"
+            }
+          ]
         }
       },
       {
-        repoURL        = local.shared.repo_url
-        path           = "."
-        targetRevision = local.shared.target_revision
+        repoURL = local.shared.repo_url
+        path    = "."
+        # The chart-source overrides keep this stage suspended across values revisions.
+        targetRevision = "main"
         ref            = "values"
         directory = {
           include = ".argocd-values-ref-placeholder.yaml"

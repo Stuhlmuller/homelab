@@ -1,6 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# These suites use independent disposable fixtures. The flake builds them
+# alongside the rest of this script and requires all results.
+case "${1:-}" in
+  --private-dns)
+    exec python3 -I scripts/ci/tailscale-private-dns-test.py
+    ;;
+  --n8n)
+    python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+    exec python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
+    ;;
+  --harbor)
+    exec python3 -I scripts/ci/harbor-publish-test.py
+    ;;
+  --remaining) ;;
+  "")
+    bash "$0" --private-dns
+    bash "$0" --n8n
+    bash "$0" --harbor
+    ;;
+  *) echo "Unknown offline fixture group: $1" >&2; exit 2 ;;
+esac
+
 # Generated units are fixtures here; no provider init or live API access.
 # shellcheck disable=SC1091 # Shared helper is linted separately.
 source scripts/ci/terragrunt-filter-base.sh
@@ -9,6 +31,7 @@ terragrunt_generate_stack
 # Kuma catalog/freshness/ownership/recovery contracts run in the pinned offline
 # tool set. Real-image timed/network fixtures are a separate local delivery gate.
 command -v promtool >/dev/null
+bash scripts/ci/octelium-proxy-alert-check.sh
 python3 -I scripts/ci/uptime-kuma-check.py
 python3 -I scripts/ci/uptime-kuma-check-test.py
 node --test scripts/ci/uptime-kuma-test.js
@@ -23,6 +46,7 @@ python3 -I scripts/ci/argocd-image-updater-test.py --unit
 python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
+python3 -I scripts/ci/renovate-registry-relay-test.py
 python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
@@ -31,6 +55,7 @@ python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/terragrunt-app-equivalence-test.py
 python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
+python3 -I scripts/ci/descheduler-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/public-dns-validate-test.py
@@ -55,7 +80,6 @@ python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/octelium-catalog-test.py
 python3 -I scripts/ci/terragrunt-credential-duration-test.py
-python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/adguard-test.py
@@ -84,8 +108,6 @@ python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
 python3 -I scripts/ci/langfuse-postgres-object-restore-test.py
-python3 -I scripts/ci/n8n-paired-checkpoint-test.py
-python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
 python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
@@ -105,7 +127,6 @@ python3 -I scripts/ci/fleet-apple-csr-test.py
 python3 -I scripts/ci/fleet-free-setup-test.py
 python3 -I scripts/ci/fleet-google-login-test.py
 python3 -I scripts/ci/fleet-airvpn-setup-test.py
-python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/openclaw-enterprise-image-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py

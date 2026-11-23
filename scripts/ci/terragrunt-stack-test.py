@@ -428,6 +428,15 @@ inputs = {
 ''')
         run("terragrunt", "--log-disable", "stack", "generate", cwd=cls.root)
 
+    def test_iac_discovery_excludes_catalog_templates(self):
+        shutil.copyfile(ROOT / "IaC/.terragrunt-filters", self.root / ".terragrunt-filters")
+        args = ("terragrunt", "--log-disable", "find", "--filter", "type=unit", "--json")
+        unfiltered = json.loads(run(*args, "--no-filters-file", cwd=self.root))
+        expected = [unit for unit in unfiltered if not unit["path"].startswith("terragrunt-catalog/")]
+        self.assertTrue(expected)
+        self.assertLess(len(expected), len(unfiltered))
+        self.assertEqual(json.loads(run(*args, cwd=self.root)), expected)
+
     def test_repeat_generation_and_clean_preserve_source_configs(self):
         paths = [self.root / "stack-defaults.hcl",
                  *self.root.glob("homelab/us-west-2/apps/*/stack.hcl"),

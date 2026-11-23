@@ -37,6 +37,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.traefik_mirror_manifest = None
         self.harbor_mirror_manifest = None
         self.renovate_mirror_manifest = None
+        self.n8n_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
@@ -109,6 +110,9 @@ class HarborPublicationGates(unittest.TestCase):
             renovate_path.unlink(missing_ok=True)
         else:
             renovate_path.write_text(json.dumps(self.renovate_mirror_manifest))
+        n8n_path = self.root / "scripts/config/harbor-n8n-images.json"
+        if self.n8n_mirror_manifest is not None:
+            n8n_path.write_text(json.dumps(self.n8n_mirror_manifest))
         dns_path = self.root / "scripts/config/harbor-dns-images.json"
         if self.dns_mirror_manifest is None:
             dns_path.unlink(missing_ok=True)
@@ -341,8 +345,6 @@ class HarborPublicationGates(unittest.TestCase):
                         print("private restarted-forward readiness fixture", file=sys.stderr)
                         raise SystemExit(7)
                 print("401", end="")
-            elif command == "sleep":
-                assert args[0].isdigit()
             elif command == "aws":
                 assert args[0] == "ssm", "No cloud signing calls allowed"
                 print("private-test-credential-must-never-appear")
@@ -451,6 +453,7 @@ class HarborPublicationGates(unittest.TestCase):
                     if FIXTURE["mirror"] and not upstream:
                         fail_read("skopeo-pull", {
                             "mirror-pull-once": "unexpected EOF",
+                            "mirror-pull-http2-once": "stream error: stream ID 19; INTERNAL_ERROR; received from peer",
                             "mirror-pull-server-once": "received unexpected HTTP status: 500",
                             "mirror-pull-server-always": "received unexpected HTTP status: 500",
                             "mirror-pull-always": "unexpected EOF",
@@ -583,10 +586,18 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "sleep", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
+        # Readiness polling calls sleep up to 90 times. Record each delay
+        # without launching a Python interpreter for every simulated wait.
+        self.executable("sleep", f"""test "$#" -eq 1 || exit 96
+case "$1" in
+    ''|*[!0-9]*) exit 96 ;;
+esac
+printf '{{"command": "sleep", "args": ["%s"]}}\\n' "$1" >>'{self.calls}'
+""")
         shutil.copyfile(ROOT / "scripts/ci/install-kubeconfig.sh", self.root / "scripts/ci/install-kubeconfig.sh")
 
     def assert_cleaned(self):
@@ -819,7 +830,7 @@ printf '%s\n' {SHA}
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -844,7 +855,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -881,7 +892,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -920,7 +931,7 @@ printf '%s\n' {SHA}
         for entry in selected["images"]:
             self.assertIn(entry, catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
 
     def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
@@ -1208,6 +1219,22 @@ printf '%s\n' {SHA}
         self.harbor_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
+
+    def test_n8n_scope_rejects_unreviewed_digests_and_other_repositories(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-n8n-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        other = self.mirror_manifest["images"][0]
+        self.assertEqual(len(selected["images"]), 1)
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.n8n_mirror_manifest = selected
+        self.rejected(mode="mirror-n8n")
+        self.mirror_manifest = {"images": [*selected["images"], other]}
+        self.n8n_mirror_manifest = {"images": [other]}
+        self.rejected(mode="mirror-n8n")
+        self.n8n_mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-n8n")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_renovate_scope_has_eight_reviewed_sources(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
@@ -1595,6 +1622,7 @@ printf '%s\n' {SHA}
         for failure, phase in (("mirror-alias-lookup-once", "alias"),
                                ("mirror-alias-verify-once", "alias"),
                                ("mirror-pull-once", "skopeo"),
+                               ("mirror-pull-http2-once", "skopeo"),
                                ("mirror-pull-server-once", "skopeo"),
                                ("mirror-regctl-pull-once", "regctl"),
                                ("mirror-regctl-pull-server-once", "regctl")):
