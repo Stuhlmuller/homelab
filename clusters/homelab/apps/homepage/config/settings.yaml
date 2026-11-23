@@ -1,0 +1,21 @@
+title: Homelab
+headerStyle: clean
+statusStyle: dot
+quicklaunch:
+  searchDescriptions: true
+layout:
+  Platform:
+    style: row
+    columns: 3
+  Observability:
+    style: row
+    columns: 3
+  Media:
+    style: row
+    columns: 3
+  AI and Automation:
+    style: row
+    columns: 3
+  Productivity:
+    style: row
+    columns: 3

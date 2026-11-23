@@ -36,18 +36,22 @@
       xerjArchives = {
         aarch64-darwin = {
           target = "aarch64-apple-darwin";
+          assetId = "765590688";
           hash = "sha256-Xxaxfc9Gq7Vm7DOg9HM7RZwPvCKfzQ9YqeataY831Y4=";
         };
         x86_64-darwin = {
           target = "x86_64-apple-darwin";
+          assetId = "765590694";
           hash = "sha256-4mQlKPuO9Wj/krAWakoQtQmtJlVo6Ei1datNnvE6LGQ=";
         };
         aarch64-linux = {
           target = "aarch64-unknown-linux-musl";
+          assetId = "765530466";
           hash = "sha256-zTrPOzfX+UIVe+uwXvpCIWUbJfB7GKhb7qy1dXZH6k8=";
         };
         x86_64-linux = {
           target = "x86_64-unknown-linux-musl";
+          assetId = "765531502";
           hash = "sha256-FijuQBqaEhFWzDgJUPnUiSPm6FZFiuHmZI8O8Y23tpM=";
         };
       };
@@ -115,7 +119,11 @@
             pname = "xerj";
             version = xerjVersion;
             src = pkgs.fetchurl {
-              url = "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz";
+              urls = [
+                "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz"
+                "https://api.github.com/repos/xerj-org/xerj/releases/assets/${archive.assetId}"
+              ];
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
               inherit (archive) hash;
             };
             nativeBuildInputs = [ pkgs.makeWrapper ];

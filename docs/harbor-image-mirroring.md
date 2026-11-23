@@ -201,10 +201,12 @@ Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
 publisher requires a fresh strict-TLS/401 registry challenge. The protected
-public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
-retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
-temporary OCI directory and forces a recursive check of nested manifests and
-blobs on each attempt.
+public mirror uses direct Tailscale HTTPS and retries a failed connection
+up to twice after one- and two-second delays. TLS errors and unexpected HTTP
+responses still stop immediately. Legacy private-publication callers retain
+their Kubernetes port-forward lifecycle until their separate cutover.
+The publisher retains completed content in one temporary OCI directory and
+forces a recursive check of nested manifests and blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
 exhausted HTTP 5xx reads keep the public `server-error` category. The complete
 pull and root digest checks remain mandatory.
@@ -294,7 +296,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
    inventory selects only the reviewed Home Assistant Container image and
-   uses the same all-platform copy and authenticated pull verification.
+   uses all-platform copy and authenticated pull verification. The Home Assistant
+   publisher sends blobs larger than 16 MiB using 16 MiB registry upload chunks.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
    `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
@@ -875,3 +878,15 @@ consumer references. A missing blob, failed download or digest mismatch stops
 publication acceptance and withholds signing/output references. This verifies
 transport completeness; private vulnerability review and original workload
 behavior remain separate release gates.
+
+## Homepage publication scope
+
+Publish the pinned Homepage image using the reviewed current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=homepage
+```
+
+The scope selects the exact Homepage v2.8.0 image from the full catalog.
+Require the workflow's complete authenticated pull before merging the cutover.
