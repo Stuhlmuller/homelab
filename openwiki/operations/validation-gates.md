@@ -2915,17 +2915,18 @@ It reports plan readiness without applying or recording a cutover receipt.
 
 ### Source-only Application stack refactors
 
-The Mastodon release preflight treats an edit confined to its `stack.hcl` as
-source-only only when real Terragrunt generation/rendering at the merge base and
-PR head proves identical module files, declared inputs, backend/provider config,
-and normalized dependency edges. Changed workload files, missing evidence, or
-any runtime-contract difference retain the existing Synced/Healthy, backup and
-restore requirements. The comparison also evaluates shared roots and templates,
-so changing them cannot conceal a changed Application manifest. Negative tests
-cover manifest, dependency, backend, provider and module changes. Shared-only
-root/template/module edits also trigger the live preflight. Equivalence supports
-only the current local Application root module: unsupported JSON or generated
-variables, indirect file/module inputs, extra arguments and hooks fail closed.
+The Mastodon release preflight can prove equivalence for a `stack.hcl` change or
+an `IaC/root.hcl` change without Mastodon-specific edits. Terragrunt generation
+and rendering at the merge base and PR head must produce identical module
+files, declared inputs, backend and provider config, and normalized dependency
+edges. Changed workload files, missing evidence, or any runtime contract
+difference retain the Synced/Healthy, backup, and restore requirements.
+The comparison also evaluates shared roots and templates. Negative tests cover
+manifest, dependency, backend, provider, and module changes. Shared
+root, template, and module edits trigger protected preflight. Equivalence
+supports the current local Application root module. Unsupported JSON or
+generated variables, indirect file or module inputs, extra arguments, and hooks
+fail closed.
 The existing apply guard is matched exactly and its script contents are compared.
 
 On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main
