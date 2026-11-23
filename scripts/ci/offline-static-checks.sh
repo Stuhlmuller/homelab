@@ -445,8 +445,10 @@ yq -e '.metadata.namespace == "kube-system" and
 echo "::endgroup::"
 
 echo "::group::Cordium genesis privilege lifecycle"
-yq -e '.data."controller.sync.timeout.seconds" == "900"' \
-  clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/bootstrap/argocd \
+  render --json --write=false --no-color |
+  jq -er '.inputs.values | select(length == 1) | .[0]' |
+  yq -e '.configs.params."controller.sync.timeout.seconds" == "900"' - >/dev/null
 yq ea -o=json -I=0 '[.]' clusters/homelab/argocd/self-management/appproject.yaml |
   jq -e '
     [.[] | select(.kind == "AppProject" and .metadata.name == "homelab")][0].spec as $project |
