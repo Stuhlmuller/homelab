@@ -411,6 +411,11 @@ if [[ "$mode" == mirror ]]; then
   REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
     regctl registry login harbor.stinkyboi.com --user "robot\$mirror+publisher" \
     --pass-stdin --skip-check <"$scratch/mirror-publisher-password" >/dev/null
+  # Keep large Home Assistant layer uploads bounded to individual requests.
+  if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+    REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+      regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216
+  fi
   rm -f -- "$scratch/mirror-publisher-password"
 
   # Keep the publisher credential on destination writes only. This distinct
@@ -567,7 +572,12 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if skopeo copy --all --preserve-digests --src-no-creds \
+        if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+            2>"$scratch/mirror-error"
+          oci_index_copy=true
+        elif skopeo copy --all --preserve-digests --src-no-creds \
             --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
             "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
           :

@@ -539,6 +539,10 @@ class HarborPublicationGates(unittest.TestCase):
                     assert user in {"robot$mirror+publisher", "robot$mirror+pull"}
                     config.write_text(json.dumps({"username": user}))
                     assert config.stat().st_mode & 0o077 == 0
+                elif args[:2] == ["registry", "set"]:
+                    assert json.loads(config.read_text()) == {"username": "robot$mirror+publisher"}
+                    assert args[2:] == ["harbor.stinkyboi.com", "--blob-chunk", "16777216",
+                                        "--blob-max", "16777216"]
                 elif args[:2] == ["image", "copy"]:
                     source, target = args[-2:]
                     assert "@sha256:" in source
@@ -947,6 +951,29 @@ printf '%s\n' {SHA}
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-homepage")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_home_assistant_scope_uses_chunked_push_and_authenticated_pull(self):
+        self.tailnet_mocks(oci_index=True, registries=("ghcr.io",))
+        self.home_assistant_mirror_manifest = self.mirror_manifest
+        fixture_source = self.mirror_manifest["images"][0]["source"]
+        reviewed_source = json.loads((ROOT / "scripts/config/harbor-home-assistant-images.json").read_text())
+        helper = self.root / "scripts/ci/harbor-publish.sh"
+        helper.write_text(helper.read_text().replace(reviewed_source["images"][0]["source"], fixture_source))
+
+        result = self.run_helper("mirror-home-assistant", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+        calls = self.calls_for("regctl")
+        self.assertIn(["registry", "set", "harbor.stinkyboi.com", "--blob-chunk", "16777216",
+                       "--blob-max", "16777216"], calls)
+        tagged, digest = fixture_source.split("@")
+        repository = tagged.rsplit(":", 1)[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        self.assertIn(["image", "copy", f"{repository}@{digest}",
+                       f"{destination}:{digest.removeprefix('sha256:')}"], calls)
+        self.assertTrue(any(args[:3] == ["image", "copy", "--force-recursive"]
+                            and args[-2] == f"{destination}@{digest}" for args in calls))
+        self.assertIn(f"{destination}:{digest.removeprefix('sha256:')}@{digest}",
+                      (self.root / "summary").read_text())
 
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"

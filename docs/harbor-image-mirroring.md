@@ -293,7 +293,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
    inventory selects only the reviewed Home Assistant Container image and
-   uses the same all-platform copy and authenticated pull verification.
+   uses all-platform copy and authenticated pull verification. The Home Assistant
+   publisher sends blobs larger than 16 MiB using 16 MiB registry upload chunks.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
    `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
