@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: renovate-registry-relay
+  namespace: traefik
 spec:
   replicas: 0
   strategy:
@@ -30,7 +31,18 @@ spec:
             - --global.checknewversion=false
             - --global.sendanonymoususage=false
             - --entrypoints.relay.address=127.0.0.1:8443
+            - --entrypoints.health.address=127.0.0.1:8080
+            - --ping=true
+            - --ping.entrypoint=health
             - --providers.file.filename=/etc/relay/routes.yaml
+          livenessProbe:
+            exec:
+              command: [traefik, healthcheck, --ping=true, --ping.entrypoint=health, --entrypoints.health.address=127.0.0.1:8080]
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: [traefik, healthcheck, --ping=true, --ping.entrypoint=health, --entrypoints.health.address=127.0.0.1:8080]
+            timeoutSeconds: 5
           resources:
             requests: {cpu: 25m, memory: 64Mi}
             limits: {cpu: 250m, memory: 256Mi}
@@ -53,6 +65,14 @@ spec:
             postStart:
               exec:
                 command: [/bin/sh, /etc/relay/activate.sh]
+          livenessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --peers=false, --json]
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --peers=false]
+            timeoutSeconds: 5
           resources:
             requests: {cpu: 25m, memory: 64Mi}
             limits: {cpu: 250m, memory: 256Mi}

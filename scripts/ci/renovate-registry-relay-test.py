@@ -30,7 +30,12 @@ class RegistryRelay(unittest.TestCase):
         for container in (relay, tailscale):
             self.assertRegex(container["image"], r"^harbor\.stinkyboi\.com/mirror/.+@sha256:[0-9a-f]{64}$")
         self.assertIn("--entrypoints.relay.address=127.0.0.1:8443", relay["args"])
+        self.assertIn("--entrypoints.health.address=127.0.0.1:8080", relay["args"])
+        self.assertIn("--ping.entrypoint=health", relay["args"])
         self.assertIn("--tun=userspace-networking", tailscale["args"])
+        for probe in ("livenessProbe", "readinessProbe"):
+            self.assertIn("--entrypoints.health.address=127.0.0.1:8080", relay[probe]["exec"]["command"])
+            self.assertIn("--socket=/run/tailscale/tailscaled.sock", tailscale[probe]["exec"]["command"])
         self.assertNotIn("state-api", {mount["name"] for mount in relay["volumeMounts"]})
         self.assertIn("state-api", {mount["name"] for mount in tailscale["volumeMounts"]})
         start = (CANDIDATE / "activate.sh").read_text()
