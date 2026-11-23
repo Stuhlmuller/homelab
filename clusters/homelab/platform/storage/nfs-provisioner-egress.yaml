@@ -1,0 +1,17 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nfs-provisioner-egress
+  namespace: storage
+spec:
+  endpointSelector:
+    matchLabels:
+      app: nfs-subdir-external-provisioner
+      release: nfs-subdir-external-provisioner
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - {port: "443", protocol: TCP}
+            - {port: "6443", protocol: TCP}
