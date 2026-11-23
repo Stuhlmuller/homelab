@@ -269,6 +269,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   For Immich onboarding, use `image_scope=immich` to publish the server,
+   VectorChord PostgreSQL, and Valkey from the fixed Immich inventory.
+
    For Uptime Kuma onboarding, use `image_scope=uptime-kuma`. The fixed
    `scripts/config/harbor-uptime-kuma-images.json` contains only Kuma 2.5.11 at
    its reviewed multi-platform digest. Require complete authenticated pulls
@@ -297,7 +300,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    publisher sends blobs larger than 16 MiB using 16 MiB registry upload chunks.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
+   `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
    `image-updater-canary`, `bazel-cache`, or `home-assistant`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik

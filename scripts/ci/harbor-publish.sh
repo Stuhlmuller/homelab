@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant || "$1" == mirror-homepage || "$1" == mirror-affine) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant|mirror-homepage|mirror-affine [--tailscale for public mirrors only]' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant || "$1" == mirror-homepage || "$1" == mirror-affine) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant|mirror-homepage|mirror-affine [--tailscale for public mirrors only]' >&2
   exit 2
 }
 tailnet_https=false
@@ -81,6 +81,9 @@ elif [[ "$mode" == mirror-litellm ]]; then
 elif [[ "$mode" == mirror-prometheus ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-prometheus-images.json
+elif [[ "$mode" == mirror-immich ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-immich-images.json
 elif [[ "$mode" == mirror-uptime-kuma ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-uptime-kuma-images.json
@@ -170,6 +173,13 @@ if [[ "$mode" == mirror ]]; then
   fi
   if [[ "$manifest" == scripts/config/harbor-bazel-cache-images.json ]]; then
     jq --exit-status '.images == [{"source":"quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-immich-images.json ]]; then
+    jq --exit-status --slurpfile inventory scripts/config/harbor-images.json '
+      (.images | length == 3) and
+      ((.images | sort_by(.source)) == ($inventory[0].images | map(select(.source |
+        test("^ghcr[.]io/immich-app/(immich-server:v3[.]4[.]2|postgres:18-vectorchord1[.]1[.]1)@|^docker[.]io/valkey/valkey:9@"))) | sort_by(.source)))
+    ' "$manifest" >/dev/null
   fi
   if [[ "$manifest" == scripts/config/harbor-affine-images.json ]]; then
     jq --exit-status '.images == [{"source":"ghcr.io/toeverything/affine@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099"}]' "$manifest" >/dev/null

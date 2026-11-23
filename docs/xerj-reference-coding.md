@@ -2,7 +2,9 @@
 
 XERJ runs on the operator workstation. Its clones and indices live under
 `~/.xerj-code/`; it does not change the cluster. The flake pins the
-checksum-verified XERJ release. Enter `nix develop .#xerj`, then start an authenticated,
+checksum-verified XERJ release. It can fetch the same pinned archive through
+the public GitHub release asset API when the browser download endpoint fails.
+Enter `nix develop .#xerj`, then start an authenticated,
 loopback-only node in a terminal:
 
 ```sh
