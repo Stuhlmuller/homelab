@@ -1,3 +1,6 @@
+# Bazel supplies the Starlark builtins that Ruff treats as undefined Python names.
+# ruff: noqa: F821
+
 """Bazel test outputs are keyed by the exact Nix derivation and cache policy."""
 
 def _nix_checks_repository(ctx):

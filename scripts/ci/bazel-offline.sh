@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Invoked by the pinned Nix application from the repository root.
 set -euo pipefail
 
