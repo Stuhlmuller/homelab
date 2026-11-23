@@ -11,7 +11,9 @@ def main():
     if sys.argv[1:] != ["get"]:
         raise ValueError("Unsupported credential helper command")
     target = urlsplit(json.load(sys.stdin)["uri"])
-    if target.scheme != "https" or target.netloc != "bazel-cache.stinkyboi.com":
+    if target.scheme != "https" or target.netloc not in {
+        "bazel-cache.stinkyboi.com", "bazel-cache.stinkyboi.com:443",
+    }:
         raise ValueError("Unexpected credential target")
 
     name = "/homelab/octelium/bazel-cache-writer-password"

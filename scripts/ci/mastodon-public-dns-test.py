@@ -63,8 +63,9 @@ for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon'), ('bazel-
     expected_apps = ['octelium-public'] if site == 'bazel-cache' else [site, 'octelium-public']
     apps = [{'metadata': {'name': name}, 'status': {'sync': {'status': 'Synced', 'revisions': [sha]},
             'health': {'status': 'Healthy'}}} for name in expected_apps]
+    output = {'kind': 'Application', **apps[0]} if len(apps) == 1 else {'items': apps}
     with patch.dict(os.environ, {'GITHUB_SHA': sha}), patch.object(
-        dns.credential, 'command', return_value=json.dumps({'items': apps})
+        dns.credential, 'command', return_value=json.dumps(output)
     ) as command:
         dns.ready(site, sha)
         command.assert_called_once_with(['kubectl', '-n', 'argocd', 'get', 'applications',

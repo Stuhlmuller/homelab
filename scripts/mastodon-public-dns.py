@@ -52,9 +52,10 @@ def ready(site, sha):
     apps = ['octelium-public'] if site == 'bazel-cache' else [site, 'octelium-public']
     data = json.loads(credential.command(['kubectl', '-n', 'argocd', 'get', 'applications',
                                          *apps, '-o', 'json']))
-    if len(data.get('items', [])) != len(apps) or {item['metadata']['name'] for item in data['items']} != set(apps):
+    items = [data] if data.get('kind') == 'Application' else data.get('items', [])
+    if len(items) != len(apps) or {item['metadata']['name'] for item in items} != set(apps):
         raise RuntimeError('Applications missing')
-    for item in data['items']:
+    for item in items:
         status = item.get('status', {})
         sync = status.get('sync', {})
         revisions = sync.get('revisions', [sync.get('revision')])
