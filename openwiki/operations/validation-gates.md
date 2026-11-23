@@ -2498,11 +2498,11 @@ is a projection, not rollout acceptance.
 ## Harbor OCI rollout
 
 The [Octelium generated-Pod rollover fixture](../../scripts/ci/harbor-generated-rollout-test.py)
-checks controller ownership, exact Pod selectors, historical-Pod exclusion,
-admission dry-run verification, and Harbor replacement readiness. Render its
-[Argo source](../../clusters/homelab/apps/octelium-enterprise/kustomization.yaml)
-and server-side dry-run the new Role, ServiceAccount, binding and Job before
-merge. Live acceptance also requires the hook result and current Pod inventory.
+checks ownership, admission dry-run, replacement readiness, and retry behavior.
+Render its [Argo source](../../clusters/homelab/apps/octelium-enterprise/kustomization.yaml)
+and dry-run the Role, ServiceAccount, binding and suspended Job before merge.
+After activation, verify completion of the Job with the observed UID, wait for
+the old upstream Pods to exit, and check current proxy readiness.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,

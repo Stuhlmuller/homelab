@@ -1253,12 +1253,13 @@ The webhook accepts a digest-only Harbor mirror reference when its repository
 and digest match a reviewed catalog entry. Kiali uses this reference format.
 
 The staged [Octelium service-proxy rollout](../../clusters/homelab/apps/octelium-enterprise/harbor-generated-rollout.yaml)
-uses an Argo Sync hook after a server dry-run Pod proves the scoped admission
-webhook rewrites the reviewed vigil image. Its namespace Role can inspect Pods
-and roll Deployments; the hook selects only active `svc-*` ConfigMap-owned
-proxies, replaces them one at a time, and waits for Harbor-image Pods to become
-Ready and old upstream Pods to exit. A failed proxy stops the hook. Live
-generated-Pod convergence still needs verification after GitOps sync.
+is a suspended Job in the final Argo sync wave. After authenticated image pulls
+and webhook readiness pass, a protected change can unsuspend the Job. It starts
+with a server dry-run proving the reviewed vigil image rewrite. The Job rolls
+active ConfigMap-owned proxies one at a time, waiting for Ready Harbor-image
+Pods and the exit of old upstream Pods. A retry waits on the existing rollout
+marker before advancing. Check Job completion and the live Pod inventory after
+sync. Argo tracks the resource separately from its long-running work.
 
 The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
 and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
