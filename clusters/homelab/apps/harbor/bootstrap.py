@@ -694,7 +694,6 @@ def main():
         client = Client(admin_password)
         # Retry only transient reads. Auth/schema/write failures never trigger a
         # fallback identity or a retry that might duplicate a created resource.
-        print("Harbor bootstrap is checking API readiness.", flush=True)
         for attempt in range(12):
             try:
                 config, _ = client.request("GET", "/configurations")
@@ -707,6 +706,7 @@ def main():
                 if str(error) != "Harbor API connection failed" or attempt == 11:
                     raise
             time.sleep(5)
+        print("Harbor bootstrap verified API readiness.", flush=True)
         reconcile(client, passwords, read_replication_policy())
     except BootstrapError as error:
         print(f"Harbor bootstrap failed: {error}", file=sys.stderr)
