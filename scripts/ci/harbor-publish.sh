@@ -433,11 +433,6 @@ if [[ "$mode" == mirror ]]; then
   REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
     regctl registry login harbor.stinkyboi.com --user "robot\$mirror+publisher" \
     --pass-stdin --skip-check <"$scratch/mirror-publisher-password" >/dev/null
-  # Keep large Home Assistant layer uploads bounded to individual requests.
-  if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
-    REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-      regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216
-  fi
   rm -f -- "$scratch/mirror-publisher-password"
 
   # Keep the publisher credential on destination writes only. This distinct
@@ -479,6 +474,21 @@ if [[ "$mode" == mirror ]]; then
       { mirror_retryable_server_error ||
         { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
           grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded|stream error: stream ID [0-9]+; INTERNAL_ERROR; received from peer' "$scratch/mirror-error"; }; }
+  }
+  mirror_copy_from_upstream() {
+    local publisher_config="$scratch/regctl-publisher.json"
+    if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
+      # Bound requests for this image in both scoped and full publication.
+      publisher_config="$scratch/regctl-chunked-publisher.json"
+      cp -- "$scratch/regctl-publisher.json" "$publisher_config"
+      REGCTL_CONFIG="$publisher_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216 \
+        2>"$scratch/mirror-error"
+    fi
+    REGCTL_CONFIG="$publisher_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+      regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+      2>"$scratch/mirror-error"
+    oci_index_copy=true
   }
   mirror_alias() {
     local source_tag="$1" alias_needs_copy=true attempt lookup_status copy_status read_status observed_digest
@@ -594,11 +604,8 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if [[ "$mirror_manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
-          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
-            2>"$scratch/mirror-error"
-          oci_index_copy=true
+        if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
+          mirror_copy_from_upstream
         elif skopeo copy --all --preserve-digests --src-no-creds \
             --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
             "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
@@ -616,19 +623,13 @@ if [[ "$mode" == mirror ]]; then
           else
             exit "$copy_status"
           fi
-          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
-            2>"$scratch/mirror-error"
-          oci_index_copy=true
+          mirror_copy_from_upstream
         fi
       else
         grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
         grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
         mirror_phase="destination-copy"
-        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
-          2>"$scratch/mirror-error"
-        oci_index_copy=true
+        mirror_copy_from_upstream
       fi
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
