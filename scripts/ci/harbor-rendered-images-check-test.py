@@ -58,7 +58,8 @@ class RenderedImagesTest(unittest.TestCase):
     def test_empty_render_requires_helm_success_and_passes_argo_settings(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            source = {"helm": {"releaseName": "chosen", "valueFiles": ["$values/values.yaml"],
+            source = {"_values_revisions": {"values": "main"},
+                      "helm": {"releaseName": "chosen", "valueFiles": ["$values/values.yaml"],
                                "values": "fixture: true", "parameters": [
                                    {"name": "count", "value": "3"},
                                    {"name": "tag", "value": "1", "forceString": True},
@@ -73,6 +74,29 @@ class RenderedImagesTest(unittest.TestCase):
             with patch.object(check.subprocess, "run", return_value=CompletedProcess([], 1, "", "failed")):
                 with self.assertRaisesRegex(RuntimeError, "render failed"):
                     check.render(source, Path("chart.tgz"), "target", "fallback", root, {}, root)
+
+    def test_pinned_values_come_from_the_declared_commit(self):
+        reference = {"ref": "values", "repoURL": "${local.shared.repo_url}", "targetRevision": "a" * 40}
+        defaults = {"repo_url": check.HOMELAB_REPOSITORY + ".git"}
+        revisions = check.values_revisions([reference], defaults)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = {"_values_revisions": revisions, "helm": {"valueFiles": ["$values/path/values.yaml"]}}
+            with patch.object(check.subprocess, "run", return_value=CompletedProcess([], 0, "", "")) as helm:
+                with patch.object(check.subprocess, "check_output", return_value=b"fixture: pinned\n") as git:
+                    check.render(source, Path("chart.tgz"), "target", "fallback", root, {}, root)
+                path = root / "pinned-values-0.yaml"
+                self.assertIn(str(path), helm.call_args.args[0])
+                self.assertEqual(path.read_bytes(), b"fixture: pinned\n")
+                git.assert_called_once_with(["git", "show", "a" * 40 + ":path/values.yaml"], cwd=root, timeout=15)
+        invalid = (
+            [{**reference, "repoURL": "https://github.com/foreign/source.git"}],
+            [{**reference, "targetRevision": "unreviewed-branch"}],
+            [reference, reference],
+        )
+        for sources in invalid:
+            with self.subTest(sources=sources), self.assertRaises(ValueError):
+                check.values_revisions(sources, defaults)
 
     def test_rendered_kustomize_image_is_checked(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -45,16 +45,13 @@ Graph PATCH. It accepts no private inputs and must not call Graph. The patch
 cannot release the owner's SMTP alias, so it is not a route to the required
 UPN and must not be restored.
 
-`entra-stuhlmuller-domain` reads the existing Entra domain through the Microsoft
-Graph provider, reads the Microsoft-generated TXT verification record, and
-verifies it only after the DNS owner has published that record. It is
-intentionally an operator unit: verification requires tenant-wide domain
-authority that the CI identities must not receive.
+`entra-stuhlmuller-domain` reads the existing Entra domain through Microsoft
+Graph and requires a verified, federated, non-default, non-initial domain.
+The one-shot verification already ran. The steady-state unit forgets only the
+old action in OpenTofu state using `destroy = false`; it cannot write to Graph.
+The separate `entra-domain-verification` catalog module remains available for
+a new managed domain after its DNS owner publishes the TXT record.
 
-The unit requires a managed, non-default and non-initial domain and sends the
-standard bodyless Graph verification request, which defaults to
-`forceTakeover = false`. It cannot create, delete, federate, make a default
-domain, configure Microsoft 365 mail services, or change Google Workspace.
 The companion `entra-stuhlmuller-pilot-user` unit retains only the isolated
 `rodman.mac@stuhlmuller.net` cloud user, with no group, role, license,
 Fleet-console assignment, mailbox, or effect on other accounts. It must not

@@ -15,6 +15,7 @@ BOOTSTRAP = "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
 CHART_INVENTORY = "scripts/config/harbor-image-charts.json"
 CHART_PACKAGES = "scripts/config/harbor-helm-charts.json"
 UPSTREAM_EXCEPTIONS = "scripts/config/harbor-rendered-upstream.json"
+HOMELAB_REPOSITORY = "https://github.com/Stuhlmuller/homelab"
 
 
 class ManifestLoader(yaml.SafeLoader):
@@ -53,22 +54,52 @@ def chart_source(location, source):
             "targetRevision": revision}
 
 
+def values_revisions(sources, defaults):
+    revisions = {}
+    for source in sources:
+        if (name := source.get("ref")) is None:
+            continue
+        if name in revisions:
+            raise ValueError(f"duplicate Helm values source: {name}")
+        repo = source.get("repoURL")
+        revision = source.get("targetRevision")
+        if repo == "${local.shared.repo_url}":
+            repo = defaults["repo_url"]
+        if revision == "${local.shared.target_revision}":
+            revision = defaults["target_revision"]
+        if repo not in {HOMELAB_REPOSITORY, f"{HOMELAB_REPOSITORY}.git"}:
+            raise ValueError(f"Helm values source must use the homelab repository: {name}")
+        if not isinstance(revision, str) or not (revision == "main" or re.fullmatch(r"[0-9a-f]{40}", revision)):
+            raise ValueError(f"Helm values must follow main or pin a commit: {name}")
+        revisions[name] = revision
+    return revisions
+
+
 def sources(root=ROOT):
+    shared = hcl2.loads((root / "IaC/stack-defaults.hcl").read_text())["locals"][0]
+    repository, = shared["repo_url"]
+    revision, = shared["target_revision"]
+    defaults = {"repo_url": repository, "target_revision": revision}
     for path in sorted((root / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl")):
         for inputs in hcl2.loads(path.read_text()).get("inputs", []):
             spec = inputs.get("spec", {})
             namespace = spec.get("destination", {}).get("namespace", path.parent.name)
-            for source in application_sources(spec):
+            stack_sources = application_sources(spec)
+            revisions = values_revisions(stack_sources, defaults)
+            for source in stack_sources:
                 if entry := chart_source(path.relative_to(root), source):
-                    yield entry, namespace, path.parent.name, source
+                    yield entry, namespace, path.parent.name, {**source, "_values_revisions": revisions}
     for path in sorted((root / "clusters").rglob("*.yaml")):
         for document in yaml.safe_load_all(path.read_text()):
             if not isinstance(document, dict) or document.get("kind") != "Application":
                 continue
             spec = document["spec"]
-            for source in application_sources(spec):
+            app_sources = application_sources(spec)
+            revisions = values_revisions(app_sources, defaults)
+            for source in app_sources:
                 if entry := chart_source(path.relative_to(root), source):
-                    yield entry, spec["destination"]["namespace"], document["metadata"]["name"], source
+                    yield (entry, spec["destination"]["namespace"], document["metadata"]["name"],
+                           {**source, "_values_revisions": revisions})
 
 
 def verify_coverage(discovered, inventory):
@@ -105,13 +136,21 @@ def render(source, package, namespace, application, workdir, env, root=ROOT):
     helm = source.get("helm", {})
     release = helm.get("releaseName", application)
     command = ["helm", "template", release, str(package), "--namespace", namespace]
-    for value in helm.get("valueFiles", []):
-        if not value.startswith("$values/"):
+    revisions = source.get("_values_revisions", {})
+    for index, value in enumerate(helm.get("valueFiles", [])):
+        ref, separator, relative_name = value.partition("/")
+        if not (ref.startswith("$") and separator and relative_name and ref[1:] in revisions):
             raise ValueError(f"unsupported Helm value file source: {value}")
-        relative = Path(value.removeprefix("$values/"))
+        relative = Path(relative_name)
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError(f"Helm value file escapes the repository: {value}")
-        command.extend(["-f", str(root / relative)])
+        revision = revisions[ref[1:]]
+        values_path = root / relative
+        if revision != "main":
+            values_path = workdir / f"pinned-values-{index}.yaml"
+            values_path.write_bytes(subprocess.check_output(
+                ["git", "show", f"{revision}:{relative.as_posix()}"], cwd=root, timeout=15))
+        command.extend(["-f", str(values_path)])
     values = helm.get("values")
     if values is not None:
         command.extend(["-f", "-"])
