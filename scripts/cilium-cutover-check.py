@@ -50,15 +50,41 @@ def verify(pods, endpoints, cidr):
     return checked, failures
 
 
+def worker_pods(pods, nodes, worker, previous_boot_id):
+    matches = [node for node in nodes if node["metadata"]["name"] == worker]
+    if len(matches) != 1:
+        raise ValueError(f"Expected exactly one node named {worker}")
+    node = matches[0]
+    status = node["status"]
+    boot_id = status["nodeInfo"]["bootID"]
+    if not boot_id or boot_id == previous_boot_id:
+        raise ValueError(f"{worker} has not reported a new boot")
+    if node["spec"].get("unschedulable") is not True:
+        raise ValueError(f"{worker} must still be cordoned during cutover verification")
+    if not any(condition["type"] == "Ready" and condition["status"] == "True"
+               for condition in status["conditions"]):
+        raise ValueError(f"{worker} is not Ready")
+    return [pod for pod in pods if pod["spec"].get("nodeName") == worker]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pods", required=True, type=Path)
     parser.add_argument("--endpoints", required=True, type=Path)
     parser.add_argument("--cidr", required=True, type=ipaddress.ip_network)
+    parser.add_argument("--worker", choices=("zimaboard-2",))
+    parser.add_argument("--nodes", type=Path)
+    parser.add_argument("--previous-boot-id")
     args = parser.parse_args()
+    if any((args.worker, args.nodes, args.previous_boot_id)) and not all(
+        (args.worker, args.nodes, args.previous_boot_id)
+    ):
+        parser.error("--worker, --nodes and --previous-boot-id must be supplied together")
     try:
-        count, failures = verify(items(args.pods, "Pod"),
-                                 items(args.endpoints, "CiliumEndpoint"), args.cidr)
+        pods = items(args.pods, "Pod")
+        if args.worker:
+            pods = worker_pods(pods, items(args.nodes, "Node"), args.worker, args.previous_boot_id)
+        count, failures = verify(pods, items(args.endpoints, "CiliumEndpoint"), args.cidr)
     except (OSError, KeyError, ValueError) as error:
         raise SystemExit(f"Cilium cutover check failed: {error}") from None
     if failures:

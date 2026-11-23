@@ -31,12 +31,12 @@ load before advancing node cutover.
    Deploy the coexistence Application through GitOps, then implement the protected
    node-by-node cutover and rollback. Include eviction feasibility and retain
    a working route to the Talos and Kubernetes APIs throughout the cutover.
-   The standalone `node-migration.yaml` selector is for the cutover stage
-   after the chart installs its CRD. It allows Cilium to write its primary
-   CNI configuration on a selected node while retaining the Multus and
-   Flannel configuration files. The staged Helm Application does not include
-   this manifest. Validate Multus delegation and rollback on the trial node
-   before introducing the first selector label in the live cluster.
+   The Application tracks `node-migration.yaml`, which selects only
+   `zimaboard-2` by hostname. When the agent starts on the selected worker,
+   it writes the primary CNI configuration and retains the Multus and Flannel
+   files. Before syncing this stage, verify the coexistence overlay, host-route
+   preflight, completed eviction and registry recovery. Recreate the worker
+   workloads through the guarded cutover so their sandboxes use Cilium.
 
 3. Inventory effective egress and install explicit workload grants for DNS,
    API access, internal peers and approved external destinations. Verify
@@ -66,6 +66,17 @@ snapshots with `scripts/cilium-cutover-check.py --pods <pods.json> --endpoints
 <endpoints.json> --cidr 10.245.0.0/16`. The check rejects stale endpoint
 ownership, unready endpoints and legacy primary IP addresses. Repeat it
 around the cutover and verify host-network and Multus traffic separately.
+Before uncordoning `zimaboard-2`, run the same check against private Pod and
+CiliumEndpoint snapshots containing the Cilium probe. Supply
+`--worker zimaboard-2 --nodes <nodes.json> --previous-boot-id <boot-id>`
+to require a changed boot ID, a Ready node and a current Cilium endpoint
+while the worker remains cordoned. The `worker-probe/` fixture starts a
+temporary Job on the cordoned worker. Its readiness checks the secondary
+interface, cluster DNS and TCP access to the Kubernetes Service. Verify
+the Cilium endpoint while the Job is Ready and remove the fixture before
+restoring scheduling. Its test bridge exercises Multus delegation. Verify
+the Octelium attachment on the actual Octelium dataplane separately.
+
 
 
 The [rollback patch](../../../../.talos/patches/cilium-cni-rollback.yaml)

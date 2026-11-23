@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cilium-first-worker-probe
+  namespace: cilium-worker-probe
+spec:
+  activeDeadlineSeconds: 360
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: secondary
+      labels:
+        app.kubernetes.io/name: cilium-first-worker-probe
+    spec:
+      nodeName: zimaboard-2
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:latest@sha256:60e3c0d33ab77e50ace0850ccdf6eaec825ce89dad9b1ec2b0300a2070892b05
+          imagePullPolicy: Always
+          command:
+            - /usr/bin/python3
+            - -I
+            - -c
+            - |
+              import socket
+              import time
+              from pathlib import Path
+              assert "net1" in dict(socket.if_nameindex()).values(), "Multus interface missing"
+              with socket.create_connection(("kubernetes.default.svc.cluster.local", 443), timeout=10):
+                  print("Secondary interface, cluster DNS, and Kubernetes Service TCP passed", flush=True)
+              Path("/probe/ready").touch()
+              time.sleep(300)
+          readinessProbe:
+            exec:
+              command:
+                - /usr/bin/python3
+                - -I
+                - -c
+                - 'from pathlib import Path; assert Path("/probe/ready").is_file()'
+          volumeMounts:
+            - name: probe
+              mountPath: /probe
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: probe
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
