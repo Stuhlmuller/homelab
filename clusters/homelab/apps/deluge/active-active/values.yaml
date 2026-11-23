@@ -42,9 +42,8 @@ controllers:
       vpn-client-preflight:
         dependsOn: vpn-guard
         image:
-          repository: '{{ .Values.controllers.deluge.containers.app.image.repository }}'
-          tag: '{{ default "" .Values.controllers.deluge.containers.app.image.tag }}'
-          digest: '{{ default "" .Values.controllers.deluge.containers.app.image.digest }}'
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/deluge
+          tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
         command: [python3, -B, /scripts/vpn-client-preflight.py]
         securityContext:
           allowPrivilegeEscalation: false

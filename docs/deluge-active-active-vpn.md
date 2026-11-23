@@ -54,7 +54,8 @@ peers may discover only one exit through a particular tracker.
    listener, and graceful shutdown check on a clean catalog. The existing
    catalog still needs a restore rehearsal. Publish the tested application
    image through the Harbor mirror workflow and pin it for the app,
-   port-config, and daemon-metrics containers. Confirm the latest config
+   port-config, and daemon-metrics containers. Set the `vpn-client-preflight`
+   init container to the same digest as the app. Confirm the latest config
    backup succeeded. Set production AirVPN
    port `5983` to All Devices and cut over through the Helm values overlay.
    Keep the old Gluetun profile and base values available for rollback. Verify
