@@ -157,5 +157,8 @@ Argo CD rolls the deployment when the generated ConfigMap changes. Verify that
 the public viewer opens Quickstart and follows a link to another page. Revert
 the viewer export in Git and let Argo CD reconcile to roll back a content update.
 For initial DNS publication, dispatch the [protected DNS workflow](../../.github/workflows/mastodon-public-dns.yml)
-with `site=openwiki` and the exact current main SHA after Argo CD reports both
-`openwiki` and `octelium-public` Synced and Healthy at that revision.
+with `site=openwiki` and the current main SHA. When a runner starts, it
+validates the latest main descended from that SHA with the same workflow
+definition. If main advances during checks, the runner validates again once.
+The publisher requires the validated revision to remain current and both
+`openwiki` and `octelium-public` to report Synced and Healthy at that revision.
