@@ -5,9 +5,26 @@ tag and writes its digest to the Application through Argo CD. It does not write
 workload versions or hashes to Git. Git source branches remain ordinary
 Application configuration; a Git branch is not an image tag.
 
-The declared controller has one replica and no enrolled workloads. Source
-configuration and registry manifest availability have been checked; controller
-readiness and a real workload update are still pending deployment evidence.
+The upstream Helm chart runs one controller replica in `argocd`. The controller
+watches explicit `ImageUpdater` resources in that namespace.
+
+## Native write-back canary
+
+The controller Application syncs one canary ApplicationSet and one ImageUpdater.
+The canary tracks the Harbor mirror's curl `8.22.0` tag with the native `digest`
+strategy. Its Deployment starts from a reviewed curl `8.21.0` digest. The
+ApplicationSet ignores the generated Application's Kustomize image override so
+the controller can write the resolved digest through Argo CD. The canary runs
+one sleeping container in `automation` with inbound and outbound traffic denied.
+
+Verify the controller result, generated Application override and live image:
+
+```sh
+kubectl -n argocd get imageupdater image-updater-canary -o jsonpath='{.status}'
+kubectl -n argocd get application image-updater-canary -o jsonpath='{.spec.source.kustomize.images}'
+kubectl -n automation get pods -l app.kubernetes.io/name=image-updater-canary \
+  -o custom-columns='READY:.status.containerStatuses[0].ready,IMAGE:.spec.containers[0].image,IMAGE_ID:.status.containerStatuses[0].imageID'
+```
 
 Uptime Kuma monitors the declared controller Deployment in `argocd` using the
 existing fresh Prometheus workload-health signals. This covers readiness and
@@ -113,6 +130,25 @@ apply payloads and conflict propagation. It is not evidence of live Kubernetes
 managed-field behavior or successful controller reconciliation. Runtime acceptance
 requires publishing two digests behind an operator-selected tag, observing the
 second, and confirming an unrelated normal apply preserves it.
+
+## Disposable BusyBox canary
+
+The reviewed `image-updater-canary` scope of the existing Harbor mirror
+workflow retags an already-mirrored Docker Hub BusyBox artifact as
+`harbor.stinkyboi.com/mirror/docker.io/library/busybox:issue-1846-canary`.
+The dedicated [inventory](../scripts/config/harbor-image-updater-canary.json)
+selects artifact A initially. Before each alias write, the publisher completes
+an authenticated pull, verifies the digest, and rechecks current `main`.
+A creates an absent alias or verifies an existing A. B advances A or verifies
+an existing B. The publisher rejects all other transitions and uses a separate
+concurrency group for canary runs.
+
+After a protected merge, publish A by dispatching the selected scope on exact
+`main`. Require its successful alias and digest receipt before enrolling the
+one canary workload. With the baseline running, advance the inventory to B
+through a separate reviewed change, publish on current `main`, then verify the
+same selector, new Application and running image digests, and retention after
+a targeted unrelated Application metadata apply.
 
 ## Protected delivery and validation
 

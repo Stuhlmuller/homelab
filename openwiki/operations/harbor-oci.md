@@ -160,12 +160,22 @@ verified:
 
 # Harbor Private OCI Registry
 
+## Argo CD bootstrap image
+
+The offline image coverage check requires a digest-pinned Quay catalog entry
+for the bootstrap chart's literal `global.image.tag`. The full catalog keeps
+v3.4.2 for rollback alongside v3.4.14. Use protected Harbor publication and
+authenticated pull verification before applying a new bootstrap image tag.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
 the package SHA-256 for every Argo CD chart source, including the dormant
-OpenClaw Enterprise Git Helm chart. The protected
-`harbor-helm-charts.yml` dispatch publishes the exact packages to
+OpenClaw Enterprise Git Helm chart. The required offline check validates that
+every declared Argo CD chart has a reviewed package before publication. For
+charts from pinned Git revisions, Helm selects the package contents and the
+publisher normalizes the archive timestamps before checking the reviewed hash.
+The protected `harbor-helm-charts.yml` dispatch publishes the exact packages to
 `harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
 robot. Run it on current `main` before moving any Argo CD chart source to
 Harbor. The repository credential is owned by Argo CD self-management and
