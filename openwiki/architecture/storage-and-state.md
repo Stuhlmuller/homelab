@@ -219,8 +219,9 @@ control-plane node and its system disk. GitOps explicitly declares the retained
 creates the backup target independently of the active StatefulSet.
 
 Before placing or expanding retained local state, check per-node `/var` free
-bytes, inodes and depletion rate in the
+bytes, inodes, depletion rate and recent node I/O pressure in the
 [EPHEMERAL monitoring runbook](../../docs/talos-ephemeral-monitoring.md).
+Device latency, error and wear telemetry remains a separate acceptance item.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
@@ -519,6 +520,9 @@ repository-owned one-shot recovery needs an immutable PVC capture and offline
 candidate validation first; do not edit the live PVC manually. See the
 [Enterprise README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md)
 and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
+
+The Enterprise Application uses selective sync so an inspector-only change
+can leave the in-sync store Deployment untouched.
 
 The November 1 resource-store capture candidate is dormant under
 `clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
@@ -921,3 +925,7 @@ in local scratch containers, recording source and credential versions privately.
 It never mounts production claims. Preserve independent AWS/encrypted-state
 recovery access; a retained PVC alone is not proof of recoverable credentials.
 Live private routing and normal-client acceptance are separate checks.
+
+The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
+limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
+PostgreSQL and Redis serve inbound clients without initiating egress.

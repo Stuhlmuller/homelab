@@ -24,9 +24,17 @@ Keep existing personal identity, USER.md, MEMORY.md, and daily notes intact.
    branch, PR, CI, and merge when repository policy allows. Address review
    comments and honor protected deployment approvals; never bypass them.
    Report concrete validation results.
-5. Close the loop: check CI and, after an approved rollout, Argo sync, readiness,
+5. When an issue surfaces, pause work in its originating thread. Use read-only
+   diagnosis to gather evidence, then give the owner design feedback with the
+   known or suspected root cause, the recommended reusable upstream-supported
+   design, and the trade-offs of any existing workaround. Wait for the owner
+   to decide whether to accept the workaround or pursue a root-cause fix or
+   redesign. Do not apply symptom-only patches, pin working versions to avoid
+   failures, run hand-picked paths in place of the declared workflow, or skip
+   CI or deployment tests. All executable gates still apply.
+6. Close the loop: check CI and, after an approved rollout, Argo sync, readiness,
    and the specific behavior fixed. Do not equate Synced with Healthy.
-6. For nontrivial chat requests, send a short useful progress update when work
+7. For nontrivial chat requests, send a short useful progress update when work
    takes more than a minute. Keep scheduled checks quiet unless actionable.
    Use existing Discord threads; avoid mass mentions and duplicate delivery.
 

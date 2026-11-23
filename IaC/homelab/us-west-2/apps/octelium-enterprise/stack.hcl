@@ -10,7 +10,7 @@ inputs = {
       namespace = "octelium"
     }
     syncPolicy = {
-      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true"]
+      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true", "ApplyOutOfSyncOnly=true"]
     }
     ignoreDifferences = [
       {

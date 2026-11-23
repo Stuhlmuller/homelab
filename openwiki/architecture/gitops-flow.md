@@ -323,23 +323,22 @@ from [`IaC/root.hcl`](../../IaC/root.hcl) and preserve the original KMS
 key-provider metadata identity with `encrypted_metadata_alias`.
 
 For production retirement, the [apply runner](../../scripts/ci/terragrunt-apply.sh)
-uses `--filter-allow-destroy` to plan from the last successful full apply
+uses `--filter-affected` and `--filter-allow-destroy` to plan from the last successful full apply
 revision. It checks the saved plan's JSON against current Conftest policy
 before applying the same binary plan. Previously unencrypted records require
 the adoption described in the [state encryption guide](../../docs/state-encryption.md).
 Existing policy gates protect retained secret and backup data.
 
-## Pull request plan selection
+## CI unit selection
 
-The [plan selector](../../scripts/ci/terragrunt-plan-units.py) uses native
-`--filter-affected` discovery plus authored app-stack paths, then plans exact
-allowed units in the checkout so saved plans remain available to Conftest.
-Shared IaC/toolchain/policy changes retain full coverage; unrelated apps and
-unchanged bootstrap/storage units are skipped. Secret-bearing units remain
-excluded and deleted units retain their separate checks.
+Both pipelines use [affected-unit discovery](../../scripts/ci/terragrunt-affected-units.py).
+Terragrunt compares the PR merge base or the last successful full apply with
+the checked-out revision. The pipelines run affected units at exact paths in
+the checkout so Conftest can inspect their saved plans. PR plans exclude
+secret-bearing units, and retirements keep their separate state checks.
 
 The [plan runner](../../scripts/ci/terragrunt-plan.sh) preserves dependency order
-with eight concurrent Argo CD units and four AzureAD units, reuses local sources,
+with two concurrent Argo CD units and four AzureAD units, reuses local sources,
 and enables partial-parse caching. The workflow persists only OpenTofu provider
 binaries, never state or plans. See [plan performance](../../docs/ci-cd.md#plan-performance)
 for cache behavior, validation, and rollback.
