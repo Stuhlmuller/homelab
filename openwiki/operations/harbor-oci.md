@@ -438,6 +438,11 @@ separate `publisher` and `pull` robots. The publisher has pull/push permissions
 and no artifact deletion; the reader has pull only. Source-controlled bootstrap
 credentials stay outside this public repository.
 
+The bootstrap Job logs fixed phase names for API readiness, project and robot
+policy, registry policy, and scan backfill. Use the last phase message to
+locate a timeout. Verify Job completion separately from the Harbor health
+endpoint, which can report healthy while bootstrap is still running.
+
 The reviewed Stage A saved plan created and metadata-verified
 `/homelab/harbor/mirror-robot-pull-password` without exposing its value. It made
 only the reader parameter and identified exact-ARN reader-policy changes;
