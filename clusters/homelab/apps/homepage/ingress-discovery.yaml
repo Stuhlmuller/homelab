@@ -160,7 +160,7 @@ metadata:
     gethomepage.dev/name: Kiali
     gethomepage.dev/href: https://kiali.stinkyboi.com
     gethomepage.dev/description: Read-only Istio mesh topology and traffic view.
-    gethomepage.dev/icon: kiali.png
+    gethomepage.dev/icon: mdi-graph-outline
     gethomepage.dev/group: Observability
 spec:
   ingressClassName: compass-discovery
@@ -188,7 +188,7 @@ metadata:
     gethomepage.dev/name: LiteLLM
     gethomepage.dev/href: https://litellm.stinkyboi.com
     gethomepage.dev/description: AI model gateway used by homelab agents.
-    gethomepage.dev/icon: litellm.png
+    gethomepage.dev/icon: sh-litellm.png
     gethomepage.dev/group: AI and Automation
 spec:
   ingressClassName: compass-discovery
