@@ -59,10 +59,12 @@ def contract(root, app):
 
 
 def equivalent(app, paths, base_ref, root=ROOT):
-    """Fail closed; only an existing app's stack.hcl-only edit is eligible."""
+    """Compare the existing app's rendered contract for eligible IaC edits."""
     relevant = [p for p in paths if not p.endswith(".md") and (
         p.startswith(f"clusters/homelab/apps/{app}/") or p.startswith("IaC/") and f"/{app}/" in p)]
-    if relevant != [f"IaC/homelab/us-west-2/apps/{app}/stack.hcl"]:
+    app_stack_only = relevant == [f"IaC/homelab/us-west-2/apps/{app}/stack.hcl"]
+    shared_root = not relevant and "IaC/root.hcl" in paths
+    if not (app_stack_only or shared_root):
         return False
     try:
         base = run(root, "git", "merge-base", base_ref, "HEAD").strip()

@@ -46,6 +46,7 @@ python3 -I scripts/ci/argocd-image-updater-test.py --unit
 python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
+python3 -I scripts/ci/renovate-registry-relay-test.py
 python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
@@ -54,6 +55,7 @@ python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/terragrunt-app-equivalence-test.py
 python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
+python3 -I scripts/ci/descheduler-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/public-dns-validate-test.py
@@ -1007,7 +1009,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "22c70ea54b7675e4b43d232adad1d2922d5de5ce115e7f1c9f50449533910d69" ]] || {
+[[ "$scope_body_sha256" == "1fee4aac6decf54b55fd68f4a1f530b26160a1c57f7181d534443d71e10d4807" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1198,7 +1200,7 @@ done <<'EOF'
 .github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml eb8dcb70f4011365d076e0d92a54d83119c70af1b95f2c7b43e1ed8ba747a299
+.github/workflows/terragrunt-plan.yml 2e77323aaf87b025378659ce023119e29671c0cefb7ff8ba824a0d78f4945d7e
 .github/workflows/validate.yml 876de14f60a20bf9b85c2ba61e58b6d043aa1b7442affff6702627790d1ba875
 EOF
 echo "::endgroup::"

@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: renovate-registry-relay
+  namespace: traefik
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: renovate-registry-relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: renovate-registry-relay
+    spec:
+      serviceAccountName: renovate-registry-relay
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: relay
+          image: harbor.stinkyboi.com/mirror/docker.io/library/traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+          args:
+            - --global.checknewversion=false
+            - --global.sendanonymoususage=false
+            - --entrypoints.relay.address=127.0.0.1:8443
+            - --entrypoints.health.address=127.0.0.1:8080
+            - --ping=true
+            - --ping.entrypoint=health
+            - --providers.file.filename=/etc/relay/routes.yaml
+          livenessProbe:
+            exec:
+              command: [traefik, healthcheck, --ping=true, --ping.entrypoint=health, --entrypoints.health.address=127.0.0.1:8080]
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: [traefik, healthcheck, --ping=true, --ping.entrypoint=health, --entrypoints.health.address=127.0.0.1:8080]
+            timeoutSeconds: 5
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: config, mountPath: /etc/relay, readOnly: true}
+        - name: tailscale
+          image: harbor.stinkyboi.com/mirror/docker.io/tailscale/tailscale:v1.102.3@sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680
+          command: [/usr/local/bin/tailscaled]
+          args:
+            - --tun=userspace-networking
+            - --state=kube:renovate-registry-relay-state
+            - --statedir=/var/lib/tailscale
+            - --socket=/run/tailscale/tailscaled.sock
+          lifecycle:
+            postStart:
+              exec:
+                command: [/bin/sh, /etc/relay/activate.sh]
+          livenessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --peers=false, --json]
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: [/usr/local/bin/tailscale, --socket=/run/tailscale/tailscaled.sock, status, --peers=false]
+            timeoutSeconds: 5
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: config, mountPath: /etc/relay, readOnly: true}
+            - {name: state-api, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+            - {name: enrollment, mountPath: /var/run/secrets/renovate-registry, readOnly: true}
+            - {name: socket, mountPath: /run/tailscale}
+            - {name: state-dir, mountPath: /var/lib/tailscale}
+      volumes:
+        - name: config
+          configMap:
+            name: renovate-registry-relay
+        - name: state-api
+          projected:
+            defaultMode: 0444
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3600}
+              - configMap: {name: kube-root-ca.crt, items: [{key: ca.crt, path: ca.crt}]}
+              - downwardAPI: {items: [{path: namespace, fieldRef: {fieldPath: metadata.namespace}}]}
+        - name: enrollment
+          secret:
+            secretName: renovate-registry-relay-enrollment
+            defaultMode: 0440
+        - name: socket
+          emptyDir: {}
+        - name: state-dir
+          emptyDir: {}
