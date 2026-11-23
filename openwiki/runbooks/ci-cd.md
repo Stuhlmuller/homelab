@@ -14,8 +14,6 @@ sources:
     resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-ae9e276e4f1f0876814f04a2
     resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
-  - id: openwiki-source-9a01f0687eaa075cf78c3abc
-    resource: repo://.github/workflows/image-automation.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
@@ -159,11 +157,10 @@ environment protection rules; `homelab-production` has its branch policy and
 no required reviewer. The older October 6 reviewer snapshot is superseded.
 Re-read live settings before changing environment or branch protections.
 
-NOFX image builds, OpenClaw native configuration checks, and Image automation
-verification now run on matching `main` pushes or reviewed manual dispatches,
-without optional pull-request runs. Image automation no longer observes every
-five minutes; dispatch its `verify` operation from `main` for a deliberate
-journal check. Required pull-request checks retain their existing producers.
+NOFX image builds and OpenClaw native configuration checks run on matching
+`main` pushes or manual dispatches. The dedicated image updater and legacy
+proposal workflows were removed. The offline suite still validates the image
+catalog and runtime ownership policy.
 
 The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
 builds the stock controller, runtime, and CLI plus the source-bound journal
