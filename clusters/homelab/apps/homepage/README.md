@@ -6,13 +6,14 @@ The Argo CD Application, Kubernetes Service and access routes retain the
 bookmarks. The workload is stateless.
 
 Homepage lists opt-in Kubernetes Ingresses using its projected service account.
-Add `gethomepage.dev/enabled: "true"` to an Ingress and use Homepage annotations
-for its display name, group, icon and other metadata. Only grant annotation
-write access to people trusted to configure Homepage widgets. The
-`compass-discovery` IngressClass has no traffic controller. Its records in
-`ingress-discovery.yaml` provide explicit HTTPS links for apps whose traffic
-is routed by Istio or the Traefik file provider. They are marked external
-because their Ingress records do not describe the apps' Kubernetes backends.
+Add `gethomepage.dev/enabled: "true"` to a Kubernetes Ingress you want to
+discover. Use Homepage annotations for its display name, group and icon. Only
+grant annotation write access to people trusted to configure Homepage widgets.
+
+The existing Istio and Traefik file-provider apps are listed in
+`config/services.yaml`. These links have no controller-managed Kubernetes
+Ingress. Keeping them in Homepage config lets Argo CD complete the cutover
+without waiting for status from a load balancer.
 
 Use Terragrunt to switch the existing Argo CD Application from the Compass
 chart to this directory. Argo CD waits for the Homepage Deployment to become
