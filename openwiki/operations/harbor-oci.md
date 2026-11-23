@@ -371,6 +371,17 @@ success did not prove Harbor version discovery worked. These hosted-runner
 timeouts do not establish the cause of the separate cluster failure. Keep
 detailed Job logs restricted because they can name private packages.
 
+The [hosted Renovate relay candidate](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+is a standalone Kustomization at zero replicas outside the active Traefik
+Application. It prepares a private TCP 443 route from the dedicated hosted
+runner to the registry-only listener, with Harbor TLS, SNI, and the token
+realm preserved. The [offline fixture](../../scripts/ci/renovate-registry-relay-test.py)
+checks that the active overlay excludes it and verifies the route and its
+identity boundary. A separate activation must verify signed Tailnet Lock
+enrollment, persistent relay state, the protected companion workflow, and a
+read-only OCI lookup plus access denials before using the route for hosted
+Renovate runs.
+
 The first manual in-cluster dry run used the default `automation` service
 identity and resolved Harbor through the shared private Traefik listener on
 8443. Destination ztunnel rejected its HBONE connections under the existing
@@ -466,6 +477,10 @@ base/head native receipt entries differ. Unreadable state or a missing receipt
 map is included and fails closed. Unrelated open PR heads keep
 their earlier status, avoiding repeated writes to GitHub's per-head/context
 status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
+
+Use the [n8n mirror scope](../../docs/harbor-image-mirroring.md#delivery)
+for the single staged n8n image. It verifies a complete authenticated Harbor
+pull independently of the shared Renovate scope.
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -865,14 +880,13 @@ also failed with the same sanitized category. The [last passing main run](https:
 on October 28 retained five unresolved matches. A
 [commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
 shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
-workflow between the passing and failing main revisions. A fresh advisory
-database may now report an available fix; public logs deliberately withhold the
-finding, so the exact cause remains unverified. Inspect the private report,
-update the pinned runtime base or affected dependency as needed, then rerun the
+workflow between the passing and failing main revisions. A November 22 rebuild
+reproduced the available-fix finding with the current Grype database. The
+[Core Dockerfile](../../builds/harbor-core/Dockerfile) pins the signed Photon
+updates for cURL and Expat. The hosted
 [Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
-[full-image scan](../../builds/harbor-core/scan.sh). Keep the
-[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
-Grype database gate; do not suppress the match to clear unrelated PR checks.
+[full-image scan](../../builds/harbor-core/scan.sh) verify the package update
+before protected publication.
 
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.

@@ -243,7 +243,7 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 7
-	dispatch.inputs.stage.options == ["inspect", "cilium-route-preflight", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "cilium-route-preflight", "cilium-evacuate-worker", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'a7118ba8bb684fda79a4cd135e49196946ad96a58fb11379d7f10ac722c286ab  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -926,6 +926,8 @@ echo "::group::Mastodon database release checks"
 python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::LiteLLM rollout capacity checks"
 python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"
+echo "::group::Descheduler activation checks"
+python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::Argo CD bootstrap plan"
 bash scripts/ci/terragrunt-plan.sh
 EOF`
@@ -1046,6 +1048,9 @@ case "$IMAGE_SCOPE" in
   renovate)
     bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
     ;;
+  n8n)
+    bash scripts/ci/harbor-publish.sh mirror-n8n --tailscale
+    ;;
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
     ;;
@@ -1074,7 +1079,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'72f431c67abab37e7c47c4e949d65bd602b3e3b768addeea143584e2e5034ae3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5b741465a823256d3b722b30aa2f2bc7d005d17ba3d6c5d51366957e4a1ebcf7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1178,7 +1183,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "ac4d35e628c59b45ff93e0928fe11e69faba16586464df437bdf57e70c670489"
+	crypto.sha256(json.marshal(canonical)) == "41e23fc6f1a9c7199442730bb1fdc4c322d53350eeaa4bcd61e3ff2a18d00f41"
 }
 
 tailnet_workflow_requested if {

@@ -12,20 +12,17 @@ output.mkdir(mode=0o700, parents=True, exist_ok=True)
 output.chmod(0o700)
 
 
-def write_card(source: Path, target: Path, language: str = "") -> None:
+def write_card(source: Path, target: Path) -> None:
     body = source.read_bytes()
     body.decode("utf-8")
     longest = max((len(match.group()) for match in finditer(rb"`+", body)), default=0)
     fence = b"`" * max(4, longest + 1)
     relative = source.relative_to(root).as_posix().encode()
     target.write_bytes(
-        b"# " + relative + b"\n\n" + fence + language.encode() + b"\n" + body
+        b"# " + relative + b"\n\n" + fence + b"\n" + body
         + (b"\n" if not body.endswith(b"\n") else b"") + fence + b"\n"
     )
 
-
-special = root / "clusters/homelab/apps/octelium-enterprise/resources.yaml"
-write_card(special, output / "octelium-enterprise-resources.md", "yaml")
 
 expected = set()
 for raw in check_output(["git", "ls-files", "-z"], cwd=root).split(b"\0"):
@@ -46,5 +43,7 @@ for stale in output.glob("dotfile-*.md"):
     if stale.name not in expected:
         stale.unlink()
 
+# Release rc.104 indexes this manifest alongside the rest of the visible tree.
+(output / "octelium-enterprise-resources.md").unlink(missing_ok=True)
 assert {path.name for path in output.glob("dotfile-*.md")} == expected
-print(f"XERJ text cards: {len(expected)} tracked hidden files and one YAML workaround")
+print(f"XERJ text cards: {len(expected)} tracked hidden files")
