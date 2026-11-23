@@ -529,6 +529,19 @@ test_codex_signer_reads_only_four_exact_runtime_credentials if {
 	contains(msg, "outside its allowed application prefixes")
 }
 
+test_immich_database_secrets_are_exact_and_namespace_scoped if {
+	every key in {"/homelab/immich/postgres-admin-password", "/homelab/immich/postgres-app-password"} {
+		allowed := deny with input as oce_secret("immich", key)
+		count(allowed) == 0
+		wrong_namespace := deny with input as oce_secret("ai", key)
+		some namespace_msg in wrong_namespace
+		contains(namespace_msg, "outside its allowed application prefixes")
+	}
+	wrong_key := deny with input as oce_secret("immich", "/homelab/immich/postgres-app-password-extra")
+	some key_msg in wrong_key
+	contains(key_msg, "outside its allowed application prefixes")
+}
+
 test_uptime_kuma_secret_is_exact_and_monitoring_only if {
 	allowed := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/admin-password")
 	count(allowed) == 0

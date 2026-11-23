@@ -1,6 +1,13 @@
 # Private application routes and the two reviewed public callback surfaces.
 http:
   routers:
+    immich:
+      entryPoints: [websecure]
+      # First administrator setup is available through an operator port-forward.
+      rule: Host(`immich.stinkyboi.com`) && !PathRegexp(`(?i)^/+api/+auth/+admin-sign-up(/|$)`)
+      middlewares: [reject-ambiguous-paths]
+      service: immich
+      tls: {}
     uptime-kuma:
       entryPoints: [websecure]
       rule: Host(`uptime-kuma.stinkyboi.com`)
@@ -203,6 +210,10 @@ http:
     octelium-console:
       serverName: console.stinkyboi.com
   services:
+    immich:
+      loadBalancer:
+        servers:
+          - url: http://immich.immich.svc.cluster.local:2283
     uptime-kuma:
       loadBalancer:
         servers:

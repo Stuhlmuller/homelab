@@ -22,6 +22,7 @@ APPS = {
     "fleet": "fleet.fleet:8080",
     "grafana": "grafana.monitoring:80",
     "harbor": "harbor.harbor:80",
+    "immich": "immich.immich:2283",
     "kiali": "kiali.monitoring:20001",
     "langfuse": "langfuse-web.langfuse:3000",
     "litellm": "litellm.ai:4000",
@@ -74,7 +75,7 @@ class RouteTests(unittest.TestCase):
                 self.assertEqual(router["tls"], {})
                 self.assertEqual(router["service"], app)
                 host = f"Host(`{app}.stinkyboi.com`)"
-                if app != "fleet":
+                if app not in {"fleet", "immich"}:
                     self.assertEqual(router["rule"], host)
                 service, port = backend.split(":")
                 self.assertEqual(HTTP["services"][app]["loadBalancer"], {
@@ -110,6 +111,14 @@ class RouteTests(unittest.TestCase):
         # An alternate Fleet router would bypass the setup exclusions.
         self.assertEqual([name for name, route in ROUTERS.items()
                           if "fleet.stinkyboi.com" in route["rule"]], ["fleet"])
+
+    def test_immich_first_admin_is_only_available_to_cluster_operators(self):
+        router = ROUTERS["immich"]
+        self.assertEqual(router["rule"], "Host(`immich.stinkyboi.com`) && "
+                         "!PathRegexp(`(?i)^/+api/+auth/+admin-sign-up(/|$)`)")
+        self.assertEqual(router["middlewares"], ["reject-ambiguous-paths"])
+        self.assertEqual([name for name, route in ROUTERS.items()
+                          if "immich.stinkyboi.com" in route["rule"]], ["immich"])
 
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()

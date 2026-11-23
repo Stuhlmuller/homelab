@@ -934,3 +934,12 @@ Live private routing and normal-client acceptance are separate checks.
 The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
 limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
 PostgreSQL and Redis serve inbound clients without initiating egress.
+
+
+## Immich
+
+[Immich](../../clusters/homelab/apps/immich/README.md) stores media on the retained
+QNAP claim and keeps PostgreSQL on a separate retained local volume on `acer`.
+Nightly logical dumps on the QNAP claim protect against database node loss.
+Recovery after NAS loss requires a separately stored database dump and matching
+media copy. Valkey is ephemeral and interrupted queue work may need requeuing.

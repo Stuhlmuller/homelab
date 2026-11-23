@@ -397,6 +397,7 @@ external_secret_allowed_prefixes := {
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},
 	"harbor": {"/homelab/harbor/"},
+	"immich": {"/homelab/immich/postgres-admin-password", "/homelab/immich/postgres-app-password"},
 	"kagent": {"/homelab/kagent/litellm-token", "/homelab/kagent/postgres-password"},
 	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
