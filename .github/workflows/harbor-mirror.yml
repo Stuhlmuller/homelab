@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Kuma/AdGuard/Cilium/kagent/Image Updater canary inventories with exact destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Immich/Kuma/AdGuard/Cilium/kagent/Image Updater canary inventories with exact destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, uptime-kuma, adguard, cilium, kagent, image-updater-canary]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, immich, uptime-kuma, adguard, cilium, kagent, image-updater-canary]
 
 permissions: {}
 
@@ -105,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|immich|uptime-kuma|adguard|cilium|kagent|image-updater-canary) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -210,6 +210,9 @@ jobs:
             prometheus)
               bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
               ;;
+            immich)
+              bash scripts/ci/harbor-publish.sh mirror-immich --tailscale
+              ;;
             uptime-kuma)
               bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
               ;;
@@ -229,7 +232,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'f2ad07a9ee653b981f5e6acc6207152eecc4f28c63b58ee781a662d7d48bba7d  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'6e1525043a93d40038bda8e01d58e80907598216054b7a8e91a96fd67131d2f0  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
