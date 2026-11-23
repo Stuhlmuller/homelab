@@ -319,7 +319,11 @@ uses `--filter-affected` and `--filter-allow-destroy` to plan from the last succ
 revision. It checks the saved plan's JSON against current Conftest policy
 before applying the same binary plan. Previously unencrypted records require
 the adoption described in the [state encryption guide](../../docs/state-encryption.md).
-Existing policy gates protect retained secret and backup data.
+Existing policy gates protect retained secret and backup data. A
+`retire_argocd_app` dispatch targets one removed Application. Its saved plan
+may delete only that registration, and an existing Application must have the
+Argo CD cascading-deletion finalizer. The dispatch leaves the full-apply
+checkpoint in place.
 
 ## CI unit selection
 
