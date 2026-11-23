@@ -28,8 +28,10 @@ if [[ "$mode" == publish-harbor-core ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
 fi
+cordium_publication=false
 if [[ "$mode" == publish-cordium ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  cordium_publication=true
   mode=publish
   publish_names=(homelab-cordium-runner homelab-cordium-controller)
   publish_outputs=(runner controller)
@@ -110,7 +112,11 @@ fi
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repository_root"
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
-[[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+if "$cordium_publication"; then
+  bash scripts/ci/cordium-publication-source.sh
+else
+  [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+fi
 
 # Enroll the independently checked public key through review before publication.
 if [[ "$mode" == publish ]]; then
