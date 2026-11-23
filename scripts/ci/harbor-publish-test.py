@@ -341,8 +341,6 @@ class HarborPublicationGates(unittest.TestCase):
                         print("private restarted-forward readiness fixture", file=sys.stderr)
                         raise SystemExit(7)
                 print("401", end="")
-            elif command == "sleep":
-                assert args[0].isdigit()
             elif command == "aws":
                 assert args[0] == "ssm", "No cloud signing calls allowed"
                 print("private-test-credential-must-never-appear")
@@ -583,10 +581,18 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "sleep", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
+        # Readiness polling calls sleep up to 90 times. Record each delay
+        # without launching a Python interpreter for every simulated wait.
+        self.executable("sleep", f"""test "$#" -eq 1 || exit 96
+case "$1" in
+    ''|*[!0-9]*) exit 96 ;;
+esac
+printf '{{"command": "sleep", "args": ["%s"]}}\\n' "$1" >>'{self.calls}'
+""")
         shutil.copyfile(ROOT / "scripts/ci/install-kubeconfig.sh", self.root / "scripts/ci/install-kubeconfig.sh")
 
     def assert_cleaned(self):
