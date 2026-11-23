@@ -108,12 +108,72 @@ class Backups(unittest.TestCase):
                 result = self.snapshot()
             writer.result(timeout=10)
 
-        self.assertEqual(result["heartbeats"], 2)
+        self.assertEqual(result["heartbeats"], 1)
+        self.assertEqual(self.db.execute("SELECT id FROM heartbeat ORDER BY id").fetchall(), [(1,), (2,)])
         restored = self.root / "restore"
         B.restore(self.dest, restored)
         with closing(connect(restored / "kuma.db")) as database:
-            self.assertEqual(database.execute("SELECT id FROM heartbeat ORDER BY id").fetchall(), [(1,), (2,)])
+            self.assertEqual(database.execute("SELECT id FROM heartbeat ORDER BY id").fetchall(), [(1,)])
+            self.assertEqual(
+                database.execute("SELECT count(*) FROM payload WHERE value = ?", (b"x" * 512,)).fetchone()[0],
+                10000,
+            )
             self.assertEqual(database.execute("SELECT count(*) FROM payload").fetchone()[0], 10000)
+
+    def test_wal_snapshot_keeps_progress_when_every_step_sees_a_commit(self):
+        self.db.executescript(
+            "CREATE TABLE payload(value BLOB); INSERT INTO payload VALUES(zeroblob(5000000));"
+        )
+        connect = sqlite3.connect
+        live = self.db
+        pages_left = []
+
+        class CommittingReader(sqlite3.Connection):
+            def backup(self, target, *, progress, **kwargs):
+                def commit_after_step(status, remaining, total):
+                    pages_left.append(remaining)
+                    progress(status, remaining, total)
+                    if remaining:
+                        live.execute("INSERT INTO heartbeat VALUES(2)")
+                        live.commit()
+
+                return super().backup(target, progress=commit_after_step, **kwargs)
+
+        def connect_with_writer(path, *args, **kwargs):
+            if str(path).endswith("?mode=ro"):
+                kwargs["factory"] = CommittingReader
+            return connect(path, *args, **kwargs)
+
+        # A fake clock bounds the failure if copying restarts on every commit.
+        with patch.object(B.sqlite3, "connect", side_effect=connect_with_writer):
+            with patch.object(B, "time") as clock:
+                clock.monotonic.side_effect = lambda: len(pages_left) * 10
+                result = self.snapshot()
+        self.assertGreater(len(pages_left), 2)
+        self.assertEqual(pages_left, sorted(set(pages_left), reverse=True))
+        self.assertEqual(pages_left[-1], 0)
+        self.assertEqual(result["heartbeats"], 1)
+        self.assertEqual(
+            live.execute("SELECT count(*) FROM heartbeat").fetchone()[0], len(pages_left)
+        )
+        restored = B.restore(self.dest, self.root / "restored")
+        self.assertEqual(restored["heartbeats"], 1)
+
+    def test_snapshot_timeout_releases_wal_reader_and_cleans_staging(self):
+        self.snapshot()
+        before = list(self.dest.iterdir())
+        scratch = self.root / "scratch"
+        scratch.mkdir()
+        with patch.object(B, "time") as clock:
+            clock.monotonic.side_effect = [0, 121]
+            with self.assertRaisesRegex(TimeoutError, "snapshot-timeout"):
+                B.snapshot(self.source, self.dest, self.catalog, scratch_directory=scratch)
+        self.assertEqual(list(self.dest.iterdir()), before)
+        self.assertEqual(list(scratch.iterdir()), [])
+        self.db.execute("INSERT INTO heartbeat VALUES(2)")
+        self.db.commit()
+        self.assertEqual(self.db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone(), (0, 0, 0))
+        self.assertEqual(self.snapshot()["heartbeats"], 2)
 
     def test_partial_catalog_configuration_not_published(self):
         self.db.execute("ALTER TABLE monitor ADD COLUMN description TEXT")

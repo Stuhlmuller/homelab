@@ -369,7 +369,8 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
 remaining fixture groups concurrently. The offline Nix result requires each
-group's result.
+group's result. The n8n fixtures use the inputs listed in `flake.nix` and
+publish a separate signed result for reuse across unrelated changes.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The offline Nix gate also runs the pinned XERJ release against the Octelium
