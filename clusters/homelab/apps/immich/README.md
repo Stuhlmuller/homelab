@@ -1,7 +1,7 @@
 # Immich
 
 Immich v3.4.2 stores photos and videos on the retained QNAP-backed
-`immich-library` claim. Its dedicated VectorChord PostgreSQL runs on
+`immich-library` claim. Its dedicated PostgreSQL 18 with VectorChord runs on
 `acer` with retained local storage. Valkey holds the job queue in memory.
 After a Valkey restart, requeue interrupted jobs from the Immich admin UI.
 Machine learning and its dependent search and face features are disabled
