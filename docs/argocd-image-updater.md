@@ -144,8 +144,11 @@ an existing B. The publisher rejects all other transitions and uses a separate
 concurrency group for canary runs.
 
 After a protected merge, publish A by dispatching the selected scope on exact
-`main`. Require its successful alias and digest receipt before enrolling the
-one canary workload. With the baseline running, advance the inventory to B
+`main`. The [BusyBox canary](../clusters/homelab/apps/image-updater-busybox-canary)
+uses a separate Application and starts at zero replicas with enrollment paused.
+Require the successful alias
+and digest receipt before scaling to one replica and unpausing enrollment
+through a protected change. Once the baseline runs, advance the inventory to B
 through a separate reviewed change, publish on current `main`, then verify the
 same selector, new Application and running image digests, and retention after
 a targeted unrelated Application metadata apply.

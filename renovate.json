@@ -19,6 +19,13 @@
       "enabled": false
     },
     {
+      "description": "Argo CD runtime digest ownership",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["harbor.stinkyboi.com/mirror/docker.io/library/busybox"],
+      "matchFileNames": ["clusters/homelab/apps/image-updater-busybox-canary/deployment.yaml"],
+      "enabled": false
+    },
+    {
       "description": "Validate Nix toolchain changes on every supported system before merging.",
       "matchManagers": [
         "nix"

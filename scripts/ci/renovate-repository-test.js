@@ -28,16 +28,28 @@ test('discovers each declared HCL Helm chart once, without matching Git sources'
 test('keeps Nix updates reviewed and preserves image ownership', () => {
   assert.equal(config.nix.enabled, true);
   assert.equal(config.lockFileMaintenance.enabled, true);
-  const nixRule = config.packageRules.find((rule) => rule.matchManagers?.includes('nix'));
-  assert.equal(nixRule.automerge, false);
-  assert.equal(config.packageRules.length, 2, 'preserve existing automerge for non-Nix dependencies');
-  assert.equal(config.packageRules.find((rule) => rule.matchManagers?.includes('nix')).groupName, 'Nix toolchain');
-  assert.deepEqual(config.packageRules[0], {
-    description: 'Image Updater exclusively owns enrolled Chainguard Harbor targets.',
-    matchDatasources: ['docker'],
-    matchPackageNames: ['harbor.stinkyboi.com/homelab/chainguard/python', 'harbor.stinkyboi.com/homelab/chainguard/curl'],
-    enabled: false,
-  });
+  assert.deepEqual(
+    config.packageRules.map(({ description: _description, ...rule }) => rule),
+    [
+      {
+        matchDatasources: ['docker'],
+        matchPackageNames: ['harbor.stinkyboi.com/homelab/chainguard/python', 'harbor.stinkyboi.com/homelab/chainguard/curl'],
+        enabled: false,
+      },
+      {
+        matchDatasources: ['docker'],
+        matchPackageNames: ['harbor.stinkyboi.com/mirror/docker.io/library/busybox'],
+        matchFileNames: ['clusters/homelab/apps/image-updater-busybox-canary/deployment.yaml'],
+        enabled: false,
+      },
+      {
+        matchManagers: ['nix'],
+        groupName: 'Nix toolchain',
+        automerge: false,
+      },
+    ],
+    'preserve automerge outside the exact Image Updater and Nix rules',
+  );
 });
 
 test('every SHA-pinned action includes same-line version metadata', () => {
