@@ -106,12 +106,13 @@ class ServiceInventoryTests(unittest.TestCase):
                                         "2026-11-01T15:34:00+00:00")
 
     @unittest.skipUnless(shutil.which("yq"), "Nix-provided yq is unavailable")
-    def test_reviewed_manifest_has_25_fallbacks_and_critical_components(self):
+    def test_reviewed_manifest_has_24_fallbacks_and_critical_components(self):
         result = subprocess.run(
             ["yq", "ea", "-o=json", "-I=0", "[.]", str(INVENTORY.FALLBACK_SOURCE)],
             check=True, capture_output=True, text=True)
         definitions = INVENTORY.fallback_sources(json.loads(result.stdout))
-        self.assertEqual(len(definitions), 25)
+        self.assertEqual(len(definitions), 24)
+        self.assertNotIn("kiali-public", definitions)
         for marker, name in INVENTORY.REQUIRED_FALLBACKS.items():
             self.assertEqual(definitions[marker]["deployment"], name)
 

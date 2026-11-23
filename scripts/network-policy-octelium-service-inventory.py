@@ -22,7 +22,7 @@ NAMESPACE = "octelium"
 NATIVE_NODE = "zimaboard-0"
 FALLBACK_NODE = "acer"
 FALLBACK_LABEL = "homelab.rst.io/emergency-dataplane"
-EXPECTED_FALLBACK_DEPLOYMENTS = 25
+EXPECTED_FALLBACK_DEPLOYMENTS = 24
 REQUIRED_FALLBACKS = {"ingress": "emergency-octelium-ingress",
                       "octovigil": "emergency-octelium-octovigil"}
 MAX_RESPONSE = 8 * 1024 * 1024
