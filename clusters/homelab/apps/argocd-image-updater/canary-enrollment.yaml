@@ -1,0 +1,53 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: image-updater-canary
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: [missingkey=error]
+  generators:
+    - list:
+        elements:
+          - name: image-updater-canary
+  ignoreApplicationDifferences:
+    - jsonPointers:
+        - /spec/source/kustomize/images
+  template:
+    metadata:
+      name: '{{.name}}'
+    spec:
+      project: homelab-workloads
+      source:
+        repoURL: https://github.com/Stuhlmuller/homelab.git
+        targetRevision: main
+        path: clusters/homelab/apps/argocd-image-updater/canary
+        kustomize:
+          namespace: automation
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: automation
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+---
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: image-updater-canary
+  namespace: argocd
+spec:
+  writeBackConfig:
+    method: argocd
+  applicationRefs:
+    - namePattern: image-updater-canary
+      images:
+        - alias: curl
+          imageName: harbor.stinkyboi.com/mirror/docker.io/curlimages/curl:8.22.0
+          commonUpdateSettings:
+            updateStrategy: digest
+          manifestTargets:
+            kustomize:
+              name: harbor.stinkyboi.com/mirror/docker.io/curlimages/curl
