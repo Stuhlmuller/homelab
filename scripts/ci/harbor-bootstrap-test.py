@@ -14,7 +14,7 @@ import unittest
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -700,6 +700,49 @@ class BootstrapTest(unittest.TestCase):
             bootstrap.backfill_scans(self.client)
         self.assertEqual(self.mutations(), [])
 
+    def test_readiness_transport_error_preserves_retry_budget_and_redacts_details(self):
+        with patch.object(bootstrap.urllib.request.OpenerDirector, "open",
+                          side_effect=bootstrap.urllib.error.URLError(ADMIN)) as opened, \
+                patch.object(bootstrap, "time") as clock:
+            clock.monotonic_ns.return_value = 0
+            result, output = self.main()
+        self.assertEqual(result, 1)
+        self.assertEqual(opened.call_count, 12)
+        self.assertTrue(all(request.kwargs == {"timeout": 10} for request in opened.call_args_list))
+        self.assertEqual(clock.sleep.call_args_list, [call(5)] * 11)
+        self.assertEqual(output.splitlines(), [
+            "Harbor API transport diagnostic: family=readiness phase=open elapsed_ms=0",
+        ] * 12 + ["Harbor bootstrap failed: Harbor API connection failed"])
+
+    def test_transport_body_read_only_reports_allowlisted_family_and_elapsed_time(self):
+        private_value = "synthetic-private-response"
+        body_value = "synthetic-private-request-body"
+        artifact_path = f"/projects/homelab/repositories/{private_value}/artifacts"
+        cases = (
+            ("GET", f"{artifact_path}?token={ADMIN}", None, "artifact-list"),
+            ("POST", f"{artifact_path}/sha256:{'a' * 64}/scan?token={ADMIN}",
+             {"private": body_value}, "artifact-action"),
+            ("GET", f"/{private_value}?token={ADMIN}", None, "other"),
+            ("GET", "/configurations", None, "configuration"),
+        )
+        for method, request_path, body, family in cases:
+            with self.subTest(family=family):
+                response = Mock(status=200, headers={"X-Private": private_value})
+                response.read.side_effect = TimeoutError(f"{private_value}: {ADMIN}")
+                output = io.StringIO()
+                diagnostics = io.StringIO()
+                with patch.object(self.client.opener, "open", return_value=contextlib.nullcontext(response)), \
+                        patch.object(bootstrap.time, "monotonic_ns", side_effect=(10_000_000, 17_000_000)), \
+                        contextlib.redirect_stdout(output), contextlib.redirect_stderr(diagnostics):
+                    with self.assertRaisesRegex(bootstrap.BootstrapError, "^Harbor API connection failed$"):
+                        self.client.request(method, request_path, body)
+                self.assertEqual(output.getvalue(), "")
+                self.assert_no_credentials(diagnostics.getvalue())
+                self.assertNotIn(private_value, diagnostics.getvalue())
+                self.assertNotIn(body_value, diagnostics.getvalue())
+                self.assertEqual(diagnostics.getvalue(),
+                                 f"Harbor API transport diagnostic: family={family} phase=body-read elapsed_ms=7\n")
+
     def test_denied_admin_and_unexpected_response_never_log_credentials(self):
         for status in (401, 403, 500):
             with self.subTest(status=status):
@@ -707,7 +750,7 @@ class BootstrapTest(unittest.TestCase):
                 self.api.override = lambda *_args: (status, {"secret": ADMIN}, {})
                 result, output = self.main()
                 self.assertEqual(result, 1)
-                self.assertIn(f"HTTP {status}", output)
+                self.assertEqual(output, f"Harbor bootstrap failed: Harbor API returned HTTP {status}\n")
                 self.assertEqual(self.mutations(), [])
 
     def test_malformed_configuration_and_wrong_prefix_fail_before_mutation(self):

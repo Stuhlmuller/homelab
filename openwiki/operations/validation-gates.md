@@ -986,8 +986,10 @@ current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
 and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
 and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
-receipt records the failed phase or route-check result, including any overlapping
-prefix. A successful result requires the checksum-verified receipt.
+receipt records which credential check, transport setup, inventory read, or
+route comparison failed. A route comparison records any overlapping prefix.
+Transport output stays out of the receipt. A successful result requires the
+checksum-verified receipt.
 
 After Cilium coexistence is Synced and Healthy, use Platform Maintenance
 `stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
@@ -1144,6 +1146,8 @@ Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
 database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+Before removing a reader policy, the cleanup gate requires a complete empty
+Kubernetes PodList with a server resource version for the run's owner label.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run

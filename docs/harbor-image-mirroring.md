@@ -292,8 +292,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
+   For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
+   inventory selects only the reviewed Home Assistant Container image and
+   uses the same all-platform copy and authenticated pull verification.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `immich`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
+   `image-updater-canary`, `bazel-cache`, or `home-assistant`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.

@@ -224,10 +224,11 @@ absent() {
   [[ -z "$result" ]]
 }
 reader_pods_gone() {
-  local _
+  local _ selector
+  selector="homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D$owner_token"
   for _ in {1..6}; do
-    if kubectl -n automation get pods \
-      -l "homelab.stuhlmuller.dev/checkpoint-owner=$owner_token" --chunk-size=0 -o json |
+    # The raw API preserves the PodList resource version and pagination metadata.
+    if kubectl get --raw "/api/v1/namespaces/automation/pods?limit=500&labelSelector=$selector" |
       jq -e '.kind == "PodList" and
         (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
         (.metadata.continue // "") == "" and (.items | type == "array" and length == 0)' >/dev/null; then
