@@ -274,8 +274,12 @@ over UDP/TCP 53. It watches only the labeled `traefik-private` Service;
 that Service's hostname annotation and explicit HTTPS routes must match.
 Unmatched address queries and non-address records go to public resolvers;
 Traefik still owns HTTPS and application routing.
-For the initial handoff, publish and verify its pinned Harbor image, reconcile
-the Application, verify the `homelab-dns` proxy, and check its **observed**
+Before switching the Application to the Harbor chart source, run the
+[protected Helm chart publisher](../../docs/harbor-image-mirroring.md#helm-charts)
+and verify its authenticated pull of the reviewed package. The repository gate
+renders that package by SHA-256. Wait for Argo CD self-management to apply the
+Helm repository allowlist, then reconcile `tailnet-dns` through targeted
+Terragrunt Apply. Verify the `homelab-dns` proxy and check its **observed**
 tailnet IP from an authorized tailnet client:
 
 ```sh
