@@ -1124,14 +1124,13 @@ Funnel path retains Traefik's plain-text 404 under safe OPTIONS. It sends no
 webhook and does not prove HMAC validation or workflow execution; verify a real
 workflow run separately before retiring the old unsigned hook. Run
 `python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
-The [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
 the n8n 3.3.0 stack renders one Deployment replica, and the maintenance overlay
 renders zero when applied, with no migration Job in either render. Its
 [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
-before a paired capture. The checkpoint receipt verifies the live backup
-and isolated restore.
+before a paired capture; source rendering alone is not a live backup.
 The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
 is manual and exact-main. It pins the capture script, restore helper,
 excluded reader Job, and deny-all policy by SHA-256 before AWS or Octelium

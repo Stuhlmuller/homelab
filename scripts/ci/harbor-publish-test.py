@@ -539,6 +539,10 @@ class HarborPublicationGates(unittest.TestCase):
                     assert user in {"robot$mirror+publisher", "robot$mirror+pull"}
                     config.write_text(json.dumps({"username": user}))
                     assert config.stat().st_mode & 0o077 == 0
+                elif args[:2] == ["registry", "set"]:
+                    assert json.loads(config.read_text()) == {"username": "robot$mirror+publisher"}
+                    assert args[2:] == ["harbor.stinkyboi.com", "--blob-chunk", "16777216",
+                                        "--blob-max", "16777216"]
                 elif args[:2] == ["image", "copy"]:
                     source, target = args[-2:]
                     assert "@sha256:" in source
@@ -947,6 +951,29 @@ printf '%s\n' {SHA}
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-homepage")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_home_assistant_scope_uses_chunked_push_and_authenticated_pull(self):
+        self.tailnet_mocks(oci_index=True, registries=("ghcr.io",))
+        self.home_assistant_mirror_manifest = self.mirror_manifest
+        fixture_source = self.mirror_manifest["images"][0]["source"]
+        reviewed_source = json.loads((ROOT / "scripts/config/harbor-home-assistant-images.json").read_text())
+        helper = self.root / "scripts/ci/harbor-publish.sh"
+        helper.write_text(helper.read_text().replace(reviewed_source["images"][0]["source"], fixture_source))
+
+        result = self.run_helper("mirror-home-assistant", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+        calls = self.calls_for("regctl")
+        self.assertIn(["registry", "set", "harbor.stinkyboi.com", "--blob-chunk", "16777216",
+                       "--blob-max", "16777216"], calls)
+        tagged, digest = fixture_source.split("@")
+        repository = tagged.rsplit(":", 1)[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        self.assertIn(["image", "copy", f"{repository}@{digest}",
+                       f"{destination}:{digest.removeprefix('sha256:')}"], calls)
+        self.assertTrue(any(args[:3] == ["image", "copy", "--force-recursive"]
+                            and args[-2] == f"{destination}@{digest}" for args in calls))
+        self.assertIn(f"{destination}:{digest.removeprefix('sha256:')}@{digest}",
+                      (self.root / "summary").read_text())
 
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -2272,20 +2299,26 @@ printf '%s\n' {SHA}
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
-    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+    def tailnet_mocks(self, status="401", failure=None, readiness_failures=None, **kwargs):
         self.transport_mocks(mirror=True, failure=failure, **kwargs)
         self.env.pop("OCTELIUM_AUTH_TOKEN", None)
         self.env.pop("KUBE_API_SERVER_URL", None)
         self.calls.touch(exist_ok=True)
         self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
         self.executable("curl", f"""exec python3 - "$@" <<'PYMOCK'
-import json,sys
+import json, sys
 from pathlib import Path
-args=sys.argv[1:]
+args = sys.argv[1:]
 assert "--insecure" not in args and "--resolve" not in args
 assert args[-1] == "https://harbor.stinkyboi.com/v2/"
-with Path({str(self.calls)!r}).open("a") as f:
+calls = Path({str(self.calls)!r})
+attempt = 1 + sum(json.loads(line)["command"] == "curl" for line in calls.read_text().splitlines())
+with calls.open("a") as f:
     f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+failure = {readiness_failures or {}!r}.get(attempt)
+if failure:
+    print("private tailnet readiness fixture", file=sys.stderr)
+    raise SystemExit(failure)
 print({status!r},end="")
 PYMOCK
 """)
@@ -2313,12 +2346,32 @@ PYMOCK
                 self.assertEqual(self.calls_for("aws"), [])
                 self.assertEqual(self.calls_for("kubectl"), [])
 
-    def test_tailnet_authenticated_retry_rechecks_https_without_forward(self):
-        self.tailnet_mocks(failure="mirror-pull-once")
+    def test_tailnet_authenticated_retry_recovers_after_connection_failure(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7})
         result = self.run_helper("mirror", tailnet=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertGreaterEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual(len(self.calls_for("curl")), 3)
         self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertEqual(self.calls_for("sudo"), [])
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr)
+
+    def test_tailnet_connection_readiness_retries_are_bounded(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7, 3: 7, 4: 7})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 7)
+        self.assertEqual(len(self.calls_for("curl")), 4)
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-failed\n", self.public_status)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr + self.public_status)
+
+    def test_tailnet_tls_error_stops_without_retrying(self):
+        self.tailnet_mocks(readiness_failures={1: 60})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 60)
+        self.assertEqual(len(self.calls_for("curl")), 1)
+        self.assertEqual(self.calls_for("aws"), [])
 
     def test_tailnet_mode_rejects_another_workflow(self):
         self.tailnet_mocks()

@@ -597,8 +597,8 @@ take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
 instead of changing the major image in place, then verify SQL, n8n readiness,
 and the public webhook before retiring the old PVC.
 
-The n8n 3.3.0 stack declares one Deployment replica. The preceding
-[maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+The n8n 3.3.0 stack declares one Deployment replica. The
+[inactive maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 declares zero replicas when included in Helm `valueFiles`. While the fence is
 active, the paired checkpoint must verify the exact Argo CD revision, zero
 n8n writer Pods or Jobs, PostgreSQL readiness, and both PVC/PV bindings across
