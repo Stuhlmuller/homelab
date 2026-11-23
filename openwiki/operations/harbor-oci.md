@@ -467,6 +467,10 @@ map is included and fails closed. Unrelated open PR heads keep
 their earlier status, avoiding repeated writes to GitHub's per-head/context
 status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
+Use the [n8n mirror scope](../../docs/harbor-image-mirroring.md#delivery)
+for the single staged n8n image. It verifies a complete authenticated Harbor
+pull independently of the shared Renovate scope.
+
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
 Retain the database, registry blobs, signing certificate and encryption key
