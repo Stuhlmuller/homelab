@@ -34,7 +34,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - zimaboard-1
+          - zimaboard-0
   persistentVolumeReclaimPolicy: Retain
   storageClassName: home-assistant-config
   volumeMode: Filesystem

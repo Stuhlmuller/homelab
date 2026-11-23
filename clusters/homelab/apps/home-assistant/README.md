@@ -17,7 +17,7 @@ additional networking or hardware configuration. Integrations that
 support direct device addresses can be configured in Home Assistant.
 
 The retained `home-assistant-config` claim stores `/config`, including
-the SQLite recorder and authentication state, on `zimaboard-1`. A single
+the SQLite recorder and authentication state, on `zimaboard-0`. A single
 replica and Recreate updates keep one writer on the local filesystem.
 The claim survives application pruning or deletion. In Home Assistant,
 create and download backups under **Settings → System → Backups**. Store

@@ -938,6 +938,6 @@ PostgreSQL and Redis serve inbound clients without initiating egress.
 ## Home Assistant state
 
 [Home Assistant](../../clusters/homelab/apps/home-assistant/README.md) uses a
-retained local claim on `zimaboard-1` for configuration, credentials, and the
+retained local claim on `zimaboard-0` for configuration, credentials, and the
 SQLite recorder. The documented backup and recovery path uses Home Assistant
 archives downloaded and stored off the node.
