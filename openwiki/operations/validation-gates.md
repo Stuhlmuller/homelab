@@ -946,6 +946,16 @@ and the four reviewed Talos nodes' routes. The encrypted, versioned
 receipt records the failed phase or route-check result, including any overlapping
 prefix. A successful result requires the checksum-verified receipt.
 
+After Cilium coexistence is Synced and Healthy, use Platform Maintenance
+`stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
+Verify healthy Cilium, Envoy, Flannel, and Multus rollouts and confirm AdGuard
+and Harbor core are Ready on surviving nodes. The stage runs a server-side
+drain dry run, rechecks Harbor before eviction, and verifies that Harbor core
+remains Ready after the drain. It leaves the worker cordoned and drained.
+Verify authenticated registry pulls and tailnet DNS before the separate cutover.
+If evacuation fails, confirm the worker's cordon and eviction state. Keep
+cutover paused and review a protected scheduling recovery before retrying.
+
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
 guard. Regression fixtures reject a reusable `workflow_call` trigger, shell or

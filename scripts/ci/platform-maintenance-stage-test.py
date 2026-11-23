@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,6 +99,46 @@ class PlatformStageTests(unittest.TestCase):
             check(pool, nodes, services, {})
         with self.assertRaisesRegex(ValueError, "no nondefault routes"):
             check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
+
+    def test_worker_evacuation_refuses_unready_overlay_or_another_cordoned_node(self):
+        require_overlay = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["require_overlay"]
+        app = {"spec": {"syncPolicy": {"automated": {"enabled": True}}},
+               "status": {"sync": {"status": "Synced", "revisions": ["1.20.5", SHA]},
+                          "health": {"status": "Healthy"}}}
+        nodes = [{"metadata": {"name": node}, "spec": {}}
+                 for node in ("acer", "zimaboard-0", "zimaboard-1", "zimaboard-2")]
+        daemonset = {"metadata": {"name": "cilium", "generation": 1},
+                     "status": {"observedGeneration": 1, "desiredNumberScheduled": 4,
+                                "numberReady": 4, "updatedNumberScheduled": 4, "numberAvailable": 4}}
+        require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 3
+        with self.assertRaisesRegex(ValueError, "not current and ready"):
+            require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 4
+        nodes[0]["spec"]["unschedulable"] = True
+        with self.assertRaisesRegex(ValueError, "different node is already cordoned"):
+            require_overlay(app, nodes, [daemonset])
+
+    def test_worker_evacuation_checks_harbor_before_live_drain(self):
+        evacuation = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["main"]
+        kube = mock.Mock()
+
+        def get(kind, *_args):
+            if kind == "configmap":
+                return {"data": {"enable-policy": "never", "custom-cni-conf": "true"}}
+            return {"items": []}
+
+        settings = {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": SHA}
+        commands = {"run": mock.Mock(return_value=SHA), "get": get, "kube": kube,
+                    "check_main": mock.Mock(), "require_overlay": mock.Mock(),
+                    "ready_elsewhere": mock.Mock(side_effect=(True, False))}
+        with (mock.patch.dict(os.environ, settings),
+              mock.patch("sys.argv", ["evacuate", "--expected-sha", SHA]),
+              mock.patch.dict(evacuation.__globals__, commands)):
+            with self.assertRaisesRegex(SystemExit, "Harbor core Ready on a surviving node before evacuation"):
+                evacuation()
+        kube.assert_called_once()
+        self.assertIn("--dry-run=server", kube.call_args.args)
 
     def test_cilium_route_preflight_retains_exit_status_and_failure_phase(self):
         source = STAGE.read_text()
