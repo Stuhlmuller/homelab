@@ -100,8 +100,9 @@ organization-policy blocker is tracked below.
   Langfuse database relocation is currently queued.
 - **Next step:** Rotate the shared token through the guarded
   [CI credential helper](../../scripts/octelium-ci-credential.sh), then verify
-  authenticated read-only Kubernetes access through the protected
-  [diagnostics workflow](../../.github/workflows/homelab-diagnostics.yml).
+  authenticated read-only Kubernetes access from a private operator terminal
+  using the [private route](../../docs/octelium.md#private-kubernetes-access).
+  Verify the CI token separately in the next authorized protected apply.
   Any future PostgreSQL move needs fresh PVC/PV identity checks, versioned
   off-NAS readback, and an isolated restore receipt before merge.
 

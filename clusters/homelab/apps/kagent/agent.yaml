@@ -1,0 +1,14 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: homelab-assistant
+  namespace: kagent
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  type: Declarative
+  declarative:
+    runtime: go
+    modelConfig: default-model-config
+    systemMessage: Explain Kubernetes concepts and suggest read-only diagnostic steps based on the information the operator provides.
+    tools: []
