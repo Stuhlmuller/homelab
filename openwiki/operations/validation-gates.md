@@ -375,11 +375,30 @@ latest PR head and trusted review receipt. See the
 [CI/CD security model](../../docs/ci-cd.md#security-model).
 
 For Descheduler values or chart changes, run
-`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
-rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
-exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. Live revision, argument and execution-cadence
-acceptance remain separate; see the [workload notes](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/descheduler/README.md).
+`bash scripts/ci/descheduler-cadence-check.sh`. During staging it verifies
+chart `0.33.0` renders one suspended CronJob and no Deployment. It applies
+the same chart overrides to both the repaired values and a pre-repair values
+fixture. Update the check alongside the pinned chart when upgrading. The same render feeds
+`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
+enabled strategy, valid LowNodeUtilization thresholds and the existing
+DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
+cycle. The protected live-plan job runs
+[`descheduler-release-check.py`](../../scripts/ci/descheduler-release-check.py)
+for runtime and gate changes. It requires the Argo values source to track
+`main` and explicit chart overrides for `kind=CronJob` and `suspend=true`.
+After protected staging, verify the exact reconciled revision, a suspended
+CronJob, and zero live Descheduler Pods. A separate activation change needs a
+repo-owned protected manual gate that binds the exact activation revision and
+checks fresh node, Pod, lease, Job and kubelet evidence immediately before
+removing the suspension. The prepared capacity
+helper fails on stale timestamps, changed inventory, or unknown demand; an
+earlier PR check cannot authorize later eviction. NodeFit remains a subset of
+scheduler checks; this helper does not establish N-1 capacity or later cycles. Missing
+strategy configuration prevents profile construction even while the Pod remains Ready.
+After activation, verify the live revision, 30-minute interval and two
+cycles without profile-construction errors. Zero evictions is acceptable.
+The pinned [chart defaults](https://github.com/kubernetes-sigs/descheduler/blob/v0.33.0/charts/descheduler/values.yaml#L125-L136)
+use CPU, memory and Pod thresholds of 20% with 50% targets.
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:
 Argo applied `07672f6d13114a6e695c28339dd99e401c840972`, then compared its
