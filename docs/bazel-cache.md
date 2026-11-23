@@ -13,7 +13,7 @@ Nix derivation and signature policy in its inputs. On a Bazel miss, Nix
 can substitute a signed output or run the original check in the Nix sandbox.
 
 To share your results with CI, use an x86-64 Linux Nix environment and an AWS
-session allowed to decrypt `/homelab/bazel-cache/writer-password`.
+session allowed to decrypt `/homelab/octelium/bazel-cache-writer-password`.
 
 ```sh
 nix develop --command nix run .#bazel-offline -- --publish

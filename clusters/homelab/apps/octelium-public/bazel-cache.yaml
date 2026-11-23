@@ -22,7 +22,7 @@ spec:
   data:
     - secretKey: writerPassword
       remoteRef:
-        key: /homelab/bazel-cache/writer-password
+        key: /homelab/octelium/bazel-cache-writer-password
 ---
 apiVersion: apps/v1
 kind: Deployment

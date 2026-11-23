@@ -14,7 +14,7 @@ def main():
     if target.scheme != "https" or target.netloc != "bazel-cache.stinkyboi.com":
         raise ValueError("Unexpected credential target")
 
-    name = "/homelab/bazel-cache/writer-password"
+    name = "/homelab/octelium/bazel-cache-writer-password"
     result = subprocess.run(
         ["aws", "ssm", "get-parameter", "--region", "us-west-2", "--name", name,
          "--with-decryption", "--output", "json", "--no-cli-pager"],

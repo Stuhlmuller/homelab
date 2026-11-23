@@ -119,7 +119,7 @@ class PeerTests(unittest.TestCase):
         ])
         self.assertEqual(resources["ExternalSecret"]["data"], [{
             "secretKey": "writerPassword",
-            "remoteRef": {"key": "/homelab/bazel-cache/writer-password"},
+            "remoteRef": {"key": "/homelab/octelium/bazel-cache-writer-password"},
         }])
 
     def test_harbor_metrics_accept_only_prometheus(self):
