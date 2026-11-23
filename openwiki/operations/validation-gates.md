@@ -960,6 +960,14 @@ Harbor Core run on `main` pushes. In PRs,
 the exact event diff, including removed paths, for each check's inputs. An
 unavailable diff runs the full runtime suite.
 
+The `validate` repository and runtime jobs share a GitHub Actions Nix store
+cache keyed by runner OS, architecture, and the two flake files. Successful
+`main` repository jobs populate it after signed offline verification. Check
+the `Cache Nix Store` or `Restore Nix Store Cache` step on a later run with the
+same key to verify reuse. Revert the cache steps and their matching workflow
+hash to roll back.
+See [cache trust and freshness](../../docs/nix-cache.md#ci-trust-and-freshness).
+
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
 commands, pinned actions, job settings and private credential mapping. Regression
