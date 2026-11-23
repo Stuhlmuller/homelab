@@ -172,6 +172,15 @@
       ]
     },
     {
+      "id": "immich",
+      "lifecycle": "active",
+      "source": "IaC/homelab/us-west-2/apps/immich/stack.hcl",
+      "reason": "Declared private Immich workload. Check the server, Valkey and dedicated PostgreSQL replicas.",
+      "monitorIds": [
+        "immich-workloads"
+      ]
+    },
+    {
       "id": "istio",
       "lifecycle": "active",
       "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
@@ -1301,6 +1310,164 @@
       {"kind":"statefulset","namespace":"harbor","name":"harbor-postgres"},
       {"kind":"statefulset","namespace":"harbor","name":"harbor-redis"},
       {"kind":"statefulset","namespace":"harbor","name":"harbor-trivy"}
+    ]
+  },
+  {
+    "key": "immich-workloads",
+    "name": "immich — workload health",
+    "ownerAppIds": [
+      "immich"
+    ],
+    "kind": "json-query",
+    "target": {
+      "url": "http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query",
+      "method": "POST",
+      "body": "query=vector%28%28scalar%28count%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_statefulset_status_replicas_ready%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_status_replicas_ready%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_status_replicas_ready%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_statefulset_status_replicas_updated%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_status_replicas_updated%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_statefulset_status_replicas_updated%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%2A+%28scalar%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich%22%2Cnamespace%3D%22immich%22%7D%29%29+%2A+%28scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_deployment_status_replicas_available%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%2A+%28scalar%28kube_deployment_status_observed_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_metadata_generation%7Bdeployment%3D%22immich-valkey%22%2Cnamespace%3D%22immich%22%7D%29%29+%2A+%28scalar%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_statefulset_status_replicas_ready%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29+%3E%3D+bool+scalar%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29+%2A+%28scalar%28kube_statefulset_status_replicas_updated%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29+%3E%3D+bool+scalar%28kube_statefulset_replicas%7Bnamespace%3D%22immich%22%2Cstatefulset%3D%22immich-postgres%22%7D%29%29%29",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    },
+    "expected": {
+      "statusCodes": [
+        200
+      ],
+      "jsonPath": "(status = \"success\" and $count(data.result) = 1 and data.result[0].value[1] = \"1\") ? \"1\" : \"0\"",
+      "value": "1"
+    },
+    "intervalSeconds": 60,
+    "timeoutSeconds": 10,
+    "retries": 1,
+    "enabled": true,
+    "meaning": "Every listed active workload has fresh, unique desired and available/ready signals; desired replicas must be positive.",
+    "limitations": "Kubernetes readiness and current generation. Private HTTPS, sign-in, and media storage require separate checks.",
+    "sourceSignals": [
+      {
+        "metric": "kube_deployment_spec_replicas",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_replicas_available",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_metadata_generation",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_observed_generation",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_spec_replicas",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich-valkey"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_replicas_available",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich-valkey"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_metadata_generation",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich-valkey"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_observed_generation",
+        "labels": {
+          "namespace": "immich",
+          "deployment": "immich-valkey"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_statefulset_replicas",
+        "labels": {
+          "namespace": "immich",
+          "statefulset": "immich-postgres"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_statefulset_status_replicas_ready",
+        "labels": {
+          "namespace": "immich",
+          "statefulset": "immich-postgres"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_statefulset_status_replicas_updated",
+        "labels": {
+          "namespace": "immich",
+          "statefulset": "immich-postgres"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      }
+    ],
+    "workloads": [
+      {
+        "kind": "deployment",
+        "namespace": "immich",
+        "name": "immich"
+      },
+      {
+        "kind": "deployment",
+        "namespace": "immich",
+        "name": "immich-valkey"
+      },
+      {
+        "kind": "statefulset",
+        "namespace": "immich",
+        "name": "immich-postgres"
+      }
     ]
   },
   {

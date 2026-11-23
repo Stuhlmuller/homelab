@@ -68,6 +68,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  namespace: immich
   name: immich-library
   annotations:
     argocd.argoproj.io/sync-options: Prune=false,Delete=false

@@ -1,6 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: immich
   name: immich-postgres
   annotations:
     argocd.argoproj.io/sync-wave: '-1'
@@ -15,6 +16,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  namespace: immich
   name: immich-postgres
   annotations:
     argocd.argoproj.io/sync-wave: '-1'

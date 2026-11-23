@@ -1,6 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
+  namespace: immich
   name: immich-postgres-backup
 spec:
   schedule: '20 10 * * *'
@@ -21,8 +22,8 @@ spec:
           automountServiceAccountToken: false
           restartPolicy: Never
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
+            runAsUser: 10001
+            runAsGroup: 10001
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
