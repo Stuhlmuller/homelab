@@ -27,6 +27,7 @@ nix build "${build_jobs[@]}" --print-build-logs --no-link --print-out-paths --no
   --option extra-substituters "$cache" --option extra-trusted-public-keys "$key" \
   --option narinfo-cache-negative-ttl 0 \
   ".#checks.${system}.offline-tests" ".#checks.${system}.manifest-policy" \
+  ".#checks.${system}.n8n-offline-tests" \
   ".#checks.${system}.openwiki-setup" ".#checks.${system}.xerj-autoindex" 2>"$log" || status=$?
 cat "$log" >&2
 if grep -Eq 'ignoring (the client-specified setting|untrusted substituter)' "$log"; then

@@ -36,18 +36,22 @@
       xerjArchives = {
         aarch64-darwin = {
           target = "aarch64-apple-darwin";
+          assetId = "765590688";
           hash = "sha256-Xxaxfc9Gq7Vm7DOg9HM7RZwPvCKfzQ9YqeataY831Y4=";
         };
         x86_64-darwin = {
           target = "x86_64-apple-darwin";
+          assetId = "765590694";
           hash = "sha256-4mQlKPuO9Wj/krAWakoQtQmtJlVo6Ei1datNnvE6LGQ=";
         };
         aarch64-linux = {
           target = "aarch64-unknown-linux-musl";
+          assetId = "765530466";
           hash = "sha256-zTrPOzfX+UIVe+uwXvpCIWUbJfB7GKhb7qy1dXZH6k8=";
         };
         x86_64-linux = {
           target = "x86_64-unknown-linux-musl";
+          assetId = "765531502";
           hash = "sha256-FijuQBqaEhFWzDgJUPnUiSPm6FZFiuHmZI8O8Y23tpM=";
         };
       };
@@ -115,7 +119,11 @@
             pname = "xerj";
             version = xerjVersion;
             src = pkgs.fetchurl {
-              url = "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz";
+              urls = [
+                "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz"
+                "https://api.github.com/repos/xerj-org/xerj/releases/assets/${archive.assetId}"
+              ];
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
               inherit (archive) hash;
             };
             nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -172,15 +180,33 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          # A complete tracked tree keeps fixtures and configuration in the key.
+          # Cross-repository fixtures and policy checks use the full tracked tree.
           source = builtins.path {
             path = ./.;
             name = "homelab-source";
             filter = path: _type: builtins.baseNameOf path != ".git";
           };
+          n8nSource = pkgs.lib.fileset.toSource {
+            root = ./.;
+            fileset = pkgs.lib.fileset.unions [
+              ./.github/workflows/n8n-paired-checkpoint.yml
+              ./IaC/homelab/us-west-2/apps/n8n/stack.hcl
+              ./IaC/homelab/us-west-2/operator/application-backup-storage.hcl
+              ./clusters/homelab/apps/n8n/checkpoint-reader.job.yaml
+              ./clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml
+              ./clusters/homelab/apps/n8n/kustomization.yaml
+              ./clusters/homelab/apps/n8n-postgres/statefulset.yaml
+              ./scripts/ci/n8n-paired-checkpoint-test.py
+              ./scripts/ci/n8n-paired-checkpoint.sh
+              ./scripts/ci/n8n-paired-residual-cleanup-test.py
+              ./scripts/ci/n8n-pvc-restore-check.py
+              ./scripts/ci/offline-checks.sh
+              ./scripts/n8n-paired-residual-cleanup.sh
+            ];
+          };
           tools = self.devShells.${system}.default.nativeBuildInputs;
           check =
-            name: command:
+            name: fixtureSource: command:
             pkgs.runCommand name
               {
                 # mkShell exposes PostgreSQL dev outputs here; restore fixtures
@@ -194,7 +220,7 @@
               ''
                 export HOME="$TMPDIR/home"
                 mkdir -p "$HOME"
-                cp -R ${source} source
+                cp -R ${fixtureSource} source
                 chmod -R u+w source
                 cd source
                 # Bind fixture tools and their copied helpers to sandbox interpreters.
@@ -213,7 +239,7 @@
                 printf 'passed\n' > "$out/result"
               '';
         in
-        {
+        rec {
           openwiki-setup = pkgs.runCommand "homelab-openwiki-setup-test" {
             nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
           } ''
@@ -230,22 +256,24 @@
             mkdir "$out"
             printf 'passed\n' > "$out/result"
           '';
+          n8n-offline-tests = check "homelab-offline-n8n" n8nSource "bash scripts/ci/offline-checks.sh --n8n";
           offline-tests =
             let
-              remaining = check "homelab-offline-fixtures" "bash scripts/ci/offline-checks.sh --remaining";
-              privateDns = check "homelab-offline-private-dns" "bash scripts/ci/offline-checks.sh --private-dns";
-              n8n = check "homelab-offline-n8n" "bash scripts/ci/offline-checks.sh --n8n";
-              harbor = check "homelab-offline-harbor" "bash scripts/ci/offline-checks.sh --harbor";
+              remaining = check "homelab-offline-fixtures" source "bash scripts/ci/offline-checks.sh --remaining";
+              privateDns =
+                check "homelab-offline-private-dns" source
+                  "bash scripts/ci/offline-checks.sh --private-dns";
+              harbor = check "homelab-offline-harbor" source "bash scripts/ci/offline-checks.sh --harbor";
             in
             pkgs.runCommand "homelab-offline-tests" { } ''
               test -s ${remaining}/result
               test -s ${privateDns}/result
-              test -s ${n8n}/result
+              test -s ${n8n-offline-tests}/result
               test -s ${harbor}/result
               mkdir "$out"
               printf 'passed\n' > "$out/result"
             '';
-          manifest-policy = check "homelab-manifest-policy" "bash scripts/ci/conftest-policies.sh";
+          manifest-policy = check "homelab-manifest-policy" source "bash scripts/ci/conftest-policies.sh";
         }
       );
 

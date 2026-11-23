@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -1060,6 +1060,9 @@ case "$IMAGE_SCOPE" in
   prometheus)
     bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
     ;;
+  immich)
+    bash scripts/ci/harbor-publish.sh mirror-immich --tailscale
+    ;;
   uptime-kuma)
     bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
     ;;
@@ -1072,6 +1075,18 @@ case "$IMAGE_SCOPE" in
   kagent)
     bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
     ;;
+  bazel-cache)
+    bash scripts/ci/harbor-publish.sh mirror-bazel-cache --tailscale
+    ;;
+  home-assistant)
+    bash scripts/ci/harbor-publish.sh mirror-home-assistant --tailscale
+    ;;
+  homepage)
+    bash scripts/ci/harbor-publish.sh mirror-homepage --tailscale
+    ;;
+  affine)
+    bash scripts/ci/harbor-publish.sh mirror-affine --tailscale
+    ;;
   image-updater-canary)
     bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
     ;;
@@ -1079,7 +1094,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5b741465a823256d3b722b30aa2f2bc7d005d17ba3d6c5d51366957e4a1ebcf7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b34af93defee334b4d0aaa1507551f74a29a14554760132d0418b8918dee2d54  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1183,7 +1198,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "41e23fc6f1a9c7199442730bb1fdc4c322d53350eeaa4bcd61e3ff2a18d00f41"
+	crypto.sha256(json.marshal(canonical)) == "f871fade2e8dd06a3a1f6c84da8604e2a8730aff93b6ed7f3639c62bf4936da6"
 }
 
 tailnet_workflow_requested if {

@@ -53,6 +53,14 @@ ROUTERS = HTTP["routers"]
 
 
 class RouteTests(unittest.TestCase):
+    def test_controller_rolls_out_without_a_fixed_hostname(self):
+        values = read_yaml("clusters/homelab/apps/traefik/values.yaml")
+        controller = values["controllers"]["traefik"]
+        self.assertNotIn("kubernetes.io/hostname", controller["pod"].get("nodeSelector", {}))
+        self.assertEqual(controller["strategy"], "RollingUpdate")
+        self.assertEqual(controller["rollingUpdate"]["surge"], 1)
+        self.assertEqual(controller["rollingUpdate"]["unavailable"], "0%")
+
     def test_adguard_is_private_authenticated_backend_with_tls_coverage(self):
         self.assertEqual(ROUTERS["adguard"], {"entryPoints": ["websecure"],
                          "rule": "Host(`adguard.stinkyboi.com`)", "service": "adguard", "tls": {}})
