@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|cilium-route-preflight|cilium-evacuate-worker|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|cilium-route-preflight|cilium-evacuate-worker|cilium-reboot-worker|cilium-probe-worker|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -18,8 +18,12 @@ config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
 if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
-elif [[ "$stage" != inspect && "$stage" != cilium-route-preflight && "$stage" != cilium-evacuate-worker ]]; then
+elif [[ "$stage" != inspect && "$stage" != cilium-route-preflight && "$stage" != cilium-evacuate-worker && "$stage" != cilium-reboot-worker && "$stage" != cilium-probe-worker ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
+fi
+
+if [[ "$stage" == cilium-reboot-worker || "$stage" == cilium-probe-worker ]]; then
+  [[ "${GITHUB_RUN_ATTEMPT:-}" == 1 && "${PREVIOUS_BOOT_ID:-}" =~ ^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$ ]] || exit 2
 fi
 
 work="$(mktemp -d)"
@@ -172,6 +176,18 @@ case "$stage" in
   cilium-evacuate-worker)
     bash scripts/ci/install-kubeconfig.sh
     python3 -I scripts/cilium-evacuate-worker.py --expected-sha "$GITHUB_SHA"
+    ;;
+  cilium-reboot-worker)
+    connect_talos
+    python3 -I scripts/cilium-reboot-worker.py --expected-sha "$GITHUB_SHA" \
+      --previous-boot-id "$PREVIOUS_BOOT_ID" --talosconfig "$work/talosconfig"
+    ;;
+  cilium-probe-worker)
+    bash scripts/ci/install-kubeconfig.sh
+    pool="$(yq -o=json '.ipam.operator.clusterPoolIPv4PodCIDRList' \
+      clusters/homelab/platform/cilium/values-migration.yaml | jq -er 'select(length == 1) | .[0]')"
+    python3 -I scripts/cilium-probe-worker.py --expected-sha "$GITHUB_SHA" \
+      --previous-boot-id "$PREVIOUS_BOOT_ID" --pool "$pool"
     ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
