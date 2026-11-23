@@ -94,10 +94,6 @@ data:
         originRequest:
           originServerName: fleet.stinkyboi.com
           httpHostHeader: fleet.stinkyboi.com
-      - hostname: kiali.stinkyboi.com
-        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
-        originRequest:
-          httpHostHeader: kiali.stinkyboi.com
       - hostname: harbor.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

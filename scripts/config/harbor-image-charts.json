@@ -186,12 +186,6 @@
     "targetRevision": "0.10.6"
   },
   {
-    "chart": "kiali-operator",
-    "repoURL": "https://kiali.org/helm-charts",
-    "source": "IaC/homelab/us-west-2/apps/kiali/stack.hcl",
-    "targetRevision": "2.26.0"
-  },
-  {
     "chart": "kube-prometheus-stack",
     "repoURL": "https://prometheus-community.github.io/helm-charts",
     "source": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl",

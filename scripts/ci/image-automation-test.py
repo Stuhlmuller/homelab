@@ -33,7 +33,7 @@ assert automation.validate_workload_evidence(
     {"command": ["curl"], "retry": 60, "timeout": 10, "run_as_non_root": True,
      "read_only_root": True, "health_endpoint": "http://prometheus/-/ready"},
 )[0] is True
-evidence_app = {"application_id": "kiali", "consumer_ids": [],
+evidence_app = {"application_id": "curl-workload", "consumer_ids": [],
                 "preflight_recipe": "curl-workload-v1", "health_recipe": "curl-workload-v1",
                 "recovery_recipe": "stateless-recovery-v1", "deadline_minutes": 30,
                 "evidence": {

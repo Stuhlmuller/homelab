@@ -189,9 +189,9 @@
     },
     {
       "id": "kiali",
-      "lifecycle": "active",
-      "source": "IaC/homelab/us-west-2/apps/kiali/stack.hcl",
-      "reason": "Current source-owned running service; exact workload readiness is covered with fresh source metrics.",
+      "lifecycle": "retired",
+      "source": "openwiki/workloads/application-notes.md",
+      "reason": "Retired with its operator. The workload monitor is paused to retain its history.",
       "monitorIds": [
         "kiali-workloads"
       ]
@@ -1504,8 +1504,8 @@
     "intervalSeconds": 60,
     "timeoutSeconds": 10,
     "retries": 1,
-    "enabled": true,
-    "meaning": "The operator remains ready while it finalizes the Kiali server removal.",
+    "enabled": false,
+    "meaning": "Retained operator readiness monitor for the retired Kiali application.",
     "limitations": "Kubernetes readiness and current generation, not an end-to-end user transaction; missing/stale sources fail. ",
     "sourceSignals": [
       {"metric":"kube_deployment_spec_replicas","labels":{"namespace":"istio-system","deployment":"kiali-operator"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},

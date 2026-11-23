@@ -59,11 +59,12 @@ tracked in [Secrets And Identity](../architecture/secrets-and-identity.md).
 
 ## Kiali retirement
 
-Argo CD prunes the Kiali custom resource when the chart disables CR creation.
-The operator remains running to finalize that deletion, and Uptime Kuma
-monitors the operator during this stage. Verify the server Deployment and
-Service are absent before removing the operator registration. See the
-[rollback and teardown runbook](../../docs/rollback-argocd-apps.md).
+<!-- uptime-kuma-retired: kiali -->
+
+The Kiali server and operator are removed from desired state along with their
+routes and access rules. Uptime Kuma retains a paused workload monitor for
+history. Prometheus continues scraping Istio through the
+[Istio PodMonitors](../../clusters/homelab/apps/prometheus/istio-podmonitors.yaml).
 
 ### Historical mesh visibility incidents
 

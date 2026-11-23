@@ -10,7 +10,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 APPS = frozenset("""affine argocd bazarr compass deluge dispatcharr grafana harbor
-kiali langfuse litellm multica n8n nofx policy-bot prowlarr radarr sonarr""".split())
+langfuse litellm multica n8n nofx policy-bot prowlarr radarr sonarr""".split())
 ISTIO = "https://istio-ingressgateway.istio-system.svc.cluster.local:443"
 BAZARR = "http://bazarr.media.svc.cluster.local:6767"
 CLUSTER_BACKEND = re.compile(

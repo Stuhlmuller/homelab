@@ -59,7 +59,8 @@ def approved_names(values, routes, inventory):
     require(all(names) and len(names) == len(set(names)), "blank or duplicate private DNS name")
     require(all(NAME.fullmatch(name) or name in WILDCARD_RULES.values() for name in names),
             "private DNS name is outside the approved zone or wildcard scope")
-    require(not set(names) & set(inventory["retired_hostnames"]), "retired name is republished")
+    retired = set(inventory["retired_hostnames"] + inventory["retired_private_hostnames"])
+    require(not set(names) & retired, "retired name is republished")
 
     routed = []
     for router in routes["http"]["routers"].values():

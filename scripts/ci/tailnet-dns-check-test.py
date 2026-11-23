@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("dns_check", ROOT / "scripts/tailnet-dns-check.py")
 CHECK = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECK)
-NAMES = json.loads((ROOT / "scripts/config/tailscale-private-dns.json").read_text())["hostnames"]
+INVENTORY = json.loads((ROOT / "scripts/config/tailscale-private-dns.json").read_text())
+NAMES = [name for name in INVENTORY["hostnames"] if name not in INVENTORY["retired_private_hostnames"]]
 SERVER = "100.99.16.75"
 TRAEFIK = "100.99.16.74"
 
@@ -60,7 +61,7 @@ class DirectDnsCheck(unittest.TestCase):
     def test_checks_all_names_and_both_transports(self):
         with redirect_stdout(io.StringIO()) as output:
             CHECK.verify(SERVER)
-        self.assertIn("30 approved names", output.getvalue())
+        self.assertIn("29 approved names", output.getvalue())
         self.assertEqual(CHECK.SIGNER.inspect_target.call_args.args[0],
                          ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"))
         calls = CHECK.dns_answer.call_args_list

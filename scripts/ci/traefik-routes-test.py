@@ -22,7 +22,6 @@ APPS = {
     "fleet": "fleet.fleet:8080",
     "grafana": "grafana.monitoring:80",
     "harbor": "harbor.harbor:80",
-    "kiali": "kiali.monitoring:20001",
     "langfuse": "langfuse-web.langfuse:3000",
     "litellm": "litellm.ai:4000",
     "multica": "multica-frontend.ai:3000",

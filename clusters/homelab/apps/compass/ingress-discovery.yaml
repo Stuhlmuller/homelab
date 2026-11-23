@@ -151,34 +151,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: compass-discovery-kiali
-  namespace: monitoring
-  labels:
-    compass.adinhodovic.com/enabled: "true"
-  annotations:
-    compass.adinhodovic.com/name: Kiali
-    compass.adinhodovic.com/urls: "Kiali=https://kiali.stinkyboi.com"
-    compass.adinhodovic.com/description: Read-only Istio mesh topology and traffic view.
-    compass.adinhodovic.com/icon: selfhst:kiali
-    compass.adinhodovic.com/primary-tag: kubernetes
-    compass.adinhodovic.com/tags: monitoring,mesh
-spec:
-  ingressClassName: compass-discovery
-  rules:
-    - host: kiali.stinkyboi.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: compass
-                port:
-                  number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: compass-discovery-litellm
   namespace: monitoring
   labels:

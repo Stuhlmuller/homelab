@@ -14,7 +14,6 @@ spec:
         - source:
             principals:
               - cluster.local/ns/monitoring/sa/grafana
-              - cluster.local/ns/monitoring/sa/kiali-service-account
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1

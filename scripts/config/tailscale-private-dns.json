@@ -32,6 +32,9 @@
     "*.agents.oce.stinkyboi.com",
     "uptime-kuma.stinkyboi.com"
   ],
+  "retired_private_hostnames": [
+    "kiali.stinkyboi.com"
+  ],
   "retired_hostnames": [
     "octelium-transport.stinkyboi.com",
     "kubernetes-api-ci.stinkyboi.com",

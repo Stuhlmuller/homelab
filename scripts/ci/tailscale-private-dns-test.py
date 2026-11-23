@@ -30,6 +30,8 @@ class Readiness(unittest.TestCase):
             'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com', 'uptime-kuma.stinkyboi.com'})
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
+        self.assertEqual(value['retired_private_hostnames'], ['kiali.stinkyboi.com'])
+        self.assertNotIn('kiali.stinkyboi.com', check.active_names(value))
         self.assertEqual(check.retirement_names(value), value['hostnames'][1:27])
         self.assertEqual(len(check.retirement_names(value)), 26)
         self.assertNotIn('stinkyboi.com', check.retirement_names(value))
@@ -288,7 +290,7 @@ class Readiness(unittest.TestCase):
 
     def test_retirement_route_check_excludes_staged_oce_backends(self):
         value = check.inventory()
-        for args, expected in ((['--check'], 30), (['--retire-private', '--check'], 27)):
+        for args, expected in ((['--check'], 29), (['--retire-private', '--check'], 26)):
             with self.subTest(args=args), patch.object(sys, 'argv', ['check', *args]), \
                     patch.object(check, 'mesh_addresses', return_value={'A':['100.100.100.1'], 'AAAA':[]}), \
                     patch.object(check, 'declared_routes'), patch.object(check, 'routes') as routes:
@@ -299,8 +301,9 @@ class Readiness(unittest.TestCase):
                 return_value=[(None,None,None,None,('100.100.100.1',443))]) as dns, \
                 patch.object(check, 'routes') as routes, contextlib.redirect_stderr(io.StringIO()):
             check.verify_private_dns(value, {'A':['100.100.100.1'], 'AAAA':[]}, '100.100.100.2')
-            self.assertEqual(dns.call_count, 30)
-            self.assertEqual(routes.call_args.args[0]['hostnames'], value['hostnames'][:27])
+            self.assertEqual(dns.call_count, 29)
+            self.assertEqual(routes.call_args.args[0]['hostnames'],
+                             [name for name in value['hostnames'][:27] if name != 'kiali.stinkyboi.com'])
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):
         commands = []
@@ -308,7 +311,8 @@ class Readiness(unittest.TestCase):
         def run(*command):
             commands.append(command)
             return 'HTTP/2 200\n\n200'
-        value = {'hostnames':['stinkyboi.com', '*.cordium.stinkyboi.com'], 'retired_hostnames':[]}
+        value = {'hostnames':['stinkyboi.com', '*.cordium.stinkyboi.com'], 'retired_hostnames':[],
+                 'retired_private_hostnames':[]}
         with patch.object(check, 'run', side_effect=run), patch.object(check.socket, 'getaddrinfo',
                 return_value=[(None,None,None,None,('100.100.100.1',443))]), contextlib.redirect_stderr(io.StringIO()):
             check.verify_private_dns(value, addresses, '100.100.100.2')

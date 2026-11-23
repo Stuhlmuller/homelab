@@ -20,7 +20,6 @@ spec:
     - https://helm.cilium.io
     - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
-    - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
     - https://kubernetes-sigs.github.io/metrics-server/
     - https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/

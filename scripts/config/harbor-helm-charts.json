@@ -110,12 +110,6 @@
       "sha256": "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
     },
     {
-      "chart": "kiali-operator",
-      "version": "2.26.0",
-      "repository": "https://kiali.org/helm-charts",
-      "sha256": "3941d6aab78cc9d19d08ec9c6b06efa2843eb6c9f4154c191a64c57797e353ce"
-    },
-    {
       "chart": "kube-prometheus-stack",
       "version": "85.2.0",
       "repository": "https://prometheus-community.github.io/helm-charts",

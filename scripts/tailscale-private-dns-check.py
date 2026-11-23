@@ -38,7 +38,8 @@ def run(*command):
 
 def inventory():
     value = json.loads(INVENTORY.read_text())
-    if set(value) != {"ingress_hostname", "hostnames", "retired_hostnames"} or value["ingress_hostname"] != TARGET:
+    fields = {"ingress_hostname", "hostnames", "retired_hostnames", "retired_private_hostnames"}
+    if set(value) != fields or value["ingress_hostname"] != TARGET:
         raise RuntimeError("Unexpected private DNS target or inventory fields")
     for key in ("hostnames", "retired_hostnames"):
         if not isinstance(value[key], list) or not value[key]:
@@ -55,7 +56,19 @@ def inventory():
     digest = hashlib.sha256("\n".join(sorted(migration)).encode()).hexdigest()
     if digest != MIGRATION_NAMES_SHA256 or value["hostnames"][27:] != PRIVATE_ONLY_NAMES:
         raise RuntimeError("The public retirement inventory must retain the fixed 27-name migration set and reviewed private-only names")
+    private_retirements = value["retired_private_hostnames"]
+    if (not isinstance(private_retirements, list)
+            or any(not isinstance(name, str) or name == APEX or name not in migration
+                   for name in private_retirements)
+            or len(private_retirements) != len(set(private_retirements))):
+        raise RuntimeError("Private retirements must be unique non-apex names from the migration inventory")
     return value
+
+
+def active_names(value, *, migration_only=False):
+    names = value["hostnames"][:27] if migration_only else value["hostnames"]
+    retired = set(value["retired_private_hostnames"])
+    return [name for name in names if name not in retired]
 
 
 def retirement_names(value):
@@ -386,12 +399,12 @@ def validate_retirement_evidence(evidence, value, expected_sha):
 def verify_private_dns(value, addresses, resolver_ip):
     run("python3", "-I", str(ROOT / "scripts/tailnet-dns-check.py"), "--server", resolver_ip)
     expected = set(addresses["A"] + addresses["AAAA"])
-    for hostname in value["hostnames"]:
+    for hostname in active_names(value):
         test_host = hostname.replace("*.", "dns-preflight.", 1)
         resolved = {item[4][0] for item in socket.getaddrinfo(test_host, 443, type=socket.SOCK_STREAM)}
         if resolved != expected:
             raise RuntimeError(f"Normal client DNS for {hostname} does not match the private Traefik Service")
-    routes({"hostnames": value["hostnames"][:27]})
+    routes({"hostnames": active_names(value, migration_only=True)})
     print("Direct resolver, normal client DNS, and migration HTTPS routes verified", file=sys.stderr)
 
 
@@ -436,13 +449,13 @@ def main():
     elif args.evidence or args.expected_sha:
         parser.error("--evidence and --expected-sha require --execute")
     if args.retire_private and not (args.execute or args.check):
-        print(f"Fixed 26-name public retirement inventory verified; {len(value['hostnames'])} private names retained")
+        print(f"Fixed 26-name public retirement inventory verified; {len(active_names(value))} private names retained")
         return
     addresses = mesh_addresses()
     if args.execute or args.check:
         declared_routes()
     if args.execute or args.check:
-        route_value = {"hostnames": value["hostnames"][:27]} if args.retire_private else value
+        route_value = {"hostnames": active_names(value, migration_only=args.retire_private)}
         for address in addresses["A"] + addresses["AAAA"]:
             routes(route_value, address)
     if args.execute:

@@ -428,7 +428,7 @@ with tempfile.TemporaryDirectory() as directory:
         check.ROOT = root
         check.AUTOMATION = root / "image-automation.json"
         check.AUTOMATION_STATE = root / "image-automation-state.json"
-        target = root / "clusters/homelab/apps/kiali/values.yaml"
+        target = root / "clusters/homelab/apps/curl-workload/values.yaml"
         target.parent.mkdir(parents=True)
         target.write_text("image: fixture\n")
         other = root / "clusters/homelab/apps/other/values.yaml"
@@ -488,10 +488,16 @@ with tempfile.TemporaryDirectory() as directory:
         }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
-        consumer = next(item for item in config["consumers"]
-                        if item["image_id"] == "chainguard-curl")
-        consumer["automation_status"] = "enrolled"
-        consumer["migration_status"] = "migrated"
+        consumer = {
+            "consumer_id": "curl-fixture",
+            "application_id": "curl-workload",
+            "image_id": "chainguard-curl",
+            "target": "/" + target.relative_to(root).as_posix(),
+            "automation_status": "enrolled",
+            "migration_status": "migrated",
+            "owner": "argocd",
+        }
+        config["consumers"].append(consumer)
         check.AUTOMATION.write_text(json.dumps(config))
         plan = next(item for item in check.native_receipt_plans(config).values()
                     if item["image_id"] == "chainguard-curl")
@@ -565,7 +571,7 @@ with tempfile.TemporaryDirectory() as directory:
         consumer["migration_status"] = "candidate"
         check.AUTOMATION.write_text(json.dumps(config))
         assert check.receipt_errors() == [
-            "Native Chainguard reference lacks migrated status: kiali-prometheus-readiness"
+            "Native Chainguard reference lacks migrated status: curl-fixture"
         ]
         consumer["migration_status"] = "migrated"
         check.AUTOMATION.write_text(json.dumps(config))

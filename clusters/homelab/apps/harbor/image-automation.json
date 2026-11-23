@@ -30,15 +30,6 @@
       "migration_status": "candidate",
       "automation_status": "not-enrolled",
       "owner": "argocd"
-    },
-    {
-      "consumer_id": "kiali-prometheus-readiness",
-      "application_id": "kiali",
-      "image_id": "chainguard-curl",
-      "target": "/clusters/homelab/apps/kiali/values.yaml",
-      "migration_status": "candidate",
-      "automation_status": "not-enrolled",
-      "owner": "argocd"
     }
   ],
   "applications": [
@@ -55,24 +46,6 @@
         "health": {"uid": 65532, "read_only_root": true, "ca_trust": true,
           "health_endpoint": "/metrics", "data_paths": ["/app", "/secrets"]},
         "recovery": {"known_good_digest": "sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d",
-          "data_safety": "safe", "single_attempt": true}
-      }
-    },
-    {
-      "application_id": "kiali",
-      "consumer_ids": ["kiali-prometheus-readiness"],
-      "preflight_recipe": "curl-workload-v1",
-      "health_recipe": "curl-workload-v1",
-      "recovery_recipe": "stateless-recovery-v1",
-      "deadline_minutes": 30,
-      "evidence": {
-        "preflight": {"command": ["curl"], "retry": 60, "timeout": 10,
-          "run_as_non_root": true, "read_only_root": true,
-          "health_endpoint": "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"},
-        "health": {"command": ["curl"], "retry": 60, "timeout": 10,
-          "run_as_non_root": true, "read_only_root": true,
-          "health_endpoint": "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"},
-        "recovery": {"known_good_digest": "sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777",
           "data_safety": "safe", "single_attempt": true}
       }
     }

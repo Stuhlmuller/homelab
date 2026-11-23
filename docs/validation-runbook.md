@@ -91,7 +91,6 @@ and healthy:
 argocd app get external-secrets
 argocd app get cert-manager
 argocd app get istio
-argocd app get kiali
 argocd app get platform-dns
 argocd app get platform-storage
 ```
@@ -100,18 +99,6 @@ Private ingress also requires healthy `tailscale` and `traefik` Applications,
 online mesh peers and valid canonical TLS. Follow the
 [staged ingress acceptance](../clusters/homelab/apps/traefik/CUTOVER.md); existing
 Octelium routes remain only until replacement acceptance.
-
-For Kiali, verify the operator-created custom resource and private mesh UI:
-
-```sh
-kubectl -n monitoring get kiali kiali
-kubectl -n monitoring get deploy,svc kiali
-curl -I https://kiali.stinkyboi.com
-```
-
-Expected result: the Kiali Application is synced and healthy, the Kiali custom
-resource is successfully reconciled, and the `kiali.stinkyboi.com` hostname
-reaches the read-only UI through Tailscale and Traefik.
 
 For retained legacy Octelium routing only, the old e2e gate remains available:
 This is not a mesh acceptance gate and may fail intentionally after DNS cutover.

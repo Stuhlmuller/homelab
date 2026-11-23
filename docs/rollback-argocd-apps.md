@@ -18,16 +18,15 @@ handling is clear.
 9. LiteLLM
 10. Langfuse
 11. Deluge
-12. Kiali
-13. Grafana
-14. Descheduler
-15. Prometheus
-16. platform-storage
-17. Tailscale
-18. Istio
-19. cert-manager
-20. external-secrets
-21. platform-dns
+12. Grafana
+13. Descheduler
+14. Prometheus
+15. platform-storage
+16. Tailscale
+17. Istio
+18. cert-manager
+19. external-secrets
+20. platform-dns
 
 ## cert-manager v1.20.3
 
