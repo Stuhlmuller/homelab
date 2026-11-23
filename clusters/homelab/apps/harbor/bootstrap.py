@@ -33,7 +33,7 @@ SETTINGS = {"self_registration": False, "project_creation_restriction": "adminon
 PROXY_CACHES = {
     "proxy-dockerhub": ("https://hub.docker.com", "docker-hub"),
     "proxy-ghcr": ("https://ghcr.io", "github-ghcr"),
-    "proxy-quay": ("https://quay.io", "quay"),
+    "proxy-quay": ("https://quay.io", "docker-registry"),
 }
 PROXY_METADATA = {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"}
 CHAINGUARD_REPLICATION = {
@@ -176,7 +176,10 @@ def registry_matches(actual, desired):
 
 def find_registry(client, name):
     query = urllib.parse.urlencode({"name": name})
-    registries, _ = client.request("GET", "/registries?" + query)
+    registries, headers = client.request("GET", "/registries?" + query)
+    # Harbor serializes an empty registry slice as null.
+    if registries is None and headers.get("X-Total-Count") == "0":
+        return None
     if not isinstance(registries, list) or len(registries) > 1:
         raise BootstrapError("Harbor upstream registry is ambiguous")
     if registries:

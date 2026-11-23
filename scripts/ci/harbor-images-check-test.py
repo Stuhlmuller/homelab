@@ -178,6 +178,10 @@ with tempfile.TemporaryDirectory() as directory:
     prometheus_source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
     catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source},
                           {"source": litellm_source}, {"source": prometheus_source}]}
+    bootstrap = check.ROOT / check.ARGOCD_BOOTSTRAP
+    bootstrap.parent.mkdir(parents=True)
+    bootstrap.write_text('global = {\n  # Preserve the chart pin.\n  image = { tag = "v3.4.14" }\n}')
+    argocd_source = {"source": "quay.io/argoproj/argocd:v3.4.14@" + digest}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
@@ -196,6 +200,14 @@ with tempfile.TemporaryDirectory() as directory:
     check.yaml_documents = lambda paths: (
         [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
     check.chart_sources = list
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "missing digest-pinned Harbor source for quay.io/argoproj/argocd:v3.4.14" in str(error)
+    else:
+        raise AssertionError("Unmirrored Argo CD bootstrap tag passed")
+    catalog["images"].append(argocd_source)
+    check.CATALOG.write_text(json.dumps(catalog))
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source.replace("0b556", "0b557")}]}))

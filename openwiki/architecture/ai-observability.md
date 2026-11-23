@@ -154,6 +154,7 @@ defaults match the External Secrets API to prevent persistent Argo drift.
 | OpenClaw | `/homelab/openclaw/litellm-app-token` | Routed to `openrouter/free`; Codex subscription runtime removed. |
 | Multica | `/homelab/multica/litellm-token` | OpenCode uses the internal gateway; Codex runtime removed. |
 | NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
+| kagent | `/homelab/kagent/litellm-token` | The private assistant calls `openrouter/free` with its own inference-only key. |
 | n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. One-time workflow conversion overlays have been removed. The gateway key never enters workflow JSON. |
 
 AFFiNE has no active AI workload. Cordium

@@ -14,7 +14,7 @@ the cache project, then use the project's repository prefix.
 | Upstream | Example Harbor reference |
 | --- | --- |
 | Docker Hub | `harbor.stinkyboi.com/proxy-dockerhub/library/nginx:1.28` |
-| GitHub Container Registry | `harbor.stinkyboi.com/proxy-ghcr/cli/cli:latest` |
+| GitHub Container Registry | `harbor.stinkyboi.com/proxy-ghcr/stefanprodan/podinfo:6.9.0` |
 | Quay | `harbor.stinkyboi.com/proxy-quay/prometheus/prometheus:latest` |
 
 Harbor fetches uncached references on the first pull without a catalog entry or

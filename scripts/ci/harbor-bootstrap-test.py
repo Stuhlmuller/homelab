@@ -60,7 +60,7 @@ class HarborAPI:
         if path.startswith("/registries?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
             registry = self.registries.get(query.get("name", [""])[0])
-            return 200, ([registry] if registry else []), {}
+            return 200, ([registry] if registry else None), {"X-Total-Count": "1" if registry else "0"}
         if path.startswith("/registries/"):
             identifier = int(path.rsplit("/", 1)[1])
             registry = next((item for item in self.registries.values() if item["id"] == identifier), None)
@@ -464,6 +464,8 @@ class BootstrapTest(unittest.TestCase):
         original = copy.deepcopy(self.api.robots)
         self.assertEqual(len(original), 5)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
+        self.assertEqual(bootstrap.PROXY_CACHES["proxy-quay"],
+                         ("https://quay.io", "docker-registry"))
         for name, (url, provider) in bootstrap.PROXY_CACHES.items():
             registry = self.api.registries[name]
             self.assertEqual((registry["url"], registry["type"], registry["insecure"]), (url, provider, False))
@@ -695,6 +697,15 @@ class BootstrapTest(unittest.TestCase):
         self.api.override = lambda *_args: (302, {}, {"Location": self.endpoint + "/sink"})
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(len(self.api.requests), 1)
+
+    def test_null_registry_listing_requires_explicit_zero_count(self):
+        for headers in ({}, {"X-Total-Count": "1"}):
+            with self.subTest(headers=headers):
+                self.api.override = lambda method, path, body: (
+                    (200, None, headers) if path == "/registries?name=proxy-quay" else None)
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.find_registry(self.client, "proxy-quay")
+                self.assertEqual(self.mutations(), [])
 
     def test_ambiguous_robot_listing_fails_before_mutation(self):
         self.reconcile()
