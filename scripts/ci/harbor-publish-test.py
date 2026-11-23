@@ -49,6 +49,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.adguard_mirror_manifest = None
         self.cilium_mirror_manifest = None
         self.kagent_mirror_manifest = None
+        self.homepage_mirror_manifest = None
         self.canary_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -156,6 +157,11 @@ class HarborPublicationGates(unittest.TestCase):
             kagent_path.unlink(missing_ok=True)
         else:
             kagent_path.write_text(json.dumps(self.kagent_mirror_manifest))
+        homepage_path = self.root / "scripts/config/harbor-homepage-images.json"
+        if self.homepage_mirror_manifest is None:
+            homepage_path.unlink(missing_ok=True)
+        else:
+            homepage_path.write_text(json.dumps(self.homepage_mirror_manifest))
         canary_path = self.root / "scripts/config/harbor-image-updater-canary.json"
         if self.canary_mirror_manifest is None:
             canary_path.unlink(missing_ok=True)
@@ -841,7 +847,7 @@ printf '%s\n' {SHA}
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -866,7 +872,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -916,6 +922,32 @@ printf '%s\n' {SHA}
         result = self.rejected(mode="mirror-home-assistant")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
+    def test_homepage_scope_only_accepts_the_reviewed_catalog_image(self):
+        source = (
+            "ghcr.io/gethomepage/homepage:v2.8.0@"
+            "sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"
+        )
+        entry = {"source": source}
+        selected = json.loads((ROOT / "scripts/config/harbor-homepage-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [entry]})
+        self.assertIn(entry, catalog["images"])
+
+        tampered = {"source": source.replace("019d8f", "119d8f")}
+        self.mirror_manifest = {"images": [entry, tampered]}
+        for scope in (None, {"images": [tampered]}, {"images": [entry, tampered]}):
+            with self.subTest(scope=scope):
+                self.homepage_mirror_manifest = scope
+                self.rejected(mode="mirror-homepage")
+
+        self.homepage_mirror_manifest = selected
+        self.mirror_manifest = {"images": [tampered]}
+        self.rejected(mode="mirror-homepage")
+        self.mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-homepage")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
         selected = json.loads((ROOT / "scripts/config/harbor-uptime-kuma-images.json").read_text())
@@ -924,7 +956,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -963,7 +995,7 @@ printf '%s\n' {SHA}
         for entry in selected["images"]:
             self.assertIn(entry, catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
@@ -2240,20 +2272,26 @@ printf '%s\n' {SHA}
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
-    def tailnet_mocks(self, status="401", failure=None, **kwargs):
+    def tailnet_mocks(self, status="401", failure=None, readiness_failures=None, **kwargs):
         self.transport_mocks(mirror=True, failure=failure, **kwargs)
         self.env.pop("OCTELIUM_AUTH_TOKEN", None)
         self.env.pop("KUBE_API_SERVER_URL", None)
         self.calls.touch(exist_ok=True)
         self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
         self.executable("curl", f"""exec python3 - "$@" <<'PYMOCK'
-import json,sys
+import json, sys
 from pathlib import Path
-args=sys.argv[1:]
+args = sys.argv[1:]
 assert "--insecure" not in args and "--resolve" not in args
 assert args[-1] == "https://harbor.stinkyboi.com/v2/"
-with Path({str(self.calls)!r}).open("a") as f:
+calls = Path({str(self.calls)!r})
+attempt = 1 + sum(json.loads(line)["command"] == "curl" for line in calls.read_text().splitlines())
+with calls.open("a") as f:
     f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+failure = {readiness_failures or {}!r}.get(attempt)
+if failure:
+    print("private tailnet readiness fixture", file=sys.stderr)
+    raise SystemExit(failure)
 print({status!r},end="")
 PYMOCK
 """)
@@ -2281,12 +2319,32 @@ PYMOCK
                 self.assertEqual(self.calls_for("aws"), [])
                 self.assertEqual(self.calls_for("kubectl"), [])
 
-    def test_tailnet_authenticated_retry_rechecks_https_without_forward(self):
-        self.tailnet_mocks(failure="mirror-pull-once")
+    def test_tailnet_authenticated_retry_recovers_after_connection_failure(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7})
         result = self.run_helper("mirror", tailnet=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertGreaterEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual(len(self.calls_for("curl")), 3)
         self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertEqual(self.calls_for("sudo"), [])
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr)
+
+    def test_tailnet_connection_readiness_retries_are_bounded(self):
+        self.tailnet_mocks(failure="mirror-pull-once", readiness_failures={2: 7, 3: 7, 4: 7})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 7)
+        self.assertEqual(len(self.calls_for("curl")), 4)
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-failed\n", self.public_status)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertNotIn("private tailnet readiness fixture", result.stdout + result.stderr + self.public_status)
+
+    def test_tailnet_tls_error_stops_without_retrying(self):
+        self.tailnet_mocks(readiness_failures={1: 60})
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 60)
+        self.assertEqual(len(self.calls_for("curl")), 1)
+        self.assertEqual(self.calls_for("aws"), [])
 
     def test_tailnet_mode_rejects_another_workflow(self):
         self.tailnet_mocks()
