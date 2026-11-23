@@ -607,6 +607,9 @@
       "source": "ghcr.io/toeverything/affine@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f"
     },
     {
+      "source": "ghcr.io/toeverything/affine@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099"
+    },
+    {
       "source": "lscr.io/linuxserver/deluge:18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9"
     },
     {
