@@ -44,12 +44,6 @@
       "sha256": "fa60f8b5e80ee72c48ea72f2a0b63f9ed1b82fdffc57d1c59241bbbcba2b9f0a"
     },
     {
-      "chart": "compass",
-      "version": "0.6.0",
-      "repository": "ghcr.io/adinhodovic/charts",
-      "sha256": "884bb89d548736f516f0f428fc204c5db873b6fd7cd8f7e34bb21ba02f0f466f"
-    },
-    {
       "chart": "crossplane",
       "version": "2.3.3",
       "repository": "https://charts.crossplane.io/stable",

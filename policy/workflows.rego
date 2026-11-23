@@ -1088,7 +1088,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'c4015f2b1478381f93fc39696dbe2fcb2eb19aeff1a4e8a8476c6e403ae81531  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'a335200e6a80ba6df5ed7af59b3cf5990a568178772ea2f048eb23c43e7822be  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1192,7 +1192,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "914c8240a739a330214cff773b79e742fcacd5a55825cf49e56a40e9f372b6ba"
+	crypto.sha256(json.marshal(canonical)) == "7dcb36cc7bb31561fdef0e5062ea2097265cb8e026f478cfd2e1b77c98777945"
 }
 
 tailnet_workflow_requested if {

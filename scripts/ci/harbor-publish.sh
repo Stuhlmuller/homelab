@@ -269,7 +269,7 @@ cleanup() {
       mirror_category="authentication-denied"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
       mirror_category="transport-failed"
-    elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing blob:|uploading blob:|failed to send blob' "$scratch/mirror-error"; then
+    elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing blob:|uploading blob:' "$scratch/mirror-error"; then
       mirror_category="blob-upload-failed"
     elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing manifest:|uploading manifest:' "$scratch/mirror-error"; then
       mirror_category="manifest-upload-failed"
@@ -558,27 +558,7 @@ if [[ "$mode" == mirror ]]; then
       fi
       mirror_phase="upstream-download"
       upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
-      if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
-        # Stage seekable blobs and preserve the original index, including attestations.
-        printf '{}\n' >"$scratch/regctl-anonymous.json"
-        REGCTL_CONFIG="$scratch/regctl-anonymous.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy --force-recursive "${source_repository}@${source_digest}" "ocidir://${upstream_directory}:mirror" \
-          2>"$scratch/mirror-error"
-        mirror_phase="upstream-verify"
-        skopeo inspect --raw "oci:${upstream_directory}:mirror" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
-        mirror_category="digest-mismatch"
-        [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
-        mirror_category="command-failed"
-        mirror_phase="destination-copy"
-        chunked_config="$scratch/regctl-chunked-publisher.json"
-        cp -- "$scratch/regctl-publisher.json" "$chunked_config"
-        REGCTL_CONFIG="$chunked_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl registry set harbor.stinkyboi.com --blob-chunk 8388608 --blob-max 8388608 2>"$scratch/mirror-error"
-        REGCTL_CONFIG="$chunked_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy --force-recursive "ocidir://${upstream_directory}:mirror" "${destination}:${tag}" \
-          2>"$scratch/mirror-error"
-        oci_index_copy=true
-      elif skopeo copy --all --preserve-digests --src-no-creds \
+      if skopeo copy --all --preserve-digests --src-no-creds \
           --src-authfile "$scratch/anonymous-auth.json" \
           "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"; then
         mirror_phase="upstream-verify"
@@ -587,8 +567,19 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if skopeo copy --all --preserve-digests --src-no-creds \
-          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+        if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
+          # Bound requests for this image in both scoped and full publication.
+          chunked_config="$scratch/regctl-chunked-publisher.json"
+          cp -- "$scratch/regctl-publisher.json" "$chunked_config"
+          REGCTL_CONFIG="$chunked_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216 \
+            2>"$scratch/mirror-error"
+          REGCTL_CONFIG="$chunked_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+            2>"$scratch/mirror-error"
+          oci_index_copy=true
+        elif skopeo copy --all --preserve-digests --src-no-creds \
+            --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
             "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
           :
         else
