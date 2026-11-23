@@ -1,0 +1,7 @@
+{
+  "images": [
+    {
+      "source": "quay.io/argoproj/argocd:v3.4.14@sha256:487168f017d1d969e0378e665156633e517be6a86bfb139a935fa3d43f627560"
+    }
+  ]
+}
