@@ -59,6 +59,7 @@ class PeerTests(unittest.TestCase):
         })
         self.assertEqual(dataplane["to"], [
             octelium, peer("openwiki", labels={"app.kubernetes.io/name": "openwiki"}),
+            {"podSelector": {"matchLabels": {"app.kubernetes.io/name": "bazel-cache"}}},
         ])
 
         config = nested_yaml(documents(APPS / "octelium-public/configmap.yaml")[0]
@@ -70,6 +71,7 @@ class PeerTests(unittest.TestCase):
             "octelium-api-ingressgateway.istio-system.svc.cluster.local:443",
             "octelium-ingress-dataplane.octelium.svc.cluster.local:8080",
             "openwiki.openwiki.svc.cluster.local:8080",
+            "bazel-cache.octelium-public.svc.cluster.local:8080",
         })
         self.assertEqual([route for route in config["ingress"]
                           if route.get("hostname") == "openwiki.stinkyboi.com"], [{
@@ -88,6 +90,37 @@ class PeerTests(unittest.TestCase):
         self.assertEqual({key: emergency["spec"]["template"]["metadata"]["labels"][key]
                           for key in octelium["podSelector"]["matchLabels"]},
                          octelium["podSelector"]["matchLabels"])
+
+    def test_bazel_cache_public_boundary(self):
+        config = nested_yaml(documents(APPS / "octelium-public/configmap.yaml")[0]
+                             ["data"]["config.yaml"])
+        host = "bazel-cache.stinkyboi.com"
+        self.assertEqual([route for route in config["ingress"]
+                          if route.get("hostname") == host], [{
+            "hostname": host,
+            "path": "^/(ac|cas)/[a-f0-9]{64}$",
+            "service": "http://bazel-cache.octelium-public.svc.cluster.local:8080",
+        }, {"hostname": host, "service": "http_status:404"}])
+        resources = {item["kind"]: item["spec"] for item in
+                     documents(APPS / "octelium-public/bazel-cache.yaml")}
+        self.assertEqual(resources["NetworkPolicy"]["ingress"], [{
+            "from": [{"podSelector": {"matchLabels": {
+                "app.kubernetes.io/name": "cloudflared",
+                "app.kubernetes.io/part-of": "octelium-public",
+            }}}],
+            "ports": [{"port": 8080, "protocol": "TCP"}],
+        }])
+        pod = resources["Deployment"]["template"]["spec"]
+        self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertEqual(pod["containers"][0]["args"], [
+            "--dir=/data", "--max_size=2", "--http_address=0.0.0.0:8080",
+            "--grpc_address=none", "--profile_address=none", "--htpasswd_file=/auth/htpasswd",
+            "--allow_unauthenticated_reads",
+        ])
+        self.assertEqual(resources["ExternalSecret"]["data"], [{
+            "secretKey": "writerPassword",
+            "remoteRef": {"key": "/homelab/octelium/bazel-cache-writer-password"},
+        }])
 
     def test_harbor_metrics_accept_only_prometheus(self):
         monitor = peer("monitoring", labels={"app.kubernetes.io/name": "prometheus"})

@@ -60,6 +60,9 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: openwiki
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: bazel-cache
       ports:
         - protocol: TCP
           port: 8080

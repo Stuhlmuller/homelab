@@ -867,10 +867,12 @@ child fixtures; it does not change infrastructure inputs. The artifact scanner
 still rejects saved plan/state files in ignored checkout paths. See the
 [validation runbook](../../docs/validation-runbook.md).
 
-The required `Terragrunt Gate` covers signed offline Nix checks on every PR
-targeting `main`, including forks and changes that do not need a live plan.
-The `validate / repo` job verifies the same outputs on pushes to `main` and
-runs its other repository checks on both events.
+The required `Terragrunt Gate` runs the offline Nix checks under Bazel on
+every PR targeting `main`, including forks. The `validate / repo` job uses the
+same offline targets on pushes to `main`. Both can reuse results uploaded by a
+trusted Linux writer to the [Homelab Bazel cache](../../docs/bazel-cache.md). A
+cache miss uses the signed Nix release cache or rebuilds the check. Live plans
+and the remaining repository checks run in their existing jobs.
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.

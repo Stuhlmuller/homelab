@@ -111,3 +111,6 @@ IaC/homelab/**/terragrunt.hcl
 IaC/homelab/**/terragrunt.values.hcl
 IaC/homelab/**/terragrunt *.hcl
 IaC/homelab/**/terragrunt.values *.hcl
+
+# Bazel output links
+/bazel-*

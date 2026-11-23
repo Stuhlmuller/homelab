@@ -1,0 +1,4 @@
+module(name = "homelab")
+
+nix_checks = use_repo_rule("//bazel:nix_check.bzl", "nix_checks_repository")
+nix_checks(name = "nix_checks")

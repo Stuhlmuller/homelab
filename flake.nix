@@ -68,6 +68,15 @@
           archive = xerjArchives.${system};
         in
         {
+          bazel-offline = pkgs.writeShellApplication {
+            name = "bazel-offline";
+            runtimeInputs = [ pkgs.bazel_8 pkgs.jq pkgs.nixVersions.latest ];
+            text = ''
+              export JAVA_HOME=${pkgs.jdk21_headless}
+              ${builtins.readFile ./scripts/ci/bazel-offline.sh}
+            '';
+          };
+
           openwiki = pkgs.buildNpmPackage {
             pname = "homelab-openwiki";
             version = "0.7.0";

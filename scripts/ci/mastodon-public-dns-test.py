@@ -42,7 +42,7 @@ def exercise(site, desired, records, count=None):
     return True, writes
 
 
-for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon')]:
+for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon'), ('bazel-cache', 'mastodon')]:
     desired = {'type': 'CNAME', 'name': f'{site}.stinkyboi.com', 'content': TUNNEL + '.cfargotunnel.com',
                'proxied': True, 'ttl': 1, 'comment': f'homelab-{site}-public'}
     assert exercise(site, desired, [])[1] == [('POST', '/zones/' + 'a' * 32 + '/dns_records')]
@@ -60,15 +60,17 @@ for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon')]:
         assert exercise(site, desired, records, count)[0] is False
 
     sha = 'a' * 40
+    expected_apps = ['octelium-public'] if site == 'bazel-cache' else [site, 'octelium-public']
     apps = [{'metadata': {'name': name}, 'status': {'sync': {'status': 'Synced', 'revisions': [sha]},
-            'health': {'status': 'Healthy'}}} for name in [site, 'octelium-public']]
+            'health': {'status': 'Healthy'}}} for name in expected_apps]
+    output = {'kind': 'Application', **apps[0]} if len(apps) == 1 else {'items': apps}
     with patch.dict(os.environ, {'GITHUB_SHA': sha}), patch.object(
-        dns.credential, 'command', return_value=json.dumps({'items': apps})
+        dns.credential, 'command', return_value=json.dumps(output)
     ) as command:
         dns.ready(site, sha)
         command.assert_called_once_with(['kubectl', '-n', 'argocd', 'get', 'applications',
-                                         site, 'octelium-public', '-o', 'json'])
-    for invalid in [apps[:1], apps + [apps[0]], [apps[1], {**apps[0], 'metadata': {'name': other}}],
+                                         *expected_apps, '-o', 'json'])
+    for invalid in [apps[1:], apps + [apps[0]], [*apps[1:], {**apps[0], 'metadata': {'name': other}}],
                     [{**app, 'status': {}} for app in apps]]:
         with patch.dict(os.environ, {'GITHUB_SHA': sha}), patch.object(
             dns.credential, 'command', return_value=json.dumps({'items': invalid})
@@ -127,4 +129,4 @@ try:
     raise AssertionError('Redirect accepted')
 except RuntimeError:
     pass
-print('Mastodon and OpenWiki DNS: create, idempotence, owned update, conflict refusal, and rollout checks passed')
+print('Public Tunnel DNS: create, idempotence, owned update, conflict refusal, and rollout checks passed')

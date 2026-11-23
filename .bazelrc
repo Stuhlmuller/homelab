@@ -1,0 +1,6 @@
+test --remote_upload_local_results=false
+test --test_output=errors
+test --local_test_jobs=2
+test --build_tests_only
+test --lockfile_mode=error
+test --test_timeout=120,300,1800,3600

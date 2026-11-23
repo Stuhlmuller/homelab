@@ -405,6 +405,12 @@ inputs = {
       description   = "Octelium authentication token for the homelab workload client connector."
       initial_value = local.placeholder
     }
+    "/homelab/octelium/bazel-cache-writer-password" = {
+      description = "Writer password for the Homelab Bazel remote cache."
+      generated = {
+        length = 48
+      }
+    }
     "/homelab/octelium/cloudflare-tunnel-credentials-json" = {
       description   = "Cloudflare Tunnel credentials JSON for the public Octelium control-plane connector."
       initial_value = local.placeholder

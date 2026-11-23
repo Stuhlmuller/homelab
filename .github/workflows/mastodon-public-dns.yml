@@ -1,6 +1,6 @@
 name: Mastodon Public DNS
 
-# checkov:skip=CKV_GHA_7: expected_sha anchors reviewed main and site selects one of two fixed hostnames.
+# checkov:skip=CKV_GHA_7: expected_sha anchors reviewed main and site selects one of three fixed hostnames.
 on:
   workflow_dispatch:
     inputs:
@@ -16,6 +16,7 @@ on:
         options:
           - mastodon
           - openwiki
+          - bazel-cache
 
 permissions: {}
 

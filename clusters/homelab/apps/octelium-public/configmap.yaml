@@ -158,4 +158,9 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: sonarr.stinkyboi.com
+      - hostname: bazel-cache.stinkyboi.com
+        path: ^/(ac|cas)/[a-f0-9]{64}$
+        service: http://bazel-cache.octelium-public.svc.cluster.local:8080
+      - hostname: bazel-cache.stinkyboi.com
+        service: http_status:404
       - service: http_status:404
