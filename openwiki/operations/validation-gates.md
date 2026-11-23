@@ -372,6 +372,14 @@ remaining fixture groups concurrently. The offline Nix result requires each
 group's result.
 See [signed offline validation](../../docs/nix-cache.md).
 
+The offline Nix gate also runs the pinned XERJ release against the Octelium
+Enterprise manifest on an authenticated loopback node. It requires a committed
+catalog and a searchable result sorted by the dotted upgrade annotation.
+It also checks that MCP can query the running node and leaves it stopped
+after the operator shuts it down.
+See [XERJ reference coding](../../docs/xerj-reference-coding.md) for the
+workstation index migration.
+
 The required Codex review status is published on a lightweight GitHub runner.
 A new publisher run for the same PR replaces the prior run and reads the
 latest PR head and trusted review receipt. See the
@@ -949,8 +957,17 @@ credentials stay scoped to the one live step.
 The `validate` runtime checks for image admission, network enforcement, and
 Harbor Core run on `main` pushes. In PRs,
 [`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
-the exact event diff, including removed paths, for each check's inputs. An
-unavailable diff runs the full runtime suite.
+the exact event diff, including removed paths, for each check's inputs. If the
+shallow checkout lacks the event base commit, the script fetches that commit.
+An unavailable diff runs the full runtime suite.
+
+The `validate` repository and runtime jobs share a GitHub Actions Nix store
+cache keyed by runner OS, architecture, and the two flake files. Successful
+`main` repository jobs populate it after signed offline verification. Check
+the `Cache Nix Store` or `Restore Nix Store Cache` step on a later run with the
+same key to verify reuse. Revert the cache steps and their matching workflow
+hash to roll back.
+See [cache trust and freshness](../../docs/nix-cache.md#ci-trust-and-freshness).
 
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
