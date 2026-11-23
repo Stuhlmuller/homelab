@@ -686,10 +686,10 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   database source-identity validation still need live validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
   kube-state-metrics by service account. Homepage allows the Istio gateway,
-  Traefik and the Octelium connector. Homepage also owns
-  discovery-only `Ingress` resources with an inert `compass-discovery` class;
-  those resources intentionally ignore Argo CD health checks because no
-  controller populates their load balancer status. The Prometheus operator
+  Traefik and the Octelium connector. Homepage reads opted-in Kubernetes
+  Ingresses. Its configuration lists the Istio and Traefik file-provider apps
+  so Argo CD can finish syncing without load-balancer status for catalog
+  links. The Prometheus operator
   remains unselected until its webhook/control-plane paths are modeled.
 - The `octelium-client` pod template is explicitly ambient-enrolled so future
   connector-served upstreams have a stable workload principal when they call

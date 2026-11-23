@@ -140,9 +140,9 @@ continue to reach the application unchanged. Prometheus has no ingress.
 The shared Istio gateway and old app VirtualServices remain during cutover.
 Traefik uses application Services directly, except for Mastodon's existing web/streaming gateway and the retained console
 redirect compatibility route. See the [Traefik route boundaries](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/README.md).
-Homepage uses the established dashboard hostname and discovery-only Ingress
-entries. The catalog records supply launch URLs, and the file provider routes
-those hostnames to their backends.
+Homepage uses the established dashboard hostname. Its catalog config lists
+apps routed through Istio and the Traefik file provider. Homepage also
+discovers Kubernetes Ingresses that opt in with its annotations.
 
 ## Tailnet Exit Node And LAN Route
 

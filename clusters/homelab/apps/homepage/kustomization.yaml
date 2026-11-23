@@ -5,7 +5,6 @@ namespace: monitoring
 resources:
   - authorizationpolicy.yaml
   - deployment.yaml
-  - ingress-discovery.yaml
   - networkpolicy.yaml
   - rbac.yaml
   - service.yaml
@@ -16,9 +15,9 @@ configMapGenerator:
     files:
       - settings.yaml=config/settings.yaml
       - kubernetes.yaml=config/kubernetes.yaml
+      - services.yaml=config/services.yaml
     literals:
       - bookmarks.yaml=[]
-      - services.yaml=[]
       - widgets.yaml=[]
       - docker.yaml={}
       - custom.css=
