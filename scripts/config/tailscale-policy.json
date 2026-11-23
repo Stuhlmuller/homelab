@@ -27,6 +27,12 @@
     ],
     "tag:codex-cloud-signer": [
       "autogroup:admin"
+    ],
+    "tag:homelab-ci-renovate": [
+      "autogroup:admin"
+    ],
+    "tag:homelab-harbor-registry": [
+      "autogroup:admin"
     ]
   },
   "acls": [],
@@ -195,9 +201,35 @@
       "ip": [
         "*"
       ]
+    },
+    {
+      "src": [
+        "tag:homelab-ci-renovate"
+      ],
+      "dst": [
+        "tag:homelab-harbor-registry"
+      ],
+      "ip": [
+        "tcp:443"
+      ]
     }
   ],
   "tests": [
+    {
+      "src": "tag:homelab-ci-renovate",
+      "accept": [
+        "tag:homelab-harbor-registry:443"
+      ],
+      "deny": [
+        "tag:homelab-harbor-registry:53",
+        "tag:homelab-harbor-registry:80",
+        "tag:homelab-ingress:443",
+        "tag:homelab-ingress:53",
+        "tag:k8s-operator:443",
+        "homelab-control-plane:6443",
+        "homelab-nas-lan:2049"
+      ]
+    },
     {
       "src": "tag:homelab-ci-plan",
       "accept": [

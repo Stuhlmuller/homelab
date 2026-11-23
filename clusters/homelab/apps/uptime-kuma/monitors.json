@@ -172,6 +172,15 @@
       ]
     },
     {
+      "id": "home-assistant",
+      "lifecycle": "active",
+      "source": "IaC/homelab/us-west-2/apps/home-assistant/stack.hcl",
+      "reason": "Declared active Home Assistant Container workload with Kubernetes readiness monitoring.",
+      "monitorIds": [
+        "home-assistant-workloads"
+      ]
+    },
+    {
       "id": "immich",
       "lifecycle": "active",
       "source": "IaC/homelab/us-west-2/apps/immich/stack.hcl",
@@ -1310,6 +1319,84 @@
       {"kind":"statefulset","namespace":"harbor","name":"harbor-postgres"},
       {"kind":"statefulset","namespace":"harbor","name":"harbor-redis"},
       {"kind":"statefulset","namespace":"harbor","name":"harbor-trivy"}
+    ]
+  },
+  {
+    "key": "home-assistant-workloads",
+    "name": "home-assistant — workload health",
+    "ownerAppIds": [
+      "home-assistant"
+    ],
+    "kind": "json-query",
+    "target": {
+      "url": "http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query",
+      "method": "POST",
+      "body": "query=vector%28%28scalar%28count%28kube_deployment_spec_replicas%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_spec_replicas%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_replicas_available%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_replicas_available%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_metadata_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_metadata_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28count%28kube_deployment_status_observed_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3D%3D+bool+1%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3C%3D+bool+60%29+%2A+%28time%28%29+-+scalar%28timestamp%28kube_deployment_status_observed_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%3E%3D+bool+0%29+%2A+%28scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29+%3E+bool+0%29+%2A+%28scalar%28kube_deployment_status_replicas_available%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_spec_replicas%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29+%2A+%28scalar%28kube_deployment_status_observed_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29+%3E%3D+bool+scalar%28kube_deployment_metadata_generation%7Bdeployment%3D%22home-assistant%22%2Cnamespace%3D%22home-assistant%22%7D%29%29%29",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    },
+    "expected": {
+      "statusCodes": [
+        200
+      ],
+      "jsonPath": "(status = \"success\" and $count(data.result) = 1 and data.result[0].value[1] = \"1\") ? \"1\" : \"0\"",
+      "value": "1"
+    },
+    "intervalSeconds": 60,
+    "timeoutSeconds": 10,
+    "retries": 1,
+    "enabled": true,
+    "meaning": "Every listed active workload has fresh, unique desired and available/ready signals; desired replicas must be positive.",
+    "limitations": "Kubernetes readiness and current generation only. Browser onboarding and device integrations require separate functional checks. Missing or stale metrics fail.",
+    "sourceSignals": [
+      {
+        "metric": "kube_deployment_spec_replicas",
+        "labels": {
+          "namespace": "home-assistant",
+          "deployment": "home-assistant"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_replicas_available",
+        "labels": {
+          "namespace": "home-assistant",
+          "deployment": "home-assistant"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_metadata_generation",
+        "labels": {
+          "namespace": "home-assistant",
+          "deployment": "home-assistant"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      },
+      {
+        "metric": "kube_deployment_status_observed_generation",
+        "labels": {
+          "namespace": "home-assistant",
+          "deployment": "home-assistant"
+        },
+        "periodSeconds": 30,
+        "maxAgeSeconds": 60,
+        "cadenceSource": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl"
+      }
+    ],
+    "workloads": [
+      {
+        "kind": "deployment",
+        "namespace": "home-assistant",
+        "name": "home-assistant"
+      }
     ]
   },
   {
