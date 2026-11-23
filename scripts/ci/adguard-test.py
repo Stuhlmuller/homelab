@@ -123,7 +123,7 @@ class AdGuardManifestTests(unittest.TestCase):
         self.assertTrue(config["querylog"]["enabled"])
         self.assertEqual(config["querylog"]["size_memory"], 1000)
         self.assertFalse(config["querylog"]["file_enabled"])
-        self.assertFalse(config["statistics"]["enabled"])
+        self.assertEqual(config["statistics"], {"enabled": True, "interval": "1d"})
         self.assertTrue(all(v is False for v in config["clients"]["runtime_sources"].values()))
         self.assertEqual(config["dns"]["fallback_dns"], [])
         self.assertFalse(config["dns"]["use_private_ptr_resolvers"])

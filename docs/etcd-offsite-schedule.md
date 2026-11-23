@@ -139,7 +139,10 @@ Repeated uninstall succeeds when the agent is already absent.
 ```
 
 For update or rollback, run `install` from another reviewed main revision with
-the same runtime and local source runtime. To change the source runtime,
+the same runtime and local source runtime. Existing releases use the original
+destination path. New releases also store and verify a copy at that path so an
+installer from before the move can validate the active release during rollback.
+To change the source runtime,
 uninstall and choose a fresh offsite runtime. The manual publisher's existing
 CLI and receipt-only retrieval remain available for operator recovery.
 

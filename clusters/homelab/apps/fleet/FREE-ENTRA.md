@@ -292,23 +292,19 @@ nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fle
 nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet apply /tmp/fleet-entra-saml.plan
 ```
 
-For the `stuhlmuller.net` pilot, first follow the two-stage
-[custom-domain operator module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-domain-verification/README.md):
-read the existing domain with verification disabled, publish its exact returned
-TXT through the DNS owner's reviewed code path, then enable verification in a
-separate reviewed commit. Only after its `Managed`, verified, non-default status
-is confirmed may the operator plan and apply
-`IaC/operator/entra-stuhlmuller-pilot-user`. Do not add a DNS record manually
-or enable a domain-wide Entra/Google SSO setting to shortcut this sequence.
+The `stuhlmuller.net` Mac pilot's initial credential handoff is retired.
+`IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` now attests the
+existing account by immutable object ID and exact UPN on the verified
+Federated domain. Its saved plan can forget legacy OpenTofu bindings without
+changing the account or password. The historical Managed-only bootstrap
+module is outside the active stack.
 
 Treat plans, plan JSON, logs and credential outputs as private. Set `umask 077`
 inside the Nix shell when saving artifacts. Never attach them to a public PR.
 The SAML signing certificate expires on **2027-10-04**; renew through the unit's
 reviewed expiry input and rerun the SAML acceptance check. Keep recovery access
-during renewal. The pilot user's initial password is generated into encrypted
-state, requires change at first login, and is ignored by later applies after
-the user takes ownership. The resource prevents accidental destruction and
-grants no role, group membership or license.
+during renewal. The account's original encrypted state remains subject to the
+backend retention policy. The current unit exports no password.
 
 Prepare application and device settings using the fixed operator commands:
 
@@ -318,14 +314,11 @@ nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execu
 python3 -I scripts/fleet-free-setup.py reporting --execute
 python3 -I scripts/fleet-free-setup.py mac-pilot --execute
 python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --execute
-nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --pilot stuhlmuller --output <PRIVATE_FILE_OUTSIDE_REPO>
 ```
 
 Omit `--execute` to preview without reading credentials or contacting APIs.
-The credential exporter is different: it writes a new mode-0600 file and refuses
-existing paths and repository destinations. Open that file privately, complete
-the initial known-password change/MFA flow, and remove the obsolete copy when
-finished. The file is not a recovery credential after the initial change.
+The separate `stinkyboi.com` credential exporter still writes only a new
+mode-0600 file outside Git repositories.
 
 The Mac pilot privately matches both serial and hardware UUID. Individual Mac
 baseline installation requires an explicit Fleet ID and verifies `darwin` and

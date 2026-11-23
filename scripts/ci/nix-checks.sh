@@ -11,11 +11,18 @@ cache="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["url
 key="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["publicKey"])' "$policy")"
 system="$(nix eval --impure --raw --expr builtins.currentSystem)"
 
+# Overlap independent builds on the same runner while leaving CPU capacity
+# for subprocess-heavy fixtures.
+build_jobs=()
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+  build_jobs=(--max-jobs 2)
+fi
+
 # The policy comes from the protected base in CI, never from the PR's key list.
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 status=0
-nix build --print-build-logs --no-link --print-out-paths --no-update-lock-file \
+nix build "${build_jobs[@]}" --print-build-logs --no-link --print-out-paths --no-update-lock-file \
   --option sandbox true --option require-sigs true \
   --option extra-substituters "$cache" --option extra-trusted-public-keys "$key" \
   --option narinfo-cache-negative-ttl 0 \

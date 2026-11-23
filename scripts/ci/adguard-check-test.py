@@ -82,9 +82,10 @@ class DirectCheck(unittest.TestCase):
 
     def test_admin_requires_authentication_closed_setup_and_private_history(self):
         valid = ({'name': 'admin'}, {'enabled': True},
-                 {'enabled': False}, [403, 403], 403)
+                 {'enabled': True, 'interval': 86400000}, [403, 403], 403)
         CHECK.validate_admin(*valid)
-        for index, value in ((0, {'name': 'other'}), (1, {'enabled': False}), (2, {'enabled': True}),
+        for index, value in ((0, {'name': 'other'}), (1, {'enabled': False}), (2, {'enabled': False, 'interval': 86400000}),
+                             (2, {'enabled': True, 'interval': 604800000}),
                              (3, [200, 403]), (3, [403, 400]), (4, 200)):
             data = list(copy.deepcopy(valid))
             data[index] = value

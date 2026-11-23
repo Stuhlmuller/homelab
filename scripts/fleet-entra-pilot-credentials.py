@@ -19,10 +19,6 @@ PILOTS = {
         "unit": "IaC/homelab/us-west-2/apps/fleet/pilot-user",
         "upn": "rodman.mac@stinkyboi.com",
     },
-    "stuhlmuller": {
-        "unit": "IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user",
-        "upn": "rodman.mac@stuhlmuller.net",
-    },
 }
 
 
