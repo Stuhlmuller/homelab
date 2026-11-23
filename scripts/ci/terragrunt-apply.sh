@@ -104,7 +104,8 @@ destroy_deleted_terragrunt_units() {
     fi
     conftest test --policy "${repo_root}/policy" --output github "$json_file" || return 1
     if [[ -n "$retire_app" ]]; then
-      live_app="$(kubectl -n argocd get application "$retire_app" --ignore-not-found -o json)" || return 1
+      live_app="$(kubectl -n argocd get application "$retire_app" --ignore-not-found -o json |
+        jq -c '{apiVersion, kind, metadata: (.metadata | {name, namespace, finalizers})}')" || return 1
       if ! terragrunt_retired_argocd_app_plan "$retire_app" "${live_app:-null}" "$json_file"; then
         echo "Retirement plan must delete only the selected Application with cascading deletion enabled." >&2
         return 1
