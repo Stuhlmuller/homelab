@@ -32,23 +32,23 @@
           hash = "sha256-G6StEc9qwnfoulmj/c64V2d44i9qJL7dVC6RutnzZJE=";
         };
       };
-      xerjVersion = "1.0.0-rc.96";
+      xerjVersion = "1.0.0-rc.104";
       xerjArchives = {
         aarch64-darwin = {
           target = "aarch64-apple-darwin";
-          hash = "sha256-UUSRo2AY4osJ35JIeroAPx30QBUR372d/RFTokxGHXs=";
+          hash = "sha256-Xxaxfc9Gq7Vm7DOg9HM7RZwPvCKfzQ9YqeataY831Y4=";
         };
         x86_64-darwin = {
           target = "x86_64-apple-darwin";
-          hash = "sha256-eSesQYPMjKftiujdYlgEcr/YUi0Xsi9JaDZUm7JhYsM=";
+          hash = "sha256-4mQlKPuO9Wj/krAWakoQtQmtJlVo6Ei1datNnvE6LGQ=";
         };
         aarch64-linux = {
           target = "aarch64-unknown-linux-musl";
-          hash = "sha256-MntwU9stFbeWe98OojP2+HfNd+ZJapTrfZRAgRBdcd8=";
+          hash = "sha256-zTrPOzfX+UIVe+uwXvpCIWUbJfB7GKhb7qy1dXZH6k8=";
         };
         x86_64-linux = {
           target = "x86_64-unknown-linux-musl";
-          hash = "sha256-AHuZKUDQLn7qnmVsWcdzka6MfeBptiAIZlZu8SMrM6E=";
+          hash = "sha256-FijuQBqaEhFWzDgJUPnUiSPm6FZFiuHmZI8O8Y23tpM=";
         };
       };
       systems = [
@@ -118,11 +118,17 @@
               url = "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz";
               inherit (archive) hash;
             };
+            nativeBuildInputs = [ pkgs.makeWrapper ];
             dontStrip = true;
             installPhase = ''
-              mkdir -p "$out/bin"
-              cp xerj "$out/bin/xerj"
-              chmod 755 "$out/bin/xerj"
+              runHook preInstall
+              install -Dm755 xerj "$out/libexec/xerj"
+              # Existing Codex checkouts launch this package from main.
+              makeWrapper "$out/libexec/xerj" "$out/bin/xerj" \
+                --run 'case "''${1:-}:''${2:-}" in
+                  mcp:*|--disable-feedback:mcp) set -- "$@" --no-autostart ;;
+                esac'
+              runHook postInstall
             '';
             meta.mainProgram = "xerj";
           };
@@ -212,6 +218,15 @@
             nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
           } ''
             node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
+          xerj-autoindex = pkgs.runCommand "homelab-xerj-autoindex-test" {
+            nativeBuildInputs = [ pkgs.python3 self.packages.${system}.xerj ];
+            __darwinAllowLocalNetworking = true;
+          } ''
+            python3 -I ${./scripts/ci/xerj-autoindex-check.py} \
+              ${./clusters/homelab/apps/octelium-enterprise/resources.yaml}
             mkdir "$out"
             printf 'passed\n' > "$out/result"
           '';
