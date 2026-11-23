@@ -130,8 +130,8 @@ separately from retained S3 versions.
 
 ## Manual publication and retrieval
 
-The shared S3 destination is defined in
-[`IaC/application-backup-storage.hcl`](../IaC/application-backup-storage.hcl).
+The shared S3 destination is defined in the
+[operator stack configuration](../IaC/homelab/us-west-2/operator/application-backup-storage.hcl).
 Use a scoped file-backed AWS profile and read-only access to completed dumps.
 For Octelium resource-store captures, follow the
 [resource-store capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)

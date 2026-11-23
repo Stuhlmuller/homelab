@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: octelium-generated-proxies
+  namespace: monitoring
+spec:
+  groups:
+    - name: homelab.octelium-generated-proxies
+      interval: 1m
+      rules:
+        - alert: OcteliumGeneratedProxyUnavailable
+          expr: |
+            (
+              max by (namespace, service) (
+                kube_service_info{job="kube-state-metrics",namespace="octelium",service=~"(upstream-)?svc-.+"} == 1
+              )
+              unless on (namespace, service)
+              max by (namespace, service) (
+                label_replace(
+                  kube_deployment_status_replicas_available{
+                    job="kube-state-metrics",namespace="octelium",deployment=~"(upstream-)?svc-.+"
+                  } > 0,
+                  "service", "$1", "deployment", "(.+)"
+                )
+              )
+            )
+            and on () (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octelium generated proxy has no available Deployment replica
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts
+        - alert: OcteliumGeneratedProxyStaleTerminating
+          expr: |
+            (
+              time() - max by (namespace, pod, uid) (
+                kube_pod_deletion_timestamp{job="kube-state-metrics",namespace="octelium",pod=~"(upstream-)?svc-.+"}
+              ) > 900
+            )
+            and on (namespace, pod, uid)
+            kube_pod_owner{
+              job="kube-state-metrics",namespace="octelium",owner_kind="ReplicaSet",owner_is_controller="true"
+            }
+            and on () (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Octelium generated proxy Pod is stuck terminating
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts
