@@ -14,7 +14,7 @@ import unittest
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,6 +39,7 @@ class HarborAPI:
         self.passwords = {}
         self.repositories = []
         self.artifacts = {}
+        self.immutable_rules = {}
         self.registries = {"cgr.dev": {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
                                         "type": "docker-registry", "insecure": False}}
         self.replication_policies = {}
@@ -60,7 +61,7 @@ class HarborAPI:
         if path.startswith("/registries?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
             registry = self.registries.get(query.get("name", [""])[0])
-            return 200, ([registry] if registry else []), {}
+            return 200, ([registry] if registry else None), {"X-Total-Count": "1" if registry else "0"}
         if path.startswith("/registries/"):
             identifier = int(path.rsplit("/", 1)[1])
             registry = next((item for item in self.registries.values() if item["id"] == identifier), None)
@@ -99,8 +100,23 @@ class HarborAPI:
             if name in self.projects:
                 return 409, {"error": "already exists"}, {}
             self.projects[name] = {"name": name, "project_id": len(self.projects) + 7,
-                                  "metadata": copy.deepcopy(body["metadata"])}
+                                   "metadata": copy.deepcopy(body["metadata"]),
+                                   "registry_id": body.get("registry_id")}
             return 201, b"", {}
+        rules_path = "/projects/mirror/immutabletagrules"
+        if path.startswith(rules_path + "?") and method == "GET":
+            rules = [{key: value for key, value in rule.items()
+                      if key != "project_id" and not (key in {"disabled", "priority"} and not value)}
+                     for rule in self.immutable_rules.values()]
+            return 200, rules, {"X-Total-Count": str(len(rules))}
+        if path == rules_path and method == "POST":
+            identifier = max(self.immutable_rules, default=0) + 1
+            self.immutable_rules[identifier] = {**copy.deepcopy(body), "id": identifier}
+            return 201, b"", {}
+        if path.startswith(rules_path + "/") and method == "PUT":
+            identifier = int(path.rsplit("/", 1)[1])
+            self.immutable_rules[identifier] = copy.deepcopy(body)
+            return 200, b"", {}
         if path.startswith("/projects/homelab/repositories"):
             parsed = urllib.parse.urlsplit(path)
             query = urllib.parse.parse_qs(parsed.query)
@@ -179,7 +195,7 @@ class KubernetesTagClient:
         if method == "GET" and path.startswith(artifact_prefix):
             encoded = path[len(artifact_prefix):].split("/artifacts/", 1)[0]
             repository = urllib.parse.unquote(urllib.parse.unquote(encoded))
-            desired = bootstrap.kubernetes_immutable_rule(repository, 7)
+            desired = bootstrap.mirror_immutable_rule(repository, bootstrap.KUBERNETES_TAG, 7)
             locked = any(all(rule.get(key) == value for key, value in desired.items())
                          for rule in self.rules)
             return {"digest": self.digests[repository], "tags": [
@@ -257,31 +273,42 @@ class BootstrapTest(unittest.TestCase):
         self.assertTrue({entry["source"] for entry in catalog["images"]}.issuperset(pins))
         self.assertFalse(bootstrap.KUBERNETES_TAG_LOCK_ENABLED)
 
-    def test_kubernetes_tag_lock_is_dormant_until_reviewed_activation(self):
+    def test_mirror_locks_chart_versions_without_locking_image_aliases(self):
         client = KubernetesTagClient()
-        bootstrap.reconcile_kubernetes_tag_lock(client, 7)
-        self.assertEqual(client.calls, [])
+        bootstrap.reconcile_mirror_tag_locks(client, 7)
+        self.assertEqual(len(client.rules), 1)
+        self.assertEqual([item["pattern"] for item in client.rules[0]["scope_selectors"]["repository"]], ["helm/**"])
+        self.assertEqual([item["pattern"] for item in client.rules[0]["tag_selectors"]], ["**"])
+        self.assertFalse(any("/artifacts/" in path for _, path, _ in client.calls))
+
+    def test_mirror_tag_locks_reject_ambiguous_existing_rule(self):
+        client = KubernetesTagClient()
+        rule = bootstrap.mirror_immutable_rule("helm/**", "**", 7)
+        client.rules = [{**rule, "id": identifier} for identifier in (1, 2)]
+        with self.assertRaisesRegex(bootstrap.BootstrapError, "ambiguous"):
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
+        self.assertTrue(all(method == "GET" for method, _, _ in client.calls))
 
     def test_kubernetes_tag_lock_prechecks_all_digests_before_writing(self):
         client = KubernetesTagClient()
         client.digests["ghcr.io/siderolabs/kubelet"] = "sha256:" + "0" * 64
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
                 self.assertRaises(bootstrap.BootstrapError):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
         self.assertFalse([call for call in client.calls if call[0] != "GET"])
 
     def test_kubernetes_tag_lock_reads_back_and_repairs_exact_rules(self):
         client = KubernetesTagClient()
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
-            self.assertEqual(len(client.rules), 5)
-            self.assertEqual(len([call for call in client.calls if call[0] == "POST"]), 5)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
+            self.assertEqual(len(client.rules), 6)
+            self.assertEqual(len([call for call in client.calls if call[0] == "POST"]), 6)
             client.calls.clear()
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
             self.assertFalse([call for call in client.calls if call[0] != "GET"])
             client.rules[0]["disabled"] = True
             client.calls.clear()
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
             self.assertEqual(len([call for call in client.calls if call[0] == "PUT"]), 1)
 
     def test_kubernetes_tag_lock_rejects_missing_immutable_readback(self):
@@ -289,7 +316,7 @@ class BootstrapTest(unittest.TestCase):
         client.report_immutable = False
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
                 self.assertRaisesRegex(bootstrap.BootstrapError, "digest or lock"):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
 
     def test_paused_policy_disables_native_rules(self):
         rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]
@@ -457,12 +484,21 @@ class BootstrapTest(unittest.TestCase):
 
     def test_initial_bootstrap_and_repeat_preserve_identities_and_least_privilege(self):
         self.assertEqual(self.main()[0], 0)
+        self.assertEqual(len(self.api.immutable_rules), 1)
         self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"})
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
         self.assertEqual(len(original), 5)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
+        self.assertEqual(bootstrap.PROXY_CACHES["proxy-quay"],
+                         ("https://quay.io", "docker-registry"))
+        for name, (url, provider) in bootstrap.PROXY_CACHES.items():
+            registry = self.api.registries[name]
+            self.assertEqual((registry["url"], registry["type"], registry["insecure"]), (url, provider, False))
+            self.assertFalse(registry.get("credential"))
+            self.assertEqual(self.api.projects[name]["registry_id"], registry["id"])
+            self.assertEqual(self.api.projects[name]["metadata"], bootstrap.PROXY_METADATA)
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
                 robot = next(robot for robot in original.values()
@@ -527,6 +563,30 @@ class BootstrapTest(unittest.TestCase):
         self.api.requests.clear()
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
+
+    def test_proxy_reconciliation_rejects_conflicting_registry_or_project(self):
+        bootstrap.reconcile_proxy_caches(self.client)
+        for target, field, value in (
+            (self.api.registries["proxy-dockerhub"], "insecure", True),
+            (self.api.registries["proxy-dockerhub"], "credential", {"access_key": "unexpected"}),
+            (self.api.projects["proxy-ghcr"], "registry_id", self.api.registries["proxy-quay"]["id"]),
+            (self.api.projects["proxy-ghcr"], "registry_id", 0),
+        ):
+            with self.subTest(field=field, value=value), patch.dict(target, {field: value}):
+                self.api.requests.clear()
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.reconcile_proxy_caches(self.client)
+                self.assertEqual(self.mutations(), [])
+
+    def test_proxy_reconciliation_handles_partial_create_and_repairs_privacy(self):
+        bootstrap.reconcile_proxy_caches(self.client)
+        del self.api.projects["proxy-dockerhub"]
+        self.api.projects["proxy-quay"]["metadata"]["public"] = "true"
+        self.api.requests.clear()
+        bootstrap.reconcile_proxy_caches(self.client)
+        self.assertEqual([(method, path) for method, path, _ in self.mutations()],
+                         [("POST", "/projects"), ("PUT", "/projects/proxy-quay")])
+        self.assertEqual(self.api.projects["proxy-quay"]["metadata"]["public"], "false")
 
     def test_enables_missing_or_disabled_scanning_and_preserves_other_metadata(self):
         for metadata in ({"public": "false"}, {"public": "false", "auto_scan": "false"}):
@@ -640,6 +700,49 @@ class BootstrapTest(unittest.TestCase):
             bootstrap.backfill_scans(self.client)
         self.assertEqual(self.mutations(), [])
 
+    def test_readiness_transport_error_preserves_retry_budget_and_redacts_details(self):
+        with patch.object(bootstrap.urllib.request.OpenerDirector, "open",
+                          side_effect=bootstrap.urllib.error.URLError(ADMIN)) as opened, \
+                patch.object(bootstrap, "time") as clock:
+            clock.monotonic_ns.return_value = 0
+            result, output = self.main()
+        self.assertEqual(result, 1)
+        self.assertEqual(opened.call_count, 12)
+        self.assertTrue(all(request.kwargs == {"timeout": 10} for request in opened.call_args_list))
+        self.assertEqual(clock.sleep.call_args_list, [call(5)] * 11)
+        self.assertEqual(output.splitlines(), [
+            "Harbor API transport diagnostic: family=readiness phase=open elapsed_ms=0",
+        ] * 12 + ["Harbor bootstrap failed: Harbor API connection failed"])
+
+    def test_transport_body_read_only_reports_allowlisted_family_and_elapsed_time(self):
+        private_value = "synthetic-private-response"
+        body_value = "synthetic-private-request-body"
+        artifact_path = f"/projects/homelab/repositories/{private_value}/artifacts"
+        cases = (
+            ("GET", f"{artifact_path}?token={ADMIN}", None, "artifact-list"),
+            ("POST", f"{artifact_path}/sha256:{'a' * 64}/scan?token={ADMIN}",
+             {"private": body_value}, "artifact-action"),
+            ("GET", f"/{private_value}?token={ADMIN}", None, "other"),
+            ("GET", "/configurations", None, "configuration"),
+        )
+        for method, request_path, body, family in cases:
+            with self.subTest(family=family):
+                response = Mock(status=200, headers={"X-Private": private_value})
+                response.read.side_effect = TimeoutError(f"{private_value}: {ADMIN}")
+                output = io.StringIO()
+                diagnostics = io.StringIO()
+                with patch.object(self.client.opener, "open", return_value=contextlib.nullcontext(response)), \
+                        patch.object(bootstrap.time, "monotonic_ns", side_effect=(10_000_000, 17_000_000)), \
+                        contextlib.redirect_stdout(output), contextlib.redirect_stderr(diagnostics):
+                    with self.assertRaisesRegex(bootstrap.BootstrapError, "^Harbor API connection failed$"):
+                        self.client.request(method, request_path, body)
+                self.assertEqual(output.getvalue(), "")
+                self.assert_no_credentials(diagnostics.getvalue())
+                self.assertNotIn(private_value, diagnostics.getvalue())
+                self.assertNotIn(body_value, diagnostics.getvalue())
+                self.assertEqual(diagnostics.getvalue(),
+                                 f"Harbor API transport diagnostic: family={family} phase=body-read elapsed_ms=7\n")
+
     def test_denied_admin_and_unexpected_response_never_log_credentials(self):
         for status in (401, 403, 500):
             with self.subTest(status=status):
@@ -647,7 +750,7 @@ class BootstrapTest(unittest.TestCase):
                 self.api.override = lambda *_args: (status, {"secret": ADMIN}, {})
                 result, output = self.main()
                 self.assertEqual(result, 1)
-                self.assertIn(f"HTTP {status}", output)
+                self.assertEqual(output, f"Harbor bootstrap failed: Harbor API returned HTTP {status}\n")
                 self.assertEqual(self.mutations(), [])
 
     def test_malformed_configuration_and_wrong_prefix_fail_before_mutation(self):
@@ -664,6 +767,15 @@ class BootstrapTest(unittest.TestCase):
         self.api.override = lambda *_args: (302, {}, {"Location": self.endpoint + "/sink"})
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(len(self.api.requests), 1)
+
+    def test_null_registry_listing_requires_explicit_zero_count(self):
+        for headers in ({}, {"X-Total-Count": "1"}):
+            with self.subTest(headers=headers):
+                self.api.override = lambda method, path, body: (
+                    (200, None, headers) if path == "/registries?name=proxy-quay" else None)
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.find_registry(self.client, "proxy-quay")
+                self.assertEqual(self.mutations(), [])
 
     def test_ambiguous_robot_listing_fails_before_mutation(self):
         self.reconcile()

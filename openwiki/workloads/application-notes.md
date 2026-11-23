@@ -57,6 +57,17 @@ workload README and [Storage And State](../architecture/storage-and-state.md). S
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [Secrets And Identity](../architecture/secrets-and-identity.md).
 
+## Compass image history
+
+Argo CD includes retained terminal pods in the Application image summary. The
+Compass Deployment and its ready pod use the Harbor image in the
+[chart values](../../clusters/homelab/apps/compass/values.yaml). The
+[sync hook](../../clusters/homelab/apps/compass/retired-pod-cleanup.yaml)
+removes the historical pod only after matching its finished phase, ReplicaSet,
+and old image. Its delete request checks the UID and resource version returned
+by Kubernetes. Verify that the pod is absent, the Deployment is ready, and
+Argo CD has dropped the old entry, then remove the one-time hook and its RBAC.
+
 ## Kiali mesh visibility
 
 The 2026-09-05 read-only probes found cluster-wide namespace and Istio config

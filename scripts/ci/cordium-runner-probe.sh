@@ -49,7 +49,7 @@ if [[ "$mode" == runner ]]; then
   [[ -s "$scratch/jitconfig" ]]
   chown runner:docker "$scratch" "$scratch/jitconfig"
   # Only the transient runner configuration reaches runner argv; no App key.
-  sudo -u runner /home/runner/run.sh --jitconfig "$(cat "$scratch/jitconfig")"
+  runuser -u runner -- /home/runner/run.sh --jitconfig "$(cat "$scratch/jitconfig")"
   exit
 fi
 

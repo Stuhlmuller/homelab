@@ -1,0 +1,76 @@
+rule_files: [rules.yml]
+evaluation_interval: 1m
+
+tests:
+  - name: Missing and unready native deployments warn even with an available fallback
+    interval: 1m
+    input_series:
+      - {series: 'up{job="kube-state-metrics"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="svc-missing",instance="a"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="svc-missing",instance="b"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="upstream-svc-unready"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="svc-ready"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="unrelated"}', values: '1x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="other",service="svc-private"}', values: '1x10'}
+      - {series: 'kube_deployment_status_replicas_available{job="kube-state-metrics",namespace="octelium",deployment="emergency-octelium-missing"}', values: '1x10'}
+      - {series: 'kube_deployment_status_replicas_available{job="kube-state-metrics",namespace="octelium",deployment="upstream-svc-unready"}', values: '0x10'}
+      - {series: 'kube_deployment_status_replicas_available{job="kube-state-metrics",namespace="octelium",deployment="svc-ready"}', values: '1x10'}
+      - {series: 'kube_deployment_status_replicas_available{job="kube-state-metrics",namespace="other",deployment="svc-missing"}', values: '1x10'}
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: OcteliumGeneratedProxyUnavailable
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: OcteliumGeneratedProxyUnavailable
+        exp_alerts:
+          - exp_labels: {namespace: octelium, service: svc-missing, severity: warning}
+            exp_annotations:
+              summary: Octelium generated proxy has no available Deployment replica
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts
+          - exp_labels: {namespace: octelium, service: upstream-svc-unready, severity: warning}
+            exp_annotations:
+              summary: Octelium generated proxy has no available Deployment replica
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts
+
+  - name: Availability returns and dead kube-state-metrics cannot report native readiness
+    interval: 1m
+    input_series:
+      - {series: 'up{job="kube-state-metrics"}', values: '1x8 0x10'}
+      - {series: 'kube_service_info{job="kube-state-metrics",namespace="octelium",service="svc-recover"}', values: '1x20'}
+      - {series: 'kube_deployment_status_replicas_available{job="kube-state-metrics",namespace="octelium",deployment="svc-recover"}', values: '0x6 1 0x12'}
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: OcteliumGeneratedProxyUnavailable
+        exp_alerts:
+          - exp_labels: {namespace: octelium, service: svc-recover, severity: warning}
+            exp_annotations:
+              summary: Octelium generated proxy has no available Deployment replica
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts
+      - eval_time: 7m
+        alertname: OcteliumGeneratedProxyUnavailable
+        exp_alerts: []
+      - eval_time: 17m
+        alertname: OcteliumGeneratedProxyUnavailable
+        exp_alerts: []
+
+  - name: Only the exact old controlled Pod identity can warn after the stale window
+    interval: 1m
+    input_series:
+      - {series: 'up{job="kube-state-metrics"}', values: '1x30'}
+      - {series: 'kube_pod_deletion_timestamp{job="kube-state-metrics",namespace="octelium",pod="svc-stale",uid="old"}', values: '60x30'}
+      - {series: 'kube_pod_owner{job="kube-state-metrics",namespace="octelium",pod="svc-stale",uid="old",owner_kind="ReplicaSet",owner_is_controller="true"}', values: '1x30'}
+      - {series: 'kube_pod_deletion_timestamp{job="kube-state-metrics",namespace="octelium",pod="svc-uid-mismatch",uid="gone"}', values: '60x30'}
+      - {series: 'kube_pod_owner{job="kube-state-metrics",namespace="octelium",pod="svc-uid-mismatch",uid="new",owner_kind="ReplicaSet",owner_is_controller="true"}', values: '1x30'}
+      - {series: 'kube_pod_deletion_timestamp{job="kube-state-metrics",namespace="octelium",pod="emergency-octelium-stale",uid="fallback"}', values: '60x30'}
+      - {series: 'kube_pod_owner{job="kube-state-metrics",namespace="octelium",pod="emergency-octelium-stale",uid="fallback",owner_kind="ReplicaSet",owner_is_controller="true"}', values: '1x30'}
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: OcteliumGeneratedProxyStaleTerminating
+        exp_alerts: []
+      - eval_time: 23m
+        alertname: OcteliumGeneratedProxyStaleTerminating
+        exp_alerts:
+          - exp_labels: {namespace: octelium, pod: svc-stale, uid: old, severity: warning}
+            exp_annotations:
+              summary: Octelium generated proxy Pod is stuck terminating
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/runbooks/octelium.md#generated-proxy-alerts

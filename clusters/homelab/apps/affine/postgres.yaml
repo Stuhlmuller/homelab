@@ -34,7 +34,7 @@ metadata:
     app.kubernetes.io/part-of: homelab-productivity
 spec:
   serviceName: affine-postgres
-  replicas: 0
+  replicas: 1
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain
     whenScaled: Retain

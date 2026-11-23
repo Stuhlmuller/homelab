@@ -2,6 +2,7 @@
 """Synthetic offsite scheduling tests; no client, launchd, or network operations."""
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -142,7 +143,6 @@ class ScheduleTests(fixture.PublicationFixture):
         newer = self.scheduled / "etcd-20260913T090000Z-newer"
         shutil.copytree(self.source, newer)
         data = b"different synthetic snapshot".ljust(4096, b"\0")
-        import hashlib
         (newer / "etcd.snapshot").write_bytes(data + hashlib.sha256(data).digest())
         value = json.loads((newer / "manifest.json").read_text())
         value["integrity"] = fixture.offsite.backup.snapshot_digest(newer / "etcd.snapshot")
@@ -408,6 +408,39 @@ class InstallationTests(unittest.TestCase):
         self.assertTrue(self.loaded)
         self.assertEqual((self.runtime / "installation.json").read_bytes(), before)
         self.assertEqual(retained.read_text(), "preserve")
+
+    def test_updates_legacy_release_and_preserves_rollback_compatibility(self):
+        scheduler.install(self.args)
+        legacy_settings, _, old_target = scheduler.installed(self.runtime)
+        legacy_release = self.runtime / "releases" / self.args.revision
+        legacy_settings["source_sha256"].pop(scheduler.DESTINATION)
+        (legacy_release / scheduler.DESTINATION).unlink()
+        scheduler.local.write_json(self.runtime / "installation.json", legacy_settings)
+
+        self.assertEqual(scheduler.installed(self.runtime)[2], old_target)
+        self.args.revision = "b" * 40
+        scheduler.install(self.args)
+        settings, _, target = scheduler.installed(self.runtime)
+        self.assertEqual(target, old_target)
+        self.assertEqual(settings["revision"], self.args.revision)
+        release = self.runtime / "releases" / self.args.revision
+        legacy_copy = release / scheduler.LEGACY_DESTINATION
+        self.assertEqual(legacy_copy.read_bytes(), self.files[scheduler.DESTINATION])
+        self.assertEqual(settings["source_sha256"][scheduler.LEGACY_DESTINATION],
+                         hashlib.sha256(legacy_copy.read_bytes()).hexdigest())
+        self.assertTrue(self.loaded)
+
+        legacy_copy.write_text("changed")
+        with self.assertRaisesRegex(ValueError, "reviewed release"):
+            scheduler.installed(self.runtime)
+
+    def test_installation_rejects_unrecognized_source_paths(self):
+        scheduler.install(self.args)
+        settings, _, _ = scheduler.installed(self.runtime)
+        settings["source_sha256"]["../unrecognized.hcl"] = "0" * 64
+        scheduler.local.write_json(self.runtime / "installation.json", settings)
+        with self.assertRaisesRegex(ValueError, "installation source paths"):
+            scheduler.installed(self.runtime)
 
     def test_active_attempt_blocks_install_without_disrupting_service(self):
         scheduler.install(self.args)

@@ -44,7 +44,7 @@ literal_absent() {
 literal_absent 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 literal_absent 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 
-bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/homelab/us-west-2/operator/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
 checked_equal "$account" aws --region us-east-1 sts get-caller-identity --query Account --output text || exit 1

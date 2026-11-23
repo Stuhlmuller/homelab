@@ -332,10 +332,11 @@ credentials.
 
 For retirement [#842](https://github.com/Stuhlmuller/homelab/issues/842), run
 `python3 -I scripts/crossplane-retirement-check.py` against the authenticated
-homelab API immediately before preparing the chart-prune stage. The check
-requires the pinned 21 core CRDs, zero active workloads or volume claims, and
-only three unchanged initializer objects: the default DeploymentRuntimeConfig,
-the empty package Lock, and the default ManagedResourceActivationPolicy. The
+direct homelab API immediately before preparing the chart-prune stage. The check
+requires the exact 23 tracked chart identities, the pinned 21 core CRDs, zero
+active workloads and volume claims, and only three unchanged initializer
+objects. These are the default DeploymentRuntimeConfig, the empty package
+Lock, and the default ManagedResourceActivationPolicy. The
 pinned [Crossplane initializers](https://github.com/crossplane/crossplane/tree/v2.3.3/internal/initializer)
 define those objects.
 
@@ -389,7 +390,7 @@ checks those source declarations; it does not prove rollout.
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Depends on                                                                                                          |
 | ---------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `affine`               | `affine`           | `clusters/homelab/apps/affine`                  | `IaC/homelab/us-west-2/apps/affine/argocd`               | Suspended at zero replicas with PostgreSQL and Redis for memory capacity; PVCs retained; AFFiNE `0.27.0`; PostgreSQL 16 with pgvector, an explicit 20 Gi retained claim, NFS-aware checkpoint/WAL tuning, a 30-minute probe recovery window, and 120-second shutdown grace; the 2026-07-20 fenced stale-lock recovery is complete and its one-shot hook has been removed; ephemeral Redis, with persistence disabled; former AOF claim retained, now unmounted; migration init container with `Recreate` ordering; 50 Gi blob storage; retained config; generated ECDSA signing key; disabled public signup; disabled Copilot/BYOK; and `https://affine.stinkyboi.com` through anonymous Octelium transport with AFFiNE-owned authentication for web and native clients                                                       | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage                                  |
+| `affine`               | `affine`           | `clusters/homelab/apps/affine`                  | `IaC/homelab/us-west-2/apps/affine/argocd`               | One replica each for AFFiNE, PostgreSQL, and Redis; PVCs retained; AFFiNE `0.27.0` with the canary namespace for new read/write workspace MCP credentials; PostgreSQL 16 with pgvector, an explicit 20 Gi retained claim, NFS-aware checkpoint/WAL tuning, a 30-minute probe recovery window, and 120-second shutdown grace; the 2026-07-20 fenced stale-lock recovery is complete and its one-shot hook has been removed; ephemeral Redis, with persistence disabled; former AOF claim retained, now unmounted; migration init container with `Recreate` ordering; 50 Gi blob storage; retained config; generated ECDSA signing key; disabled public signup; disabled Copilot/BYOK; and `https://affine.stinkyboi.com` through anonymous Octelium transport with AFFiNE-owned authentication for web and native clients                                                       | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage                                  |
 | `uptime-kuma` | `monitoring` | `clusters/homelab/apps/uptime-kuma` | `IaC/homelab/us-west-2/apps/uptime-kuma/argocd` | Declared private native-authenticated availability UI; retained local SQLite on acer and NFS archives; [coverage and acceptance](#uptime-kuma-availability-monitoring) remain distinct from rollout proof | external-secrets, cert-manager, istio, platform-storage, prometheus, traefik; generated SSM |
 | `openwiki` | `openwiki` | `clusters/homelab/apps/openwiki` | `IaC/homelab/us-west-2/apps/openwiki/argocd` | Public read-only [wiki viewer](../operations/wiki-maintenance.md#public-viewer); generated content, no persistent state | octelium-public |
 | `argocd-image-updater` | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/homelab/us-west-2/apps/argocd-image-updater/stack.hcl` | The upstream Helm chart runs one controller replica. The native ImageUpdater canary uses Argo CD write-back for a digest from Harbor. | none |
@@ -910,8 +911,9 @@ nonroot replica, a DNS-only `homelab-adguard` Tailscale proxy and private
 Cloudflare malware resolvers; private `stinkyboi.com` queries use the existing
 cluster-local tailnet resolver. MagicDNS and the existing split-DNS policy are
 preserved. No automatic unfiltered fallback is configured. The authenticated Query Log holds at most 1,000 recent queries in memory with
-anonymized client IPs. Restart clears it; file query logs and statistics remain
-disabled. The retained 1Gi NFS claim holds replaceable filter cache.
+full client IPs. Restart clears the query log, and file query logging
+is disabled. Dashboard statistics use a one-day interval and are stored
+alongside the filter cache on the retained 1 GiB NFS claim.
 
 Source registration does not activate global tailnet DNS. After image publication,
 GitOps rollout, verified peer identity and live direct/admin/recovery checks,

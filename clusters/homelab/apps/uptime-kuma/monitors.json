@@ -12,10 +12,12 @@
     },
     {
       "id": "affine",
-      "lifecycle": "suspended",
+      "lifecycle": "active",
       "source": "clusters/homelab/apps/affine/deployment.yaml",
-      "reason": "All AFFiNE application/database replicas explicitly zero in source; no active runtime.",
-      "monitorIds": []
+      "reason": "AFFiNE, PostgreSQL, and Redis are declared active and monitored for workload readiness.",
+      "monitorIds": [
+        "affine-workloads"
+      ]
     },
     {
       "id": "argocd-image-updater",
@@ -999,6 +1001,52 @@
     ],
     "workloads": [
       {"kind":"deployment","namespace":"kube-system","name":"descheduler"}
+    ]
+  },
+  {
+    "key": "affine-workloads",
+    "name": "affine \u2014 workload health",
+    "ownerAppIds": [
+      "affine"
+    ],
+    "kind": "json-query",
+    "target": {
+      "url": "http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query",
+      "method": "POST",
+      "body": "query=vector((scalar(count(kube_deployment_spec_replicas{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_spec_replicas{deployment%3D%22affine%22,namespace%3D%22affine%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_spec_replicas{deployment%3D%22affine%22,namespace%3D%22affine%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_status_replicas_available{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_replicas_available{deployment%3D%22affine%22,namespace%3D%22affine%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_replicas_available{deployment%3D%22affine%22,namespace%3D%22affine%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_metadata_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_metadata_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_metadata_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_deployment_status_observed_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_observed_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_deployment_status_observed_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+>%3D+bool+0)+%2A+(scalar(count(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+%3D%3D+bool+1)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+<%3D+bool+60)+%2A+(time()+-+scalar(timestamp(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+>%3D+bool+0)+%2A+(scalar(kube_deployment_spec_replicas{deployment%3D%22affine%22,namespace%3D%22affine%22})+>+bool+0)+%2A+(scalar(kube_deployment_status_replicas_available{deployment%3D%22affine%22,namespace%3D%22affine%22})+>%3D+bool+scalar(kube_deployment_spec_replicas{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%2A+(scalar(kube_deployment_status_observed_generation{deployment%3D%22affine%22,namespace%3D%22affine%22})+>%3D+bool+scalar(kube_deployment_metadata_generation{deployment%3D%22affine%22,namespace%3D%22affine%22}))+%2A+(scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22})+>+bool+0)+%2A+(scalar(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22})+>%3D+bool+scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+%2A+(scalar(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22})+>%3D+bool+scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-postgres%22}))+%2A+(scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22})+>+bool+0)+%2A+(scalar(kube_statefulset_status_replicas_ready{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22})+>%3D+bool+scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22}))+%2A+(scalar(kube_statefulset_status_replicas_updated{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22})+>%3D+bool+scalar(kube_statefulset_replicas{namespace%3D%22affine%22,statefulset%3D%22affine-redis%22})))",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
+    },
+    "expected": {
+      "statusCodes": [
+        200
+      ],
+      "jsonPath": "(status = \"success\" and $count(data.result) = 1 and data.result[0].value[1] = \"1\") ? \"1\" : \"0\"",
+      "value": "1"
+    },
+    "intervalSeconds": 60,
+    "timeoutSeconds": 10,
+    "retries": 1,
+    "enabled": true,
+    "meaning": "Every listed active workload has fresh, unique desired and available/ready signals; desired replicas must be positive.",
+    "limitations": "Kubernetes workload readiness and rollout status. Sign-in and workspace sync need separate verification.",
+    "sourceSignals": [
+      {"metric":"kube_deployment_spec_replicas","labels":{"namespace":"affine","deployment":"affine"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_status_replicas_available","labels":{"namespace":"affine","deployment":"affine"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_metadata_generation","labels":{"namespace":"affine","deployment":"affine"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_deployment_status_observed_generation","labels":{"namespace":"affine","deployment":"affine"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_replicas","labels":{"namespace":"affine","statefulset":"affine-postgres"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_status_replicas_ready","labels":{"namespace":"affine","statefulset":"affine-postgres"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_status_replicas_updated","labels":{"namespace":"affine","statefulset":"affine-postgres"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_replicas","labels":{"namespace":"affine","statefulset":"affine-redis"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_status_replicas_ready","labels":{"namespace":"affine","statefulset":"affine-redis"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"},
+      {"metric":"kube_statefulset_status_replicas_updated","labels":{"namespace":"affine","statefulset":"affine-redis"},"periodSeconds":30,"maxAgeSeconds":60,"cadenceSource":"IaC/homelab/us-west-2/apps/prometheus/stack.hcl"}
+    ],
+    "workloads": [
+      {"kind":"deployment","namespace":"affine","name":"affine"},
+      {"kind":"statefulset","namespace":"affine","name":"affine-postgres"},
+      {"kind":"statefulset","namespace":"affine","name":"affine-redis"}
     ]
   },
   {
