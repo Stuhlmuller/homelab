@@ -50,6 +50,14 @@ assert check({"containers": short, "initContainers": source, "ephemeralContainer
 assert check({"containers": short, "ephemeralContainers": short}, subresource="ephemeralcontainers") == [
     {"op": "replace", "path": "/spec/ephemeralContainers/0/image", "value": target}]
 assert check({"containers": target}) == []
+kiali = next(item["source"] for item in selected["images"]
+             if item["source"].startswith("quay.io/kiali/kiali:"))
+kiali_mirror = mapping[module.normalize(kiali)]
+kiali_digest = module.repository_digest(kiali_mirror)
+assert check({"containers": kiali_mirror}) == []
+assert check({"containers": kiali_digest}) == []
+check({"containers": kiali_digest.split("@", 1)[0] + "@sha256:" + "0" * 64}, allowed=False)
+check({"containers": kiali_digest.replace("/kiali/kiali@", "/kiali/unreviewed@")}, allowed=False)
 check({"containers": "harbor.stinkyboi.com/homelab/custom@sha256:" + "a" * 64}, allowed=False)
 check({"containers": "unreviewed.example/app:1"}, allowed=False)
 check({"initContainers": short + "@sha256:" + "0" * 64}, allowed=False)

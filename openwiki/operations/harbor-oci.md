@@ -1249,6 +1249,9 @@ has created and metadata-verified the parameter, but it does not prove GitOps
 reconciliation, publication, or node authentication. Private `homelab` artifacts
 retain their existing authentication/signing contract.
 
+The webhook accepts a digest-only Harbor mirror reference when its repository
+and digest match a reviewed catalog entry. Kiali uses this reference format.
+
 The staged [Octelium service-proxy rollout](../../clusters/homelab/apps/octelium-enterprise/harbor-generated-rollout.yaml)
 uses an Argo Sync hook after a server dry-run Pod proves the scoped admission
 webhook rewrites the reviewed vigil image. Its namespace Role can inspect Pods
