@@ -201,10 +201,12 @@ Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
 publisher requires a fresh strict-TLS/401 registry challenge. The protected
-public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
-retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
-temporary OCI directory and forces a recursive check of nested manifests and
-blobs on each attempt.
+public mirror uses direct Tailscale HTTPS and retries a failed connection
+up to twice after one- and two-second delays. TLS errors and unexpected HTTP
+responses still stop immediately. Legacy private-publication callers retain
+their Kubernetes port-forward lifecycle until their separate cutover.
+The publisher retains completed content in one temporary OCI directory and
+forces a recursive check of nested manifests and blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
 exhausted HTTP 5xx reads keep the public `server-error` category. The complete
 pull and root digest checks remain mandatory.

@@ -318,12 +318,25 @@ fi
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 start_private_forward() {
-  local attempt ready status
+  local attempt ready status probe_exit
   if "$tailnet_https"; then
-    status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
-      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
-      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]
-    return
+    for attempt in 1 2 3; do
+      if status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
+        --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+        2>"$scratch/readiness.log")"; then
+        [[ "$status" == 401 ]]
+        return
+      else
+        probe_exit=$?
+      fi
+      # A failed connection can be transient. TLS errors and unexpected HTTP
+      # responses still fail immediately on the same private route.
+      if [[ "$probe_exit" != 7 || "$attempt" == 3 ]]; then
+        return "$probe_exit"
+      fi
+      sleep "$attempt"
+    done
+    return 1
   fi
   for attempt in 1 2 3; do
     timeout --signal=TERM --kill-after=5s "$forward_timeout" \
