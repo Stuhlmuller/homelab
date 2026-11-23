@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'dbca0e4cd8cff056cfcd566eb5c59c50c29db19504f8a1378809eb6060703139  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'3f079f91f47a9007e0f8afb7fc312952c8074c7a0c0055214b5e4ab4e6adf731  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -1080,6 +1080,12 @@ case "$IMAGE_SCOPE" in
   bazel-cache)
     bash scripts/ci/harbor-publish.sh mirror-bazel-cache --tailscale
     ;;
+  home-assistant)
+    bash scripts/ci/harbor-publish.sh mirror-home-assistant --tailscale
+    ;;
+  homepage)
+    bash scripts/ci/harbor-publish.sh mirror-homepage --tailscale
+    ;;
   image-updater-canary)
     bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
     ;;
@@ -1087,7 +1093,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'60c8bef2eca7353b9c9d4cacfb76aa1f414569db45c938424b2ae88856cd5b60  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'45792c40ee74c5c862290a5f49d852ba294a6caef3fb941c707e514b28c09a20  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1191,7 +1197,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "7f83da6813033c4dbda6f7c0fd98b2ffc13e631bbcf4012e1e5479cc5ea67b7e"
+	crypto.sha256(json.marshal(canonical)) == "a2f8f34f2a1e679e2eed731a7f2fc5351153bac296d06a8aa438570ac3debe2a"
 }
 
 tailnet_workflow_requested if {

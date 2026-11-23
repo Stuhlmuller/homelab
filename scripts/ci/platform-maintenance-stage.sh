@@ -105,10 +105,14 @@ connect_talos() {
     # CLIENT credential is limited by homelab-platform-talos-ci-access.
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && -n "${OCE_OCTELIUM_CLIENT_AUTH_TOKEN:-}" &&
        -n "${OCE_TALOSCONFIG_B64:-}" ]] || exit 1
+    preflight_phase=kubeconfig-install
     bash scripts/ci/install-kubeconfig.sh
+    preflight_phase=talosconfig-decode
     printf %s "$OCE_TALOSCONFIG_B64" | base64 --decode >"$work/talosconfig"
     chmod 600 "$work/talosconfig"
+    preflight_phase=octelium-client-install
     bash scripts/ci/install-octelium-client.sh >/dev/null
+    preflight_phase=talos-tunnel
     install -m 0700 -d "$work/octelium"
     OCTELIUM_AUTH_TOKEN="$OCE_OCTELIUM_CLIENT_AUTH_TOKEN" \
       "${HOME}/.local/bin/octelium" --homedir "$work/octelium" connect \
@@ -142,23 +146,29 @@ case "$stage" in
   cilium-route-preflight)
     preflight_attempt="${GITHUB_RUN_ATTEMPT:-1}"
     [[ "$preflight_attempt" =~ ^[1-9][0-9]*$ ]] || exit 2
-    preflight_phase=inventory
+    preflight_phase=transport-inputs
     : >"$work/cilium-route-check.log"
     trap 'finish_cilium_preflight "$?"' EXIT
     connect_talos
+    preflight_phase=cilium-daemonset-check
     current_cilium="$(kubectl -n kube-system get daemonset cilium --ignore-not-found -o name)"
     [[ -z "$current_cilium" ]]
+    preflight_phase=kubernetes-node-inventory
     kubectl get nodes -o json >"$work/nodes.json"
+    preflight_phase=kubernetes-service-cidr-inventory
     kubectl get servicecidrs -o json >"$work/services.json"
+    preflight_phase=reviewed-route-inputs
     endpoint="$(jq -er .protectedTalosEndpoint "$config")"
     pool="$(yq -o=json '.ipam.operator.clusterPoolIPv4PodCIDRList' \
       clusters/homelab/platform/cilium/values-migration.yaml | jq -er 'select(length == 1) | .[0]')"
     route_args=()
     for node in acer zimaboard-0 zimaboard-1 zimaboard-2; do
+      preflight_phase=reviewed-node-identity
       address="$(jq -er --arg node "$node" '.expectedStart.nodes[$node].address' "$config")"
       jq -e --arg node "$node" --arg address "$address" \
         'any(.items[]; .metadata.name == $node and any(.status.addresses[]; .address == $address))' \
         "$work/nodes.json" >/dev/null
+      preflight_phase=talos-route-inventory
       talosctl --talosconfig "$work/talosconfig" --endpoints "$endpoint" --nodes "$address" \
         get routes -o json | jq -r '.spec.dst // empty' >"$work/$node.routes"
       route_args+=(--node-routes "$node=$work/$node.routes")
