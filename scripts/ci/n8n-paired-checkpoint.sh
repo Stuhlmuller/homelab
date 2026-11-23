@@ -74,6 +74,7 @@ done
 
 pg_image="$(yq -r 'select(.kind == "StatefulSet" and .metadata.name == "n8n-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/n8n-postgres/statefulset.yaml)"
 [[ "$pg_image" =~ ^harbor\.stinkyboi\.com/mirror/docker\.io/library/postgres:[^@]+@sha256:[0-9a-f]{64}$ ]] || exit 1
+restore_image="docker.io/library/postgres@${pg_image##*@}"
 reader_image="$(yq -r '.spec.template.spec.containers[] | select(.name == "reader") | .image' "$job_manifest")"
 [[ "$reader_image" == harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e ]] || exit 1
 
@@ -218,16 +219,18 @@ job_uid=
 policy_uid=
 container=
 volume=
+phase="source-validation"
 absent() {
   local result
   result="$(kubectl -n automation get "$1" "$resource_name" -o json --ignore-not-found)" || return 1
   [[ -z "$result" ]]
 }
 reader_pods_gone() {
-  local _
+  local _ selector
+  selector="homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D$owner_token"
   for _ in {1..6}; do
-    if kubectl -n automation get pods \
-      -l "homelab.stuhlmuller.dev/checkpoint-owner=$owner_token" --chunk-size=0 -o json |
+    # The raw API preserves the PodList resource version and pagination metadata.
+    if kubectl get --raw "/api/v1/namespaces/automation/pods?limit=500&labelSelector=$selector" |
       jq -e '.kind == "PodList" and
         (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
         (.metadata.continue // "") == "" and (.items | type == "array" and length == 0)' >/dev/null; then
@@ -265,6 +268,9 @@ cleanup() {
   if [[ -n "$container" ]]; then docker rm -f "$container" >/dev/null 2>&1 || true; fi
   if [[ -n "$volume" ]]; then docker volume rm -f "$volume" >/dev/null 2>&1 || true; fi
   rm -rf -- "$work"
+  if (( result != 0 )); then
+    printf '%s\n' "$phase" >"${RUNNER_TEMP:?}/n8n-paired-checkpoint-failure-phase"
+  fi
   exit "$result"
 }
 trap cleanup EXIT
@@ -275,6 +281,11 @@ pg_binding="$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_P
 pg_record="$(pg_state)"
 checked_equal 1 kubectl -n automation exec n8n-postgres-0 -c postgres -- \
   psql -XAt -w -U postgres -d n8n -c 'SELECT 1' || exit 1
+
+# Stage the same immutable database image before allocating capture resources.
+phase="restore-image"
+docker pull "$restore_image" >/dev/null
+phase="capture"
 database_bytes="$(kubectl -n automation exec n8n-postgres-0 -c postgres -- psql -XAt -w -U postgres -d n8n -c 'SELECT pg_database_size(current_database())')"
 [[ "$database_bytes" =~ ^[1-9][0-9]*$ && "$database_bytes" -lt 1073741824 ]] || exit 1
 
@@ -315,11 +326,13 @@ checked_equal "$n8n_binding" binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_
 checked_equal "$pg_binding" binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID" || exit 1
 check_fence "$reader_uid"
 
+phase="reader-cleanup"
 cleanup_resources
 job_attempted=false
 policy_attempted=false
 check_fence
 
+phase="archive-validation"
 pg_bytes="$(wc -c <"$work/n8n.dump" | tr -d '[:space:]')"
 pvc_bytes="$(wc -c <"$work/n8n.tar" | tr -d '[:space:]')"
 [[ "$pg_bytes" =~ ^[1-9][0-9]*$ && "$pg_bytes" -lt 1073741824 &&
@@ -360,21 +373,24 @@ publish() {
 
 pg_key="$prefix/n8n.dump"
 pvc_key="$prefix/n8n.tar"
+phase="archive-publication"
 pg_object="$(publish "$work/n8n.dump" "$pg_key" "$work/retrieved.dump")"
 pvc_object="$(publish "$work/n8n.tar" "$pvc_key" "$work/retrieved.tar")"
 IFS=$'\t' read -r pg_version pg_sha pg_bytes <<<"$pg_object"
 IFS=$'\t' read -r pvc_version pvc_sha pvc_bytes <<<"$pvc_object"
 
+phase="pvc-readback"
 python3 -I scripts/ci/n8n-pvc-restore-check.py "$work/retrieved.tar" "$work/retrieved-pvc-check.json"
 cmp -s "$work/pvc-check.json" "$work/retrieved-pvc-check.json"
 
+phase="database-start"
 volume="$(docker volume create)"
 [[ "$volume" =~ ^[A-Za-z0-9._-]+$ ]] || exit 1
-container="$(docker run --detach --rm --network none \
+container="$(docker run --detach --rm --pull never --network none \
   --mount "type=volume,src=$volume,dst=/var/lib/postgresql/data" \
   --mount "type=bind,src=$work/retrieved.dump,dst=/checkpoint.dump,readonly" \
   --env POSTGRES_DB=n8n --env POSTGRES_USER=postgres \
-  --env POSTGRES_HOST_AUTH_METHOD=trust "$pg_image")"
+  --env POSTGRES_HOST_AUTH_METHOD=trust "$restore_image")"
 ready=false
 for _ in {1..60}; do
   if docker exec "$container" pg_isready -h 127.0.0.1 -U postgres -d n8n >/dev/null 2>&1; then
@@ -384,6 +400,7 @@ for _ in {1..60}; do
   sleep 2
 done
 [[ "$ready" == true ]] || exit 1
+phase="database-restore"
 docker exec "$container" psql -v ON_ERROR_STOP=1 -XAt -w -U postgres -d postgres -c \
   'CREATE ROLE n8n LOGIN' >/dev/null
 docker exec "$container" psql -v ON_ERROR_STOP=1 -XAt -w -U postgres -d postgres -c \
@@ -398,6 +415,7 @@ tables="$(docker exec "$container" psql -XAt -w -U n8n -d n8n -c \
 docker exec "$container" psql -XAt -w -U n8n -d n8n -c \
   'SELECT 1 FROM public.workflow_entity LIMIT 0' >/dev/null
 
+phase="fence-recheck"
 check_fence
 checked_equal "$pg_record" pg_state || exit 1
 checked_equal "$n8n_binding" binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID" || exit 1
@@ -419,11 +437,13 @@ jq -n --arg sha "$GITHUB_SHA" --argjson run "$GITHUB_RUN_ID" \
       n8n_pvc: {key: $pvc_key, version: $pvc_version, sha256: $pvc_sha, bytes: $pvc_bytes}},
     isolated_restore: {postgresql_tables: $tables, pvc_files: $files, config_sha256: $config_sha}}' \
   >"$work/manifest.json"
+phase="manifest-publication"
 manifest_key="$prefix/manifest.json"
 manifest_object="$(publish "$work/manifest.json" "$manifest_key" "$work/retrieved-manifest.json")"
 cmp -s "$work/manifest.json" "$work/retrieved-manifest.json"
 IFS=$'\t' read -r manifest_version manifest_sha _ <<<"$manifest_object"
 
+phase="isolation-cleanup"
 docker rm -f "$container" >/dev/null
 container=
 docker volume rm -f "$volume" >/dev/null

@@ -50,7 +50,7 @@ them to the `nix-cache` GitHub prerelease. It uploads NARs before metadata,
 never replaces existing assets, and rejects a differing existing asset.
 GitHub authentication requires repository write access; CI readers need no
 cache credentials. The private signing key remains outside the checkout and
-is never supplied to PR jobs. Both checks produce self-contained outputs.
+is never supplied to PR jobs. Each check produces a self-contained output.
 
 The cache is an ordinary Nix binary cache hosted as release assets. NAR URLs
 are flattened because release assets cannot contain directory paths. Nix

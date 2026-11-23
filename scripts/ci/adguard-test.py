@@ -120,6 +120,7 @@ class AdGuardManifestTests(unittest.TestCase):
         self.assertFalse(config["http"]["doh"]["insecure_enabled"])
         self.assertFalse(config["tls"]["enabled"])
         self.assertFalse(config["dhcp"]["enabled"])
+        self.assertIs(config["dns"]["anonymize_client_ip"], False)
         self.assertTrue(config["querylog"]["enabled"])
         self.assertEqual(config["querylog"]["size_memory"], 1000)
         self.assertFalse(config["querylog"]["file_enabled"])

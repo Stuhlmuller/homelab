@@ -138,6 +138,21 @@ elif name == "kubectl":
             "status": {"observedGeneration": 1, "replicas": replicas, "readyReplicas": replicas}}))
     elif args[:2] == ["get", "--raw"]:
         raw = args[2]
+        cleanup_path = ("/api/v1/namespaces/automation/pods?limit=500&labelSelector="
+                        "homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D")
+        if raw.startswith(cleanup_path):
+            policy = json.loads(policy_record.read_text())
+            owner = policy["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"]
+            assert raw == cleanup_path + owner
+            print(json.dumps({
+                "kind": "List" if mode == "cleanup-client-list" else "PodList",
+                "metadata": {
+                    "resourceVersion": "" if mode == "cleanup-missing-version" else "12345",
+                    "continue": "next" if mode == "cleanup-paginated" else "",
+                },
+                "items": [{"metadata": {"uid": reader_u}}] if linger_record.exists() else [],
+            }))
+            raise SystemExit(1 if mode == "cleanup-partial-error" else 0)
         owner = json.loads(job_record.read_text())["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"] if job_record.exists() else ""
         reader = {"metadata": {"name": resource_name + "-abcde", "uid": reader_u,
             "labels": {"app.kubernetes.io/name": "n8n-checkpoint-reader",
@@ -192,9 +207,8 @@ elif name == "kubectl":
             if count == 2:
                 raise SystemExit(1)
     elif "pods" in args and "get" in args:
-        assert args[args.index("-l") + 1].startswith("homelab.stuhlmuller.dev/checkpoint-owner=")
-        assert "--chunk-size=0" in args
-        print(json.dumps({"kind": "PodList", "metadata": {"resourceVersion": "12345", "continue": ""},
+        # kubectl's formatted output is a generic List, even for Pods.
+        print(json.dumps({"kind": "List", "metadata": {"resourceVersion": ""},
             "items": [{"metadata": {"uid": reader_u}}] if linger_record.exists() else []}))
     elif "pod" in args and "get" in args:
         print(json.dumps({"metadata": {"uid": pg_pod_u, "ownerReferences":
@@ -268,11 +282,19 @@ elif name == "kubectl":
     else:
         raise SystemExit("unexpected kubectl command " + repr(args))
 elif name == "docker":
-    if args[:2] == ["volume", "create"]:
+    if args[0] == "pull":
+        assert args == ["pull", "docker.io/library/postgres@" + os.environ["TEST_IMAGE"].split("@", 1)[1]]
+        if mode == "restore-image-pull-error":
+            raise SystemExit(1)
+    elif args[:2] == ["volume", "create"]:
         print("volume-created")
     elif args[0] == "run":
         assert args[args.index("--network") + 1] == "none"
+        assert args[args.index("--pull") + 1] == "never"
+        assert args[-1] == "docker.io/library/postgres@" + os.environ["TEST_IMAGE"].split("@", 1)[1]
         print("container-1")
+    elif args[0] == "exec" and "pg_restore" in args and mode == "offline-restore-error":
+        raise SystemExit(1)
     elif args[0] == "exec" and "psql" in args:
         print("4")
     elif args[0] == "rm" and mode == "docker-rm-stuck":
@@ -330,14 +352,16 @@ class CheckpointBoundaryTests(unittest.TestCase):
                 "TEST_ROOT": temporary,
                 "TEST_UUID": UUID,
             } | overrides
-            if mode in ("good", "policy-create-timeout", "job-create-timeout",
+            if mode.startswith("cleanup-") or mode in (
+                        "good", "policy-create-timeout", "job-create-timeout",
                         "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck",
                         "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout",
                         "reader-pod-lingers", "job-absent-reader-lingers",
                         "pg-liveness-partial-error", "pg-state-partial-error",
                         "pv-binding-partial-error", "checksum-partial-error",
                         "s3-list-partial-error", "s3-head-partial-error",
-                        "s3-get-partial-error"):
+                        "s3-get-partial-error", "restore-image-pull-error",
+                        "offline-restore-error"):
                 env["EXPECTED_PG_PVC_UID"] = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
                 env["EXPECTED_N8N_PV_UID"] = "3" * 8 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 12
                 env["EXPECTED_PG_PV_UID"] = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
@@ -348,6 +372,8 @@ class CheckpointBoundaryTests(unittest.TestCase):
                 recent = log.read_text().splitlines()[-8:] if log.exists() else []
                 raise AssertionError(f"checkpoint fixture timed out after {recent}") from error
             commands = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+            failure_phase = path / "n8n-paired-checkpoint-failure-phase"
+            result.failure_phase = failure_phase.read_text().strip() if failure_phase.exists() else ""
             receipt = path / "n8n-paired-checkpoint-receipt"
             return result, commands, receipt.read_text() if receipt.exists() else ""
 
@@ -401,6 +427,25 @@ class CheckpointBoundaryTests(unittest.TestCase):
         result, commands, _ = self.run_case()
         self.assertNotEqual(result.returncode, 0)
         self.assert_no_mutation(commands)
+
+    def test_restore_image_pull_failure_stops_before_reader_and_archive_creation(self):
+        result, commands, receipt = self.run_case("restore-image-pull-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertEqual(result.failure_phase, "restore-image")
+        self.assertTrue(any(name == "docker" and args[0] == "pull" for name, args in commands))
+        self.assertFalse(any(name == "kubectl" and args[:2] != ["auth", "can-i"] and "create" in args
+                             or name == "aws" and "put-object" in args
+                             for name, args in commands))
+
+    def test_database_restore_error_reports_stage_without_receipt(self):
+        result, commands, receipt = self.run_case("offline-restore-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertEqual(result.failure_phase, "database-restore")
+        puts = [args for name, args in commands if name == "aws" and "put-object" in args]
+        self.assertEqual([args[args.index("--key") + 1].rsplit("/", 1)[-1] for args in puts],
+                         ["n8n.dump", "n8n.tar"])
 
     def test_success_publishes_only_after_pair_readback_and_offline_restore(self):
         result, commands, receipt = self.run_case("good")
@@ -499,18 +544,20 @@ class CheckpointBoundaryTests(unittest.TestCase):
         self.assertTrue(deletes)
         self.assertTrue(all("--request-timeout=60s" in args for args in deletes))
 
-    def test_lingering_reader_pod_keeps_policy_and_blocks_receipt(self):
-        for mode in ("reader-pod-lingers", "job-absent-reader-lingers"):
+    def test_unverified_reader_absence_keeps_policy_and_blocks_receipt(self):
+        for mode in ("reader-pod-lingers", "job-absent-reader-lingers", "cleanup-client-list",
+                     "cleanup-missing-version", "cleanup-paginated", "cleanup-partial-error"):
             with self.subTest(mode=mode):
                 result, commands, receipt = self.run_case(mode)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(receipt, "")
                 self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
-                self.assertTrue(any(name == "kubectl" and "get" in args and "pods" in args and
-                                    "--chunk-size=0" in args for name, args in commands))
+                self.assertTrue(any(name == "kubectl" and args[:2] == ["get", "--raw"] and
+                                    "limit=500&labelSelector=homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D" in args[2]
+                                    for name, args in commands))
                 deletes = [args for name, args in commands if name == "kubectl" and
                            args[:2] != ["auth", "can-i"] and "delete" in args]
-                self.assertEqual(len(deletes), 1 if mode == "reader-pod-lingers" else 0)
+                self.assertEqual(len(deletes), 0 if mode == "job-absent-reader-lingers" else 1)
 
 
 if __name__ == "__main__":

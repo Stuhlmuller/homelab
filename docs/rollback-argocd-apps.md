@@ -95,8 +95,13 @@ Policy Bot is stateless. Roll back its public exposure by removing the
 hostname first, then roll back the Deployment and ExternalSecret if the GitHub
 App should stop evaluating pull requests.
 
-Kiali is stateless. Remove the Kiali custom resource before removing the
-operator chart so the operator can clean up its managed server resources.
+Kiali is stateless. Disabling `cr.create` lets Argo CD prune the Kiali custom
+resource while the operator is still running. Apply the Application
+registration through targeted Terragrunt Apply to install the Argo CD
+cascading-deletion finalizer. Confirm that the Kiali custom resource and the
+server Deployment and Service are absent before removing the Terragrunt unit.
+A subsequent full Terragrunt Apply deletes the Application and lets Argo CD
+prune the remaining operator resources.
 
 ## Emergency Recovery
 

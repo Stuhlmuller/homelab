@@ -1,0 +1,103 @@
+controllers:
+  home-assistant:
+    strategy: Recreate
+    annotations:
+      checkov.io/skip1: CKV_K8S_40=Only the ownership init container runs as root to initialize the local claim.
+      checkov.io/skip2: CKV_K8S_25=The ownership init container needs CHOWN and FOWNER to prepare the local claim.
+    pod:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    initContainers:
+      prepare-config:
+        image: &home-assistant-image
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/home-assistant/home-assistant
+          tag: 2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f
+        command: [/bin/sh, -ec, 'chmod 0700 /config && chown 10001:10001 /config']
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+            add: [CHOWN, FOWNER]
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 32Mi
+    containers:
+      app:
+        image: *home-assistant-image
+        # Run the upstream service command directly so the app can run unprivileged.
+        command: [python3, -P, -m, homeassistant, --config, /config]
+        env:
+          HOME: /config
+          PYTHONMALLOC: mimalloc
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10001
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+          readOnlyRootFilesystem: true
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              periodSeconds: 5
+              failureThreshold: 60
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              periodSeconds: 10
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              periodSeconds: 30
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: "2"
+            memory: 2Gi
+service:
+  app:
+    controller: home-assistant
+    ports:
+      http:
+        port: 8123
+persistence:
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: home-assistant-config
+    globalMounts:
+      - path: /config
+  tmp:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 1Gi
+    advancedMounts:
+      home-assistant:
+        app:
+          - path: /tmp

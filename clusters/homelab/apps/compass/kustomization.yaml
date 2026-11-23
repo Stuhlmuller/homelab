@@ -4,6 +4,7 @@ resources:
   - authorizationpolicy.yaml
   - ingress-discovery.yaml
   - virtualservice.yaml
+  - retired-pod-cleanup.yaml
 patches:
   - target:
       kind: Ingress
