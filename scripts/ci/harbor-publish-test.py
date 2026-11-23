@@ -200,7 +200,7 @@ class HarborPublicationGates(unittest.TestCase):
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
                         core=False, cordium=False, enterprise=False,
-                        forward_start_delay=0, canary=False):
+                        forward_start_delay=0, canary=False, home_assistant=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -229,10 +229,12 @@ class HarborPublicationGates(unittest.TestCase):
             self.mirror_manifest = {"images": []}
             for registry, name in zip(registries, names):
                 digest = self.published_digests[name]
-                source = f"{registry}/library/{name}:stable@{digest}"
+                repository = ("ghcr.io/home-assistant/home-assistant" if home_assistant and registry == "ghcr.io"
+                              else f"{registry}/library/{name}")
+                source = f"{repository}:stable@{digest}"
                 self.mirror_manifest["images"].append({"source": source})
-                destination = f"harbor.stinkyboi.com/mirror/{registry}/library/{name}"
-                manifests[f"{registry}/library/{name}@{digest}"] = published_manifests[name]
+                destination = f"harbor.stinkyboi.com/mirror/{repository}"
+                manifests[f"{repository}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}:{digest.removeprefix('sha256:')}"] = published_manifests[name]
                 manifests[f"{destination}:stable"] = published_manifests[name]
@@ -546,6 +548,7 @@ class HarborPublicationGates(unittest.TestCase):
                     config.write_text(json.dumps({"username": user}))
                     assert config.stat().st_mode & 0o077 == 0
                 elif args[:2] == ["registry", "set"]:
+                    assert config.name == "regctl-chunked-publisher.json"
                     assert json.loads(config.read_text()) == {"username": "robot$mirror+publisher"}
                     assert args[2:] == ["harbor.stinkyboi.com", "--blob-chunk", "16777216",
                                         "--blob-max", "16777216"]
@@ -583,6 +586,10 @@ class HarborPublicationGates(unittest.TestCase):
                         assert args[2:-2] == []
                         assert user == "robot$mirror+publisher"
                         assert target.startswith("harbor.stinkyboi.com/mirror/")
+                        if source.startswith("ghcr.io/home-assistant/home-assistant@"):
+                            assert config.name == "regctl-chunked-publisher.json"
+                        else:
+                            assert config.name == "regctl-publisher.json"
                         reference = target
                         path = root / "published-images.json"
                         published = json.loads(path.read_text()) if path.exists() else {}
@@ -985,7 +992,7 @@ printf '%s\n' {SHA}
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_home_assistant_scope_uses_chunked_push_and_authenticated_pull(self):
-        self.tailnet_mocks(oci_index=True, registries=("ghcr.io",))
+        self.tailnet_mocks(oci_index=True, registries=("ghcr.io",), home_assistant=True)
         self.home_assistant_mirror_manifest = self.mirror_manifest
         fixture_source = self.mirror_manifest["images"][0]["source"]
         reviewed_source = json.loads((ROOT / "scripts/config/harbor-home-assistant-images.json").read_text())
@@ -1006,6 +1013,40 @@ printf '%s\n' {SHA}
                             and args[-2] == f"{destination}@{digest}" for args in calls))
         self.assertIn(f"{destination}:{digest.removeprefix('sha256:')}@{digest}",
                       (self.root / "summary").read_text())
+
+    def test_full_catalog_copies_home_assistant_with_chunking_and_other_images_normally(self):
+        self.tailnet_mocks(oci_index=True, registries=("ghcr.io", "docker.io"), home_assistant=True)
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+        calls = self.calls_for("regctl")
+        self.assertEqual(len([args for args in calls if args[:2] == ["registry", "set"]]), 1)
+        destination = "harbor.stinkyboi.com/mirror/ghcr.io/home-assistant/home-assistant"
+        self.assertTrue(any(args[:2] == ["image", "copy"] and args[-1].startswith(destination + ":")
+                            for args in calls))
+        self.assertTrue(any(args[0] == "copy" and args[-1].startswith("docker://harbor.stinkyboi.com/mirror/docker.io/")
+                            and "--dest-authfile" in args for args in self.calls_for("skopeo")))
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+
+    def test_home_assistant_oci_staging_fallback_uses_chunked_push_and_authenticated_pull(self):
+        self.tailnet_mocks(failure="mirror-oci-index", oci_index=True,
+                          registries=("ghcr.io",), home_assistant=True)
+        source = self.mirror_manifest["images"][0]["source"]
+        repository, digest = source.rsplit("@", 1)
+        repository = repository.rsplit(":", 1)[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        tag = digest.removeprefix("sha256:")
+
+        result = self.run_helper("mirror", tailnet=True)
+
+        self.assertEqual(result.returncode, 0, result.stderr + self.public_status)
+        calls = self.calls_for("regctl")
+        configure = ["registry", "set", "harbor.stinkyboi.com", "--blob-chunk", "16777216",
+                     "--blob-max", "16777216"]
+        upload = ["image", "copy", f"{repository}@{digest}", f"{destination}:{tag}"]
+        self.assertLess(calls.index(configure), calls.index(upload))
+        self.assertTrue(any(args[:3] == ["image", "copy", "--force-recursive"]
+                            and args[-2] == f"{destination}@{digest}" for args in calls))
+        self.assertEqual((self.root / "summary").read_text(), f"{destination}:{tag}@{digest}\n")
 
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
