@@ -289,8 +289,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
+   For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
+   inventory selects only the reviewed Home Assistant Container image and
+   uses the same all-platform copy and authenticated pull verification.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, `renovate`,
+   `image-updater-canary`, `bazel-cache`, or `home-assistant`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -867,3 +872,15 @@ consumer references. A missing blob, failed download or digest mismatch stops
 publication acceptance and withholds signing/output references. This verifies
 transport completeness; private vulnerability review and original workload
 behavior remain separate release gates.
+
+## Homepage publication scope
+
+Publish the pinned Homepage image using the reviewed current main commit.
+
+```sh
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha="<reviewed-current-main-sha>" -f image_scope=homepage
+```
+
+The scope selects the exact Homepage v2.8.0 image from the full catalog.
+Require the workflow's complete authenticated pull before merging the cutover.

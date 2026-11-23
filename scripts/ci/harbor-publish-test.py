@@ -44,10 +44,12 @@ class HarborPublicationGates(unittest.TestCase):
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
         self.prometheus_mirror_manifest = None
+        self.home_assistant_mirror_manifest = None
         self.uptime_kuma_mirror_manifest = None
         self.adguard_mirror_manifest = None
         self.cilium_mirror_manifest = None
         self.kagent_mirror_manifest = None
+        self.homepage_mirror_manifest = None
         self.canary_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -130,6 +132,11 @@ class HarborPublicationGates(unittest.TestCase):
             prometheus_path.unlink(missing_ok=True)
         else:
             prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
+        home_assistant_path = self.root / "scripts/config/harbor-home-assistant-images.json"
+        if self.home_assistant_mirror_manifest is None:
+            home_assistant_path.unlink(missing_ok=True)
+        else:
+            home_assistant_path.write_text(json.dumps(self.home_assistant_mirror_manifest))
         uptime_kuma_path = self.root / "scripts/config/harbor-uptime-kuma-images.json"
         if self.uptime_kuma_mirror_manifest is None:
             uptime_kuma_path.unlink(missing_ok=True)
@@ -150,6 +157,11 @@ class HarborPublicationGates(unittest.TestCase):
             kagent_path.unlink(missing_ok=True)
         else:
             kagent_path.write_text(json.dumps(self.kagent_mirror_manifest))
+        homepage_path = self.root / "scripts/config/harbor-homepage-images.json"
+        if self.homepage_mirror_manifest is None:
+            homepage_path.unlink(missing_ok=True)
+        else:
+            homepage_path.write_text(json.dumps(self.homepage_mirror_manifest))
         canary_path = self.root / "scripts/config/harbor-image-updater-canary.json"
         if self.canary_mirror_manifest is None:
             canary_path.unlink(missing_ok=True)
@@ -835,7 +847,7 @@ printf '%s\n' {SHA}
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -860,7 +872,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -889,6 +901,53 @@ printf '%s\n' {SHA}
         result = self.rejected(mode="mirror-prometheus")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
+    def test_home_assistant_scope_requires_the_exact_catalog_reference(self):
+        source = "ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f"
+        valid = {"source": source}
+        selected = json.loads((ROOT / "scripts/config/harbor-home-assistant-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [valid]})
+        self.assertIn(valid, catalog["images"])
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("493a0", "493a1")}]}):
+            with self.subTest(scope=scope):
+                self.home_assistant_mirror_manifest = scope
+                self.rejected(mode="mirror-home-assistant")
+        self.home_assistant_mirror_manifest = selected
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-home-assistant")
+        self.mirror_manifest = {"images": [valid]}
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-home-assistant")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_homepage_scope_only_accepts_the_reviewed_catalog_image(self):
+        source = (
+            "ghcr.io/gethomepage/homepage:v2.8.0@"
+            "sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"
+        )
+        entry = {"source": source}
+        selected = json.loads((ROOT / "scripts/config/harbor-homepage-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [entry]})
+        self.assertIn(entry, catalog["images"])
+
+        tampered = {"source": source.replace("019d8f", "119d8f")}
+        self.mirror_manifest = {"images": [entry, tampered]}
+        for scope in (None, {"images": [tampered]}, {"images": [entry, tampered]}):
+            with self.subTest(scope=scope):
+                self.homepage_mirror_manifest = scope
+                self.rejected(mode="mirror-homepage")
+
+        self.homepage_mirror_manifest = selected
+        self.mirror_manifest = {"images": [tampered]}
+        self.rejected(mode="mirror-homepage")
+        self.mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-homepage")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
         selected = json.loads((ROOT / "scripts/config/harbor-uptime-kuma-images.json").read_text())
@@ -897,7 +956,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -936,7 +995,7 @@ printf '%s\n' {SHA}
         for entry in selected["images"]:
             self.assertIn(entry, catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
