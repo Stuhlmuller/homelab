@@ -99,8 +99,8 @@ resource while the operator is still running. Apply the Application
 registration through targeted Terragrunt Apply to install the Argo CD
 cascading-deletion finalizer. Confirm that the Kiali custom resource and the
 server Deployment and Service are absent before removing the Terragrunt unit.
-A subsequent full Terragrunt Apply deletes the Application and lets Argo CD
-prune the remaining operator resources.
+Dispatch Terragrunt Apply with `retire_argocd_app=kiali` to delete the
+Application and let Argo CD prune the remaining operator resources.
 
 ## Emergency Recovery
 
