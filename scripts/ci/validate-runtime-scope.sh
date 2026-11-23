@@ -4,6 +4,11 @@ set -euo pipefail
 base_sha="${1:?pass the pull request base SHA}"
 [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
 
+# The pull request's merge ref may advance while a run is queued.
+if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+  git fetch --quiet --no-tags --depth=1 origin "$base_sha"
+fi
+
 changed_paths="$(mktemp)"
 trap 'rm -f "$changed_paths"' EXIT
 # Include both ends of renames so moving an input out of scope also runs its check.

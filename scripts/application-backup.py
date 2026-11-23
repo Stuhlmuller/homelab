@@ -19,7 +19,7 @@ SPEC.loader.exec_module(OFFSITE)
 RSC_SPEC = importlib.util.spec_from_file_location('rscstore_capture', Path(__file__).with_name('octelium-rscstore-capture.py'))
 RSC = importlib.util.module_from_spec(RSC_SPEC)
 RSC_SPEC.loader.exec_module(RSC)
-CONFIG = Path(__file__).resolve().parents[1] / 'IaC/application-backup-storage.hcl'
+CONFIG = Path(__file__).resolve().parents[1] / 'IaC/homelab/us-west-2/operator/application-backup-storage.hcl'
 CONTRACTS = {
     'octelium': ('globals.sql', 'octelium.dump'),
     'octelium-rscstore': (*RSC.PARTS, 'capture.json'),

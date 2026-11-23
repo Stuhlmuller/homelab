@@ -11,7 +11,7 @@ offsite copy is not implied by a successful bucket apply.
 ## Ownership And Retention
 
 These are this homelab's public deployment values. Other deployments must change
-the [committed destination](../IaC/etcd-backup-storage.hcl), consumed by
+the [committed destination](../IaC/homelab/us-west-2/operator/etcd-backup-storage.hcl), consumed by
 both the catalog inputs/provider guard and manual publisher.
 
 | Setting | Declared value |

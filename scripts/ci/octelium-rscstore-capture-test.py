@@ -299,9 +299,11 @@ class RscstoreCaptureTest(unittest.TestCase):
                     path.write_text(invalid)
                     CAPTURE.fenced_kustomization_guard(path)
 
-    def test_stage_is_dormant_in_active_kustomization(self):
+    def test_inspector_stage_keeps_writer_fence_inactive(self):
         source = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        self.assertNotIn("capture-stage", source)
+        self.assertIn("  - capture-stage/inspector.yaml", source)
+        self.assertIn("  - capture-stage/inspector-networkpolicy.yaml", source)
+        self.assertNotIn("components:", source)
 
     def test_pod_list_requires_unpaginated_resource_version(self):
         deployment, pvc, pv, pods = cluster_fixture()

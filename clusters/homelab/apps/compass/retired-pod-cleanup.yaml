@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: compass-retired-pod-cleanup
+  namespace: monitoring
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: compass-retired-pod-cleanup
+  namespace: monitoring
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    resourceNames: [compass-5d4cdc7c8d-znngm]
+    verbs: [get, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: compass-retired-pod-cleanup
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: compass-retired-pod-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: compass-retired-pod-cleanup
+    namespace: monitoring
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: compass-retired-pod-cleanup
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: compass-retired-pod-cleanup
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 10.96.0.1/32}
+        - ipBlock: {cidr: 10.1.0.199/32}
+      ports:
+        - {protocol: TCP, port: 443}
+        - {protocol: TCP, port: 6443}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: compass-retired-pod-cleanup
+  namespace: monitoring
+  annotations:
+    checkov.io/skip1: CKV_K8S_38=The Job needs a token scoped to reading and deleting one retired Pod.
+spec:
+  activeDeadlineSeconds: 90
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: compass-retired-pod-cleanup
+        app.kubernetes.io/part-of: homelab
+    spec:
+      serviceAccountName: compass-retired-pod-cleanup
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: cleanup
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          command:
+            - python3
+            - -I
+            - -c
+            - |
+              import json
+              import os
+              import ssl
+              from pathlib import Path
+              from urllib.error import HTTPError
+              from urllib.request import Request, urlopen
+
+              account = Path("/var/run/secrets/kubernetes.io/serviceaccount")
+              host = os.environ["KUBERNETES_SERVICE_HOST"]
+              port = os.environ["KUBERNETES_SERVICE_PORT"]
+              url = f"https://{host}:{port}/api/v1/namespaces/monitoring/pods/compass-5d4cdc7c8d-znngm"
+              context = ssl.create_default_context(cafile=str(account / "ca.crt"))
+              headers = {
+                  "Authorization": "Bearer " + (account / "token").read_text().strip(),
+                  "Content-Type": "application/json",
+              }
+
+              def request(method, body=None):
+                  data = json.dumps(body).encode() if body is not None else None
+                  try:
+                      with urlopen(Request(url, data=data, headers=headers, method=method),
+                                   context=context, timeout=10) as response:
+                          return json.load(response)
+                  except HTTPError as error:
+                      if error.code != 404:
+                          raise
+                      return None
+
+              pod = request("GET")
+              if pod is None:
+                  print("The retired Compass pod is already absent.")
+                  raise SystemExit(0)
+
+              metadata = pod["metadata"]
+              expected_image = (
+                  "adinhodovic/compass:0.7.0@"
+                  "sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
+              )
+              owner = next((ref for ref in metadata["ownerReferences"]
+                            if ref.get("controller")), {})
+              images = {container["name"]: container["image"]
+                        for container in pod["spec"]["containers"]}
+              if (pod["status"]["phase"] != "Succeeded"
+                      or owner.get("kind") != "ReplicaSet"
+                      or owner.get("name") != "compass-5d4cdc7c8d"
+                      or images.get("compass") != expected_image):
+                  raise SystemExit("The Compass pod does not match the retired replica.")
+
+              request("DELETE", {
+                  "apiVersion": "v1",
+                  "kind": "DeleteOptions",
+                  "preconditions": {
+                      "uid": metadata["uid"],
+                      "resourceVersion": metadata["resourceVersion"],
+                  },
+              })
+              print("Removed the retired Compass pod.")
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}

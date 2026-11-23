@@ -13,7 +13,7 @@ import tarfile
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-CHECKS = ("offline-tests", "manifest-policy")
+CHECKS = ("offline-tests", "manifest-policy", "n8n-offline-tests")
 
 GROUP_SCRIPT = r"""
 group_alive() {
@@ -72,7 +72,7 @@ def build_command(policy):
             "--option", "max-substitution-jobs", "1",
             "--option", "extra-substituters", policy["url"],
             "--option", "extra-trusted-public-keys", policy["publicKey"],
-            ".#checks.x86_64-linux.offline-tests", ".#checks.x86_64-linux.manifest-policy"]
+            *(f".#checks.x86_64-linux.{check}" for check in CHECKS)]
 
 
 def cancel(pod, uid, attempt_id):

@@ -1,0 +1,69 @@
+- Platform:
+    - Argo CD:
+        href: https://argocd.stinkyboi.com
+        description: GitOps control plane and application sync status.
+        icon: argo-cd.png
+    - Homepage:
+        href: https://compass.stinkyboi.com
+        description: Homelab service catalog and operator launchpad.
+        icon: homepage.png
+- Media:
+    - Deluge:
+        href: https://deluge.stinkyboi.com
+        description: Torrent client reached through the Octelium app access plane.
+        icon: deluge.png
+    - Dispatcharr:
+        href: https://dispatcharr.stinkyboi.com
+        description: IPTV stream and EPG manager reached through the Octelium app access plane.
+        icon: dispatcharr.png
+    - Prowlarr:
+        href: https://prowlarr.stinkyboi.com
+        description: Indexer manager for the media stack.
+        icon: prowlarr.png
+    - Radarr:
+        href: https://radarr.stinkyboi.com
+        description: Movie library automation.
+        icon: radarr.png
+    - Sonarr:
+        href: https://sonarr.stinkyboi.com
+        description: TV library automation.
+        icon: sonarr.png
+- Observability:
+    - Grafana:
+        href: https://grafana.stinkyboi.com
+        description: Dashboards, alerts, and homelab observability.
+        icon: grafana.png
+    - Kiali:
+        href: https://kiali.stinkyboi.com
+        description: Read-only Istio mesh topology and traffic view.
+        icon: mdi-graph-outline
+    - Langfuse:
+        href: https://langfuse.stinkyboi.com
+        description: LLM tracing, token usage, and prompt logs.
+        icon: mdi-chart-line
+- AI and Automation:
+    - LiteLLM:
+        href: https://litellm.stinkyboi.com
+        description: AI model gateway used by homelab agents.
+        icon: sh-litellm.png
+    - n8n:
+        href: https://n8n.stinkyboi.com
+        description: Workflow automation editor and execution UI.
+        icon: n8n.png
+    - Cordium:
+        href: https://cordium.stinkyboi.com
+        description: Octelium-backed sandbox platform for users and AI agents.
+        icon: mdi-cube-outline
+    - OpenClaw:
+        href: https://openclaw.stinkyboi.com
+        description: Local agent gateway and homelab assistant runtime.
+        icon: mdi-robot
+    - Policy Bot:
+        href: https://policy-bot.stinkyboi.com
+        description: GitHub App policy evaluator and webhook receiver.
+        icon: mdi-shield-check
+- Productivity:
+    - AFFiNE:
+        href: https://affine.stinkyboi.com
+        description: Collaborative documents, whiteboards, and knowledge base.
+        icon: affine.png

@@ -289,10 +289,11 @@ class Admin:
 
 def validate_admin(profile, querylog, statistics, denied, setup):
     require(profile.get('name') == 'admin', 'Expected initialized administrator is unavailable')
-    # The API exposes enabled, but not file_enabled or size_memory. Those
-    # settings are verified against declared config and the pinned runtime.
-    require(querylog.get('enabled') is True and statistics.get('enabled') is False,
-            'Recent query visibility must be enabled and statistics disabled')
+    # Query log file and memory settings are verified against the declared
+    # config and the pinned runtime.
+    require(querylog.get('enabled') is True, 'Recent query visibility must be enabled')
+    require(statistics.get('enabled') is True and statistics.get('interval') == 24 * 60 * 60 * 1000,
+            'Statistics must be enabled with a one-day interval')
     require(len(denied) == 2 and all(code in (401, 403) for code in denied),
             'Unauthenticated protected administration is not denied')
     require(setup in (403, 404), 'First-run setup is still available')

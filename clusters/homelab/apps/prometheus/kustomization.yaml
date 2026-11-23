@@ -6,6 +6,7 @@ resources:
   - renovate-prometheusrules.yaml
   - memory-prometheusrules.yaml
   - talos-filesystem-prometheusrules.yaml
+  - octelium-proxy-prometheusrules.yaml
   - argocd-servicemonitors.yaml
   - deluge-servicemonitor.yaml
   - istio-podmonitors.yaml
