@@ -40,6 +40,8 @@ args=(
     --remote_timeout=8s
     --remote_retries=0
 )
+publish_args=()
+publish_startup=()
 if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
     if (( $# )) || [[ "$target" != //bazel:all || "$publish" == true ]]; then
         echo 'GitHub Actions runs all offline checks with read-only cache access.' >&2
@@ -47,21 +49,35 @@ if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
     fi
     args+=(--remote_upload_local_results=false)
 elif [[ "$publish" == true ]]; then
+    if (( $# )); then
+        echo 'Use --target to select a published check.' >&2
+        exit 2
+    fi
     command -v aws >/dev/null || {
         echo 'Run the publisher in nix develop with an authorized AWS session.' >&2
         exit 2
     }
-    args+=(--remote_upload_local_results=true
-           --credential_helper_timeout=25s
-           --credential_helper="$cache_host=$PWD/scripts/ci/bazel-cache-credential.py")
+    publish_args=(--remote_upload_local_results=true
+                  --credential_helper_timeout=25s
+                  --credential_helper="$cache_host=$PWD/scripts/ci/bazel-cache-credential.py")
+    # A private output base makes a prior local-only test run eligible for upload.
+    publish_startup=(--output_base="$work/publisher")
 fi
 
 startup=(--batch --nosystem_rc --nohome_rc)
-if [[ "$publish" == true ]]; then
-    # A private output base makes a prior local-only test run eligible for upload.
-    startup+=(--output_base="$work/publisher")
-fi
 if [[ -r /etc/ssl/certs/java/cacerts ]]; then
     startup+=(--host_jvm_args=-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts)
 fi
-bazel "${startup[@]}" test "${args[@]}" "$@" "$target"
+bazel "${startup[@]}" "${publish_startup[@]}" test "${args[@]}" "${publish_args[@]}" "$@" "$target"
+
+if [[ "$publish" == true ]]; then
+    bazel "${startup[@]}" --output_base="$work/reader" test "${args[@]}" \
+        --build_event_json_file="$work/reader.json" "$target"
+    if ! jq -es '
+      map(.testResult // empty)
+      | length > 0 and all(.[]; .executionInfo.cachedRemotely == true)
+    ' "$work/reader.json" >/dev/null; then
+        echo 'The tests passed, but the read-only cache lookup missed a result.' >&2
+        exit 1
+    fi
+fi

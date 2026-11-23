@@ -19,6 +19,7 @@ session allowed to decrypt `/homelab/octelium/bazel-cache-writer-password`.
 nix develop --command nix run .#bazel-offline -- --publish
 ```
 
+Publication verifies that an independent read-only Bazel run hits the cache.
 The credential helper sends the password only to
 `https://bazel-cache.stinkyboi.com`. PR and main CI use anonymous read-only
 access. The HTTP server requires authentication for writes. The offline suites
