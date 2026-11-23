@@ -1,10 +1,10 @@
 name: Cordium Runner Image Publication
-# checkov:skip=CKV_GHA_7: expected_sha pins exact main; image pair and destination are fixed.
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main; image pair and destination are fixed.
 "on":
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact current reviewed main whose fixed runner/controller pair will be published
+        description: Exact reviewed main at dispatch whose fixed runner/controller pair will be published
         required: true
         type: string
 permissions: {}
@@ -20,19 +20,20 @@ jobs:
       contents: read
     steps:
       - name: Verify Dispatch Commit
-        if: github.event_name == 'workflow_dispatch'
         env:
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
-          test "${ACTUAL_SHA}" = "${current_main_sha}"
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
           persist-credentials: false
+      - name: Verify Reviewed Publication Inputs
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: bash scripts/ci/cordium-publication-source.sh
       - name: Build And Smoke Test Runner Images
         run: bash builds/cordium-runner/build.sh
   publish:
@@ -72,22 +73,10 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
       - name: Validate Harbor Publication Gates
         run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
-      - name: Verify Current Main Commit
+      - name: Verify Reviewed Publication Inputs
         env:
-          ACTUAL_SHA: ${{ github.sha }}
-          EVENT_NAME: ${{ github.event_name }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-        run: |
-          set -euo pipefail
-          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
-            test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          else
-            test "${EVENT_NAME}" = "push"
-          fi
-          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
-          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
-          test "${ACTUAL_SHA}" = "${current_main_sha}"
+        run: bash scripts/ci/cordium-publication-source.sh
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:

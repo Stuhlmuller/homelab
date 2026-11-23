@@ -2,10 +2,15 @@
 
 Offline Python and shell fixtures and manifest policies are Nix derivations in
 [`flake.nix`](../flake.nix). A successful check creates a `result` file. A
-failed check creates no output and cannot populate the cache. The complete
-tracked source tree, fixture commands, pinned tools, and platform determine
-the derivation; Git commit metadata does not. Testing before a signed commit
-therefore remains reusable when the committed files match.
+failed check creates no output and cannot populate the cache. Fixture inputs,
+commands, pinned tools, and platform determine the derivation. Testing before
+a signed commit remains reusable when the inputs match.
+
+The n8n recovery fixtures use the checkpoint workflow, scripts, and manifests
+listed in `flake.nix`. The signed cache publishes their result separately.
+Unrelated source edits can reuse it while the aggregate offline check still
+requires it. Cross-repository fixtures and policy checks use the full tracked
+tree.
 
 [`offline-checks.sh`](../scripts/ci/offline-checks.sh) owns the extracted
 Python checks; [offline-static-checks.sh](../scripts/ci/offline-static-checks.sh)
@@ -45,7 +50,7 @@ them to the `nix-cache` GitHub prerelease. It uploads NARs before metadata,
 never replaces existing assets, and rejects a differing existing asset.
 GitHub authentication requires repository write access; CI readers need no
 cache credentials. The private signing key remains outside the checkout and
-is never supplied to PR jobs. Both checks produce self-contained outputs.
+is never supplied to PR jobs. Each check produces a self-contained output.
 
 The cache is an ordinary Nix binary cache hosted as release assets. NAR URLs
 are flattened because release assets cannot contain directory paths. Nix

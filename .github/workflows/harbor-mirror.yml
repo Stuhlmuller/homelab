@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Kuma/AdGuard/Cilium/kagent/Image Updater canary inventories with exact destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/n8n/DNS/LiteLLM/Prometheus/Kuma/AdGuard/Cilium/kagent/Image Updater canary/Bazel cache inventories with exact destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, uptime-kuma, adguard, cilium, kagent, image-updater-canary]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, n8n, dns, litellm, prometheus, uptime-kuma, adguard, cilium, kagent, image-updater-canary, bazel-cache]
 
 permissions: {}
 
@@ -102,7 +102,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache) ;; *) exit 2 ;; esac
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
@@ -218,6 +218,9 @@ jobs:
             kagent)
               bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
               ;;
+            bazel-cache)
+              bash scripts/ci/harbor-publish.sh mirror-bazel-cache --tailscale
+              ;;
             image-updater-canary)
               bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
               ;;
@@ -225,7 +228,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'6ac59d4db7e818e5c5d00541a0c37df03031364d5d8ef5b2bd0457c37302f329  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'60c8bef2eca7353b9c9d4cacfb76aa1f414569db45c938424b2ae88856cd5b60  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

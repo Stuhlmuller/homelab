@@ -135,7 +135,8 @@ but that is no longer this homelab's warning threshold.
 Candidate savings below include running app containers and dedicated databases
 at diagnosis, but exclude shared platform services and access proxies. Both
 selected apps were configured for suspension then; retain their PVCs. Dispatcharr
-now declares one replica for its app and database; AFFiNE remains suspended.
+now declares one replica for its app and database. AFFiNE also declares one
+replica each for the server, PostgreSQL, and Redis.
 
 The October 6, 2026 05:42 UTC pre-resume snapshot measured 25.163 GiB of
 ordinary-container requests across 200 Running/Pending Pods, excluding init

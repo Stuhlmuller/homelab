@@ -89,7 +89,10 @@ lets each ephemeral runner use project flakes and build missing dependencies.
 The build verifies the tools and an offline Nix derivation as the runner user.
 
 The [Harbor publisher](../.github/workflows/cordium-runner-publish.yml) builds
-and publishes the image from reviewed main. Cordium's inline Dockerfile API
+and publishes the image from the reviewed dispatch commit. It checks
+that the commit is still an ancestor of main and that all inputs outside
+Markdown documentation still match before registry access. Tags and
+provenance identify the original dispatch commit. Cordium's inline Dockerfile API
 accepts only the Dockerfile itself. The Nix recipe needs repository files, so
 the cutover must point the Workspace at the published digest and use Cordium's
 registry image path. Use the live canary to verify Nix, Docker actions, and

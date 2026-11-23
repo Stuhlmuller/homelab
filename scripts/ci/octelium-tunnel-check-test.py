@@ -31,6 +31,10 @@ class TransportCheck(unittest.TestCase):
             def run(command, **_kwargs):
                 if command[0] == "dig":
                     return subprocess.CompletedProcess(command, 0, "203.0.113.1\n")
+                request = command[command.index("--data-binary") + 1]
+                self.assertTrue(request.startswith("@"))
+                self.assertEqual(Path(request[1:]).read_bytes(), bytes(5))
+                self.assertEqual(command.count("x-grpc-web: 1"), 0 if native else 1)
                 (directory / "headers").write_bytes(headers)
                 (directory / "body").write_bytes(body)
                 return subprocess.CompletedProcess(command, code, result)
