@@ -38,14 +38,20 @@ prose does not change pipeline behavior.
   remain in `Terragrunt Gate` and `validate`.
 - `Terragrunt Plan` runs on pull requests targeting `main`. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
-  policies. Only trusted same-repository changes to the plan workflow,
+  policies. This job also owns the PR's signed offline Nix checks. The
+  `validate` workflow verifies those same outputs on pushes to `main`.
+  Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
   Octelium, and stream the live Terragrunt plan to the Actions log. Other
-  same-repository changes use a no-permission skip-check job;
-  forks run only the static job.
-  The always-present `Terragrunt Gate` succeeds only when static checks and
-  every applicable live plan or skip-check job succeed.
+  changes skip the protected live job. The always-present `Terragrunt Gate`
+  checks the static result and the expected live job result. It records why
+  the live job was skipped and rejects runtime changes from forks.
+- `validate` compares the PR merge tree with the event's base commit before
+  scheduling the isolated image admission, network enforcement, and Harbor
+  Core runtime checks. Each check runs for its own inputs and shared flake
+  or workflow changes. All three run on `main` pushes and when PR scope is
+  unavailable.
 - `Terragrunt Apply Request` runs after every change lands on `main` and prints
   the exact dispatch command for that push.
   It has no production environment, stored secrets, or OIDC permission.
@@ -308,10 +314,9 @@ checks remain fresh.
 
 1. Merge the workflow change while `Terragrunt Gate` is not required.
 2. From the merged `main` workflow, observe a same-repository PR with no live
-   inputs: `Static Policy And Security Checks` and `Terragrunt Plan Skipped`
-   must pass, `Terragrunt Plan` must be skipped, and `Terragrunt Gate` must pass.
-3. Observe a trusted PR with live inputs: `Terragrunt Plan Skipped` must be
-   skipped and `Terragrunt Gate` must remain blocked until the protected
+   inputs. `Static Policy And Security Checks` and `Terragrunt Gate` must
+   pass, and `Terragrunt Plan` must be skipped.
+3. Observe a trusted PR with live inputs. `Terragrunt Gate` must remain blocked until the protected
    `Terragrunt Plan` succeeds. A fork must emit the gate without receiving the
    protected environment or a write token.
 4. Add the exact `Terragrunt Gate` Actions context to ruleset `14700233` without

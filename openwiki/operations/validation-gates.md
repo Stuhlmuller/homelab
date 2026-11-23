@@ -142,8 +142,6 @@ sources:
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-5a9844f09df0d8ff89f969be
     resource: repo://scripts/ci/entra-emergency-global-admin-plan-test.py
-  - id: openwiki-source-71b17b13c9c25f4d36402204
-    resource: repo://scripts/ci/entra-owner-conversion-test.py
   - id: openwiki-source-2891520885ecf43be10fd7b5
     resource: repo://scripts/ci/harbor-core-audit-status.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -743,13 +741,11 @@ until replacement acceptance.
 
 `static-checks.sh` runs the full pinned Helm render and route/annotation parity
 gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
-read-only handoff fixtures. The public chart fetch retries four times with
-bounded delays and per-attempt timeouts, and requires the exact OCI digest.
-Only a classified fetch failure can use the local package; template errors fail.
-If Codeberg is unavailable, the test renders the upstream release package
-vendored from its immutable
-GitHub mirror, after matching its reviewed SHA-256. It applies the same resource
-contract and never prints raw Helm output. Route additions, renames and
+read-only handoff fixtures. The static gate and isolated runtime fixture render
+the reviewed upstream release package from the checkout after verifying its
+SHA-256 against the Harbor chart catalog. The protected Helm chart publisher
+verifies the same hash with a separate authenticated Harbor reader pull. The
+static gate checks the resource contract and withholds raw Helm errors. Route additions, renames and
 removals must retain parity with the resolver allowlist. The one-time initial
 inventory mode has been removed after the completed cutover. The fixed
 `image_scope=dns` Harbor
@@ -813,18 +809,11 @@ The historical mail-only Graph PATCH is retired: the owner-mail Terraform unit
 uses `removed { destroy = false }` and any saved plan must forget only that
 state address. No alias-release or additional mail write is accepted.
 
-The new `entra-owner-conversion-test.py` covers read-only Graph preparation and
-post-conversion attestation, including exact existing object ID, target UPN,
-identity issuer, password timestamp, clean signed `main`, private receipt and
-independent recovery Global Administrator. It also asserts that preparation
-rejects the current federated target domain. The recovery-admin plan test keeps
-its unit disabled by default and rejects unrelated provider actions. These
-fixtures do not create the recovery account or convert the owner. An operator
-must first resolve the federated target through a separate reviewed code
-change, then review the saved plan, verify the recovery sign-in, prepare a private
-receipt, perform the separately authorized Entra admin-center conversion, then
-attest and test actual Fleet console SAML and local recovery login. See the
-[provider contract](../../docs/entra-terraform-provider.md) and
+The one-off owner-conversion helper and fixture have been removed. The
+recovery-admin plan test still keeps its unit disabled by default and rejects
+unrelated provider actions. Immutable-ID OIDC checks remain active; cleanup
+does not resolve the federated owner target or establish a successful login.
+See the [provider contract](../../docs/entra-terraform-provider.md) and
 [Fleet runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 ## GitHub Workflow Checks
@@ -841,6 +830,11 @@ outside the checkout and removes it on exit. The cache location is inherited by
 child fixtures; it does not change infrastructure inputs. The artifact scanner
 still rejects saved plan/state files in ignored checkout paths. See the
 [validation runbook](../../docs/validation-runbook.md).
+
+The required `Terragrunt Gate` covers signed offline Nix checks on every PR
+targeting `main`, including forks and changes that do not need a live plan.
+The `validate / repo` job verifies the same outputs on pushes to `main` and
+runs its other repository checks on both events.
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.
@@ -913,8 +907,8 @@ trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. An unreadable base diff fails the static job before it can emit a
 successful skip decision; the offline fixture exercises this failure. The
-aggregate fails unless static checks succeed and the applicable
-live plan or same-repository skip-note job has the expected result. Keep the
+aggregate checks static success and the expected live plan result. It logs the
+reason for a skipped live plan. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
@@ -924,6 +918,12 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+
+The `validate` runtime checks for image admission, network enforcement, and
+Harbor Core run on `main` pushes. In PRs,
+[`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
+the exact event diff, including removed paths, for each check's inputs. An
+unavailable diff runs the full runtime suite.
 
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
@@ -1155,6 +1155,20 @@ dig +short A iptorrents.com @1.1.1.1
 kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
+
+### Multica Argo project boundary
+
+Multica uses `homelab-workloads`, whose cluster-resource allowlist is empty.
+The repository-owned overlay renders only resources in `ai`; LiteLLM owns
+that namespace. The project admits the exact Multica chart repository rather
+than a registry wildcard. The current live Argo resource tree also lists only
+`ai` resources. Offline checks validate the overlay and project; the hosted
+static gate anonymously pulls the pinned OCI chart, verifies its reviewed
+package SHA-256, and rejects rendered cluster-scoped objects. Before applying
+the project change, verify that its source has synced and the protected plan
+contains only the reviewed Application project update. After apply, require
+Multica Synced/Healthy; any new chart cluster object must fail under the empty
+cluster-resource allowlist.
 
 ## Dormant Octelium resource-store capture
 
@@ -2373,10 +2387,9 @@ Portal/Platform SSO is retired; the profile operator can remove its owned
 profile but cannot install it. The operator is dry-run by default and validates
 Apple profiles through `configuration_profiles/batch?dry_run=true` without
 global assignment. Require exact device identity, acknowledged installation,
-unrelated-profile retention and session revocation. The Entra owner conversion
-requires a separately tested recovery Global Administrator, immutable-ID
-references, a reviewed plan, private read-only prepare receipt, explicit
-admin-center action and matching post-conversion attestation. Fleet console
+unrelated-profile retention and session revocation. The blocked one-off Entra
+owner conversion procedure has been removed. Immutable-ID references and the
+disabled recovery-admin unit remain unchanged. Fleet console
 SAML still needs a real browser callback and independent recovery login; API
 readback, Argo health and source tests do not establish live acceptance.
 
@@ -2884,6 +2897,11 @@ fresh administrator saved plan to observed service/peer/source/configuration and
 live policy. Rollback excludes AdGuard health dependencies. Native client mode
 currently supports macOS and records daemon/exit-node metadata; direct queries
 cannot count as normal-client or exit-node proof. These live gates remain pending.
+
+The [split resolver preflight](../../specs/20261115-185603-adguard-tailnet-dns/quickstart.md#split-resolver-exit-node-preflight)
+reads the exact-main policy, private saved plan and live DNS. It accepts one
+in-place exit-node flag repair and only its matching inverse refresh drift.
+It reports plan readiness without applying or recording a cutover receipt.
 
 ### Source-only Application stack refactors
 
