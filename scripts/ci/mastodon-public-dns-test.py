@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+from unittest import TestCase
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,6 +16,8 @@ spec.loader.exec_module(dns)
 TUNNEL = '11111111-1111-4111-8111-111111111111'
 # checkov:skip=CKV_SECRET_6: Inert fixture token used only for credential leak tests.
 TOKEN = 'fixture-private-token'
+
+
 def exercise(site, desired, records, count=None):
     writes = []
 
@@ -32,7 +35,7 @@ def exercise(site, desired, records, count=None):
 
     with patch.object(dns, 'api', side_effect=api), patch.object(dns.credential, 'validate_context'):
         try:
-            dns.reconcile(TOKEN, TUNNEL, site)
+            dns.reconcile(TOKEN, TUNNEL, site, 'a' * 40)
         except RuntimeError:
             assert not writes
             return False, writes
@@ -62,7 +65,7 @@ for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon')]:
     with patch.dict(os.environ, {'GITHUB_SHA': sha}), patch.object(
         dns.credential, 'command', return_value=json.dumps({'items': apps})
     ) as command:
-        dns.ready(site)
+        dns.ready(site, sha)
         command.assert_called_once_with(['kubectl', '-n', 'argocd', 'get', 'applications',
                                          site, 'octelium-public', '-o', 'json'])
     for invalid in [apps[:1], apps + [apps[0]], [apps[1], {**apps[0], 'metadata': {'name': other}}],
@@ -71,7 +74,7 @@ for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon')]:
             dns.credential, 'command', return_value=json.dumps({'items': invalid})
         ):
             try:
-                dns.ready(site)
+                dns.ready(site, sha)
                 raise AssertionError('Unready rollout accepted')
             except RuntimeError:
                 pass
@@ -81,6 +84,36 @@ for site, other in [('mastodon', 'openwiki'), ('openwiki', 'mastodon')]:
             contextlib.redirect_stderr(io.StringIO()):
         assert dns.main([site]) == 1
         parameter.assert_not_called()
+    with patch.dict(os.environ, {'GITHUB_SHA': 'b' * 40, 'VALIDATED_SHA': sha}), patch.object(
+        dns.credential, 'command', return_value=json.dumps({'items': apps})
+    ), patch.object(dns.credential, 'validate_context') as context, patch.object(
+        dns, 'parameter', side_effect=[TOKEN, TUNNEL]
+    ), patch.object(dns, 'reconcile') as reconcile, contextlib.redirect_stdout(io.StringIO()):
+        assert dns.main([site]) == 0
+        context.assert_called_once_with(sha)
+        reconcile.assert_called_once_with(TOKEN, TUNNEL, site, sha)
+
+validated = 'a' * 40
+dispatch = 'b' * 40
+identity = {
+    'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
+    'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+    'GITHUB_SHA': dispatch, 'VALIDATED_SHA': validated,
+}
+with patch.dict(os.environ, identity, clear=True), patch.object(
+    dns.credential, 'command', side_effect=[validated, f'{validated}\trefs/heads/main']
+):
+    dns.credential.validate_context(validated)
+with patch.dict(os.environ, identity, clear=True), patch.object(
+    dns.credential, 'command', side_effect=[validated, f'{dispatch}\trefs/heads/main']
+), patch.object(dns, 'parameter') as parameter, contextlib.redirect_stderr(io.StringIO()):
+    assert dns.main(['openwiki']) == 1
+    parameter.assert_not_called()
+with patch.dict(os.environ, identity, clear=True), patch.object(
+    dns.credential, 'command', return_value=dispatch
+):
+    with TestCase().assertRaisesRegex(RuntimeError, 'Checkout mismatch'):
+        dns.credential.validate_context(validated)
 
 with patch.object(dns.credential, 'validate_context') as context, contextlib.redirect_stderr(io.StringIO()):
     assert dns.main(['arbitrary.stinkyboi.com']) == 1

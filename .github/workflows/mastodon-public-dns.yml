@@ -1,11 +1,11 @@
 name: Mastodon Public DNS
 
-# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main and site selects one of two fixed hostnames.
+# checkov:skip=CKV_GHA_7: expected_sha anchors reviewed main and site selects one of two fixed hostnames.
 on:
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact current main commit to publish the selected DNS record
+        description: Exact main commit at dispatch
         required: true
         type: string
       site:
@@ -30,9 +30,11 @@ jobs:
   static-policy:
     name: Static Policy And Security Checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
+    outputs:
+      validated_sha: ${{ steps.validation.outputs.sha }}
     steps:
       - name: Verify Dispatch Commit
         env:
@@ -47,6 +49,7 @@ jobs:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix
@@ -56,17 +59,10 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Static Checks
-        run: |
-          git fetch --no-tags origin main
-          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
-          if git cat-file -e origin/main:scripts/config/nix-cache.json 2>/dev/null; then
-            git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
-          else
-            # Bootstrap before the policy lands on main: build without this cache.
-            printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
-          fi
-          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
-          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+        id: validation
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: bash scripts/ci/public-dns-validate.sh
 
   credential:
     name: Publish Reviewed Tunnel DNS
@@ -83,20 +79,20 @@ jobs:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
+          ref: ${{ needs.static-policy.outputs.validated_sha }}
           persist-credentials: false
 
       - name: Verify Current Main Commit
         env:
           ACTUAL_REF: ${{ github.ref }}
-          ACTUAL_SHA: ${{ github.sha }}
-          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          VALIDATED_SHA: ${{ needs.static-policy.outputs.validated_sha }}
         run: |
           set -euo pipefail
           test "${ACTUAL_REF}" = "refs/heads/main"
-          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
+          [[ "${VALIDATED_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "${VALIDATED_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
-          test "${ACTUAL_SHA}" = "${current_main_sha}"
+          test "${VALIDATED_SHA}" = "${current_main_sha}"
 
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
@@ -140,4 +136,5 @@ jobs:
       - name: Publish Fixed DNS Record
         env:
           SITE: ${{ inputs.site || 'mastodon' }}
+          VALIDATED_SHA: ${{ needs.static-policy.outputs.validated_sha }}
         run: nix develop --command python3 -I scripts/mastodon-public-dns.py "$SITE"

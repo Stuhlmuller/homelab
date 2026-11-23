@@ -23,13 +23,13 @@ def command(args):
     return result.stdout
 
 
-def validate_context():
+def validate_context(validated_sha=None):
     if (os.environ.get('GITHUB_ACTIONS') != 'true'
             or os.environ.get('GITHUB_REPOSITORY') != 'Stuhlmuller/homelab'
             or os.environ.get('GITHUB_REF') != 'refs/heads/main'
             or os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch'):
         raise RuntimeError('Protected workflow required')
-    sha = os.environ.get('GITHUB_SHA', '')
+    sha = os.environ.get('GITHUB_SHA', '') if validated_sha is None else validated_sha
     if not re.fullmatch('[0-9a-f]{40}', sha):
         raise RuntimeError('Invalid revision')
     if command(['git', 'rev-parse', 'HEAD']).strip() != sha:

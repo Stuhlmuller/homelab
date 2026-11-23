@@ -123,7 +123,22 @@ def validate_provider(plan):
             'Saved DNS plan provider version, endpoint or credential source differs')
 
 
-def validate_plan(plan, before, after):
+def validate_dns_update(resource, before, after):
+    change = resource.get('change', {})
+    require(resource.get('address') == ADDRESS and resource.get('mode') == 'managed'
+            and resource.get('type') == 'tailscale_dns_configuration'
+            and change.get('actions') == ['update'] and not change.get('replace_paths')
+            and not resource.get('previous_address'), 'Saved plan changes an unrelated resource or replaces DNS')
+    require(not unknown(change.get('after_unknown', {})), 'Saved plan contains unknown values')
+    require(policy(change.get('before')) == before and policy(change.get('after')) == after,
+            'Saved DNS before/after policy differs from the reviewed transition')
+    identity = change['before'].get('id')
+    require(isinstance(identity, str) and bool(identity) and identity == change['after'].get('id'),
+            'DNS singleton identity changed')
+    return identity
+
+
+def validate_plan(plan, before, after, *, allow_inverse_dns_drift=False):
     before, after = policy(before), policy(after)
     require(isinstance(plan, dict) and str(plan.get('format_version', '')).startswith('1.')
             and plan.get('errored', False) is False and plan.get('complete', True) is True,
@@ -133,21 +148,16 @@ def validate_plan(plan, before, after):
     changes = []
     for resource in plan['resource_changes']:
         change = resource.get('change', {})
-        require(not unknown(change.get('after_unknown', {})), 'Saved plan contains unknown values')
         if change.get('actions') == ['no-op']:
+            require(not unknown(change.get('after_unknown', {})), 'Saved plan contains unknown values')
             continue
-        require(resource.get('address') == ADDRESS and resource.get('mode') == 'managed'
-                and resource.get('type') == 'tailscale_dns_configuration'
-                and change.get('actions') == ['update'] and not change.get('replace_paths')
-                and not resource.get('previous_address'), 'Saved plan changes an unrelated resource or replaces DNS')
-        require(policy(change.get('before')) == before and policy(change.get('after')) == after,
-                'Saved DNS before/after policy differs from the reviewed transition')
-        require(isinstance(change['before'].get('id'), str) and bool(change['before']['id'])
-                and change['before']['id'] == change['after'].get('id'), 'DNS singleton identity changed')
-        changes.append(resource)
+        changes.append(validate_dns_update(resource, before, after))
     require(len(changes) == 1, 'Saved plan must contain exactly one DNS update')
-    require(all(item.get('change', {}).get('actions') == ['no-op'] for item in plan.get('resource_drift', [])),
-            'Saved plan includes unreviewed resource drift')
+    drift = [item for item in plan.get('resource_drift', []) if item.get('change', {}).get('actions') != ['no-op']]
+    if drift:
+        require(allow_inverse_dns_drift and len(drift) == 1, 'Saved plan includes unreviewed resource drift')
+        require(validate_dns_update(drift[0], after, before) == changes[0],
+                'Refresh drift belongs to a different DNS singleton')
     require(all(item.get('actions') == ['no-op'] for item in plan.get('output_changes', {}).values()),
             'Saved plan changes outputs outside the DNS transition')
     values = [r for r in resources(plan.get('planned_values', {}).get('root_module')) if r.get('address') == ADDRESS]
@@ -198,6 +208,28 @@ def binding(revision, snapshot, plan_hash, live, desired):
     require(all(result['config']) and all(result['service']), 'Direct evidence is incomplete')
     validate_binding(result, result)
     return result
+
+
+def preview_split_exit_node(adapter):
+    start, wall_start = time.monotonic(), time.time()
+    revision, desired = adapter.current_source()
+    desired = policy(desired)
+    require(len(desired['nameservers']) == 1, 'Expected one reviewed global AdGuard resolver')
+    validate_transition(adapter.baseline_policy(), desired, desired['nameservers'][0]['address'])
+    require(desired['split_dns'] == [{'domain': 'stinkyboi.com', 'nameservers': [
+        {'address': '100.71.150.27', 'use_with_exit_node': True}]}],
+        'Reviewed split DNS must enable the existing private resolver with exit nodes')
+    before = copy.deepcopy(desired)
+    before['split_dns'][0]['nameservers'][0]['use_with_exit_node'] = False
+
+    plan_hash, planned = adapter.read_plan()
+    require(0 <= parse_time(planned.get('timestamp')) <= time.time(), 'Saved plan has a future or invalid timestamp')
+    validate_plan(planned, before, desired, allow_inverse_dns_drift=True)
+    require(adapter.live_policy() == before, 'Live DNS must differ only in the split resolver exit-node flag')
+    completed = time.monotonic()
+    require(adapter.live_policy() == before and adapter.current_source() == (revision, desired)
+            and adapter.plan_hash() == plan_hash, 'Source, plan or live DNS changed during split DNS preflight')
+    validate_timing(start, completed, time.monotonic(), wall_start, time.time())
 
 
 def reconcile(adapter, execute=False):
@@ -434,7 +466,7 @@ class Adapter:
         self.check = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.check)
         self.plan_path = private_path(plan) if plan is not None else None
-        self.receipt_path = private_path(receipt, existing=False)
+        self.receipt_path = private_path(receipt, existing=False) if receipt is not None else None
         require(self.plan_path != self.receipt_path, 'Plan and receipt paths must differ')
         self.server, self.password_file = server, password_file
         self.dns_reader = DNSReader(self.check.SIGNER)
@@ -498,14 +530,23 @@ class Adapter:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=['cutover', 'rollback'], default='cutover')
+    parser.add_argument('--mode', choices=['cutover', 'rollback', 'split-exit-node-preview'], default='cutover')
     parser.add_argument('--plan', type=Path)
-    parser.add_argument('--receipt', required=True, type=Path)
+    parser.add_argument('--receipt', type=Path)
     parser.add_argument('--server')
     parser.add_argument('--password-file', type=Path)
     parser.add_argument('--execute', action='store_true')
     args = parser.parse_args(argv)
+    if args.mode != 'split-exit-node-preview' and args.receipt is None:
+        parser.error('the following arguments are required: --receipt')
     try:
+        if args.mode == 'split-exit-node-preview':
+            require(not args.execute and args.plan is not None and args.receipt is None
+                    and args.server is None and args.password_file is None,
+                    'Split DNS preflight accepts only a private saved plan and cannot execute it')
+            preview_split_exit_node(Adapter(args.plan, None, None, None))
+            print('Split DNS preflight passed for the reviewed exit-node flag; no tailnet changes made.')
+            return 0
         require(args.mode == 'rollback' or (args.plan is not None and args.server and args.password_file is not None),
                 'Cutover requires an observed server, private admin credential and saved plan')
         adapter = Adapter(args.plan, args.receipt, args.server, args.password_file)

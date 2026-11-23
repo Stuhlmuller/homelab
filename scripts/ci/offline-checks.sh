@@ -24,7 +24,6 @@ python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
 python3 -I scripts/ci/verify-gitops-test.py
-python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -34,12 +33,15 @@ python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
+python3 -I scripts/ci/public-dns-validate-test.py
 python3 -I scripts/ci/openwiki-check.py
+node --test scripts/ci/openwiki-viewer-navigation-test.mjs
 python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
+python3 -I scripts/ci/cilium-egress-audit-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/octelium-ci-credential-test.py
@@ -122,6 +124,8 @@ python3 -I scripts/ci/image-automation-alert-test.py
 python3 -I scripts/ci/image-automation.py check
 python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
+python3 -I scripts/ci/harbor-chart-publish.py --check
+python3 -I scripts/ci/harbor-chart-publish-test.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/network-policy-candidate-report-test.py

@@ -81,6 +81,35 @@ class ReleaseCheckTest(unittest.TestCase):
         self.assertIn("evidence unavailable", output.getvalue())
         self.assertNotIn(private, output.getvalue())
 
+    def test_unhealthy_baseline_reports_only_known_status_categories(self):
+        private = "SYNTHETIC_PRIVATE_TOKEN"
+        application = {"status": {
+            "sync": {"status": "OutOfSync", "revision": private},
+            "health": {"status": "Degraded", "message": private},
+            "operationState": {"phase": "Failed", "message": private},
+            "conditions": [{"type": "SyncError", "message": private}, {"type": private}],
+            "resources": [
+                {"kind": "Deployment", "name": private, "health": {"status": "Degraded", "message": private}},
+                {"kind": private, "status": "OutOfSync"},
+                {"kind": "Service", "status": "Synced"},
+            ],
+        }}
+        changed = subprocess.CompletedProcess([], 0, "IaC/root.hcl\0")
+        output = io.StringIO()
+        with (patch("sys.argv", ["check", "--base-ref", "origin/main"]),
+              patch.object(release.subprocess, "run", return_value=changed),
+              patch.object(release, "read_json", side_effect=[application, CRON, {"items": [BACKUP, RESTORE]}]),
+              contextlib.redirect_stderr(output)):
+            self.assertEqual(release.main(), 1)
+        text = output.getvalue()
+        self.assertIn(release.BASELINE_UNHEALTHY, text)
+        self.assertNotIn(private, text)
+        line = next(line for line in text.splitlines() if line.startswith("Mastodon Argo CD status "))
+        self.assertEqual(json.loads(line.removeprefix("Mastodon Argo CD status ")), {
+            "sync": "OutOfSync", "health": "Degraded", "operation": "Failed",
+            "conditions": ["SyncError", "Unknown"], "affected_kinds": ["Deployment", "Unknown"],
+        })
+
     def test_scope_excludes_docs_and_includes_deleted_runtime_paths(self):
         self.assertFalse(release.runtime_changed(["docs/ci-cd.md", "clusters/homelab/apps/mastodon/README.md"]))
         self.assertTrue(release.runtime_changed(["clusters/homelab/apps/mastodon/workloads.yaml"]))
