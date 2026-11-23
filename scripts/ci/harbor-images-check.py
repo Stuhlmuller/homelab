@@ -52,6 +52,17 @@ RUNTIME_POLICY_SPEC = importlib.util.spec_from_file_location(
 )
 RUNTIME_POLICY = importlib.util.module_from_spec(RUNTIME_POLICY_SPEC)
 RUNTIME_POLICY_SPEC.loader.exec_module(RUNTIME_POLICY)
+BOOTSTRAP_SPEC = importlib.util.spec_from_file_location(
+    "harbor_bootstrap", ROOT / "clusters/homelab/apps/harbor/bootstrap.py"
+)
+BOOTSTRAP = importlib.util.module_from_spec(BOOTSTRAP_SPEC)
+BOOTSTRAP_SPEC.loader.exec_module(BOOTSTRAP)
+REPOSITORY_COMPONENT = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+PROXY_IMAGE = re.compile(
+    rf"harbor\.stinkyboi\.com/(?P<project>[^/]+)/"
+    rf"{REPOSITORY_COMPONENT}(?:/{REPOSITORY_COMPONENT})+"
+    r"(?::[\w][\w.-]{0,127})?@(?P<digest>sha256:[0-9a-f]{64})", re.ASCII
+)
 
 
 def normalize(image):
@@ -80,6 +91,14 @@ def mirror_reference(image):
     if ":" in repository.rsplit("/", 1)[-1]:
         repository = repository.rsplit(":", 1)[0]
     return repository + "@" + digest
+
+
+def proxy_digest(image):
+    """Recognize digest-pinned images served by one of the declared caches."""
+    match = PROXY_IMAGE.fullmatch(image)
+    if match and match["project"] in BOOTSTRAP.PROXY_CACHES:
+        return match["digest"]
+    return None
 
 
 def declared_images(value):
@@ -145,6 +164,8 @@ def runtime_unmirrored(paths, known_mirrors, known, known_tags, allowed):
         for image in declared_images(entry["document"])[0]:
             if image.startswith("harbor.stinkyboi.com/homelab/"):
                 continue  # Native receipt validation remains unchanged below.
+            if proxy_digest(image):
+                continue
             if image.startswith("harbor.stinkyboi.com/mirror/"):
                 if mirror_reference(image) in known_mirrors or RUNTIME_POLICY.permits(allowed, path, image, known_tags):
                     continue
@@ -447,9 +468,10 @@ def check():
     declared_native = native_references_by_path(paths)
     # Direct Harbor mirror references must retain the reviewed digest. Upstream
     # provenance refs may use a reviewed tag because Talos resolves them through
-    # the strict Harbor mirror path.
+    # the strict Harbor mirror path. Proxy cache pulls need no prior publication.
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and not proxy_digest(image)
                      and (mirror_reference(image) not in known_mirrors
                           if image.startswith("harbor.stinkyboi.com/mirror/")
                           else catalog_reference(image) not in known | known_tags))
@@ -459,7 +481,8 @@ def check():
         raise SystemExit(f"Invalid Image Updater ownership: {error}") from error
     if runtime_owned:
         missing = runtime_unmirrored(paths, known_mirrors, known, known_tags, runtime_owned)
-    missing_digests = sorted(digests - known_digests - {
+    cache_digests = {digest for image in images if (digest := proxy_digest(image))}
+    missing_digests = sorted(digests - known_digests - cache_digests - {
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
@@ -512,7 +535,7 @@ def check():
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Harbor catalog covers {len(images)} declared image references; chart inventory matches; "
+    print(f"Harbor catalog and proxy checks cover {len(images)} declared image references; chart inventory matches; "
           f"fixed app scopes match required images: {scope_counts}")
 
 

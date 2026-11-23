@@ -104,6 +104,18 @@ with tempfile.TemporaryDirectory() as directory:
     check.ROOT = original_root
 
 digest = "sha256:" + "a" * 64
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-dockerhub/library/busybox:1.38@" + digest) == digest
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-ghcr/org/racing/image@" + digest) == digest
+assert check.proxy_digest("harbor.stinkyboi.com/proxy-quay/prometheus/prometheus@" + digest) == digest
+for invalid_proxy_reference in (
+    "harbor.stinkyboi.com/proxy-dockerhub/library/busybox:1.38",
+    "harbor.stinkyboi.com/proxy-dockerhub/busybox@" + digest,
+    "harbor.stinkyboi.com/proxy-unknown/org/image@" + digest,
+    "harbor.stinkyboi.com/mirror/docker.io/library/busybox@" + digest,
+    "harbor.stinkyboi.com/proxy-ghcr/../org/image@" + digest,
+    "harbor.stinkyboi.com/proxy-ghcr/org/image@" + digest[:-1],
+):
+    assert check.proxy_digest(invalid_proxy_reference) is None, invalid_proxy_reference
 assert check.normalize("busybox") == "docker.io/library/busybox:latest"
 assert check.normalize("index.docker.io/busybox:1.38@" + digest) == "docker.io/library/busybox@" + digest
 assert check.normalize("localhost:5000/example:v1") == "localhost:5000/example:v1"
