@@ -28,8 +28,3 @@ spec:
       relabelings:
         - targetLabel: service
           replacement: deluge
-    - port: vpn-metrics
-      path: /metrics
-      interval: 15s
-      scrapeTimeout: 5s
-      honorLabels: false
