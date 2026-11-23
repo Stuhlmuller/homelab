@@ -215,7 +215,21 @@
             mkdir "$out"
             printf 'passed\n' > "$out/result"
           '';
-          offline-tests = check "homelab-offline-tests" "bash scripts/ci/offline-checks.sh";
+          offline-tests =
+            let
+              remaining = check "homelab-offline-fixtures" "bash scripts/ci/offline-checks.sh --remaining";
+              privateDns = check "homelab-offline-private-dns" "bash scripts/ci/offline-checks.sh --private-dns";
+              n8n = check "homelab-offline-n8n" "bash scripts/ci/offline-checks.sh --n8n";
+              harbor = check "homelab-offline-harbor" "bash scripts/ci/offline-checks.sh --harbor";
+            in
+            pkgs.runCommand "homelab-offline-tests" { } ''
+              test -s ${remaining}/result
+              test -s ${privateDns}/result
+              test -s ${n8n}/result
+              test -s ${harbor}/result
+              mkdir "$out"
+              printf 'passed\n' > "$out/result"
+            '';
           manifest-policy = check "homelab-manifest-policy" "bash scripts/ci/conftest-policies.sh";
         }
       );

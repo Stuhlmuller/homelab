@@ -367,6 +367,9 @@ Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
+remaining fixture groups concurrently. The offline Nix result requires each
+group's result.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The required Codex review status is published on a lightweight GitHub runner.
@@ -912,8 +915,8 @@ trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. An unreadable base diff fails the static job before it can emit a
 successful skip decision; the offline fixture exercises this failure. The
-aggregate checks static success and the expected live plan result. It logs the
-reason for a skipped live plan. Keep the
+aggregate uses `ubuntu-slim` to check static success and the expected live plan
+result. It logs the reason for a skipped live plan. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
@@ -948,6 +951,16 @@ and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
 receipt records the failed phase or route-check result, including any overlapping
 prefix. A successful result requires the checksum-verified receipt.
+
+After Cilium coexistence is Synced and Healthy, use Platform Maintenance
+`stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
+Verify healthy Cilium, Envoy, Flannel, and Multus rollouts and confirm AdGuard
+and Harbor core are Ready on surviving nodes. The stage runs a server-side
+drain dry run, rechecks Harbor before eviction, and verifies that Harbor core
+remains Ready after the drain. It leaves the worker cordoned and drained.
+Verify authenticated registry pulls and tailnet DNS before the separate cutover.
+If evacuation fails, confirm the worker's cordon and eviction state. Keep
+cutover paused and review a protected scheduling recovery before retrying.
 
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting

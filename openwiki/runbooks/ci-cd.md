@@ -313,7 +313,10 @@ file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
 The pool remains disabled and existing job selectors stay unchanged. The
 [runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
-before a reviewed selector cutover.
+before a reviewed selector cutover. The
+[Nix runner image](../../docs/cordium-ci.md#nix-based-actions-runner-image)
+uses the same nixpkgs lock as the development shell and is built by the
+existing image workflow for digest-pinned delivery through Harbor.
 
 ## Credential recovery: 2026-09-26
 

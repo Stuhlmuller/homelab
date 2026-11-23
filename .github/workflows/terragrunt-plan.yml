@@ -191,7 +191,7 @@ jobs:
     needs:
       - static-policy
       - terragrunt-plan
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Require Applicable Checks

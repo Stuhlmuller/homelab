@@ -332,6 +332,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    it at exact current `main` and require eight complete authenticated
    pulls before merging any consuming Renovate PR.
 
+   For the n8n upgrade, use `image_scope=n8n` to publish and fully verify the
+   single versioned digest in `scripts/config/harbor-n8n-images.json`.
+   This scope keeps n8n publication independent of the shared Renovate batch.
+
    The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
    `afc7e2d` and `7d38526` pins remain for existing consumers.
 
@@ -432,8 +436,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures recheck the private Harbor TLS registry
-   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Transient authenticated pull failures, including HTTP/2 peer stream resets,
+   recheck the private Harbor TLS registry challenge before retrying Docker
+   manifests or OCI indexes. The direct
    Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact

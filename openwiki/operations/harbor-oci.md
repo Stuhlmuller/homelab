@@ -467,6 +467,10 @@ map is included and fails closed. Unrelated open PR heads keep
 their earlier status, avoiding repeated writes to GitHub's per-head/context
 status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
+Use the [n8n mirror scope](../../docs/harbor-image-mirroring.md#delivery)
+for the single staged n8n image. It verifies a complete authenticated Harbor
+pull independently of the shared Renovate scope.
+
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
 Retain the database, registry blobs, signing certificate and encryption key
@@ -865,14 +869,13 @@ also failed with the same sanitized category. The [last passing main run](https:
 on October 28 retained five unresolved matches. A
 [commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
 shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
-workflow between the passing and failing main revisions. A fresh advisory
-database may now report an available fix; public logs deliberately withhold the
-finding, so the exact cause remains unverified. Inspect the private report,
-update the pinned runtime base or affected dependency as needed, then rerun the
+workflow between the passing and failing main revisions. A November 22 rebuild
+reproduced the available-fix finding with the current Grype database. The
+[Core Dockerfile](../../builds/harbor-core/Dockerfile) pins the signed Photon
+updates for cURL and Expat. The hosted
 [Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
-[full-image scan](../../builds/harbor-core/scan.sh). Keep the
-[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
-Grype database gate; do not suppress the match to clear unrelated PR checks.
+[full-image scan](../../builds/harbor-core/scan.sh) verify the package update
+before protected publication.
 
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
