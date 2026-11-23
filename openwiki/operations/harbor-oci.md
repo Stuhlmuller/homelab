@@ -184,6 +184,12 @@ remains upstream for a cold-cluster restore.
 
 ## Ownership And Access
 
+The Harbor bootstrap declares private pull-through projects for Docker Hub,
+GitHub Container Registry, and Quay. An authenticated pull through a `proxy-*`
+project fetches a missing image from that project's public upstream without
+the publication catalog. Workload migration requires a scoped pull identity
+and release verification. See the [pull-through cache runbook](../../docs/harbor-image-mirroring.md#pull-through-cache-projects).
+
 Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
@@ -344,6 +350,26 @@ discovery path. A post-convergence eligible lookup must show transport,
 expected public or unauthorized responses, and actual version discovery
 before writer cutover. If an eligible private source needs a Harbor credential,
 add a reviewed secret contract before enabling writes.
+
+### cert-manager v1.20.5 security prerequisite
+
+The [Harbor image catalog](../../scripts/config/harbor-images.json) retains
+the five deployed cert-manager v1.20.3 rollback digests and stages official
+v1.20.5 indexes for the controller, CA injector, webhook, ACME solver and
+startup API check. Anonymous scans of all ten Linux amd64 and arm64 images
+found package inventories and zero fixable HIGH or CRITICAL findings with the
+November 22, 2026 Trivy database. The latest v1.21.3 release still has fixable
+findings.
+
+The [Jetstack v1.20.5 chart package](https://charts.jetstack.io/charts/cert-manager-v1.20.5.tgz)
+has SHA-256 `1cd093ea8b069bd136acfdc8d20002096e880ce0944854e78b4448cfb7aa8a15`.
+The candidate render preserves the existing resource identities, webhook
+settings, RBAC and the CRD served and storage versions. Publish the five
+indexes using the existing full Harbor mirror scope at reviewed current main
+and verify complete authenticated pulls. Then update the Argo chart, chart
+inventory and five runtime digests together. Verify the exact GitOps revision,
+webhook readiness and non-production certificate issuance and renewal.
+See [issue #919](https://github.com/Stuhlmuller/homelab/issues/919).
 
 ## Identity And State
 

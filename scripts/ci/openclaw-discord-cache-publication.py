@@ -76,7 +76,7 @@ def aws(*args):
 
 
 def check_bucket(bucket):
-    source = (ROOT / "IaC/application-backup-storage.hcl").read_text()
+    source = (ROOT / "IaC/homelab/us-west-2/operator/application-backup-storage.hcl").read_text()
     configured = re.findall(r'^\s*bucket\s*=\s*"([a-z0-9-]+)"\s*$', source, re.M)
     if not BUCKET.fullmatch(bucket) or configured != [bucket]:
         raise ValueError("unreviewed cache bucket")

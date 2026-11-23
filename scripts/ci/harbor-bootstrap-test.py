@@ -60,7 +60,7 @@ class HarborAPI:
         if path.startswith("/registries?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
             registry = self.registries.get(query.get("name", [""])[0])
-            return 200, ([registry] if registry else []), {}
+            return 200, ([registry] if registry else None), {"X-Total-Count": "1" if registry else "0"}
         if path.startswith("/registries/"):
             identifier = int(path.rsplit("/", 1)[1])
             registry = next((item for item in self.registries.values() if item["id"] == identifier), None)
@@ -99,7 +99,8 @@ class HarborAPI:
             if name in self.projects:
                 return 409, {"error": "already exists"}, {}
             self.projects[name] = {"name": name, "project_id": len(self.projects) + 7,
-                                  "metadata": copy.deepcopy(body["metadata"])}
+                                   "metadata": copy.deepcopy(body["metadata"]),
+                                   "registry_id": body.get("registry_id")}
             return 201, b"", {}
         if path.startswith("/projects/homelab/repositories"):
             parsed = urllib.parse.urlsplit(path)
@@ -463,6 +464,14 @@ class BootstrapTest(unittest.TestCase):
         original = copy.deepcopy(self.api.robots)
         self.assertEqual(len(original), 5)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true", "auto_sbom_generation": "true"})
+        self.assertEqual(bootstrap.PROXY_CACHES["proxy-quay"],
+                         ("https://quay.io", "docker-registry"))
+        for name, (url, provider) in bootstrap.PROXY_CACHES.items():
+            registry = self.api.registries[name]
+            self.assertEqual((registry["url"], registry["type"], registry["insecure"]), (url, provider, False))
+            self.assertFalse(registry.get("credential"))
+            self.assertEqual(self.api.projects[name]["registry_id"], registry["id"])
+            self.assertEqual(self.api.projects[name]["metadata"], bootstrap.PROXY_METADATA)
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
                 robot = next(robot for robot in original.values()
@@ -527,6 +536,30 @@ class BootstrapTest(unittest.TestCase):
         self.api.requests.clear()
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
+
+    def test_proxy_reconciliation_rejects_conflicting_registry_or_project(self):
+        bootstrap.reconcile_proxy_caches(self.client)
+        for target, field, value in (
+            (self.api.registries["proxy-dockerhub"], "insecure", True),
+            (self.api.registries["proxy-dockerhub"], "credential", {"access_key": "unexpected"}),
+            (self.api.projects["proxy-ghcr"], "registry_id", self.api.registries["proxy-quay"]["id"]),
+            (self.api.projects["proxy-ghcr"], "registry_id", 0),
+        ):
+            with self.subTest(field=field, value=value), patch.dict(target, {field: value}):
+                self.api.requests.clear()
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.reconcile_proxy_caches(self.client)
+                self.assertEqual(self.mutations(), [])
+
+    def test_proxy_reconciliation_handles_partial_create_and_repairs_privacy(self):
+        bootstrap.reconcile_proxy_caches(self.client)
+        del self.api.projects["proxy-dockerhub"]
+        self.api.projects["proxy-quay"]["metadata"]["public"] = "true"
+        self.api.requests.clear()
+        bootstrap.reconcile_proxy_caches(self.client)
+        self.assertEqual([(method, path) for method, path, _ in self.mutations()],
+                         [("POST", "/projects"), ("PUT", "/projects/proxy-quay")])
+        self.assertEqual(self.api.projects["proxy-quay"]["metadata"]["public"], "false")
 
     def test_enables_missing_or_disabled_scanning_and_preserves_other_metadata(self):
         for metadata in ({"public": "false"}, {"public": "false", "auto_scan": "false"}):
@@ -664,6 +697,15 @@ class BootstrapTest(unittest.TestCase):
         self.api.override = lambda *_args: (302, {}, {"Location": self.endpoint + "/sink"})
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(len(self.api.requests), 1)
+
+    def test_null_registry_listing_requires_explicit_zero_count(self):
+        for headers in ({}, {"X-Total-Count": "1"}):
+            with self.subTest(headers=headers):
+                self.api.override = lambda method, path, body: (
+                    (200, None, headers) if path == "/registries?name=proxy-quay" else None)
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.find_registry(self.client, "proxy-quay")
+                self.assertEqual(self.mutations(), [])
 
     def test_ambiguous_robot_listing_fails_before_mutation(self):
         self.reconcile()

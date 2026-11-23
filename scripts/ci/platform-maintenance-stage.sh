@@ -35,7 +35,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-bucket="$(terragrunt render --config IaC/application-backup-storage.hcl --json --write=false --log-disable | jq -er .inputs.bucket)"
+bucket="$(terragrunt render --config IaC/homelab/us-west-2/operator/application-backup-storage.hcl --json --write=false --log-disable | jq -er .inputs.bucket)"
 [[ "$(aws s3api get-bucket-versioning --bucket "$bucket" --query Status --output text)" == Enabled ]]
 [[ "$(aws s3api get-bucket-encryption --bucket "$bucket" \
   --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' \

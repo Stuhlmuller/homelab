@@ -20,11 +20,12 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event.issue.pull_request && github.event.comment.user.id == 199175422))
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     concurrency:
       group: codex-review-${{ github.event.issue.number || inputs.pull_request }}
-      cancel-in-progress: false
+      # Every run reads the current head and review receipt from GitHub.
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: read

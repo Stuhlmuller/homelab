@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'c85f3cb4f3a596c493adea4f624772031704391c7a3c5b049667cd63c59621d9  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -414,7 +414,7 @@ fi`)
 	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
   printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
 fi`)
-	contains(step.run, concat("", [`sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'fac3034c426bd1539fee8cad06cb838e9b55681784d6eadd12fda30ea79a63fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'97c41edc52cc7370f97433824f3d9211e9f1ae8497e52a80c7cf75191c6a5037  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
