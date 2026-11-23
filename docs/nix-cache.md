@@ -188,10 +188,16 @@ after Nix realizes both expected outputs and remaining validation passes.
 `require-sigs` and the build sandbox remain enabled. Missing entries build;
 signature or content corruption fails verification.
 
-Static jobs no longer restore the entire Nix store from an Actions cache:
-existing unsigned store objects could bypass binary-cache signature checks.
-The live Terragrunt plan job retains its development-shell dependency cache.
-Live plans and cluster checks do not consume cached test receipts.
+The Terragrunt static job verifies the signed outputs with a fresh Nix store.
+The `validate` repository job verifies them on `main` before checking for a
+GitHub Actions cache entry. On `main`, the job looks up the archive without
+downloading it and saves it on a miss after successful validation. The cache
+key includes the runner OS, architecture, and the hash of `flake.nix` and
+`flake.lock`.
+Pull request and runtime validation jobs only restore it, and a miss uses
+normal Nix substitution and builds. The live Terragrunt plan job retains its
+development-shell dependency cache. Runtime and live checks execute on each
+scheduled run.
 
 ## Key lifecycle and rollback
 
