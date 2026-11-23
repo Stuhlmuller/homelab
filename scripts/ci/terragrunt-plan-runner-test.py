@@ -30,12 +30,10 @@ prepare_terragrunt_filter_base() {
 }
 terragrunt_generate_stack() { :; }
 terragrunt_deleted_unit_paths() { :; }
-terragrunt_azuread_stack_changed() { return 1; }
-terragrunt_azuread_plan_inputs_changed() { return 1; }
+terragrunt_affected_units() { printf '%s\n' "$FIXTURE_SELECTED"; }
+terragrunt_unit_affected() { grep -Fxq "$1" <<<"$2"; }
+terragrunt_active_unit_affected() { [[ -f "$1/terragrunt.hcl" ]] && terragrunt_unit_affected "$1" "$2"; }
 """)
-        (self.scripts / "terragrunt-plan-units.py").write_text(
-            'import os\nprint(os.environ.get("FIXTURE_SELECTED", ""))\n'
-        )
         self.units = (
             "bootstrap/argocd", "operator/application-backup-storage",
             "apps/one/argocd", "apps/two/argocd", "apps/one/azuread",

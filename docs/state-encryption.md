@@ -23,15 +23,20 @@ identity stored with existing ciphertext, so moving the configuration does not
 require rotating keys or rewriting records. Keep this alias during future
 refactors unless an explicit migration is designed and tested.
 
-State and saved plans use `enforced = true` by default. The sole migration
-exception is `homelab/us-west-2/operator/application-backup-storage`, whose
-existing plaintext state was observed by authenticated CI on 2026-11-18.
-Only that exact homelab unit accepts plaintext reads; AES-GCM remains its primary
-write method for both state and saved plans. Backend key, KMS key and metadata
-identity remain unchanged. No other unit gains a plaintext fallback.
+State and saved plans use `enforced = true` by default. Authenticated plans
+observed legacy records at two exact homelab units:
 
-The source-only plan does not rewrite state. During the next declared Terragrunt
-apply for this unit, verify the state is encrypted, then remove this exact
+- `homelab/us-west-2/operator/application-backup-storage`
+- `homelab/us-west-2/shared/aws-ssm-parameters`
+
+The second state's S3 object already uses SSE-KMS. Its
+[unit template](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+owns the read exception. Both units allow legacy reads while using AES-GCM for
+new state and saved plans. Backend keys, KMS key and metadata identity remain
+unchanged.
+
+The source-only plan does not rewrite state. After each unit's next declared
+Terragrunt apply, verify the state is encrypted, then remove that unit's
 fallback so enforced reads resume. Do not expand the exception to another unit
 without evidence and a tested migration. Existing encryption tests
 prove read-only planning, encrypted state/plan writes, preserved lineage and

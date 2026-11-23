@@ -35,7 +35,7 @@ def relabel(rules, labels):
 
 def check_retention(rules):
     # Offline CI also checks the untouched 85.2.0 drops without downloading a chart.
-    prefix = json.dumps(rules[:-3], sort_keys=True, separators=(',', ':')).encode()
+    prefix = json.dumps(rules[:-5], sort_keys=True, separators=(',', ':')).encode()
     assert hashlib.sha256(prefix).hexdigest() == 'de93ffc271b1944299c23ed61522765b5521aa1e40de32d67e70539c39bdd12e', 'upstream cAdvisor drop rules changed'
     for node, device in DEVICES.items():
         for name in NAMES:
@@ -46,6 +46,15 @@ def check_retention(rules):
                             {'id': '/kubepods'}, {'id': '/;'}, {'__name__': 'container_fs_reads_total'}):
                 assert relabel(rules, {**root, **changes}) is None
             pod = {**root, 'id': '/kubepods', 'pod': 'workload'}
+            assert relabel(rules, pod) == pod
+        for state in ('waiting', 'stalled'):
+            pressure = {'__name__': f'container_pressure_io_{state}_seconds_total', 'node': node, 'id': '/'}
+            assert relabel(rules, pressure) == pressure
+            for changes in ({'id': '/system.slice'}, {'id': '/;'}, {'node': 'new-worker'},
+                            {'__name__': 'container_pressure_memory_waiting_seconds_total',
+                             '__tmp_homelab_io_pressure': '1'}):
+                assert relabel(rules, {**pressure, **changes}) is None
+            pod = {**pressure, 'id': '/kubepods', 'pod': 'workload'}
             assert relabel(rules, pod) == pod
     machine = {'__name__': 'machine_memory_bytes', 'node': 'acer'}
     assert relabel(rules, machine) == machine
@@ -79,7 +88,7 @@ def check_chart(chart, values, rules, work):
     old, new = manifests
     old_rules = cadvisor(old)['metricRelabelings']
     assert old_rules[-1] == {'sourceLabels': ['id', 'pod'], 'action': 'drop', 'regex': '.+;'}
-    assert rules[:-3] == old_rules[:-1] and cadvisor(new)['metricRelabelings'] == rules
+    assert rules[:-5] == old_rules[:-1] and cadvisor(new)['metricRelabelings'] == rules
     cadvisor(new)['metricRelabelings'] = old_rules
     assert old == new, 'unexpected kubelet ServiceMonitor change'
 
