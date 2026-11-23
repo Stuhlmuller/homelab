@@ -7,10 +7,12 @@ tracked source tree, fixture commands, pinned tools, and platform determine
 the derivation; Git commit metadata does not. Testing before a signed commit
 therefore remains reusable when the committed files match.
 
-[`offline-checks.sh`](../scripts/ci/offline-checks.sh) runs the offline tests,
-shell fixtures, and source contracts. It generates Terragrunt units once for
-the fixtures without initializing providers or making authenticated cloud or
-cluster requests.
+[`offline-checks.sh`](../scripts/ci/offline-checks.sh) owns the Python tests,
+shell fixtures, and source contracts. It generates Terragrunt units for the
+fixtures without initializing providers or making authenticated requests.
+The offline result requires all four fixture groups to pass. GitHub Actions
+builds the private DNS, n8n recovery, Harbor publication, and remaining
+groups concurrently on one runner.
 [`conftest-policies.sh`](../scripts/ci/conftest-policies.sh) owns the second
 check. Provider initialization/validation, Helm chart downloads, Git-sensitive
 secret scanning, security scanners, live plans, and cluster acceptance still

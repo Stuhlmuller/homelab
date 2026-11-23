@@ -43,7 +43,6 @@ class CacheLayoutTests(unittest.TestCase):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 command = builder.attempt_command(policy, ATTEMPT_ID)
-                command[1] = "--kill-after=1s"
                 script = command[5]
                 beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
                 ending = script.index('job="$(mktemp')
@@ -61,7 +60,8 @@ class CacheLayoutTests(unittest.TestCase):
                         time.sleep(0.01)
                     self.assertTrue((root / "started").exists())
                     process.send_signal(signal.SIGTERM)
-                    process.wait(timeout=5)
+                    # Let the production grace interval cover the cleanup loop.
+                    process.wait(timeout=15)
                     self.assertTrue((root / "graceful").exists())
                     self.assertFalse((root / "offline-check.lock").exists())
                     self.assertFalse(list(root.glob("check.*")))

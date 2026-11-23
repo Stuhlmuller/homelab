@@ -363,7 +363,10 @@ secret and saved-state scans remain checked.
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls and source contracts live in `scripts/ci/offline-checks.sh`.
-CI uses protected-main cache trust with signatures and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication,
+and remaining groups concurrently. The offline result requires every group
+to pass. CI reuses signed results from the protected main cache. Live plans
+and runtime acceptance run separately.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The required Codex review status is published on a lightweight GitHub runner.
