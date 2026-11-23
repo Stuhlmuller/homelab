@@ -24,7 +24,7 @@ trap 'rm -rf "$work"' EXIT
 system="$(nix eval --impure --raw --expr builtins.currentSystem)"
 nix eval --no-update-lock-file --no-write-lock-file --json ".#checks.${system}" \
     --apply 'checks: builtins.mapAttrs (_: check: check.drvPath) {
-      inherit (checks) offline-tests manifest-policy openwiki-setup xerj-autoindex;
+      inherit (checks) offline-tests manifest-policy n8n-offline-tests openwiki-setup xerj-autoindex;
     }' > "$work/derivations.json"
 jq --arg nix "$(command -v nix)" --slurpfile policy "$policy" '
     ($policy[0] | [.url, .publicKey]) as $cache

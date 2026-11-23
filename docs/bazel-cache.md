@@ -7,7 +7,7 @@ nix run .#bazel-offline
 ```
 
 The pinned Bazel command runs the offline fixture suite, manifest policy,
-OpenWiki setup, and XERJ autoindex as four test targets. A single target can
+n8n recovery fixtures, OpenWiki setup, and XERJ autoindex. A single target can
 be selected with `--target`. Each action includes the exact corresponding
 Nix derivation and signature policy in its inputs. On a Bazel miss, Nix
 can substitute a signed output or run the original check in the Nix sandbox.
