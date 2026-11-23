@@ -7,7 +7,7 @@ locals {
 }
 
 terraform {
-  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/entra-google-workspace-federation"
+  source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/entra-google-workspace-federation-readback"
 }
 
 generate "providers" {

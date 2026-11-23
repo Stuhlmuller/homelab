@@ -1720,12 +1720,17 @@ initialization: existing backend metadata or Terragrunt's S3 checks can still
 require AWS access. Use an isolated module copy for offline validation when
 that access is unavailable; do not silently switch a later plan to local state.
 
-Explicit stack validation:
+Full IaC planning with operator credentials:
 
 ```sh
 cd IaC
-terragrunt stack run plan
+terragrunt run plan -all
 ```
+
+[`.terragrunt-filters`](../../IaC/.terragrunt-filters) excludes catalog templates
+from the run queue. All generated deployment units, including operator units,
+remain in scope. Keep full plan output private because it includes units that
+read secrets.
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It

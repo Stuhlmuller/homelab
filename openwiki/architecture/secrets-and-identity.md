@@ -843,25 +843,21 @@ readback does not prove the browser SAML callback or recovery login.
 The separate `rodman.mac@stuhlmuller.net` pilot remains without a role, group,
 license, mailbox or Fleet console assignment and is not a Platform SSO route.
 
-The separate `operator/entra-stuhlmuller-domain` unit reads the existing
-`stuhlmuller.net` Entra domain as a non-default managed domain. It reads the
-Microsoft Graph TXT verification record, does not configure email, federation,
-or Google Workspace, and keeps verification disabled until the DNS owner has
-applied that record through its own reviewed declarative path. Once both
-authoritative servers return it, the reviewed phase-two catalog change enables
-the sole Graph verification action. That action intentionally uses the
-standard bodyless Graph request, retaining the service default of no domain
-takeover; its private saved plan must confirm the domain remains managed and
-non-default. The companion
-`operator/entra-stuhlmuller-pilot-user` unit could then create only
-`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
-non-default state, so it cannot plan against the current federation. The
-account receives no role, group, license, mailbox or
-Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
-email address alone is not an Entra password identity. Its guarded module is
-separate from the legacy AzureAD user module, and the AzureAD workflow selects
-that collection only when its own source or plan inputs change; an operator-only
-pilot change cannot trigger legacy-user reconciliation.
+The separate `operator/entra-stuhlmuller-domain` unit now attests that
+`stuhlmuller.net` is verified, federated, non-default, and non-initial. The
+steady-state module forgets the completed verification action in the existing
+backend with `destroy = false`. It reads Graph and cannot replay the action.
+For a new managed domain, the separate bootstrap module reads the TXT record
+and enables its bodyless verification POST only after the DNS record is in
+place. This retains the Managed-only guard and the no-takeover default.
+
+The companion `operator/entra-stuhlmuller-pilot-user` unit attests the retained
+`rodman.mac@stuhlmuller.net` account by immutable object ID on the verified
+Federated domain. The steady-state module has only directory reads and
+non-destructive retirement of the former state bindings. It exports no
+credential. The older bootstrap module retains its Managed-only verification
+guard outside the active stack. The independent `stinkyboi.com` account stays
+in its existing Fleet unit.
 
 ## Google Workspace federation boundary
 
@@ -873,12 +869,14 @@ target-domain change; preparation, recovery administrator and attestation
 remain required. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
-`operator/entra-google-workspace-federation` owns the Entra Graph federation
-configuration for `stuhlmuller.net`. Its Google SAML metadata is an
-operator-only SSM SecureString and never appears in Git. Google Workspace
-auto-provisioning creates the matching Entra users; the Entra federation only
-authenticates those users. CI provider identities do not receive domain-write
-permissions, so the unit remains an independently reviewed operator apply.
+The [Google Workspace federation operator unit](../../IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl)
+uses read-only Graph data to verify the sole SAML configuration for the already
+federated `stuhlmuller.net` domain. It compares Graph metadata with the
+operator-only SSM SecureString and keeps plan evidence private. Its former
+managed state address can be forgotten without deleting the Graph object.
+The separate bootstrap module still requires a verified Managed domain.
+Google Workspace auto-provisioning creates the matching Entra users. The
+federation authenticates them. CI identities retain no domain-write access.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-and-historical-alias-release-evidence)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
