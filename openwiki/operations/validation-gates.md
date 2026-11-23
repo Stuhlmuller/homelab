@@ -372,6 +372,14 @@ remaining fixture groups concurrently. The offline Nix result requires each
 group's result.
 See [signed offline validation](../../docs/nix-cache.md).
 
+The offline Nix gate also runs the pinned XERJ release against the Octelium
+Enterprise manifest on an authenticated loopback node. It requires a committed
+catalog and a searchable result sorted by the dotted upgrade annotation.
+It also checks that MCP can query the running node and leaves it stopped
+after the operator shuts it down.
+See [XERJ reference coding](../../docs/xerj-reference-coding.md) for the
+workstation index migration.
+
 The required Codex review status is published on a lightweight GitHub runner.
 A new publisher run for the same PR replaces the prior run and reads the
 latest PR head and trusted review receipt. See the
