@@ -66,7 +66,7 @@ python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/codex-cloud-signer-test.py
 python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
-python3 -I scripts/ci/tailnet-dns-retry-test.py
+python3 -I scripts/ci/tailnet-dns-chart-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
@@ -143,9 +143,21 @@ if rg -q '^[[:space:]]*(body[[:space:]]*=|forceTakeover[[:space:]]*=)' <<<"$veri
   exit 1
 fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf
-rg -Fq 'verify_domain = true' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+domain_attestation=IaC/terragrunt-catalog/modules/entra-domain-attestation
+rg -Fq '/entra-domain-attestation"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'from = msgraph_resource_action.verify' "$domain_attestation/main.tf"
+rg -Fq 'destroy = false' "$domain_attestation/main.tf"
+if rg -q '^[[:space:]]*(resource|module|import)[[:space:]]' "$domain_attestation" -g '*.tf'; then
+  echo "The federated Entra domain attestation must remain read-only." >&2
+  exit 1
+fi
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
 rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+rg -Fq '/modules/entra-retained-mac-pilot"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+if rg -q '^[[:space:]]*(resource|import)[[:space:]]' IaC/terragrunt-catalog/modules/entra-retained-mac-pilot/*.tf; then
+  echo "The retained Mac pilot must only read directory objects and forget legacy state." >&2
+  exit 1
+fi
 rg -Fq 'homelab-emergency-admin' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq 'azuread_directory_role_assignment' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
@@ -205,8 +217,13 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
     terragrunt --log-disable run --no-auto-init -- validate -no-color
   )
 done
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
+  (
+    cd "IaC/homelab/us-west-2/operator/${operator_unit}"
+    terragrunt --log-disable run --no-auto-init -- test -no-color
+  )
+done
 python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
-python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 echo "::endgroup::"
 
@@ -278,6 +295,7 @@ echo "::endgroup::"
 
 echo "::group::LiteLLM runtime hardening"
 python3 -I scripts/ci/litellm-runtime-hardening-check.py
+python3 -I scripts/ci/multica-project-boundary-test.py --chart
 echo "::endgroup::"
 
 echo "::group::Descheduler cadence"
@@ -288,8 +306,7 @@ echo "::endgroup::"
 echo "::group::n8n inactive maintenance fence"
 python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
 bash scripts/ci/n8n-maintenance-fence-check.sh
-python3 -I scripts/ci/n8n-paired-checkpoint-test.py
-python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+# Paired checkpoint and PVC restore unit tests run in the verified Nix offline suite.
 echo "::endgroup::"
 
 echo "::group::Secret scan"

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Publish reviewed Helm packages to Harbor without changing chart contents."""
 
+import gzip
 import hashlib
 import json
 import os
@@ -73,6 +74,22 @@ def package_identity(package):
     return fields["name"], fields["version"]
 
 
+def normalize_git_package(package):
+    """Normalize archive times added by Helm while preserving chart file contents."""
+    normalized = package.with_suffix(".normalized")
+    with tarfile.open(package) as source, normalized.open("wb") as output:
+        with gzip.GzipFile(fileobj=output, mode="wb", filename="", mtime=0) as compressed:
+            with tarfile.open(fileobj=compressed, mode="w") as archive:
+                for member in source:
+                    if not member.isfile():
+                        raise ValueError("Git Helm package contains a non-file entry")
+                    member.mtime = 0
+                    member.pax_headers.pop("mtime", None)
+                    with source.extractfile(member) as contents:
+                        archive.addfile(member, contents)
+    normalized.replace(package)
+
+
 def run(*args, **kwargs):
     return subprocess.run(args, check=True, capture_output=True, text=True, **kwargs)
 
@@ -91,10 +108,6 @@ def upstream_package(row, directory, anonymous_config):
         run("git", "-C", str(checkout), "fetch", "--depth=1", row["repository"], row["revision"])
         run("git", "-C", str(checkout), "checkout", "-q", "FETCH_HEAD")
         chart_path = checkout / row["path"]
-        # Helm archives source mtimes; normalize Git checkout times for a stable reviewed hash.
-        for path in sorted(chart_path.rglob("*"), key=lambda item: len(item.parts), reverse=True):
-            os.utime(path, (0, 0), follow_symlinks=False)
-        os.utime(chart_path, (0, 0))
         run("helm", "package", str(chart_path), "--destination", str(source))
     elif row["repository"].startswith("https://"):
         run("helm", "pull", row["chart"], "--repo", row["repository"],
@@ -110,6 +123,8 @@ def upstream_package(row, directory, anonymous_config):
     package = packages[0]
     if package_identity(package) != (row["chart"], row["version"]):
         raise ValueError("Upstream chart identity changed")
+    if "revision" in row:
+        normalize_git_package(package)
     if hashlib.sha256(package.read_bytes()).hexdigest() != row["sha256"]:
         raise ValueError(f"Upstream chart bytes changed: {row['chart']} {row['version']}")
     return package

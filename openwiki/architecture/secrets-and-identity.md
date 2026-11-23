@@ -98,8 +98,6 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
-    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -238,6 +236,16 @@ require a separate reviewed GitOps change. Rollback first suspends and drains
 cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
+
+The dormant [hosted Renovate relay](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+proposes separate Tailnet Lock-signed enrollment for an ephemeral hosted
+runner and a persistent registry relay. The runner would receive its
+credential through the companion repository's main-only `renovate-production`
+environment and reach only the dedicated registry tag on TCP 443. The relay's
+Kubernetes Role grants `get`, `update`, and `patch` on a single pre-created
+state Secret. Only the Tailscale container mounts the projected token. A
+separate activation must provision the signed credentials and state Secret,
+bind the protected workflow, and verify the signed node survives a restart.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
@@ -701,6 +709,9 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   key, preshared key, and first IPv4 interface address, while Gluetun's native
   AirVPN provider selects the server. The profile's endpoint and server key are
   not used, avoiding custom-provider DNS resolution during sidecar recovery.
+- kagent reads a dedicated LiteLLM caller key and PostgreSQL password from
+  ExternalSecrets in `kagent`. The controller reads its database URL from a
+  mounted Secret file. See the [kagent runbook](../../docs/kagent.md).
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
   Its dedicated `/homelab/n8n/litellm-token` is rendered only as an OpenAI
@@ -829,44 +840,34 @@ JIT/SCIM provisioning stays disabled. The public native-client route continues
 without Octelium redirects; Fleet authenticates administrative requests.
 
 Read-only inspection found Entra Free and enabled Security Defaults. The
-owner remains the existing external Microsoft-account member until a separately
-authorized admin-center conversion. Fleet, Grafana and Octelium now bind its
-immutable object ID so the supported transition can preserve ownership.
-`scripts/entra-owner-conversion.py` prepares a private read-only receipt and
-attests the converted target identity after the operator action; it never writes
-Graph. It rejects the current federated `stuhlmuller.net` target; do not run
-the conversion until a separately reviewed change reconciles the protected
-federation or selects a managed target and updates its dependent mappings. Its
-independent cloud-only recovery Global Administrator prerequisite
-is disabled by default and requires a separately reviewed saved plan and sign-in.
-After any later conversion, clear the recovery Azure CLI session and sign in as
-the converted owner before attesting; the helper checks Graph `/me` against
-the immutable owner ID and target UPN.
+owner remains the existing external Microsoft-account member. Fleet, Grafana
+and Octelium bind its immutable object ID. The blocked one-off conversion
+helper and manual portal exception have been removed; the federated
+`stuhlmuller.net` target remains unresolved. A future identity change needs
+fresh implementation and validation of federation, mappings and independent
+recovery access. The cloud-only recovery Global Administrator unit remains
+disabled by default.
 The Fleet console SAML target is `rodman@stuhlmuller.net`; the existing
 `rodman@stinkyboi.com` local administrator remains recovery-only. API topology
 readback does not prove the browser SAML callback or recovery login.
 The separate `rodman.mac@stuhlmuller.net` pilot remains without a role, group,
 license, mailbox or Fleet console assignment and is not a Platform SSO route.
 
-The separate `operator/entra-stuhlmuller-domain` unit reads the existing
-`stuhlmuller.net` Entra domain as a non-default managed domain. It reads the
-Microsoft Graph TXT verification record, does not configure email, federation,
-or Google Workspace, and keeps verification disabled until the DNS owner has
-applied that record through its own reviewed declarative path. Once both
-authoritative servers return it, the reviewed phase-two catalog change enables
-the sole Graph verification action. That action intentionally uses the
-standard bodyless Graph request, retaining the service default of no domain
-takeover; its private saved plan must confirm the domain remains managed and
-non-default. The companion
-`operator/entra-stuhlmuller-pilot-user` unit could then create only
-`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
-non-default state, so it cannot plan against the current federation. The
-account receives no role, group, license, mailbox or
-Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
-email address alone is not an Entra password identity. Its guarded module is
-separate from the legacy AzureAD user module, and the AzureAD workflow selects
-that collection only when its own source or plan inputs change; an operator-only
-pilot change cannot trigger legacy-user reconciliation.
+The separate `operator/entra-stuhlmuller-domain` unit now attests that
+`stuhlmuller.net` is verified, federated, non-default, and non-initial. The
+steady-state module forgets the completed verification action in the existing
+backend with `destroy = false`. It reads Graph and cannot replay the action.
+For a new managed domain, the separate bootstrap module reads the TXT record
+and enables its bodyless verification POST only after the DNS record is in
+place. This retains the Managed-only guard and the no-takeover default.
+
+The companion `operator/entra-stuhlmuller-pilot-user` unit attests the retained
+`rodman.mac@stuhlmuller.net` account by immutable object ID on the verified
+Federated domain. The steady-state module has only directory reads and
+non-destructive retirement of the former state bindings. It exports no
+credential. The older bootstrap module retains its Managed-only verification
+guard outside the active stack. The independent `stinkyboi.com` account stays
+in its existing Fleet unit.
 
 ## Google Workspace federation boundary
 
@@ -878,12 +879,14 @@ target-domain change; preparation, recovery administrator and attestation
 remain required. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
-`operator/entra-google-workspace-federation` owns the Entra Graph federation
-configuration for `stuhlmuller.net`. Its Google SAML metadata is an
-operator-only SSM SecureString and never appears in Git. Google Workspace
-auto-provisioning creates the matching Entra users; the Entra federation only
-authenticates those users. CI provider identities do not receive domain-write
-permissions, so the unit remains an independently reviewed operator apply.
+The [Google Workspace federation operator unit](../../IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl)
+uses read-only Graph data to verify the sole SAML configuration for the already
+federated `stuhlmuller.net` domain. It compares Graph metadata with the
+operator-only SSM SecureString and keeps plan evidence private. Its former
+managed state address can be forgotten without deleting the Graph object.
+The separate bootstrap module still requires a verified Managed domain.
+Google Workspace auto-provisioning creates the matching Entra users. The
+federation authenticates them. CI identities retain no domain-write access.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-and-historical-alias-release-evidence)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
@@ -919,11 +922,10 @@ authentication flow is not proof of denial. Keep actual HUMAN identifiers privat
 The [`operator/entra-owner-mail` unit](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-owner-mail/README.md)
 retires the historical mail-only Graph PATCH. Its `removed` block forgets only
 the retired Terraform state address after a separately reviewed plan; it does
-not write Graph or release the old SMTP alias. The supported replacement is an
-in-place Entra admin-center conversion of the existing owner, bounded by the
-private prepare/attest receipt and independent recovery administrator. Neither
-this source declaration nor the older successful mail plan proves that
-conversion or any new Fleet login has occurred.
+not write Graph or release the old SMTP alias. The blocked one-off owner
+conversion procedure has been removed; the federated target remains unresolved.
+Neither source cleanup nor the older successful mail plan proves conversion or
+any new Fleet login.
 
 ## Harbor registry identities
 

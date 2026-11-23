@@ -53,33 +53,15 @@ result privately; a successful plan or settings readback cannot establish
 login success. No paid feature, static shared NameID, tenant-owner conversion
 or license bypass is used.
 
-The proposed owner conversion keeps the existing Entra object ID while moving
-its sign-in UPN to `rodman@stuhlmuller.net`. Fleet, Grafana and Octelium owner
-references use that immutable ID. Before a separate conversion, verify an
-independent cloud-only recovery Global Administrator and run the read-only
-`entra-owner-conversion.py prepare` transaction from signed current `main`.
-This conversion is currently blocked: `stuhlmuller.net` is federated with
-Google Workspace, while Microsoft requires a nonfederated UPN domain for
+The one-off owner-conversion procedure and its prepare/attest helper have been
+removed. Fleet, Grafana and Octelium retain immutable owner object-ID references.
+The proposed `rodman@stuhlmuller.net` conversion remains unresolved:
+`stuhlmuller.net` is federated with Google Workspace, while Microsoft requires a
+nonfederated UPN domain for
 [cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
-`prepare` must reject the federated domain. A separate reviewed change must
-reconcile the protected federation or select a managed target and update this
-transaction and its SAML dependencies before any conversion attempt.
-After an authorized Entra admin-center conversion, clear the recovery
-administrator's Azure CLI session, sign in as the converted owner, and attest
-with the same signed main SHA and private receipt directory:
-
-```sh
-az account clear
-az login --tenant <TENANT_ID> --use-device-code  # Sign in as rodman@stuhlmuller.net.
-python3 -I scripts/entra-owner-conversion.py attest \
-  --expected-sha <FULL_CURRENT_SIGNED_MAIN_SHA> \
-  --receipt-directory <PRIVATE_0700_DIRECTORY>
-```
-
-The helper checks Graph `/me` against the immutable owner ID and target UPN;
-verify the actual sign-in route separately. The recovery-admin unit
-is disabled by default. See the [provider runbook](../../../../docs/entra-terraform-provider.md)
-for the exact prepare and attest contract; this PR does not perform conversion.
+Any future identity change needs a new implementation that accounts for the
+federation and a tested independent recovery administrator. Cleanup does not
+convert the owner, alter federation, or enable the disabled recovery-admin unit.
 
 For Fleet console SAML, keep `rodman@stinkyboi.com` as a local recovery
 administrator and precreate `rodman@stuhlmuller.net` as SSO-only. The
@@ -310,23 +292,19 @@ nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fle
 nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet apply /tmp/fleet-entra-saml.plan
 ```
 
-For the `stuhlmuller.net` pilot, first follow the two-stage
-[custom-domain operator module](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/modules/entra-domain-verification/README.md):
-read the existing domain with verification disabled, publish its exact returned
-TXT through the DNS owner's reviewed code path, then enable verification in a
-separate reviewed commit. Only after its `Managed`, verified, non-default status
-is confirmed may the operator plan and apply
-`IaC/operator/entra-stuhlmuller-pilot-user`. Do not add a DNS record manually
-or enable a domain-wide Entra/Google SSO setting to shortcut this sequence.
+The `stuhlmuller.net` Mac pilot's initial credential handoff is retired.
+`IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` now attests the
+existing account by immutable object ID and exact UPN on the verified
+Federated domain. Its saved plan can forget legacy OpenTofu bindings without
+changing the account or password. The historical Managed-only bootstrap
+module is outside the active stack.
 
 Treat plans, plan JSON, logs and credential outputs as private. Set `umask 077`
 inside the Nix shell when saving artifacts. Never attach them to a public PR.
 The SAML signing certificate expires on **2027-10-04**; renew through the unit's
 reviewed expiry input and rerun the SAML acceptance check. Keep recovery access
-during renewal. The pilot user's initial password is generated into encrypted
-state, requires change at first login, and is ignored by later applies after
-the user takes ownership. The resource prevents accidental destruction and
-grants no role, group membership or license.
+during renewal. The account's original encrypted state remains subject to the
+backend retention policy. The current unit exports no password.
 
 Prepare application and device settings using the fixed operator commands:
 
@@ -336,14 +314,11 @@ nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execu
 python3 -I scripts/fleet-free-setup.py reporting --execute
 python3 -I scripts/fleet-free-setup.py mac-pilot --execute
 python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --execute
-nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --pilot stuhlmuller --output <PRIVATE_FILE_OUTSIDE_REPO>
 ```
 
 Omit `--execute` to preview without reading credentials or contacting APIs.
-The credential exporter is different: it writes a new mode-0600 file and refuses
-existing paths and repository destinations. Open that file privately, complete
-the initial known-password change/MFA flow, and remove the obsolete copy when
-finished. The file is not a recovery credential after the initial change.
+The separate `stinkyboi.com` credential exporter still writes only a new
+mode-0600 file outside Git repositories.
 
 The Mac pilot privately matches both serial and hardware UUID. Individual Mac
 baseline installation requires an explicit Fleet ID and verifies `darwin` and

@@ -11,6 +11,7 @@ spec:
   sourceRepos:
     - https://github.com/Stuhlmuller/homelab.git
     - https://bjw-s-labs.github.io/helm-charts
+    - ghcr.io/multica-ai/charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: ai

@@ -50,8 +50,8 @@ jobs:
           requires_runtime_check=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md|clusters/homelab/apps/litellm/*.md|IaC/*/litellm/*.md) ;;
-              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|clusters/homelab/apps/litellm/*|IaC/*/litellm/*|scripts/ci/litellm-release-check.py|scripts/ci/litellm-release-check-test.py|scripts/ci/litellm-runtime-hardening-check.py|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
+              clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md|clusters/homelab/apps/litellm/*.md|IaC/*/litellm/*.md|clusters/homelab/apps/descheduler/*.md|IaC/*/descheduler/*.md) ;;
+              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*|clusters/homelab/apps/litellm/*|IaC/*/litellm/*|scripts/ci/litellm-release-check.py|scripts/ci/litellm-release-check-test.py|scripts/ci/litellm-runtime-hardening-check.py|clusters/homelab/apps/descheduler/*|IaC/*/descheduler/*|scripts/ci/descheduler-release-check.py|scripts/ci/descheduler-release-check-test.py|scripts/ci/descheduler-policy-check.py|scripts/ci/descheduler-cadence-check.sh|scripts/network-policy-candidate-report.py|.github/workflows/terragrunt-plan.yml)
                 requires_live_plan=true
                 requires_runtime_check=true
                 ;;
@@ -180,22 +180,11 @@ jobs:
           python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
           echo "::group::LiteLLM rollout capacity checks"
           python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"
+          echo "::group::Descheduler activation checks"
+          python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"
           echo "::group::Argo CD bootstrap plan"
           bash scripts/ci/terragrunt-plan.sh
           EOF
-
-  terragrunt-plan-skipped:
-    name: Terragrunt Plan Skipped
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      needs.static-policy.outputs.requires-live-plan != 'true'
-    needs:
-      - static-policy
-    runs-on: ubuntu-24.04
-    permissions: {}
-    steps:
-      - name: Record Live Plan Skip
-        run: echo "No live Terragrunt plan inputs changed."
 
   terragrunt-gate:
     name: Terragrunt Gate
@@ -204,8 +193,7 @@ jobs:
     needs:
       - static-policy
       - terragrunt-plan
-      - terragrunt-plan-skipped
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Require Applicable Checks
@@ -213,7 +201,6 @@ jobs:
           LIVE_PLAN_REQUIRED: ${{ needs.static-policy.outputs.requires-live-plan }}
           RUNTIME_CHECK_REQUIRED: ${{ needs.static-policy.outputs.requires-runtime-check }}
           LIVE_PLAN_RESULT: ${{ needs.terragrunt-plan.result }}
-          SKIP_NOTE_RESULT: ${{ needs.terragrunt-plan-skipped.result }}
           STATIC_RESULT: ${{ needs.static-policy.result }}
           TRUSTED_HEAD: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
@@ -243,26 +230,14 @@ jobs:
               echo "::error::Required live Terragrunt plan ended ${LIVE_PLAN_RESULT}."
               exit 1
             }
-            test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}; expected skipped."
-              exit 1
-            }
-          elif [[ "${TRUSTED_HEAD}" = "true" ]]; then
-            test "${LIVE_PLAN_RESULT}" = "skipped" || {
-              echo "::error::Non-applicable live Terragrunt plan ended ${LIVE_PLAN_RESULT}; expected skipped."
-              exit 1
-            }
-            test "${SKIP_NOTE_RESULT}" = "success" || {
-              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}."
-              exit 1
-            }
           else
             test "${LIVE_PLAN_RESULT}" = "skipped" || {
               echo "::error::Non-applicable live Terragrunt plan ended ${LIVE_PLAN_RESULT}; expected skipped."
               exit 1
             }
-            test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Forked pull requests must skip the live plan check; got ${SKIP_NOTE_RESULT}."
-              exit 1
-            }
+            if [[ "${LIVE_PLAN_REQUIRED}" = "false" ]]; then
+              echo "No live Terragrunt plan inputs changed."
+            else
+              echo "Live Terragrunt planning is restricted to trusted repository branches."
+            fi
           fi

@@ -19,11 +19,15 @@ Terragrunt v1.2.2 development shell or a newer supported generator; the root rej
 Terragrunt generates provider and AES-GCM method blocks named `default`. The policy sets
 `encrypted_metadata_alias = "key_provider.aws_kms.main"` to retain the key-provider metadata identity stored with
 previously encrypted records. It does not preserve the former method block's label. The KMS key, region and
-existing backend paths remain unchanged, and state and saved-plan encryption are both enforced.
+existing backend paths remain unchanged. New state and saved plans use AES-GCM.
 
-No plaintext fallback is configured. Previously unencrypted records fail closed and need a separately scoped
-adoption path before apply. For previously encrypted modules, the metadata alias preserves compatibility with
-the old policy. Newly protected units must retain equivalent encryption after their first ciphertext write,
+The exact Homelab units in `legacy_state_units` and the shared SSM parameter
+unit may read legacy state that predates client-side encryption. The SSM unit
+owns its read exception, which is needed to plan the declared Bedrock reader
+grant. After each declared apply, verify the encrypted write and remove the
+corresponding fallback. For previously encrypted modules, the metadata alias
+preserves compatibility with the old policy. Newly protected units must retain
+equivalent encryption after their first ciphertext write,
 including during a source rollback, until a separate migration is designed. See the
 [state encryption guide](../../docs/state-encryption.md) for verification limits, plaintext adoption and safe
 rollback boundaries. A source revert is not a state restore.
@@ -66,10 +70,3 @@ external module carried a second encryption block, which conflicts with the
 root-generated backend policy. The local copy preserves `helm_release.this`,
 provider constraints and all release inputs/outputs while removing that duplicate
 policy; no backend key or resource address migration is involved.
-
-Authenticated planning found the legacy application-backup-storage state was
-plaintext after the shared-encryption change. The root now permits plaintext
-reads only for that exact homelab unit, preserving AES-GCM writes and its existing
-backend key. All other units remain enforced. A read-only plan leaves the state
-untouched; remove this scoped fallback after the first declared encrypted apply
-is verified. See [migration behavior](../../docs/state-encryption.md).

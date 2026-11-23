@@ -45,16 +45,13 @@ Graph PATCH. It accepts no private inputs and must not call Graph. The patch
 cannot release the owner's SMTP alias, so it is not a route to the required
 UPN and must not be restored.
 
-`entra-stuhlmuller-domain` reads the existing Entra domain through the Microsoft
-Graph provider, reads the Microsoft-generated TXT verification record, and
-verifies it only after the DNS owner has published that record. It is
-intentionally an operator unit: verification requires tenant-wide domain
-authority that the CI identities must not receive.
+`entra-stuhlmuller-domain` reads the existing Entra domain through Microsoft
+Graph and requires a verified, federated, non-default, non-initial domain.
+The one-shot verification already ran. The steady-state unit forgets only the
+old action in OpenTofu state using `destroy = false`; it cannot write to Graph.
+The separate `entra-domain-verification` catalog module remains available for
+a new managed domain after its DNS owner publishes the TXT record.
 
-The unit requires a managed, non-default and non-initial domain and sends the
-standard bodyless Graph verification request, which defaults to
-`forceTakeover = false`. It cannot create, delete, federate, make a default
-domain, configure Microsoft 365 mail services, or change Google Workspace.
 The companion `entra-stuhlmuller-pilot-user` unit retains only the isolated
 `rodman.mac@stuhlmuller.net` cloud user, with no group, role, license,
 Fleet-console assignment, mailbox, or effect on other accounts. It must not
@@ -69,17 +66,11 @@ may set it true after explicit authorization; its reviewed plan must create only
 the user, bootstrap password, and assignment. Test a fresh login, then restore
 the literal to false without changing the protected resources before conversion.
 
-The exact target is the existing external owner converted in place to an
-internal Entra user through the supported Entra admin-center flow. Terraform
-first changes all ownership and Fleet-assignment lookups to immutable object IDs
-so the conversion keeps ownership and grants. Create and test an independent
-cloud-only Global Administrator before converting the sole owner. The only
-permitted portal action is bounded by the private, Graph-read-only
-[`entra-owner-conversion.py`](../scripts/entra-owner-conversion.py)
-prepare/attest transaction; it does not automate the conversion. The complete
-order, Fleet local-recovery migration, and live acceptance checks are in the
-[Fleet Free runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md). No
-support case, Exchange license, or alias workaround is required.
+Fleet, Grafana and Octelium retain immutable owner object-ID references. The
+blocked one-off external-to-internal conversion helper and portal exception
+have been removed. The federated target remains unresolved; see the
+[Fleet Free runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md). No identity
+or recovery-account state changes as part of that source cleanup.
 
 ## Etcd Offsite Backup Storage
 

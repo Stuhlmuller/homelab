@@ -11,6 +11,47 @@ locals {
   kms_key_spec           = "AES_256"
   kubernetes_config_path = "~/.kube/config"
   default_tags           = read_terragrunt_config(find_in_parent_folders("account.hcl", "${get_repo_root()}/IaC/homelab/account.hcl")).locals.default_tags
+
+  # Remove each exception after the declared apply verifies an encrypted state write.
+  legacy_state_units = [
+    "homelab/us-west-2/apps/langfuse/blob-storage",
+    "homelab/us-west-2/operator/application-backup-storage",
+    "homelab/us-west-2/operator/entra-google-workspace-federation",
+    "homelab/us-west-2/operator/etcd-backup-storage",
+    "homelab/us-west-2/operator/github-actions-role-policy",
+    "homelab/us-west-2/operator/state-bucket-encryption",
+    "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
+  ]
+
+  unit_path            = path_relative_to_include()
+  app_unit_prefix      = "homelab/us-west-2/apps/"
+  shared_unit_prefix   = "homelab/us-west-2/shared/"
+  regional_unit_prefix = "homelab/us-west-2/"
+  legacy_app_state_paths = {
+    "homelab/us-west-2/apps/fleet/azuread"         = "live/azuread-applications/fleet"
+    "homelab/us-west-2/apps/fleet/pilot-user"      = "live/azuread-applications/fleet-pilot-user"
+    "homelab/us-west-2/apps/grafana/azuread"       = "live/azuread-applications/grafana"
+    "homelab/us-west-2/apps/octelium/azuread"      = "live/azuread-applications/octelium"
+    "homelab/us-west-2/apps/langfuse/blob-storage" = "live/langfuse-blob-storage"
+  }
+  regional_state_path = replace(local.unit_path, local.regional_unit_prefix, "")
+  non_app_state_path = (
+    startswith(local.unit_path, local.shared_unit_prefix)
+    ? "live/${replace(local.unit_path, local.shared_unit_prefix, "")}"
+    : local.regional_state_path
+  )
+  unit_path_parts = split("/", local.unit_path)
+  default_app_state_path = (
+    length(local.unit_path_parts) == 5 && endswith(local.unit_path, "/argocd")
+    ? "live/argocd-apps/${local.unit_path_parts[3]}"
+    : local.unit_path
+  )
+  state_path = startswith(local.unit_path, local.app_unit_prefix) ? lookup(
+    local.legacy_app_state_paths,
+    local.unit_path,
+    local.default_app_state_path
+  ) : local.non_app_state_path
+  state_key = "IaC/${lower(local.project_name)}/${local.state_path}/terraform.tfstate"
 }
 
 remote_state {
@@ -27,21 +68,13 @@ remote_state {
     key_spec                 = local.kms_key_spec
     encrypted_metadata_alias = "key_provider.aws_kms.main"
     }, jsondecode(
-    # CI observed this one pre-existing plaintext state. New writes remain AES-GCM.
-    # Remove the fallback after its first declared encrypted apply is verified.
-    lower(local.project_name) == "homelab" && path_relative_to_include() == "homelab/us-west-2/operator/application-backup-storage" ? jsonencode({
+    lower(local.project_name) == "homelab" && contains(local.legacy_state_units, path_relative_to_include()) ? jsonencode({
       fallback = { method = "unencrypted" }
     }) : jsonencode({ enforced = true })
   ))
   config = {
-    bucket = "rstuhlmuller-aws-s3-use1-datalake"
-    key = "IaC/${lower(local.project_name)}/${startswith(path_relative_to_include(), "homelab/us-west-2/apps/") ? lookup({
-      "homelab/us-west-2/apps/fleet/azuread"         = "live/azuread-applications/fleet"
-      "homelab/us-west-2/apps/fleet/pilot-user"      = "live/azuread-applications/fleet-pilot-user"
-      "homelab/us-west-2/apps/grafana/azuread"       = "live/azuread-applications/grafana"
-      "homelab/us-west-2/apps/octelium/azuread"      = "live/azuread-applications/octelium"
-      "homelab/us-west-2/apps/langfuse/blob-storage" = "live/langfuse-blob-storage"
-    }, path_relative_to_include(), length(split("/", path_relative_to_include())) == 5 && endswith(path_relative_to_include(), "/argocd") ? "live/argocd-apps/${split("/", path_relative_to_include())[3]}" : path_relative_to_include()) : startswith(path_relative_to_include(), "homelab/us-west-2/shared/") ? "live/${replace(path_relative_to_include(), "homelab/us-west-2/shared/", "")}" : replace(path_relative_to_include(), "homelab/us-west-2/", "")}/terraform.tfstate"
+    bucket       = "rstuhlmuller-aws-s3-use1-datalake"
+    key          = local.state_key
     region       = local.state_region
     encrypt      = true
     kms_key_id   = local.kms_key_id

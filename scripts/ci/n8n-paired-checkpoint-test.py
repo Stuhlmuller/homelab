@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Fail-closed command boundary checks for the inactive protected checkpoint."""
 
+import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -136,6 +138,21 @@ elif name == "kubectl":
             "status": {"observedGeneration": 1, "replicas": replicas, "readyReplicas": replicas}}))
     elif args[:2] == ["get", "--raw"]:
         raw = args[2]
+        cleanup_path = ("/api/v1/namespaces/automation/pods?limit=500&labelSelector="
+                        "homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D")
+        if raw.startswith(cleanup_path):
+            policy = json.loads(policy_record.read_text())
+            owner = policy["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"]
+            assert raw == cleanup_path + owner
+            print(json.dumps({
+                "kind": "List" if mode == "cleanup-client-list" else "PodList",
+                "metadata": {
+                    "resourceVersion": "" if mode == "cleanup-missing-version" else "12345",
+                    "continue": "next" if mode == "cleanup-paginated" else "",
+                },
+                "items": [{"metadata": {"uid": reader_u}}] if linger_record.exists() else [],
+            }))
+            raise SystemExit(1 if mode == "cleanup-partial-error" else 0)
         owner = json.loads(job_record.read_text())["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"] if job_record.exists() else ""
         reader = {"metadata": {"name": resource_name + "-abcde", "uid": reader_u,
             "labels": {"app.kubernetes.io/name": "n8n-checkpoint-reader",
@@ -190,9 +207,8 @@ elif name == "kubectl":
             if count == 2:
                 raise SystemExit(1)
     elif "pods" in args and "get" in args:
-        assert args[args.index("-l") + 1].startswith("homelab.stuhlmuller.dev/checkpoint-owner=")
-        assert "--chunk-size=0" in args
-        print(json.dumps({"kind": "PodList", "metadata": {"resourceVersion": "12345", "continue": ""},
+        # kubectl's formatted output is a generic List, even for Pods.
+        print(json.dumps({"kind": "List", "metadata": {"resourceVersion": ""},
             "items": [{"metadata": {"uid": reader_u}}] if linger_record.exists() else []}))
     elif "pod" in args and "get" in args:
         print(json.dumps({"metadata": {"uid": pg_pod_u, "ownerReferences":
@@ -292,6 +308,12 @@ else:
 
 
 class CheckpointBoundaryTests(unittest.TestCase):
+    def test_both_workflow_jobs_pin_current_checkpoint_script(self):
+        workflow = (ROOT / ".github/workflows/n8n-paired-checkpoint.yml").read_text()
+        script = re.escape(SCRIPT.relative_to(ROOT).as_posix())
+        pins = re.findall(rf"^[ \t]*'([0-9a-f]{{64}})' {script} ", workflow, re.MULTILINE)
+        self.assertEqual(pins, [hashlib.sha256(SCRIPT.read_bytes()).hexdigest()] * 2)
+
     def run_case(self, mode="deployment-active", **overrides):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
@@ -322,7 +344,8 @@ class CheckpointBoundaryTests(unittest.TestCase):
                 "TEST_ROOT": temporary,
                 "TEST_UUID": UUID,
             } | overrides
-            if mode in ("good", "policy-create-timeout", "job-create-timeout",
+            if mode.startswith("cleanup-") or mode in (
+                        "good", "policy-create-timeout", "job-create-timeout",
                         "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck",
                         "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout",
                         "reader-pod-lingers", "job-absent-reader-lingers",
@@ -491,18 +514,20 @@ class CheckpointBoundaryTests(unittest.TestCase):
         self.assertTrue(deletes)
         self.assertTrue(all("--request-timeout=60s" in args for args in deletes))
 
-    def test_lingering_reader_pod_keeps_policy_and_blocks_receipt(self):
-        for mode in ("reader-pod-lingers", "job-absent-reader-lingers"):
+    def test_unverified_reader_absence_keeps_policy_and_blocks_receipt(self):
+        for mode in ("reader-pod-lingers", "job-absent-reader-lingers", "cleanup-client-list",
+                     "cleanup-missing-version", "cleanup-paginated", "cleanup-partial-error"):
             with self.subTest(mode=mode):
                 result, commands, receipt = self.run_case(mode)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(receipt, "")
                 self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
-                self.assertTrue(any(name == "kubectl" and "get" in args and "pods" in args and
-                                    "--chunk-size=0" in args for name, args in commands))
+                self.assertTrue(any(name == "kubectl" and args[:2] == ["get", "--raw"] and
+                                    "limit=500&labelSelector=homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D" in args[2]
+                                    for name, args in commands))
                 deletes = [args for name, args in commands if name == "kubectl" and
                            args[:2] != ["auth", "can-i"] and "delete" in args]
-                self.assertEqual(len(deletes), 1 if mode == "reader-pod-lingers" else 0)
+                self.assertEqual(len(deletes), 0 if mode == "job-absent-reader-lingers" else 1)
 
 
 if __name__ == "__main__":

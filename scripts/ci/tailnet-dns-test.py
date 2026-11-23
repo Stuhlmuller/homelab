@@ -7,8 +7,6 @@ import json
 import re
 import subprocess
 import sys
-import tempfile
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,11 +14,12 @@ VALUES = ROOT / "clusters/homelab/apps/traefik/values.yaml"
 ROUTES = ROOT / "clusters/homelab/apps/traefik/routes.yaml"
 DNS_VALUES = ROOT / "clusters/homelab/platform/tailnet-dns/values.yaml"
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
-CHART = "oci://codeberg.org/k8s-gateway/charts/k8s-gateway"
-CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7"
 CHART_PACKAGE = ROOT / "scripts/ci/fixtures/k8s-gateway-4.0.0.tgz"
 CHART_PACKAGE_SHA256 = "dbffe7bbd71919d4a204be6821fa9266483824335dc593b319a4b9a156f9ebca"
 CHART_CATALOG = ROOT / "scripts/config/harbor-helm-charts.json"
+CHART_INVENTORY = ROOT / "scripts/config/harbor-image-charts.json"
+ARGO_SELF_MANAGEMENT = ROOT / "clusters/homelab/argocd/self-management"
+HARBOR_CHART_REPOSITORY = "harbor.stinkyboi.com/mirror/helm"
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
          "sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4")
 CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
@@ -186,67 +185,44 @@ def mutation_checks(values, routes, inventory, dns_values):
             "OCE wildcard must match only opaque Agent hosts")
 
 
-def chart_failure_hint(stderr):
-    """Return only a fixed label; public CI must never print Helm's raw output."""
-    output = stderr.lower()
-    if any(fragment in output for fragment in ("429", "too many requests", "rate limit")):
-        return "rate-limit"
-    if any(fragment in output for fragment in ("no such host", "could not resolve",
-                                               "temporary failure in name resolution", "timeout",
-                                               "connection refused", "tls handshake",
-                                               "failed to fetch", "failed to resolve",
-                                               "failed to download", "failed to pull")):
-        return "transport"
-    if any(fragment in output for fragment in ("401", "403", "unauthorized", "forbidden")):
-        return "access"
-    if "404" in output or ("manifest" in output and "not found" in output):
-        return "unavailable"
-    return "unknown"
-
-
-def fetch_pinned_chart(destination):
-    """Fetch only the pinned OCI package, falling back to exact reviewed bytes."""
-    command = ["helm", "pull", CHART, "--version", "4.0.0", "--destination", str(destination)]
-    for attempt in range(4):
-        try:
-            chart = subprocess.run(command, text=True, capture_output=True,
-                                   check=False, timeout=20)
-        except subprocess.TimeoutExpired:
-            hint = "transport"
-        else:
-            if chart.returncode == 0:
-                require(CHART_DIGEST in chart.stderr, "chart 4.0.0 OCI digest changed")
-                return destination / "k8s-gateway-4.0.0.tgz"
-            hint = chart_failure_hint(chart.stderr)
-        if attempt < 3:
-            time.sleep(2 ** (attempt + 1))
-    print(f"Public OCI chart fetch unavailable ({hint}); using reviewed package.", file=sys.stderr)
-    return CHART_PACKAGE
+def chart_source_contract():
+    matches = [row for row in json.loads(CHART_INVENTORY.read_text())
+               if row["source"] == "IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl"]
+    require(len(matches) == 1 and
+            (matches[0]["chart"], matches[0]["targetRevision"], matches[0]["repoURL"])
+            == ("k8s-gateway", "4.0.0", HARBOR_CHART_REPOSITORY),
+            "resolver must use the reviewed Harbor chart")
+    project = load_yaml(ARGO_SELF_MANAGEMENT / "appproject.yaml")
+    require(HARBOR_CHART_REPOSITORY in project["spec"]["sourceRepos"],
+            "homelab project must allow the Harbor chart repository")
+    secret = load_yaml(ARGO_SELF_MANAGEMENT / "harbor-helm-repository.yaml")
+    repository = secret["spec"]["target"]["template"]["data"]
+    require(repository["url"] == HARBOR_CHART_REPOSITORY and repository["type"] == "helm"
+            and repository["enableOCI"] == "true",
+            "Argo CD must use its Helm OCI repository configuration")
 
 
 def render_pinned_chart():
-    """Render one SHA-verified package; values errors never trigger fallback."""
+    """Render the same package the protected Harbor publisher verifies."""
     catalog = json.loads(CHART_CATALOG.read_text())
     matches = [row for row in catalog["charts"] if row["chart"] == "k8s-gateway"
                and row["version"] == "4.0.0"
                and row["repository"] == "codeberg.org/k8s-gateway/charts"]
     require(len(matches) == 1 and matches[0]["sha256"] == CHART_PACKAGE_SHA256,
             "reviewed chart 4.0.0 catalog hash changed")
-    with tempfile.TemporaryDirectory(prefix="tailnet-chart-") as directory:
-        package = fetch_pinned_chart(Path(directory))
-        require(package.is_file()
-                and hashlib.sha256(package.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
-                "reviewed chart 4.0.0 package is missing or changed")
-        command = ["helm", "template", "tailnet-dns", str(package),
-                   "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
-        try:
-            rendered = subprocess.run(command, text=True, capture_output=True,
-                                      check=False, timeout=20)
-        except subprocess.TimeoutExpired as error:
-            raise ValueError("pinned chart template timed out; private Helm output withheld") from error
-        require(rendered.returncode == 0,
-                "pinned chart template failed; private Helm output withheld")
-        return rendered.stdout
+    require(CHART_PACKAGE.is_file()
+            and hashlib.sha256(CHART_PACKAGE.read_bytes()).hexdigest() == CHART_PACKAGE_SHA256,
+            "reviewed chart 4.0.0 package is missing or changed")
+    command = ["helm", "template", "tailnet-dns", str(CHART_PACKAGE),
+               "--namespace", "tailnet-dns", "-f", str(DNS_VALUES)]
+    try:
+        rendered = subprocess.run(command, text=True, capture_output=True,
+                                  check=False, timeout=20)
+    except subprocess.TimeoutExpired:
+        raise ValueError("pinned chart template timed out; private Helm output withheld") from None
+    require(rendered.returncode == 0,
+            "pinned chart template failed; private Helm output withheld")
+    return rendered.stdout
 
 
 def rendered_contract():
@@ -308,9 +284,13 @@ def rendered_contract():
 
 
 def main():
-    args = set(sys.argv[1:])
-    require(args <= {"--declarations"},
-            "usage: tailnet-dns-test.py [--declarations]")
+    args = sys.argv[1:]
+    require(args in ([], ["--declarations"], ["--render"]),
+            "usage: tailnet-dns-test.py [--declarations | --render]")
+    if args == ["--render"]:
+        sys.stdout.write(render_pinned_chart())
+        return
+    chart_source_contract()
     values = load_yaml(VALUES)
     routes = load_yaml(ROUTES)
     inventory = json.loads(INVENTORY.read_text())

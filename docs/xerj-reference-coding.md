@@ -9,24 +9,17 @@ loopback-only node in a terminal:
 xerj --data-dir ~/.xerj-code/data
 ```
 
-For this non-default data directory, let loopback clients discover its private
-key through XERJ's standard file location:
-
-```sh
-install -d -m 700 ~/.xerj
-ln -s ~/.xerj-code/data/admin.key ~/.xerj/admin.key
-```
-
-In [XERJ v1.0.0-rc.96](https://github.com/xerj-org/xerj/blob/v1.0.0-rc.96/engine/crates/xerj-autoindex/src/cli.rs#L1221-L1245),
-loopback `autoindex` also discovers this file without `--api-key` or
-`XERJ_API_KEY`. Check for `using the admin key at` in its startup output. If
-indexing returns 401, check the link and node URL.
+[XERJ v1.0.0-rc.104](https://github.com/xerj-org/xerj/blob/v1.0.0-rc.104/engine/crates/xerj-common/src/localauth.rs#L20-L44)
+publishes a pointer to the local admin key for each loopback port. Check for
+`using the admin key at` in the `autoindex` startup output. If indexing
+returns 401, check the node URL and its pointer under `~/.xerj/by-port/`.
 
 Codex runs the flake package from this repository's `main` branch through
 [`.codex/config.toml`](../.codex/config.toml).
 The absolute Nix executable path lets desktop MCP hosts start it without a shell `PATH`.
-The MCP server reads the local key file at startup; no credential belongs in
-git or a process environment. The node must be running when Codex searches.
+The packaged MCP command keeps node startup under operator control. Start
+the node before running a search in Codex. The MCP server reads its
+credential from the local key file.
 
 ## Reference sources
 
@@ -51,10 +44,9 @@ Talos is `MPL-2.0`. Check licence terms before reusing code.
 
 The Argo CD ignore file leaves 1,435 implementation files in the index. Its
 bulk documentation, UI, manifests, tests, and resource customization
-fixtures stay in the pinned clone. XERJ rc.96 times out verifying the full
-repository's largest dataset, and two resource customization fixtures also
-trigger an annotation-sort bug. If an earlier index failed, rerun
-`corpus index argo-cd --fresh` after copying the ignore file. The Talos and
+fixtures stay in the pinned clone. During initial setup, XERJ rc.96 timed
+out verifying the full repository's largest dataset. If an earlier index
+failed, rerun `corpus index argo-cd --fresh` after copying the ignore file. The Talos and
 Terragrunt ignore files similarly keep their runtime source
 searchable without the bulk test fixtures, UI, and documentation.
 
@@ -74,32 +66,37 @@ generation reconciles later changes within its existing dataset schema. XERJ
 skips hidden paths during a root walk. Index the visible tree first:
 
 ```sh
-xerj autoindex . --prefix homelab-local-v3 \
-  --state-dir ~/.xerj-code/autoindex-state/homelab-local-v3 \
-  --no-graph --workers 4 \
-  --stub 'clusters/homelab/apps/octelium-enterprise/resources.yaml'
+xerj autoindex . --prefix homelab-local-v4 \
+  --state-dir ~/.xerj-code/autoindex-state/homelab-local-v4 \
+  --no-graph --workers 4 --no-default-stubs
 ```
 
-XERJ v1.0.0-rc.96 fails catalog finalization when it sorts the Octelium YAML
-annotation `metadata_annotations_octelium.com/last-upgrade`. The `--stub` flag
-keeps that path in the root index as a name card. Make searchable text cards
-for that YAML and tracked hidden paths. Indexing hidden directories directly
-would bypass the parent `.gitignore` and could include private Talos files.
-The cards include only files tracked by this public repository:
+The `--no-default-stubs` flag keeps lockfile contents searchable. XERJ rc.104
+resolves the dotted Octelium annotation during structured indexing
+and catalog finalization. Start with the new prefix and state directory
+above because a reconciliation of the old generation can keep the previous
+name-card dataset for unchanged YAML. Keep the old generation until a search
+against the new index returns the Octelium entries.
+[Upstream fix](https://github.com/xerj-org/xerj/pull/3035)
+
+Make searchable text cards from Git-tracked hidden files. Indexing hidden
+directories directly would bypass the parent `.gitignore` and could include
+private Talos files. Use a fresh prefix and state directory for the cards
+after the script removes the legacy Octelium card:
 
 ```sh
 python3 scripts/xerj-tracked-source-cards.py
 xerj autoindex ~/.xerj-code/local-source \
-  --prefix homelab-tracked-source \
-  --state-dir ~/.xerj-code/autoindex-state/homelab-tracked-source \
+  --prefix homelab-tracked-source-v2 \
+  --state-dir ~/.xerj-code/autoindex-state/homelab-tracked-source-v2 \
   --no-graph
 ```
 
 Refresh these indices after source changes. If XERJ refuses a new dataset
 schema, build and verify a new prefix and state directory before retiring the
 old one. Search the checkout through Codex's `xerj_search` MCP tool with
-`index: homelab-local-v3-*` and `query: "<problem>"` for definition-first
-ranking. Use `index: homelab-tracked-source-*` for hidden-file cards. Read the
+`index: homelab-local-v4-*` and `query: "<problem>"` for definition-first
+ranking. Use `index: homelab-tracked-source-v2-*` for hidden-file cards. Read the
 cited repository path as the source of truth. `xerj corpus list` shows
 which reference corpora are loaded.
 XERJ treats autoindex exit `3` as success with skipped junk; an exit `1` or `4`

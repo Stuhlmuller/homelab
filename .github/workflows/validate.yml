@@ -17,7 +17,30 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  runtime-scope:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      image-policy: ${{ steps.scope.outputs.image-policy }}
+      network-policy: ${{ steps.scope.outputs.network-policy }}
+      harbor-core: ${{ steps.scope.outputs.harbor-core }}
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Resolve runtime check scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/ci/validate-runtime-scope.sh "$BASE_SHA"
+
   image-policy:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.image-policy != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -27,9 +50,18 @@ jobs:
           persist-credentials: false
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: 'false'
       - name: Exercise native image admission
         run: nix develop --command python3 -I scripts/ci/image-policy-check.py
   network-policy:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.network-policy != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,9 +71,18 @@ jobs:
           persist-credentials: false
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: 'false'
       - name: Exercise isolated network policy enforcement
         run: nix develop --command python3 -I scripts/ci/network-policy-enforcement-check.py
   harbor-core-compatibility:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.harbor-core != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -57,6 +98,11 @@ jobs:
         run: bash builds/harbor-core/build.sh
       - name: Install pinned runtime audit tools
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: 'false'
       - name: Check runtime report trust boundaries
         run: |
           python3 -I scripts/ci/harbor-core-scan-check-test.py
@@ -98,10 +144,9 @@ jobs:
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
 
-      - name: Check flake
-        run: nix flake check --no-build --all-systems
-
       - name: Verify Offline Nix Checks
+        # On PRs, the required Terragrunt Gate already verifies these outputs.
+        if: github.event_name == 'push'
         run: |
           git fetch --no-tags origin main
           cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
@@ -111,6 +156,17 @@ jobs:
             printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
           fi
           bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+
+      # Verify signed offline outputs before restoring any GitHub Actions store archive.
+      - name: Cache Nix Store
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          lookup-only: ${{ github.event_name == 'push' }}
+          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+      - name: Check flake
+        run: nix flake check --no-build --all-systems
 
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check

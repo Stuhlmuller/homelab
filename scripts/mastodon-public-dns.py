@@ -48,8 +48,7 @@ def parameter(name):
     return value
 
 
-def ready(site):
-    sha = os.environ['GITHUB_SHA']
+def ready(site, sha):
     apps = [site, 'octelium-public']
     data = json.loads(credential.command(['kubectl', '-n', 'argocd', 'get', 'applications',
                                          *apps, '-o', 'json']))
@@ -64,7 +63,7 @@ def ready(site):
             raise RuntimeError('Reviewed rollout not ready')
 
 
-def reconcile(token, tunnel, site):
+def reconcile(token, tunnel, site, sha):
     host = f'{site}.{ZONE}'
     owner = f'homelab-{site}-public'
     tunnel = str(uuid.UUID(tunnel))
@@ -94,7 +93,7 @@ def reconcile(token, tunnel, site):
         method = 'PUT'
     else:
         method = 'POST'
-    credential.validate_context()
+    credential.validate_context(sha)
     record = api(token, method, path, desired)['result']
     if not all(record.get(key) == value for key, value in desired.items()):
         raise RuntimeError('Uncertain DNS write')
@@ -105,9 +104,10 @@ def main(args):
         if args not in ([], ['mastodon'], ['openwiki']):
             raise RuntimeError('Unsupported DNS site')
         site = args[0] if args else 'mastodon'
-        credential.validate_context()
-        ready(site)
-        reconcile(parameter(TOKEN_PARAMETER), parameter(TUNNEL_PARAMETER), site)
+        sha = os.environ.get('VALIDATED_SHA', os.environ.get('GITHUB_SHA', ''))
+        credential.validate_context(sha)
+        ready(site, sha)
+        reconcile(parameter(TOKEN_PARAMETER), parameter(TUNNEL_PARAMETER), site, sha)
         print(f'{site}.{ZONE} DNS reconciled. Verify the public endpoint before acceptance.')
         return 0
     except Exception:

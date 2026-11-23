@@ -44,7 +44,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | Octelium PostgreSQL (`apps/octelium-storage`) | Daily consistent custom dump + password-free globals, 14 days on same QNAP; this PR can publish those complete sets independently | 24h / 4h | Retrieve a named S3 set; PostgreSQL 14 restore and Octelium startup/resource/decryption checks; recover DB auth, external root/encryption keys and identity bootstrap privately |
 | Octelium Redis AOF and Enterprise package storage | Retained PVCs; dormant rscstore whole-PVC S3 capture candidate, not yet activated; neither is included in the PostgreSQL dump | No loss accepted / 4h | Inventory runtime PVCs and Redis durability semantics; fence writers, capture AOF and packages, determine whether sessions/queues may be discarded; PostgreSQL coverage is not whole-Octelium coverage |
 | Media PostgreSQL (`apps/media-postgres`) | Six nightly DB dumps + globals to QNAP; active data on Acer | 24h / 8h | All six are required by publisher; separate `pg_dump` snapshots do not establish cross-database atomicity. Fence all media writers for coordinated app/config recovery |
-| AFFiNE (`apps/affine`) | NFS PostgreSQL 16/pgvector, blobs and config; source says suspended; no independent paired capture | 24h / 8h | Paired publication adapter accepts `globals.sql`, `affine.dump`, `blobs.tar`, `config.tar`, `capture.json`; prove suspension live, fence all writers, capture one window; preserve ECDSA signing key and extensions. Ephemeral Redis/queued work loss needs approval |
+| AFFiNE (`apps/affine`) | NFS PostgreSQL 16/pgvector, blobs and config; no independent paired capture | 24h / 8h | Paired publication adapter accepts `globals.sql`, `affine.dump`, `blobs.tar`, `config.tar`, `capture.json`; fence all writers and verify the fence live, then capture one window; preserve ECDSA signing key and extensions. Ephemeral Redis/queued work loss needs approval |
 | Multica backend (`apps/multica`) | NFS pgvector PostgreSQL and uploads, no automatic independent capture | 24h / 8h | Paired adapter requires `globals.sql`, `multica.dump`, `uploads.tar`, `capture.json`; fence API/workers, retain JWT/DB secret dependencies; prove records refer to recovered uploads |
 | Multica runtime (`apps/multica`, runtime manifests) | Node-local runtime PVC, PAT and native OAuth/session material | No loss accepted / 8h | Stop runtime before capture; separately approve recovery or re-enrollment of credentials; never export OAuth to SSM to make backup easier |
 | n8n (`apps/n8n`, `apps/n8n-postgres`) | NFS DB, config and file-backed state; no independent scheduled set | 24h / 8h | Quiesce workflows/webhook writers, pair dump and files, retain the exact credential encryption key; disable outbound workflows during drill |
@@ -130,8 +130,8 @@ separately from retained S3 versions.
 
 ## Manual publication and retrieval
 
-The shared S3 destination is defined in
-[`IaC/application-backup-storage.hcl`](../IaC/application-backup-storage.hcl).
+The shared S3 destination is defined in the
+[operator stack configuration](../IaC/homelab/us-west-2/operator/application-backup-storage.hcl).
 Use a scoped file-backed AWS profile and read-only access to completed dumps.
 For Octelium resource-store captures, follow the
 [resource-store capture runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)

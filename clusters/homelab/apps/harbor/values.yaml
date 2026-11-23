@@ -84,7 +84,7 @@ portal:
 core:
   image:
     repository: harbor.stinkyboi.com/homelab/homelab-harbor-core
-    tag: homelab-7df0e0044c7975c57de8093e827ab83fc3c2928f@sha256:5eebc3907774d3a9edd8731e1e997ff1d1647c4a6f0d614b2166430585914763
+    tag: homelab-83251682b2139d4cc9aa57e9504187a327f0f594@sha256:7e13007a9e2f45f23c96723fa3760ac930bdb60f2a3baa34bf94a7100075894b
   serviceAccountName: harbor
   replicas: 1
   existingSecret: harbor-secrets

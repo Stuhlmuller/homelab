@@ -142,8 +142,6 @@ sources:
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-5a9844f09df0d8ff89f969be
     resource: repo://scripts/ci/entra-emergency-global-admin-plan-test.py
-  - id: openwiki-source-71b17b13c9c25f4d36402204
-    resource: repo://scripts/ci/entra-owner-conversion-test.py
   - id: openwiki-source-2891520885ecf43be10fd7b5
     resource: repo://scripts/ci/harbor-core-audit-status.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -369,14 +367,50 @@ Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
+remaining fixture groups concurrently. The offline Nix result requires each
+group's result. The n8n fixtures use the inputs listed in `flake.nix` and
+publish a separate signed result for reuse across unrelated changes.
 See [signed offline validation](../../docs/nix-cache.md).
 
+The offline Nix gate also runs the pinned XERJ release against the Octelium
+Enterprise manifest on an authenticated loopback node. It requires a committed
+catalog and a searchable result sorted by the dotted upgrade annotation.
+It also checks that MCP can query the running node and leaves it stopped
+after the operator shuts it down.
+See [XERJ reference coding](../../docs/xerj-reference-coding.md) for the
+workstation index migration.
+
+The required Codex review status is published on a lightweight GitHub runner.
+A new publisher run for the same PR replaces the prior run and reads the
+latest PR head and trusted review receipt. See the
+[CI/CD security model](../../docs/ci-cd.md#security-model).
+
 For Descheduler values or chart changes, run
-`bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
-rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
-exactly one `--descheduling-interval=30m` argument. Update the check alongside
-the pinned chart when upgrading. Live revision, argument and execution-cadence
-acceptance remain separate; see the [workload notes](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/descheduler/README.md).
+`bash scripts/ci/descheduler-cadence-check.sh`. During staging it verifies
+chart `0.33.0` renders one suspended CronJob and no Deployment. It applies
+the same chart overrides to both the repaired values and a pre-repair values
+fixture. Update the check alongside the pinned chart when upgrading. The same render feeds
+`scripts/ci/descheduler-policy-check.py`, which requires configuration for each
+enabled strategy, valid LowNodeUtilization thresholds and the existing
+DefaultEvictor guards, `nodeFit: true` and a global one-Pod eviction limit per
+cycle. The protected live-plan job runs
+[`descheduler-release-check.py`](../../scripts/ci/descheduler-release-check.py)
+for runtime and gate changes. It requires the Argo values source to track
+`main` and explicit chart overrides for `kind=CronJob` and `suspend=true`.
+After protected staging, verify the exact reconciled revision, a suspended
+CronJob, and zero live Descheduler Pods. A separate activation change needs a
+repo-owned protected manual gate that binds the exact activation revision and
+checks fresh node, Pod, lease, Job and kubelet evidence immediately before
+removing the suspension. The prepared capacity
+helper fails on stale timestamps, changed inventory, or unknown demand; an
+earlier PR check cannot authorize later eviction. NodeFit remains a subset of
+scheduler checks; this helper does not establish N-1 capacity or later cycles. Missing
+strategy configuration prevents profile construction even while the Pod remains Ready.
+After activation, verify the live revision, 30-minute interval and two
+cycles without profile-construction errors. Zero evictions is acceptable.
+The pinned [chart defaults](https://github.com/kubernetes-sigs/descheduler/blob/v0.33.0/charts/descheduler/values.yaml#L125-L136)
+use CPU, memory and Pod thresholds of 20% with 50% targets.
 
 On November 2, 2026, revision-bound inspection verified cadence PR #1803:
 Argo applied `07672f6d13114a6e695c28339dd99e401c840972`, then compared its
@@ -743,13 +777,11 @@ until replacement acceptance.
 
 `static-checks.sh` runs the full pinned Helm render and route/annotation parity
 gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
-read-only handoff fixtures. The public chart fetch retries four times with
-bounded delays and per-attempt timeouts, and requires the exact OCI digest.
-Only a classified fetch failure can use the local package; template errors fail.
-If Codeberg is unavailable, the test renders the upstream release package
-vendored from its immutable
-GitHub mirror, after matching its reviewed SHA-256. It applies the same resource
-contract and never prints raw Helm output. Route additions, renames and
+read-only handoff fixtures. The static gate and isolated runtime fixture render
+the reviewed upstream release package from the checkout after verifying its
+SHA-256 against the Harbor chart catalog. The protected Helm chart publisher
+verifies the same hash with a separate authenticated Harbor reader pull. The
+static gate checks the resource contract and withholds raw Helm errors. Route additions, renames and
 removals must retain parity with the resolver allowlist. The one-time initial
 inventory mode has been removed after the completed cutover. The fixed
 `image_scope=dns` Harbor
@@ -813,18 +845,11 @@ The historical mail-only Graph PATCH is retired: the owner-mail Terraform unit
 uses `removed { destroy = false }` and any saved plan must forget only that
 state address. No alias-release or additional mail write is accepted.
 
-The new `entra-owner-conversion-test.py` covers read-only Graph preparation and
-post-conversion attestation, including exact existing object ID, target UPN,
-identity issuer, password timestamp, clean signed `main`, private receipt and
-independent recovery Global Administrator. It also asserts that preparation
-rejects the current federated target domain. The recovery-admin plan test keeps
-its unit disabled by default and rejects unrelated provider actions. These
-fixtures do not create the recovery account or convert the owner. An operator
-must first resolve the federated target through a separate reviewed code
-change, then review the saved plan, verify the recovery sign-in, prepare a private
-receipt, perform the separately authorized Entra admin-center conversion, then
-attest and test actual Fleet console SAML and local recovery login. See the
-[provider contract](../../docs/entra-terraform-provider.md) and
+The one-off owner-conversion helper and fixture have been removed. The
+recovery-admin plan test still keeps its unit disabled by default and rejects
+unrelated provider actions. Immutable-ID OIDC checks remain active; cleanup
+does not resolve the federated owner target or establish a successful login.
+See the [provider contract](../../docs/entra-terraform-provider.md) and
 [Fleet runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 ## GitHub Workflow Checks
@@ -841,6 +866,11 @@ outside the checkout and removes it on exit. The cache location is inherited by
 child fixtures; it does not change infrastructure inputs. The artifact scanner
 still rejects saved plan/state files in ignored checkout paths. See the
 [validation runbook](../../docs/validation-runbook.md).
+
+The required `Terragrunt Gate` covers signed offline Nix checks on every PR
+targeting `main`, including forks and changes that do not need a live plan.
+The `validate / repo` job verifies the same outputs on pushes to `main` and
+runs its other repository checks on both events.
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
 verified tip. Check GitHub's verification for every PR-introduced commit.
@@ -871,8 +901,8 @@ GitHub workflows pin their Chainguard Actions references by full commit SHA.
 Checkout, artifact publication, Nix installation, AWS credential setup, CodeQL,
 and linting retain explicit reviewed versions. Semantic-release uses the
 flake-pinned Node/npm runtime and integrity-locked root `package-lock.json`.
-Its PR preview is tokenless; only the serialized `main` publisher receives the
-release token. The [release contract](../../docs/ci-cd.md#release-publication)
+The serialized publisher runs on pushes to `main` and receives the release
+token. The [release contract](../../docs/ci-cd.md#release-publication)
 includes a disposable Git-remote test for preview, intervening commits, and idempotence.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
@@ -913,8 +943,8 @@ trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. An unreadable base diff fails the static job before it can emit a
 successful skip decision; the offline fixture exercises this failure. The
-aggregate fails unless static checks succeed and the applicable
-live plan or same-repository skip-note job has the expected result. Keep the
+aggregate uses `ubuntu-slim` to check static success and the expected live plan
+result. It logs the reason for a skipped live plan. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
@@ -924,6 +954,21 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+
+The `validate` runtime checks for image admission, network enforcement, and
+Harbor Core run on `main` pushes. In PRs,
+[`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
+the exact event diff, including removed paths, for each check's inputs. If the
+shallow checkout lacks the event base commit, the script fetches that commit.
+An unavailable diff runs the full runtime suite.
+
+The `validate` repository and runtime jobs share a GitHub Actions Nix store
+cache keyed by runner OS, architecture, and the two flake files. Successful
+`main` repository jobs populate it after signed offline verification. Check
+the `Cache Nix Store` or `Restore Nix Store Cache` step on a later run with the
+same key to verify reuse. Revert the cache steps and their matching workflow
+hash to roll back.
+See [cache trust and freshness](../../docs/nix-cache.md#ci-trust-and-freshness).
 
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
@@ -941,8 +986,20 @@ current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
 and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
 and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
-receipt records the failed phase or route-check result, including any overlapping
-prefix. A successful result requires the checksum-verified receipt.
+receipt records which credential check, transport setup, inventory read, or
+route comparison failed. A route comparison records any overlapping prefix.
+Transport output stays out of the receipt. A successful result requires the
+checksum-verified receipt.
+
+After Cilium coexistence is Synced and Healthy, use Platform Maintenance
+`stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.
+Verify healthy Cilium, Envoy, Flannel, and Multus rollouts and confirm AdGuard
+and Harbor core are Ready on surviving nodes. The stage runs a server-side
+drain dry run, rechecks Harbor before eviction, and verifies that Harbor core
+remains Ready after the drain. It leaves the worker cordoned and drained.
+Verify authenticated registry pulls and tailnet DNS before the separate cutover.
+If evacuation fails, confirm the worker's cordon and eviction state. Keep
+cutover paused and review a protected scheduling recovery before retrying.
 
 The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
@@ -1067,13 +1124,14 @@ Funnel path retains Traefik's plain-text 404 under safe OPTIONS. It sends no
 webhook and does not prove HMAC validation or workflow execution; verify a real
 workflow run separately before retiring the old unsigned hook. Run
 `python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
-The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+The [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
-the active values render one Deployment replica and the fence overlay renders
-zero, with no migration Job in either render. Its
+the baseline values render one Deployment replica, and the stack includes
+the overlay that renders zero, with no migration Job in either render. Its
 [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
-before a paired capture; source rendering alone is not a live backup.
+before a paired capture. The checkpoint receipt verifies the live backup
+and isolated restore.
 The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
 is manual and exact-main. It pins the capture script, restore helper,
 excluded reader Job, and deny-all policy by SHA-256 before AWS or Octelium
@@ -1089,6 +1147,8 @@ Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
 database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+Before removing a reader policy, the cleanup gate requires a complete empty
+Kubernetes PodList with a server resource version for the run's owner label.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run
@@ -1155,6 +1215,20 @@ dig +short A iptorrents.com @1.1.1.1
 kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
+
+### Multica Argo project boundary
+
+Multica uses `homelab-workloads`, whose cluster-resource allowlist is empty.
+The repository-owned overlay renders only resources in `ai`; LiteLLM owns
+that namespace. The project admits the exact Multica chart repository rather
+than a registry wildcard. The current live Argo resource tree also lists only
+`ai` resources. Offline checks validate the overlay and project; the hosted
+static gate anonymously pulls the pinned OCI chart, verifies its reviewed
+package SHA-256, and rejects rendered cluster-scoped objects. Before applying
+the project change, verify that its source has synced and the protected plan
+contains only the reviewed Application project update. After apply, require
+Multica Synced/Healthy; any new chart cluster object must fail under the empty
+cluster-resource allowlist.
 
 ## Dormant Octelium resource-store capture
 
@@ -1314,7 +1388,8 @@ CI/CD Octelium changes should also pass shell syntax checks for
 Session and access-token lifetimes before applying it with `octeliumctl`.
 Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
-The static gate requires manual Homelab Diagnostics and Terragrunt Apply
+Grafana diagnostics use the private operator Kubernetes context and stay
+out of GitHub Actions. The static gate requires manual Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
 resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
@@ -1700,12 +1775,17 @@ initialization: existing backend metadata or Terragrunt's S3 checks can still
 require AWS access. Use an isolated module copy for offline validation when
 that access is unavailable; do not silently switch a later plan to local state.
 
-Explicit stack validation:
+Full IaC planning with operator credentials:
 
 ```sh
 cd IaC
-terragrunt stack run plan
+terragrunt run plan -all
 ```
+
+[`.terragrunt-filters`](../../IaC/.terragrunt-filters) excludes catalog templates
+from the run queue. All generated deployment units, including operator units,
+remain in scope. Keep full plan output private because it includes units that
+read secrets.
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
@@ -1714,28 +1794,16 @@ human-readable plan streams to the Actions log. Saved plan files and
 JSON policy inputs remain temporary and are removed on exit. Run the same
 order locally when reproducing a failure.
 
-The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
-stack or shared root sources, or plan inputs, change. Missing client and tenant
-selectors or an incomplete GitHub OIDC session fail the plan; only unrelated
-changes may skip AzureAD. Restore the environment secrets through the
-[Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
-the PR plan and verify the protected gate before merging.
+The protected PR plan requires the `homelab-plan` Entra identity for affected
+AzureAD units. Missing client and tenant selectors or an incomplete OIDC
+session fail the plan.
 
-CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`, `IaC/homelab/us-west-2/apps/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
-`IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
-generated unit groups instead
-of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. Stack index/inputs/defaults, catalog, module, shared root/provider, and tracked generated-group
-changes use the local `*` because each command runs from
-its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
-script changes also refresh every plan without widening production apply scope.
-Affected-only runs combine the repository-relative group with the Git selector
-so Terragrunt cannot queue another unit group. Intentional operator plans use
-mode `0700` temporary directories. CI may save plans in generated unit caches
-for exact apply and policy checks; its scripts use `umask 077` and delete those
-files on exit. Normal local `terragrunt plan` commands do not write plan
-artifacts into generated caches.
+CI uses `terragrunt find --filter-affected` for PR plans and full production
+applies. Terragrunt discovers changed units from generated inputs, shared HCL,
+and local module sources. A changed catalog unit also selects its deployed
+instances. Exact paths keep each active phase in its assigned scope and keep
+saved plans in the current checkout for Conftest and apply.
+
 Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
@@ -1749,12 +1817,10 @@ cloud or cluster access. Manual production and
 diagnostic dispatches reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
-the base and head revisions, so a catalog migration at the same path is not a
-destroy while removing a stack block still retires its state. The production
-Azure credential gate compares AzureAD unit sources, their repository-owned
-module sources, stack blocks, and the shared root source they consume. Every
-root source change fails closed. Unrelated stack changes do not require Azure
-credentials.
+the base and head revisions. A catalog migration that preserves the state
+identity keeps that state. Retirement requires Terragrunt to discover a unit
+whose historical state identity is absent at the head revision. Full apply
+requires AzureAD credentials when its selection includes an AzureAD unit.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
@@ -2386,10 +2452,9 @@ Portal/Platform SSO is retired; the profile operator can remove its owned
 profile but cannot install it. The operator is dry-run by default and validates
 Apple profiles through `configuration_profiles/batch?dry_run=true` without
 global assignment. Require exact device identity, acknowledged installation,
-unrelated-profile retention and session revocation. The Entra owner conversion
-requires a separately tested recovery Global Administrator, immutable-ID
-references, a reviewed plan, private read-only prepare receipt, explicit
-admin-center action and matching post-conversion attestation. Fleet console
+unrelated-profile retention and session revocation. The blocked one-off Entra
+owner conversion procedure has been removed. Immutable-ID references and the
+disabled recovery-admin unit remain unchanged. Fleet console
 SAML still needs a real browser callback and independent recovery login; API
 readback, Argo health and source tests do not establish live acceptance.
 
@@ -2898,19 +2963,25 @@ live policy. Rollback excludes AdGuard health dependencies. Native client mode
 currently supports macOS and records daemon/exit-node metadata; direct queries
 cannot count as normal-client or exit-node proof. These live gates remain pending.
 
+The [split resolver preflight](../../specs/20261115-185603-adguard-tailnet-dns/quickstart.md#split-resolver-exit-node-preflight)
+reads the exact-main policy, private saved plan and live DNS. It accepts one
+in-place exit-node flag repair and only its matching inverse refresh drift.
+It reports plan readiness without applying or recording a cutover receipt.
+
 ### Source-only Application stack refactors
 
-The Mastodon release preflight treats an edit confined to its `stack.hcl` as
-source-only only when real Terragrunt generation/rendering at the merge base and
-PR head proves identical module files, declared inputs, backend/provider config,
-and normalized dependency edges. Changed workload files, missing evidence, or
-any runtime-contract difference retain the existing Synced/Healthy, backup and
-restore requirements. The comparison also evaluates shared roots and templates,
-so changing them cannot conceal a changed Application manifest. Negative tests
-cover manifest, dependency, backend, provider and module changes. Shared-only
-root/template/module edits also trigger the live preflight. Equivalence supports
-only the current local Application root module: unsupported JSON or generated
-variables, indirect file/module inputs, extra arguments and hooks fail closed.
+The Mastodon release preflight can prove equivalence for a `stack.hcl` change or
+an `IaC/root.hcl` change without Mastodon-specific edits. Terragrunt generation
+and rendering at the merge base and PR head must produce identical module
+files, declared inputs, backend and provider config, and normalized dependency
+edges. Changed workload files, missing evidence, or any runtime contract
+difference retain the Synced/Healthy, backup, and restore requirements.
+The comparison also evaluates shared roots and templates. Negative tests cover
+manifest, dependency, backend, provider, and module changes. Shared
+root, template, and module edits trigger protected preflight. Equivalence
+supports the current local Application root module. Unsupported JSON or
+generated variables, indirect file or module inputs, extra arguments, and hooks
+fail closed.
 The existing apply guard is matched exactly and its script contents are compared.
 
 On 2026-11-18, PR #1866 found Mastodon `OutOfSync` but `Healthy` against main

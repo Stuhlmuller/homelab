@@ -25,6 +25,8 @@ class HarborPublicationGates(unittest.TestCase):
         for directory in ("scripts/ci", "scripts/config", "clusters/homelab/apps/harbor", "bin", "home", "runner"):
             (self.root / directory).mkdir(parents=True)
         shutil.copyfile(ROOT / "scripts/ci/harbor-publish.sh", self.root / "scripts/ci/harbor-publish.sh")
+        shutil.copyfile(ROOT / "scripts/ci/cordium-publication-source.sh",
+                        self.root / "scripts/ci/cordium-publication-source.sh")
         shutil.copyfile(ROOT / "clusters/homelab/apps/harbor/signing-job.yaml",
                         self.root / "clusters/homelab/apps/harbor/signing-job.yaml")
         (self.root / "scripts/config/harbor-signing.json").write_text(json.dumps({
@@ -37,14 +39,17 @@ class HarborPublicationGates(unittest.TestCase):
         self.traefik_mirror_manifest = None
         self.harbor_mirror_manifest = None
         self.renovate_mirror_manifest = None
+        self.n8n_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
         self.prometheus_mirror_manifest = None
+        self.home_assistant_mirror_manifest = None
         self.uptime_kuma_mirror_manifest = None
         self.adguard_mirror_manifest = None
         self.cilium_mirror_manifest = None
         self.kagent_mirror_manifest = None
+        self.homepage_mirror_manifest = None
         self.canary_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -109,6 +114,9 @@ class HarborPublicationGates(unittest.TestCase):
             renovate_path.unlink(missing_ok=True)
         else:
             renovate_path.write_text(json.dumps(self.renovate_mirror_manifest))
+        n8n_path = self.root / "scripts/config/harbor-n8n-images.json"
+        if self.n8n_mirror_manifest is not None:
+            n8n_path.write_text(json.dumps(self.n8n_mirror_manifest))
         dns_path = self.root / "scripts/config/harbor-dns-images.json"
         if self.dns_mirror_manifest is None:
             dns_path.unlink(missing_ok=True)
@@ -124,6 +132,11 @@ class HarborPublicationGates(unittest.TestCase):
             prometheus_path.unlink(missing_ok=True)
         else:
             prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
+        home_assistant_path = self.root / "scripts/config/harbor-home-assistant-images.json"
+        if self.home_assistant_mirror_manifest is None:
+            home_assistant_path.unlink(missing_ok=True)
+        else:
+            home_assistant_path.write_text(json.dumps(self.home_assistant_mirror_manifest))
         uptime_kuma_path = self.root / "scripts/config/harbor-uptime-kuma-images.json"
         if self.uptime_kuma_mirror_manifest is None:
             uptime_kuma_path.unlink(missing_ok=True)
@@ -144,6 +157,11 @@ class HarborPublicationGates(unittest.TestCase):
             kagent_path.unlink(missing_ok=True)
         else:
             kagent_path.write_text(json.dumps(self.kagent_mirror_manifest))
+        homepage_path = self.root / "scripts/config/harbor-homepage-images.json"
+        if self.homepage_mirror_manifest is None:
+            homepage_path.unlink(missing_ok=True)
+        else:
+            homepage_path.write_text(json.dumps(self.homepage_mirror_manifest))
         canary_path = self.root / "scripts/config/harbor-image-updater-canary.json"
         if self.canary_mirror_manifest is None:
             canary_path.unlink(missing_ok=True)
@@ -184,6 +202,9 @@ class HarborPublicationGates(unittest.TestCase):
             names = ["busybox"]
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/cordium-runner-publish.yml@refs/heads/main"
+            self.executable("git", f'if [ "$1" = ls-remote ]; then printf "%s\\trefs/heads/main\\n" {SHA}; '
+                            f'else printf "%s\\n" {SHA}; fi\n')
         if enterprise:
             names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli",
                      "homelab-oce-operator"]
@@ -341,8 +362,6 @@ class HarborPublicationGates(unittest.TestCase):
                         print("private restarted-forward readiness fixture", file=sys.stderr)
                         raise SystemExit(7)
                 print("401", end="")
-            elif command == "sleep":
-                assert args[0].isdigit()
             elif command == "aws":
                 assert args[0] == "ssm", "No cloud signing calls allowed"
                 print("private-test-credential-must-never-appear")
@@ -451,6 +470,7 @@ class HarborPublicationGates(unittest.TestCase):
                     if FIXTURE["mirror"] and not upstream:
                         fail_read("skopeo-pull", {
                             "mirror-pull-once": "unexpected EOF",
+                            "mirror-pull-http2-once": "stream error: stream ID 19; INTERNAL_ERROR; received from peer",
                             "mirror-pull-server-once": "received unexpected HTTP status: 500",
                             "mirror-pull-server-always": "received unexpected HTTP status: 500",
                             "mirror-pull-always": "unexpected EOF",
@@ -583,10 +603,18 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "sleep", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
+        # Readiness polling calls sleep up to 90 times. Record each delay
+        # without launching a Python interpreter for every simulated wait.
+        self.executable("sleep", f"""test "$#" -eq 1 || exit 96
+case "$1" in
+    ''|*[!0-9]*) exit 96 ;;
+esac
+printf '{{"command": "sleep", "args": ["%s"]}}\\n' "$1" >>'{self.calls}'
+""")
         shutil.copyfile(ROOT / "scripts/ci/install-kubeconfig.sh", self.root / "scripts/ci/install-kubeconfig.sh")
 
     def assert_cleaned(self):
@@ -819,7 +847,7 @@ printf '%s\n' {SHA}
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -844,7 +872,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -873,6 +901,53 @@ printf '%s\n' {SHA}
         result = self.rejected(mode="mirror-prometheus")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
+    def test_home_assistant_scope_requires_the_exact_catalog_reference(self):
+        source = "ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f"
+        valid = {"source": source}
+        selected = json.loads((ROOT / "scripts/config/harbor-home-assistant-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [valid]})
+        self.assertIn(valid, catalog["images"])
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("493a0", "493a1")}]}):
+            with self.subTest(scope=scope):
+                self.home_assistant_mirror_manifest = scope
+                self.rejected(mode="mirror-home-assistant")
+        self.home_assistant_mirror_manifest = selected
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-home-assistant")
+        self.mirror_manifest = {"images": [valid]}
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-home-assistant")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_homepage_scope_only_accepts_the_reviewed_catalog_image(self):
+        source = (
+            "ghcr.io/gethomepage/homepage:v2.8.0@"
+            "sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"
+        )
+        entry = {"source": source}
+        selected = json.loads((ROOT / "scripts/config/harbor-homepage-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [entry]})
+        self.assertIn(entry, catalog["images"])
+
+        tampered = {"source": source.replace("019d8f", "119d8f")}
+        self.mirror_manifest = {"images": [entry, tampered]}
+        for scope in (None, {"images": [tampered]}, {"images": [entry, tampered]}):
+            with self.subTest(scope=scope):
+                self.homepage_mirror_manifest = scope
+                self.rejected(mode="mirror-homepage")
+
+        self.homepage_mirror_manifest = selected
+        self.mirror_manifest = {"images": [tampered]}
+        self.rejected(mode="mirror-homepage")
+        self.mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-homepage")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
     def test_uptime_kuma_scope_declares_one_fixed_reviewed_image(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
         selected = json.loads((ROOT / "scripts/config/harbor-uptime-kuma-images.json").read_text())
@@ -881,7 +956,7 @@ printf '%s\n' {SHA}
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-uptime-kuma", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_uptime_kuma_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"
@@ -920,7 +995,7 @@ printf '%s\n' {SHA}
         for entry in selected["images"]:
             self.assertIn(entry, catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-adguard", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|n8n|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary|bazel-cache|home-assistant|homepage)", workflow)
 
     def test_adguard_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = 'docker.io/adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c'
@@ -1208,6 +1283,22 @@ printf '%s\n' {SHA}
         self.harbor_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
+
+    def test_n8n_scope_rejects_unreviewed_digests_and_other_repositories(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-n8n-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        other = self.mirror_manifest["images"][0]
+        self.assertEqual(len(selected["images"]), 1)
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.n8n_mirror_manifest = selected
+        self.rejected(mode="mirror-n8n")
+        self.mirror_manifest = {"images": [*selected["images"], other]}
+        self.n8n_mirror_manifest = {"images": [other]}
+        self.rejected(mode="mirror-n8n")
+        self.n8n_mirror_manifest = selected
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-n8n")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_renovate_scope_has_eight_reviewed_sources(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
@@ -1595,6 +1686,7 @@ printf '%s\n' {SHA}
         for failure, phase in (("mirror-alias-lookup-once", "alias"),
                                ("mirror-alias-verify-once", "alias"),
                                ("mirror-pull-once", "skopeo"),
+                               ("mirror-pull-http2-once", "skopeo"),
                                ("mirror-pull-server-once", "skopeo"),
                                ("mirror-regctl-pull-once", "regctl"),
                                ("mirror-regctl-pull-server-once", "regctl")):
@@ -2155,6 +2247,12 @@ printf '%s\n' {SHA}
         self.env["GITHUB_EVENT_NAME"] = "push"
         self.rejected(mode="publish-cordium")
 
+    def test_cordium_publication_rejects_a_different_workflow(self):
+        self.transport_mocks(cordium=True)
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
+        result = self.rejected(mode="publish-cordium")
+        self.assertIn("Invalid Cordium publication dispatch context", result.stderr)
+
     def test_cordium_digest_or_signing_failure_withholds_success(self):
         for failure in ("digest", "pull", "pull-digest", "sign", "verify"):
             self.transport_mocks(cordium=True, failure=failure)
@@ -2519,6 +2617,75 @@ class MirrorWorkflowStatusPin(unittest.TestCase):
         )
         for name in ("policy/workflows.rego", "policy/workflows_test.rego"):
             self.assertIn(digest, (ROOT / name).read_text())
+
+
+class CordiumPublicationSource(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="cordium-publication-source-")
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        self.main = root / "main"
+        self.main.mkdir()
+        self.checkout = root / "checkout"
+        self.env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL="/dev/null")
+        self.git(self.main, "init", "--initial-branch=main")
+        self.commit("flake.lock", "pinned source")
+        self.sha = self.git(self.main, "rev-parse", "HEAD").strip()
+        self.git(root, "clone", "--depth=1", self.main.as_uri(), str(self.checkout))
+        self.git(self.checkout, "config", f"url.{self.main.as_uri()}.insteadOf",
+                 "https://github.com/Stuhlmuller/homelab.git")
+        self.env.update(GITHUB_ACTIONS="true", GITHUB_REPOSITORY="Stuhlmuller/homelab",
+                        GITHUB_REF="refs/heads/main", GITHUB_SHA=self.sha,
+                        EXPECTED_SHA=self.sha, GITHUB_EVENT_NAME="workflow_dispatch",
+                        GITHUB_WORKFLOW_REF="Stuhlmuller/homelab/.github/workflows/"
+                                            "cordium-runner-publish.yml@refs/heads/main")
+
+    def git(self, cwd, *args):
+        return subprocess.check_output(
+            ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+             "-c", "commit.gpgsign=false", *args], cwd=cwd, env=self.env, stderr=subprocess.PIPE, text=True,
+        )
+
+    def commit(self, path, contents):
+        target = self.main / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(contents)
+        self.git(self.main, "add", "--", path)
+        self.git(self.main, "commit", "-m", "update " + path)
+
+    def verify(self):
+        return subprocess.run(["bash", str(ROOT / "scripts/ci/cordium-publication-source.sh")],
+                              cwd=self.checkout, env=self.env, capture_output=True, text=True, timeout=10)
+
+    def test_same_commit_and_prose_only_descendant_keep_original_checkout(self):
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.commit("docs/guide.md", "updated prose")
+        self.commit("openwiki/runbooks/guide.md", "updated runbook")
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.git(self.checkout, "rev-parse", "HEAD").strip(), self.sha)
+
+    def test_publication_inputs_and_non_prose_docs_fail_closed(self):
+        self.commit("docs/example.yaml", "modified configuration")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("publication inputs changed", result.stderr)
+        self.git(self.main, "reset", "--hard", self.sha)
+        self.commit("flake.lock", "different inputs")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("publication inputs changed", result.stderr)
+
+    def test_rewritten_main_and_wrong_dispatch_are_rejected(self):
+        self.git(self.main, "checkout", "--orphan", "rewritten")
+        self.commit("README.md", "new branch")
+        self.git(self.main, "branch", "-M", "main")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no longer an ancestor", result.stderr)
+        self.env["EXPECTED_SHA"] = "0" * 40
+        self.assertIn("Invalid Cordium publication dispatch context", self.verify().stderr)
 
 
 if __name__ == "__main__":

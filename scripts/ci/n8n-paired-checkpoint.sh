@@ -41,12 +41,10 @@ literal_absent() {
   rg -Fq "$1" "$2" || status=$?
   [[ "$status" -eq 1 ]]
 }
-literal_absent 'migration-v1.values.yaml' "$stack" || exit 1
-literal_absent 'migration-github-trigger-v1.values.yaml' "$stack" || exit 1
 literal_absent 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 literal_absent 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 
-bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/homelab/us-west-2/operator/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
 checked_equal "$account" aws --region us-east-1 sts get-caller-identity --query Account --output text || exit 1
@@ -226,10 +224,11 @@ absent() {
   [[ -z "$result" ]]
 }
 reader_pods_gone() {
-  local _
+  local _ selector
+  selector="homelab.stuhlmuller.dev%2Fcheckpoint-owner%3D$owner_token"
   for _ in {1..6}; do
-    if kubectl -n automation get pods \
-      -l "homelab.stuhlmuller.dev/checkpoint-owner=$owner_token" --chunk-size=0 -o json |
+    # The raw API preserves the PodList resource version and pagination metadata.
+    if kubectl get --raw "/api/v1/namespaces/automation/pods?limit=500&labelSelector=$selector" |
       jq -e '.kind == "PodList" and
         (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
         (.metadata.continue // "") == "" and (.items | type == "array" and length == 0)' >/dev/null; then

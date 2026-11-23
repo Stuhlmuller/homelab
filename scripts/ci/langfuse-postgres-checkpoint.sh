@@ -74,7 +74,7 @@ aws_checkpoint() {
   fi
 }
 
-bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/homelab/us-west-2/operator/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
 [[ "$(aws_checkpoint --region us-east-1 sts get-caller-identity --query Account --output text)" == "$account" ]] || exit 1

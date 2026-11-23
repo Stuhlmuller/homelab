@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kagent-postgres
+  namespace: kagent
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: kagent-postgres
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kagent-postgres
+  namespace: kagent
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kagent-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kagent-postgres
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: POSTGRES_USER
+              value: kagent
+            - name: POSTGRES_DB
+              value: kagent
+            - name: POSTGRES_PASSWORD_FILE
+              value: /var/run/secrets/postgres/password
+            - name: PGDATA
+              value: /var/lib/postgresql/18/docker
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, kagent, -d, kagent]
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, kagent, -d, kagent]
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+            - name: postgres-run
+              mountPath: /var/run/postgresql
+            - name: postgres-tmp
+              mountPath: /tmp
+            - name: postgres-auth
+              mountPath: /var/run/secrets/postgres
+              readOnly: true
+      volumes:
+        - name: data
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: postgres-run
+          emptyDir: {}
+        - name: postgres-tmp
+          emptyDir: {}
+        - name: postgres-auth
+          secret:
+            secretName: kagent-postgres
