@@ -4,15 +4,9 @@ resources:
   - policy.yaml
   - binding.yaml
   - image-rewrite.yaml
-  - terminal-pod-cleanup.yaml
 configMapGenerator:
   - name: image-rewrite
     namespace: kube-system
     files:
       - image-rewrite.py
       - images.json
-  - name: terminal-image-cleanup
-    namespace: kube-system
-    files:
-      - terminal-pod-cleanup.py
-      - terminal-pod-targets.json

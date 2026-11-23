@@ -1,0 +1,7 @@
+{
+  "images": [
+    {
+      "source": "quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"
+    }
+  ]
+}
