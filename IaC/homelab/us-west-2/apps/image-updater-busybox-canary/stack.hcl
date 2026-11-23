@@ -15,6 +15,7 @@ inputs = {
       repoURL        = local.shared.argocd_defaults.repo_url
       targetRevision = local.shared.argocd_defaults.target_revision
       path           = "${local.shared.argocd_defaults.source_root}/image-updater-busybox-canary"
+      kustomize      = {}
     }]
   }
   image_update = {

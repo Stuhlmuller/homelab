@@ -167,6 +167,14 @@ for the bootstrap chart's literal `global.image.tag`. The full catalog keeps
 v3.4.2 for rollback alongside v3.4.14. Use protected Harbor publication and
 authenticated pull verification before applying a new bootstrap image tag.
 
+## Historical pod image entries
+
+Argo CD can list images from retained terminal pods. A one-time GitOps Job
+removed 51 reviewed terminal ReplicaSet pods with upstream references after
+their 30-day retention period. Argo CD reported the hook succeeded, and a
+subsequent Kubernetes inventory found none of the reviewed pods. The cleanup
+preserved active pods, recent failures, and Job history.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
@@ -370,6 +378,17 @@ Read-only inspection of a successful
 success did not prove Harbor version discovery worked. These hosted-runner
 timeouts do not establish the cause of the separate cluster failure. Keep
 detailed Job logs restricted because they can name private packages.
+
+The [hosted Renovate relay candidate](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+is a standalone Kustomization at zero replicas outside the active Traefik
+Application. It prepares a private TCP 443 route from the dedicated hosted
+runner to the registry-only listener, with Harbor TLS, SNI, and the token
+realm preserved. The [offline fixture](../../scripts/ci/renovate-registry-relay-test.py)
+checks that the active overlay excludes it and verifies the route and its
+identity boundary. A separate activation must verify signed Tailnet Lock
+enrollment, persistent relay state, the protected companion workflow, and a
+read-only OCI lookup plus access denials before using the route for hosted
+Renovate runs.
 
 The first manual in-cluster dry run used the default `automation` service
 identity and resolved Harbor through the shared private Traefik listener on
@@ -587,6 +606,10 @@ missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
 anonymous upstream reads, immutable digest checks and complete authenticated
 Harbor pulls with the dedicated mirror reader. They use the same fixed
 destination repositories.
+
+Homepage uses the fixed [Homepage inventory](../../scripts/config/harbor-homepage-images.json)
+at reviewed current main. The scope checks the v2.8.0 digest against the full
+catalog and requires a complete authenticated pull before the cutover.
 
 Bazarr uses `image_scope=bazarr` with the fixed
 `scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
@@ -913,6 +936,13 @@ activate the held consumer, or clear shared recovery/advisory gates.
 Current-main source staging also applies the fresh private pull prerequisite to
 both retained NOFX subjects; its anonymous source download and alias checks
 remain independent of this fixed core-only mode.
+
+The Photon security rebuild updated curl, curl-libs and expat-libs. The
+protected publisher recorded a zero-match runtime audit, a complete
+authenticated pull and signature verification for the new image. The
+[Harbor Helm values](../../clusters/homelab/apps/harbor/values.yaml) select
+that exact tag and digest.
+[Protected publication](https://github.com/Stuhlmuller/homelab/actions/runs/45104169857)
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

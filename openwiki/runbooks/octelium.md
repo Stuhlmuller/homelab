@@ -170,9 +170,18 @@ tree, which omits these controller-generated Deployments.
   the condition persists for another five minutes. Match the Pod UID
   before investigating its deletion, finalizers, and node health.
 
-The Service serves as the expected inventory. Detecting simultaneous loss of a
-Service and its Deployment requires a separate desired-Service inventory.
-Monitor role capacity, endpoint reachability, public transport, and
-authorization separately. Run `bash scripts/ci/octelium-proxy-alert-check.sh`
-in the repository's Nix devShell to evaluate the rules against the
-failure and recovery fixtures.
+For an Octelium Deployment with fewer available replicas than requested,
+check `KubeDeploymentReplicasMismatch` in Prometheus Alerts. Filter by
+namespace and Deployment. This alert can fire while Argo reports Healthy.
+Alertmanager routes it to `homelab-notifications`. Use the
+[read-only Prometheus verification path](../operations/monitoring-resource-requests.md)
+to inspect its firing state.
+
+The Service supplies the expected inventory for each generated proxy.
+Detecting simultaneous loss of a Service and its Deployment requires a
+separate desired-Service inventory. Detecting an entirely absent control-plane
+or dataplane role requires an explicit role inventory. Use separate probes for
+endpoint reachability, public gRPC, and authorization.
+
+Run `bash scripts/ci/octelium-proxy-alert-check.sh` in the repository's Nix
+devShell to exercise generated-proxy failure and recovery.

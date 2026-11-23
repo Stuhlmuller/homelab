@@ -298,8 +298,8 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
-AFFiNE remains suspended for memory capacity, including its PostgreSQL and Redis
-workloads; its four PVCs remain retained. Dispatcharr now declares one app and
+AFFiNE declares one app replica and one replica each for PostgreSQL and Redis.
+All four existing PVCs are retained. Dispatcharr now declares one app and
 one dedicated PostgreSQL replica for IPTV-org USA setup, reusing its two retained
 PVCs. No durable data is removed. See [Monitoring Resource Requests](../operations/monitoring-resource-requests.md)
 and the app READMEs for capacity, suspension and resume checks.
@@ -615,12 +615,13 @@ An API outage that leaves either resource keeps the fence in place until the
 [run-bound cleanup helper](../../scripts/n8n-paired-residual-cleanup.sh)
 verifies current main, the fence, observed resource UIDs and owner/spec, then
 removes the Job and its Pods before the deny-all policy. A mismatch leaves the
-fence and policy in place. The checkpoint script
+fence and policy in place. The checkpoint script stages the same immutable
+PostgreSQL image from its public upstream before capturing the volumes. It
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
 downloads and restores both in disposable runner storage, then publishes a
-checksum-bound manifest. This is source preparation, not a completed backup;
-activation still needs a separate reviewed fence revision and successful live
-receipt.
+checksum-bound manifest. A failed run reports a fixed phase label while
+keeping command output private. Backup activation requires a separate
+reviewed fence revision and a successful live receipt.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
@@ -934,3 +935,10 @@ Live private routing and normal-client acceptance are separate checks.
 The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
 limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
 PostgreSQL and Redis serve inbound clients without initiating egress.
+
+## Home Assistant state
+
+[Home Assistant](../../clusters/homelab/apps/home-assistant/README.md) uses a
+retained local claim on `zimaboard-0` for configuration, credentials, and the
+SQLite recorder. The documented backup and recovery path uses Home Assistant
+archives downloaded and stored off the node.

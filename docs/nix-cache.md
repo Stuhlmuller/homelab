@@ -2,15 +2,23 @@
 
 Offline Python and shell fixtures and manifest policies are Nix derivations in
 [`flake.nix`](../flake.nix). A successful check creates a `result` file. A
-failed check creates no output and cannot populate the cache. The complete
-tracked source tree, fixture commands, pinned tools, and platform determine
-the derivation; Git commit metadata does not. Testing before a signed commit
-therefore remains reusable when the committed files match.
+failed check creates no output and cannot populate the cache. Fixture inputs,
+commands, pinned tools, and platform determine the derivation. Testing before
+a signed commit remains reusable when the inputs match.
+
+The n8n recovery fixtures use the checkpoint workflow, scripts, and manifests
+listed in `flake.nix`. The signed cache publishes their result separately.
+Unrelated source edits can reuse it while the aggregate offline check still
+requires it. Cross-repository fixtures and policy checks use the full tracked
+tree.
 
 [`offline-checks.sh`](../scripts/ci/offline-checks.sh) owns the extracted
 Python checks; [offline-static-checks.sh](../scripts/ci/offline-static-checks.sh)
 owns shell fixtures and source contracts. Their generated Terragrunt units are fixtures; it performs no
 provider initialization or authenticated cloud/cluster requests.
+The offline result requires all four fixture groups to pass. GitHub Actions
+builds the independent private DNS, n8n recovery, Harbor publication, and
+remaining groups in parallel on a single runner.
 [`conftest-policies.sh`](../scripts/ci/conftest-policies.sh) owns the second
 check. Provider initialization/validation, Helm chart downloads, Git-sensitive
 secret scanning, security scanners, live plans, and cluster acceptance still
@@ -42,7 +50,7 @@ them to the `nix-cache` GitHub prerelease. It uploads NARs before metadata,
 never replaces existing assets, and rejects a differing existing asset.
 GitHub authentication requires repository write access; CI readers need no
 cache credentials. The private signing key remains outside the checkout and
-is never supplied to PR jobs. Both checks produce self-contained outputs.
+is never supplied to PR jobs. Each check produces a self-contained output.
 
 The cache is an ordinary Nix binary cache hosted as release assets. NAR URLs
 are flattened because release assets cannot contain directory paths. Nix
@@ -186,10 +194,16 @@ after Nix realizes both expected outputs and remaining validation passes.
 `require-sigs` and the build sandbox remain enabled. Missing entries build;
 signature or content corruption fails verification.
 
-Static jobs no longer restore the entire Nix store from an Actions cache:
-existing unsigned store objects could bypass binary-cache signature checks.
-The live Terragrunt plan job retains its development-shell dependency cache.
-Live plans and cluster checks do not consume cached test receipts.
+The Terragrunt static job verifies the signed outputs with a fresh Nix store.
+The `validate` repository job verifies them on `main` before checking for a
+GitHub Actions cache entry. On `main`, the job looks up the archive without
+downloading it and saves it on a miss after successful validation. The cache
+key includes the runner OS, architecture, and the hash of `flake.nix` and
+`flake.lock`.
+Pull request and runtime validation jobs only restore it, and a miss uses
+normal Nix substitution and builds. The live Terragrunt plan job retains its
+development-shell dependency cache. Runtime and live checks execute on each
+scheduled run.
 
 ## Key lifecycle and rollback
 
