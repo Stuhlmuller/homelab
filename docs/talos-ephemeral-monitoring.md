@@ -62,6 +62,24 @@ Filesystem and inode readings cover exhaustion. Per-device I/O, SMART/ATA
 health and eMMC wear require separate hardware evidence under
 [issue #909](https://github.com/Stuhlmuller/homelab/issues/909).
 
+## Node I/O pressure
+
+The same authenticated kubelet scrape retains the root-cgroup I/O pressure
+counters on the four eligible nodes. Query a five-minute rate to find nodes
+where tasks wait for I/O. A rate of 0.1 means that waiting occurred during 10% of
+the measured interval.
+
+```promql
+rate(container_pressure_io_waiting_seconds_total{job="kubelet",metrics_path="/metrics/cadvisor",id="/",pod=""}[5m])
+```
+
+Use `container_pressure_io_stalled_seconds_total` for the time all non-idle
+tasks are stalled. Expect one series per node per metric. Pressure is a
+node-wide signal, so correlate it with workloads and filesystem runway.
+The [Linux PSI semantics](https://docs.kernel.org/accounting/psi.html) describe
+partial and full stalls. Device latency, errors and hardware wear still need a
+separate collector.
+
 ## Validate and roll back
 
 Run `nix develop --command python3 -I scripts/ci/talos-filesystem-check.py`

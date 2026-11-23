@@ -1,0 +1,68 @@
+rbac:
+  namespaces: [kagent]
+
+database:
+  postgres:
+    bundled:
+      enabled: false
+    urlFile: /var/run/secrets/kagent-postgres/url
+
+controller:
+  agentDeployment:
+    serviceAccountName: kagent-inference
+  image:
+    tag: "0.10.6@sha256:7f99ef6e0c75dd9cebc322ad62792c712f952c7f89efea6b6d6be02a2edd4b92"
+  agentImage:
+    tag: "0.10.6@sha256:d8e8d6a53a35884c4889acf64483fd151efb17be79ace3ce5463a72379e4b5ef"
+  goAgentImage:
+    tag: "0.10.6@sha256:8afb90938d01ab0b2d222d77a2e94136237286f7a0eb06acace6d2fe8626ad29"
+  skillsInitImage:
+    tag: "0.10.6@sha256:aa687d91e2e55095307524674f6ba093ade04ee5b335700fd106642a93e786b9"
+  volumes:
+    - name: postgres-auth
+      secret:
+        secretName: kagent-postgres
+  volumeMounts:
+    - name: postgres-auth
+      mountPath: /var/run/secrets/kagent-postgres
+      readOnly: true
+
+ui:
+  image:
+    tag: "0.10.6@sha256:a7ad7d95021a04a44bef9c76d273002f0359f8e30a5ff97bd2be8e8d76e8df69"
+
+providers:
+  default: openAI
+  openAI:
+    model: openrouter/free
+    apiKeySecretRef: kagent-litellm
+    apiKeySecretKey: token
+    config:
+      baseUrl: http://litellm.ai.svc.cluster.local:4000/v1
+
+kmcp:
+  enabled: false
+kagent-tools:
+  enabled: false
+grafana-mcp:
+  enabled: false
+k8s-agent:
+  enabled: false
+kgateway-agent:
+  enabled: false
+istio-agent:
+  enabled: false
+promql-agent:
+  enabled: false
+observability-agent:
+  enabled: false
+argo-rollouts-agent:
+  enabled: false
+helm-agent:
+  enabled: false
+cilium-policy-agent:
+  enabled: false
+cilium-manager-agent:
+  enabled: false
+cilium-debug-agent:
+  enabled: false

@@ -342,6 +342,27 @@ class Boundaries(unittest.TestCase):
         self.assertEqual(remaining[0][:2], ("CKV_SECRET_6", OCTELIUM_CATALOG))
 
     @unittest.skipUnless(NATIVE, "Run --native with either reviewed pinned Checkov on PATH")
+    def test_native_kagent_public_secret_reference_keeps_credential_scanning(self):
+        path = "clusters/homelab/apps/kagent/values.yaml"
+        original = (review.ROOT / path).read_text()
+        target = self.root / path
+        target.parent.mkdir(parents=True)
+        reviews = review.load_reviews(review.REVIEWS.read_text())
+        command = ["checkov", "--framework", "secrets", "--enable-secret-scan-all-files",
+                   "--output", "json", "-f", path]
+        value = base64.b64encode(bytes(range(32, 96))).decode()
+        for contents, remaining_count in ((original, 0), (original + f'\nfixture_secret: "{value}"\n', 1)):
+            target.write_text(contents)
+            result = subprocess.run(command, cwd=self.root, capture_output=True, text=True,
+                                    timeout=120, check=False)
+            self.assertEqual(result.returncode, 1)
+            self.assertFalse(result.stderr.strip())
+            reviewed, remaining = review.assess(result.stdout, result.returncode, "secrets",
+                                                  self.root, {path}, reviews)
+            self.assertEqual(reviewed, 1)
+            self.assertEqual([finding[:2] for finding in remaining], [("CKV_SECRET_6", path)] * remaining_count)
+
+    @unittest.skipUnless(NATIVE, "Run --native with either reviewed pinned Checkov on PATH")
     def test_native_pinned_scanner(self):
         # Generated inert bytes are intentionally high entropy; never a real credential.
         value = base64.b64encode(bytes(range(32, 96))).decode()
