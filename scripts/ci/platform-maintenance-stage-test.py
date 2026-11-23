@@ -10,6 +10,7 @@ import re
 import runpy
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -179,6 +180,36 @@ cleanup() { touch "$work/cleaned"; }
                         "runId": "123", "runAttempt": "2", "phase": phase,
                         "exitCode": stage_status, "verified": stage_status == 0, "detail": detail,
                     })
+
+    def test_worker_reboot_without_boot_id_stops_before_external_access(self):
+        result, external = self.run_stage("cilium-reboot-worker")
+        self.assertEqual(result.returncode, 2)
+        self.assertFalse(external)
+
+    def test_failed_cilium_probe_leaves_worker_cordoned_and_cleans_up(self):
+        script = ROOT / "scripts/cilium-probe-worker.py"
+        main = runpy.run_path(str(script))["main"]
+        node = {
+            "metadata": {"name": "zimaboard-2", "uid": "worker-uid", "resourceVersion": "1"},
+            "spec": {"unschedulable": True},
+            "status": {"nodeInfo": {"bootID": "new-boot"},
+                       "conditions": [{"type": "Ready", "status": "True"}]},
+        }
+        probe_id = "9cf43e2f-6f84-4f57-a2d7-eb034e6081ba"
+        args = [str(script), "--expected-sha", SHA, "--previous-boot-id", probe_id,
+                "--pool", "10.245.0.0/16"]
+        cluster = mock.Mock(return_value=json.dumps({"metadata": {"uid": "probe-namespace-uid"}}))
+        cleanup = mock.Mock()
+        functions = {"get": mock.Mock(return_value=node), "kube": cluster, "check_main": mock.Mock(),
+                     "wait_for_probe": mock.Mock(side_effect=RuntimeError("probe timed out")),
+                     "delete_namespace": cleanup}
+        with mock.patch.dict(main.__globals__, functions), mock.patch.object(sys, "argv", args), mock.patch.dict(
+            os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": SHA}
+        ), mock.patch.object(subprocess, "check_output", return_value=SHA):
+            with self.assertRaisesRegex(RuntimeError, "probe timed out"):
+                main()
+        cleanup.assert_called_once_with("probe-namespace-uid")
+        self.assertEqual([call.args[0] for call in cluster.call_args_list], ["create", "create"])
 
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()

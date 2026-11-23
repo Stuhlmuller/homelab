@@ -12,7 +12,11 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, cilium-route-preflight, cilium-evacuate-worker, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, cilium-route-preflight, cilium-evacuate-worker, cilium-reboot-worker, cilium-probe-worker, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+      previous_boot_id:
+        description: Reviewed prior boot ID for the first Cilium worker reboot
+        required: false
+        type: string
       cleanup_run_id:
         description: Verified owned-cleanup run ID, required only for canary-release
         required: false
@@ -151,6 +155,7 @@ jobs:
       - name: Run Reviewed Platform Stage
         env:
           RUN_STAGE: ${{ inputs.stage }}
+          PREVIOUS_BOOT_ID: ${{ inputs.previous_boot_id }}
           CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           QUALIFICATION_RUN_ID: ${{ inputs.qualification_run_id }}
@@ -171,7 +176,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'37da40b4b90be5514b30b4981fd72c9ed757be7823d134f4ba11c90f1c8cd9c5  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
