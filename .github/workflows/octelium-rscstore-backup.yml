@@ -77,9 +77,9 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '7cdb7c8efd5324a8136150ee7c56439bcd86cda99b8044c0d39c4d66dfef8ec6' scripts/ci/octelium-rscstore-backup.sh \
+            '0494795c91b453264b15ec9b22eee462d35a875728ed584f49f6bce815bc820e' scripts/ci/octelium-rscstore-backup.sh \
             '21df44d23675683179056636bb5d2d5e3b04bb34a2f4eddb2666a62e5d0e511d' scripts/octelium-rscstore-capture.py \
-            'bef7063dfb90bef89f17f8fe26fc82e1c79a54b03115667ab5c427f2922d3924' scripts/application-backup.py \
+            '3a04e0b4736cb7826d83848dcd9ead3266337ec1f9522937b8265658c4faf991' scripts/application-backup.py \
             'e0ce092527c9fa165c36c744f55a6e31eb35610591ec7dd74bc752c9935e366f' scripts/ci/octelium-rscstore-backup-receipt.py \
             | sha256sum --check --status
       - name: Install Nix
