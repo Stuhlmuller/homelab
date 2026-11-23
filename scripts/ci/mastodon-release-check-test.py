@@ -57,12 +57,17 @@ class ReleaseCheckTest(unittest.TestCase):
                                .split("        run: |\n", 1)[1])
         baseline = {**os.environ, "STATIC_RESULT": "success", "LIVE_PLAN_REQUIRED": "true",
                     "RUNTIME_CHECK_REQUIRED": "true", "TRUSTED_HEAD": "true",
-                    "LIVE_PLAN_RESULT": "success", "SKIP_NOTE_RESULT": "skipped"}
+                    "LIVE_PLAN_RESULT": "success"}
         for changes, succeeds in (({}, True), ({"TRUSTED_HEAD": "false"}, False),
                                   ({"LIVE_PLAN_RESULT": "failure"}, False),
                                   ({"LIVE_PLAN_REQUIRED": "false"}, False),
                                   ({"RUNTIME_CHECK_REQUIRED": ""}, False),
-                                  ({"STATIC_RESULT": "failure"}, False)):
+                                  ({"STATIC_RESULT": "failure"}, False),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "LIVE_PLAN_REQUIRED": "false",
+                                    "LIVE_PLAN_RESULT": "skipped"}, True),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "LIVE_PLAN_REQUIRED": "false"}, False),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "TRUSTED_HEAD": "false",
+                                    "LIVE_PLAN_RESULT": "skipped"}, True)):
             result = subprocess.run(["bash", "-c", gate], env={**baseline, **changes},
                                     capture_output=True, text=True, timeout=5, check=False)
             self.assertEqual(result.returncode == 0, succeeds, changes)

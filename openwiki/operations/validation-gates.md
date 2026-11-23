@@ -907,8 +907,8 @@ trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. An unreadable base diff fails the static job before it can emit a
 successful skip decision; the offline fixture exercises this failure. The
-aggregate fails unless static checks succeed and the applicable
-live plan or same-repository skip-note job has the expected result. Keep the
+aggregate checks static success and the expected live plan result. It logs the
+reason for a skipped live plan. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
@@ -918,6 +918,12 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+
+The `validate` runtime checks for image admission, network enforcement, and
+Harbor Core run on `main` pushes. In PRs,
+[`validate-runtime-scope.sh`](../../scripts/ci/validate-runtime-scope.sh) checks
+the exact event diff, including removed paths, for each check's inputs. An
+unavailable diff runs the full runtime suite.
 
 The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
 the explicit empty permissions map, fixed inputs and endpoint, both jobs'
