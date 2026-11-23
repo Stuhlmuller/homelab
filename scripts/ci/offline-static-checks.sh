@@ -931,6 +931,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
     '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+    '.github/workflows/octelium-rscstore-backup.yml:backup' \
+    '.github/workflows/octelium-rscstore-backup.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/platform-maintenance.yml:maintenance' \
@@ -998,6 +1000,7 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
+.github/workflows/octelium-rscstore-backup.yml cbdfd780f10ff081c7862708b977005c1362f5502a580001dddc62af583e1462
 .github/workflows/lint.yml a0348d00b52e0e8d7269fa1ba98ed45615bee45c5ce94cef3d8e300e06b76819
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
@@ -1017,6 +1020,11 @@ done <<'EOF'
 .github/workflows/terragrunt-plan.yml fd14da374b313d09e6cd4789c96d0f1a7c7370c70d412a2e9ef829cf7ca8c76f
 .github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
 EOF
+echo "::endgroup::"
+
+echo "::group::Octelium resource-store backup helper checksums"
+yq -er '.jobs.backup.steps[] | select(.name == "Verify Reviewed Backup Helpers") | .run' \
+  .github/workflows/octelium-rscstore-backup.yml | bash -e -o pipefail
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
@@ -1043,7 +1051,8 @@ for workflow_job in \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
   '.github/workflows/mastodon-public-dns.yml:static-policy' \
   '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
-  '.github/workflows/n8n-paired-checkpoint.yml:static-policy'; do
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
+  '.github/workflows/octelium-rscstore-backup.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
   job="${workflow_job##*:}"
   yq -o=json '.' "$workflow" |

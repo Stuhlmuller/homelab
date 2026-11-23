@@ -191,9 +191,11 @@ def load(directory):
     return record
 
 
-def upload(aws, key, path, digest):
+def upload(aws, key, path, digest, *, create_only=False):
     args = ['--key', key, '--checksum-mode', 'ENABLED']
-    metadata = aws.call('s3api', 'head-object', args, missing=True)
+    # Scoped CI cannot probe a missing key with an unversioned HEAD. A fresh
+    # publication uses a conditional PUT and verifies only the returned version.
+    metadata = None if create_only else aws.call('s3api', 'head-object', args, missing=True)
     if metadata is None:
         response = aws.call('s3api', 'put-object', [
             '--key', key, '--body', str(path), '--if-none-match', '*',
@@ -219,7 +221,7 @@ def download(aws, key, item, path):
         raise ValueError('downloaded bytes failed checksum')
 
 
-def publish(directory, workspace, aws):
+def publish(directory, workspace, aws, *, create_only=False):
     record = load(directory)
     fresh(record['captured_at'])
     aws.check()
@@ -229,7 +231,7 @@ def publish(directory, workspace, aws):
     for name, digest in record['objects'].items():
         if load(directory) != record:
             raise ValueError('source changed during publication')
-        version = upload(aws, f'{prefix}/{name}', directory / name, digest)
+        version = upload(aws, f'{prefix}/{name}', directory / name, digest, create_only=create_only)
         item = {'digest': digest, 'version_id': version}
         download(aws, f'{prefix}/{name}', item, scratch / name)
         manifest['objects'][name] = item
@@ -240,7 +242,8 @@ def publish(directory, workspace, aws):
     # and its actual bytes checked. Content is deterministic for resumable PUTs.
     write(scratch / 'complete.json', canonical(manifest))
     digest = OFFSITE.digest(scratch / 'complete.json')
-    version = upload(aws, f'{prefix}/complete.json', scratch / 'complete.json', digest)
+    version = upload(aws, f'{prefix}/complete.json', scratch / 'complete.json', digest,
+                     create_only=create_only)
     download(aws, f'{prefix}/complete.json', {'digest': digest, 'version_id': version}, scratch / 'marker-check.json')
     OFFSITE.save(directory / 'publication.json', {'destination': aws.target, 'id': directory.name,
                  'marker_version': version, 'verified_at': now(), 'application_restore_tested': False})
@@ -333,7 +336,11 @@ def main():
     parser.add_argument('--aws-cli', type=Path)
     parser.add_argument('--profile', default='application-backup')
     parser.add_argument('--metrics', type=Path)
+    parser.add_argument('--create-only', action='store_true',
+                        help='publish a fresh Octelium resource-store backup using conditional PUTs')
     args = parser.parse_args()
+    if args.create_only and (args.command != 'publish' or args.app != 'octelium-rscstore'):
+        parser.error('--create-only requires publish --app octelium-rscstore')
     os.umask(0o077)
     success, stamp = False, 0
     try:
@@ -347,7 +354,7 @@ def main():
                 raise ValueError('explicit prepared recovery ID required')
             if load(workspace / args.id)['app'] != args.app:
                 raise ValueError('application differs from preparation')
-            print(publish(workspace / args.id, workspace, aws))
+            print(publish(workspace / args.id, workspace, aws, create_only=args.create_only))
         elif args.command == 'retrieve':
             print(retrieve(args.app, args.id or '', workspace, aws).name)
         else:

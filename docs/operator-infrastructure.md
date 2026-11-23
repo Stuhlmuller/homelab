@@ -83,6 +83,23 @@ with an existing administrator session. Generic CI validates this unit offline
 but does not live-plan or apply it. Bucket creation does not publish snapshots
 or prove offsite recovery; those verification steps remain separate.
 
+## Octelium resource-store backup publisher
+
+The `octelium-rscstore-backup` operator unit owns the dedicated GitHub OIDC
+role, its inline policy, and a matching permissions boundary. It targets the
+existing application backup bucket and uses separate state from the bucket
+and OpenClaw publisher. Use an administrator session and a reviewed saved
+plan scoped to this unit. Expect only the three new IAM resources.
+
+Use the `github-iac` environment declaration to restrict
+`octelium-rscstore-backup` deployments to `main` before any workflow requests
+the role. The GitHub workflow checks that its run still targets the reviewed
+current `main` revision. The AWS role can inspect bucket encryption and
+versioning, conditionally create encrypted files under
+`applications/octelium-rscstore/`, read recorded object versions, and
+discover a completion marker's version. It operates on the AWS-managed S3
+key only through S3 with the application backup bucket's encryption context.
+
 ## GitHub Actions apply-role policy
 
 `github-actions-role-policy` owns the existing `Github-TF-State` role trust and

@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 from datetime import datetime, timezone
 import subprocess
@@ -34,6 +35,10 @@ POD_UID = "44444444-4444-4444-8444-444444444444"
 SHA = "a" * 40
 BOOT_ID = "55555555-5555-4555-8555-555555555555"
 CONTAINER_ID = "a" * 64
+WRITER_UID = "77777777-7777-4777-8777-777777777777"
+REPLICA_SET_UID = "88888888-8888-4888-8888-888888888888"
+WRITER_CONTAINER_ID = "e" * 64
+WRITER_NAME = f"{CAPTURE.DEPLOYMENT}-12345-abcde"
 
 
 def archive_bytes(include_database=True):
@@ -126,7 +131,127 @@ def argo_application_fixture():
         "status": {"sync": {"status": "Synced", "revisions": [SHA]}}}
 
 
+def writer_fixture(*, crashed=False):
+    container_id = "containerd://" + WRITER_CONTAINER_ID
+    container = {"name": "rscstore", "ready": not crashed, "containerID": container_id}
+    if crashed:
+        container["state"] = {"waiting": {"reason": "CrashLoopBackOff"}}
+        container["lastState"] = {"terminated": {"containerID": container_id, "exitCode": 1}}
+    return {"metadata": {"name": WRITER_NAME, "namespace": CAPTURE.NAMESPACE, "uid": WRITER_UID,
+                         "ownerReferences": [{"controller": True, "kind": "ReplicaSet",
+                                              "name": f"{CAPTURE.DEPLOYMENT}-12345", "uid": REPLICA_SET_UID}]},
+            "spec": {"nodeName": "zimaboard-1",
+                     "volumes": [{"name": "octelium", "persistentVolumeClaim": {"claimName": CAPTURE.CLAIM}}],
+                     "containers": [{"name": "rscstore", "volumeMounts": [
+                         {"name": "octelium", "mountPath": "/octelium-data"}]}]},
+            "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": str(not crashed)}],
+                       "containerStatuses": [container]}}
+
+
 class RscstoreCaptureTest(unittest.TestCase):
+    def test_actions_release_guard_binds_workflow_and_transport(self):
+        env = {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
+               "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main",
+               "GITHUB_SHA": SHA, "GITHUB_WORKFLOW_SHA": SHA,
+               "GITHUB_WORKFLOW_REF": CAPTURE.ACTIONS_WORKFLOW_REF}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            overlay = root / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
+            overlay.parent.mkdir(parents=True)
+            overlay.write_text("\n".join(CAPTURE.INSPECTOR_KUSTOMIZATION) + "\n")
+            kubeconfig = {"clusters": [{"cluster": {"server": CAPTURE.ACTIONS_SERVER}}]}
+            app = argo_application_fixture()
+            app["spec"]["syncPolicy"] = {"syncOptions": ["ApplyOutOfSyncOnly=true"]}
+            with mock.patch.object(CAPTURE, "ROOT", root), \
+                    mock.patch.object(CAPTURE, "output", side_effect=[SHA, "", SHA] * 8), \
+                    mock.patch.object(CAPTURE, "json_output", side_effect=[kubeconfig, app] * 4), \
+                    mock.patch.dict(os.environ, env, clear=True):
+                CAPTURE.release_guard(SHA, CAPTURE.ACTIONS_CONTEXT, actions=True, fenced=False)
+                with self.assertRaisesRegex(ValueError, "fenced capture source"):
+                    CAPTURE.release_guard(SHA, CAPTURE.ACTIONS_CONTEXT, actions=True)
+                for key, value in (("GITHUB_REPOSITORY", "fork/homelab"),
+                                   ("GITHUB_WORKFLOW_REF", "other-workflow"),
+                                   ("GITHUB_WORKFLOW_SHA", "b" * 40),
+                                   ("GITHUB_EVENT_NAME", "pull_request")):
+                    with self.subTest(key=key), mock.patch.dict(os.environ, {key: value}), \
+                            self.assertRaisesRegex(ValueError, "exact current-main workflow dispatch"):
+                        CAPTURE.release_guard(SHA, CAPTURE.ACTIONS_CONTEXT, actions=True, fenced=False)
+                with self.assertRaisesRegex(ValueError, "exact current-main workflow dispatch"):
+                    CAPTURE.release_guard(SHA, "other-context", actions=True, fenced=False)
+                kubeconfig["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = True
+                with mock.patch.object(CAPTURE, "json_output", return_value=kubeconfig), \
+                        self.assertRaisesRegex(ValueError, "must verify the reviewed endpoint"):
+                    CAPTURE.release_guard(SHA, CAPTURE.ACTIONS_CONTEXT, actions=True, fenced=False)
+
+    def test_preflight_requires_current_active_writer_and_storage(self):
+        deployment, pvc, pv, pods = cluster_fixture()
+        deployment["spec"]["replicas"] = 1
+        deployment["status"].update(replicas=1, readyReplicas=1, availableReplicas=1)
+        pods.append(writer_fixture())
+        replica_set = {"metadata": {"uid": REPLICA_SET_UID, "ownerReferences": [
+            {"controller": True, "kind": "Deployment", "name": CAPTURE.DEPLOYMENT, "uid": DEPLOY_UID}]}}
+        with mock.patch.object(CAPTURE, "json_output", return_value=replica_set):
+            writer = CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods)
+            self.assertEqual(writer["metadata"]["uid"], WRITER_UID)
+            source = CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID, writer=writer)
+            self.assertEqual(source["pv_uid"], PV_UID)
+            mount = writer["spec"]["containers"][0]["volumeMounts"][0]
+            mount["readOnly"] = True
+            with self.assertRaisesRegex(ValueError, "does not mount the reviewed PVC"):
+                CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods)
+            mount.pop("readOnly")
+            replica_set["metadata"]["ownerReferences"][0]["uid"] = "unexpected"
+            with self.assertRaisesRegex(ValueError, "not owned by the current Deployment"):
+                CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods)
+        with self.assertRaisesRegex(ValueError, "not fenced"):
+            CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID)
+        deployment["status"]["readyReplicas"] = 0
+        with self.assertRaisesRegex(ValueError, "one current resource-store writer"):
+            CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID, writer=writer)
+
+    def test_preflight_accepts_only_the_current_verified_crash_loop_writer(self):
+        deployment, pvc, pv, pods = cluster_fixture()
+        deployment["spec"]["replicas"] = 1
+        deployment["status"].update(replicas=1, readyReplicas=0, availableReplicas=0)
+        writer = writer_fixture(crashed=True)
+        pods.append(writer)
+        replica_set = {"metadata": {"uid": REPLICA_SET_UID, "ownerReferences": [
+            {"controller": True, "kind": "Deployment", "name": CAPTURE.DEPLOYMENT, "uid": DEPLOY_UID}]}}
+        with mock.patch.object(CAPTURE, "json_output", return_value=replica_set):
+            self.assertIs(CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods), writer)
+            source = CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID, writer=writer)
+            self.assertEqual(source["pv_uid"], PV_UID)
+            status = writer["status"]["containerStatuses"][0]
+            status["state"]["waiting"]["reason"] = "ContainerCreating"
+            with self.assertRaisesRegex(ValueError, "verified crash-loop state"):
+                CAPTURE.writer_guard(CAPTURE.ACTIONS_CONTEXT, deployment, pods)
+        with self.assertRaisesRegex(ValueError, "not fenced"):
+            CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID)
+
+    def test_preflight_reads_full_archive_and_rejects_inadequate_workspace(self):
+        workspace = Path("/unused/private-scratch")
+        talosconfig = Path("/unused/talosconfig")
+        size = 1024**2
+        identities = {"pvc_uid": PVC_UID, "pv_uid": PV_UID}
+        with mock.patch.object(CAPTURE, "private_parent", return_value=workspace), \
+                mock.patch.object(CAPTURE, "release_guard") as release, \
+                mock.patch.object(CAPTURE, "cluster_guard", return_value={**identities, "writer_uid": WRITER_UID}) as cluster, \
+                mock.patch.object(CAPTURE, "tar_stream", return_value={"bytes": size}) as archive, \
+                mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=100 * size)):
+            self.assertEqual(CAPTURE.preflight_actions(workspace, SHA, talosconfig), identities)
+        archive.assert_called_once_with(CAPTURE.ACTIONS_CONTEXT, CAPTURE.INSPECTOR)
+        self.assertEqual(cluster.call_args_list, [
+            mock.call(CAPTURE.ACTIONS_CONTEXT, talosconfig, None, None, SHA, actions=True, fenced=False),
+            mock.call(CAPTURE.ACTIONS_CONTEXT, talosconfig, PVC_UID, PV_UID, SHA, actions=True, fenced=False),
+        ])
+        self.assertEqual(release.call_args_list, [mock.call(
+            SHA, CAPTURE.ACTIONS_CONTEXT, actions=True, fenced=False)] * 2)
+        with mock.patch.object(CAPTURE.shutil, "disk_usage", return_value=mock.Mock(free=69 * size)), \
+                self.assertRaisesRegex(ValueError, "lacks space"):
+            CAPTURE.require_capture_space(workspace, size)
+        with self.assertRaisesRegex(ValueError, "out of bounds"):
+            CAPTURE.require_capture_space(workspace, CAPTURE.MAX_ARCHIVE + 1)
+
     def test_argo_guard_requires_live_single_source_shape_and_exact_revision(self):
         application = argo_application_fixture()
         with mock.patch.object(CAPTURE, "json_output", return_value=application):
@@ -213,7 +338,7 @@ class RscstoreCaptureTest(unittest.TestCase):
                       for name in CAPTURE.NODES]}
         state = {"nodes": nodes, "leases": leases, "views": {},
                  "talos_writer": False, "talos_old_reader": False,
-                 "talos_inspector": "current"}
+                 "talos_inspector": "current", "talos_endpoints": []}
         for name in CAPTURE.NODES:
             state["views"][name] = {"pods": {"kind": "PodList", "items": [inspector]
                                                if name == "zimaboard-1" else []},
@@ -232,6 +357,7 @@ class RscstoreCaptureTest(unittest.TestCase):
             if command[1] == "version":
                 return "Client:\nTalos v1.11.3\n"
             address = command[command.index("--nodes") + 1]
+            state["talos_endpoints"].append(command[command.index("--endpoints") + 1])
             header = "NODE NAMESPACE ID IMAGE PID STATUS\n"
             row = f"{address} k8s.io kube-system/example pause:3.10 123 SANDBOX_READY\n"
             if address == CAPTURE.NODES["zimaboard-1"] and state["talos_inspector"] in ("current", "duplicate", "duplicate-current"):
@@ -249,9 +375,14 @@ class RscstoreCaptureTest(unittest.TestCase):
                         "pause:3.10 458 SANDBOX_READY\n")
                 row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:bbbbbbbbbbbb "
                         "busybox:1.38.0 459 CONTAINER_RUNNING\n")
-            if state["talos_writer"]:
+            if state["talos_writer"] is True:
                 row += (f"{address} k8s.io octelium/octeliumee-rscstore-old "
                         "store:0.22.0 1 CONTAINER_RUNNING\n")
+            elif state["talos_writer"] in ("current", "exited") and address == CAPTURE.NODES["zimaboard-1"]:
+                status = "CONTAINER_RUNNING" if state["talos_writer"] == "current" else "CONTAINER_EXITED"
+                row += (f"{address} k8s.io octelium/{WRITER_NAME} pause:3.10 13 SANDBOX_READY\n"
+                        f"{address} k8s.io └─ octelium/{WRITER_NAME}:rscstore:{WRITER_CONTAINER_ID[:12]} "
+                        f"store:0.22.0 14 {status}\n")
             if state["talos_old_reader"] and address == CAPTURE.NODES["zimaboard-1"]:
                 row += (f"{address} k8s.io octelium/old-reader "
                         "busybox:1.38.0 458 SANDBOX_READY\n")
@@ -327,6 +458,36 @@ class RscstoreCaptureTest(unittest.TestCase):
                 "octelium.com/node-mode-controlplane": ""}
             with self.assertRaisesRegex(ValueError, "placement label is ambiguous"):
                 guard()
+            state["nodes"]["items"][0]["metadata"]["labels"] = {}
+            current_writer = writer_fixture()
+            for view in state["views"]["zimaboard-1"].values():
+                view["items"].append(current_writer)
+            state["talos_writer"] = "current"
+            state["talos_endpoints"].clear()
+            with mock.patch.object(CAPTURE, "json_output", side_effect=response), \
+                    mock.patch.object(CAPTURE, "output", side_effect=talos):
+                self.assertEqual(CAPTURE.node_runtime_guard(
+                    CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, current_writer], POD_UID,
+                    actions=True, writer=current_writer), dict.fromkeys(CAPTURE.NODES, BOOT_ID))
+                self.assertEqual(state["talos_endpoints"], [CAPTURE.ACTIONS_TALOS_ENDPOINT] * 4)
+                state["talos_writer"] = False
+                with self.assertRaisesRegex(ValueError, "CRI resource-store writer .* missing or duplicated"):
+                    CAPTURE.node_runtime_guard(
+                        CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, current_writer], POD_UID,
+                        actions=True, writer=current_writer)
+
+                crashed_writer = writer_fixture(crashed=True)
+                state["views"]["zimaboard-1"]["pods"]["items"] = [inspector, crashed_writer]
+                state["views"]["zimaboard-1"]["runningpods/"]["items"] = [inspector]
+                state["talos_writer"] = "exited"
+                self.assertEqual(CAPTURE.node_runtime_guard(
+                    CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, crashed_writer], POD_UID,
+                    actions=True, writer=crashed_writer), dict.fromkeys(CAPTURE.NODES, BOOT_ID))
+                state["talos_writer"] = "current"
+                with self.assertRaisesRegex(ValueError, "Talos CRI resource-store writer container identity differs"):
+                    CAPTURE.node_runtime_guard(
+                        CAPTURE.ACTIONS_CONTEXT, talosconfig, [inspector, crashed_writer], POD_UID,
+                        actions=True, writer=crashed_writer)
 
     def test_inspector_requires_exact_identity_and_zero_other_mounts(self):
         deployment, pvc, pv, pods = cluster_fixture()

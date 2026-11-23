@@ -22,6 +22,12 @@ unit "operator_application_backup_storage" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_octelium_rscstore_backup" {
+  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/operator/octelium-rscstore-backup"
+  path                    = "octelium-rscstore-backup"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_azuread_ci_identities" {
   source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/operator/azuread-ci-identities"
   path                    = "azuread-ci-identities"

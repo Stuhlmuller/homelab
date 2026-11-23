@@ -544,6 +544,35 @@ local receipt files alone do not qualify. This is a prepared path, not a
 deployed backup or a DuckDB reopen proof. No WAL file is changed or store
 writer resumed by this stage. See the [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
+The separate operator `octelium-rscstore-backup` unit declares a dedicated
+`homelab-octelium-rscstore-backup` GitHub OIDC role. Configure the
+`octelium-rscstore-backup` GitHub environment to allow deployments only from
+`main` before enabling credentialed publication. The role can check bucket
+versioning and encryption, read explicit object versions, and conditionally
+create SSE-KMS objects under `applications/octelium-rscstore/`. Retrieval can
+discover the current version of a `complete.json` marker or a preflight
+receipt and uses explicit version IDs for downloads. Publication records the version ID returned by
+each successful conditional creation before verifying that version.
+
+The [Octelium Resource Store Backup workflow](../../.github/workflows/octelium-rscstore-backup.yml)
+uses a clean exact-`main` checkout. Its dedicated environment supplies
+`OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN` and scoped Kubernetes, native Talos relay,
+and Talos mTLS credentials. `preflight` runs with one desired writer replica
+and a ready read-only inspector. Its API, kubelet, and Talos checks must agree
+on the writer identity and report either a ready container or a verified
+crash loop. It discovers and verifies the bound storage UIDs inside
+the protected job, then retains them in its versioned private S3 receipt. It
+also checks live transport, private runner disk, and encrypted readback.
+Preserve a working rollback route and verify successful preflight with current
+storage before merging the fence. After the fence reconciles to exact `main`,
+dispatch `backup` with the successful preflight run ID. It checks unchanged
+backup code and the receipt's source SHA, run ID, and four-hour age limit.
+The backup then verifies live PVC and PV UIDs against the receipt before
+reading the volume. It stores the
+verified archive and fresh extraction proof in S3. GitHub logs report the
+source revision and result. Archive contents, storage UIDs, and object versions
+remain in private receipts.
+
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from

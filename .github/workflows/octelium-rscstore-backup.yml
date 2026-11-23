@@ -1,0 +1,176 @@
+name: Octelium Resource Store Backup
+run-name: Octelium rscstore ${{ inputs.stage }} @ ${{ github.sha }}
+
+# checkov:skip=CKV_GHA_7: the protected workflow uses a fixed stage, exact main, and a verified preflight run.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit
+        required: true
+        type: string
+      stage:
+        description: Preflight before the writer is fenced, or backup after the fence reconciles
+        required: true
+        type: choice
+        options: [preflight, backup]
+      preflight_run_id:
+        description: Successful protected preflight run, required for backup
+        required: false
+        type: string
+
+permissions: {}
+concurrency:
+  group: octelium-rscstore-backup
+  cancel-in-progress: false
+
+jobs:
+  static-policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$GITHUB_WORKFLOW_SHA" = "$EXPECTED_SHA"
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Validate Dispatch and Backup Contracts
+        run: |
+          set -euo pipefail
+          bash scripts/ci/terragrunt-current-main.sh
+          bash -n scripts/ci/octelium-rscstore-backup.sh
+          python3 -I scripts/ci/octelium-rscstore-capture-test.py
+          python3 -I scripts/ci/application-backup-test.py
+          python3 -I scripts/ci/octelium-rscstore-backup-receipt-test.py
+
+  backup:
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.actor_id == '57728706' && github.run_attempt == '1'
+    needs: [static-policy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    environment:
+      name: octelium-rscstore-backup
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify Reviewed Backup Helpers
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            '0494795c91b453264b15ec9b22eee462d35a875728ed584f49f6bce815bc820e' scripts/ci/octelium-rscstore-backup.sh \
+            '21df44d23675683179056636bb5d2d5e3b04bb34a2f4eddb2666a62e5d0e511d' scripts/octelium-rscstore-capture.py \
+            '3a04e0b4736cb7826d83848dcd9ead3266337ec1f9522937b8265658c4faf991' scripts/application-backup.py \
+            'e0ce092527c9fa165c36c744f55a6e31eb35610591ec7dd74bc752c9935e366f' scripts/ci/octelium-rscstore-backup-receipt.py \
+            | sha256sum --check --status
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Private Scratch
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: bash scripts/ci/octelium-rscstore-backup.sh init
+      - name: Assume Backup Role for Preflight Verification
+        if: inputs.stage == 'backup'
+        id: receipt-session
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN }}
+          role-session-name: octelium-preflight-${{ github.run_id }}
+          role-duration-seconds: 900
+          output-credentials: true
+          output-env-credentials: false
+          mask-aws-account-id: true
+          unset-current-credentials: true
+      - name: Verify Prior Protected Preflight and Exact S3 Receipt
+        if: inputs.stage == 'backup'
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          AWS_ACCESS_KEY_ID: ${{ steps.receipt-session.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.receipt-session.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.receipt-session.outputs.aws-session-token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh authorize >"$private_log" 2>&1; then
+            echo '::error::A current preflight receipt does not match the requested backup. Private details withheld.'
+            exit 1
+          fi
+      - name: Check Cluster or Capture Fenced Store
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_RSCSTORE_KUBE_TOKEN }}
+          RSCSTORE_TALOS_TOKEN: ${{ secrets.OCTELIUM_RSCSTORE_TALOS_TOKEN }}
+          RSCSTORE_TALOSCONFIG_B64: ${{ secrets.OCTELIUM_RSCSTORE_TALOSCONFIG_B64 }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh cluster >"$private_log" 2>&1; then
+            echo '::error::The Octelium cluster or scratch check failed. Private details withheld.'
+            exit 1
+          fi
+      - name: Recheck Current Main Before AWS Credentials
+        run: bash scripts/ci/terragrunt-current-main.sh
+      - name: Assume Scoped Backup Role
+        id: backup-session
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.OCTELIUM_RSCSTORE_BACKUP_ROLE_ARN }}
+          role-session-name: octelium-rscstore-${{ github.run_id }}
+          role-duration-seconds: 3600
+          output-credentials: true
+          output-env-credentials: false
+          mask-aws-account-id: true
+          unset-current-credentials: true
+      - name: Verify S3 Access or Publish and Prove Extraction
+        env:
+          BACKUP_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PREFLIGHT_RUN_ID: ${{ inputs.preflight_run_id }}
+          AWS_ACCESS_KEY_ID: ${{ steps.backup-session.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.backup-session.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.backup-session.outputs.aws-session-token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/octelium-rscstore-backup.sh publish >"$private_log" 2>&1; then
+            echo '::error::The Octelium S3 or extraction check failed. Private details withheld.'
+            exit 1
+          fi
+          printf 'Octelium resource-store %s verified at %s.\n' "$BACKUP_STAGE" "$EXPECTED_SHA"
+      - name: Remove Private Runner Scratch
+        if: always()
+        run: bash scripts/ci/octelium-rscstore-backup.sh cleanup

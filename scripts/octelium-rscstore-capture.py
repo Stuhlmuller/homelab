@@ -20,10 +20,15 @@ import threading
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = "https://10.1.0.199:6443"
+ACTIONS_CONTEXT = "homelab-ci"
+ACTIONS_SERVER = "https://kubernetes-api-ci.stinkyboi.com"
+ACTIONS_TALOS_ENDPOINT = "talos-api.homelab.local.stinkyboi.com:15000"
+ACTIONS_WORKFLOW_REF = "Stuhlmuller/homelab/.github/workflows/octelium-rscstore-backup.yml@refs/heads/main"
 NAMESPACE = "octelium"
 DEPLOYMENT = "octeliumee-rscstore"
 CLAIM = "octelium-rscstore"
 INSPECTOR = "octelium-rscstore-capture-inspector"
+INSPECTOR_POLICY = "octelium-rscstore-capture-inspector-deny-all"
 NODES = {"acer": "10.1.0.199", "zimaboard-0": "10.1.0.200",
          "zimaboard-1": "10.1.0.201", "zimaboard-2": "10.1.0.202"}
 IMAGE = "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
@@ -107,9 +112,22 @@ def json_output(*command):
     return json.loads(output(*command))
 
 
-def release_guard(expected_sha, context):
+def release_guard(expected_sha, context, *, actions=False, fenced=True):
     require(re.fullmatch(r"[0-9a-f]{40}", expected_sha or ""), "expected main SHA required")
     require(context and not context.startswith("-"), "explicit kubectl context required")
+    if actions:
+        required_environment = {
+            "GITHUB_ACTIONS": "true",
+            "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
+            "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_SHA": expected_sha,
+            "GITHUB_WORKFLOW_SHA": expected_sha,
+            "GITHUB_WORKFLOW_REF": ACTIONS_WORKFLOW_REF,
+        }
+        require(context == ACTIONS_CONTEXT
+                and all(os.environ.get(key) == value for key, value in required_environment.items()),
+                "protected Actions backup requires the exact current-main workflow dispatch")
     require(output("git", "-C", str(ROOT), "rev-parse", "HEAD").strip() == expected_sha,
             "checkout differs from reviewed main")
     require(not output("git", "-C", str(ROOT), "status", "--porcelain").strip(),
@@ -117,23 +135,39 @@ def release_guard(expected_sha, context):
     require(output("gh", "api", "repos/Stuhlmuller/homelab/commits/main", "--jq", ".sha").strip()
             == expected_sha, "reviewed main has advanced")
     kustomization = ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
-    fenced_kustomization_guard(kustomization)
+    if fenced:
+        fenced_kustomization_guard(kustomization)
+    else:
+        inspector_kustomization_guard(kustomization)
     config = json_output("kubectl", "--context", context, "config", "view", "--minify", "-o", "json")
-    require(config["clusters"][0]["cluster"]["server"] == SERVER,
+    cluster = config["clusters"][0]["cluster"]
+    require(cluster["server"] == (ACTIONS_SERVER if actions else SERVER),
             "kubectl context points at another cluster")
-    argo_guard(context, expected_sha)
+    if actions:
+        require(not cluster.get("insecure-skip-tls-verify") and not cluster.get("tls-server-name"),
+                "protected Kubernetes transport must verify the reviewed endpoint")
+    argo_guard(context, expected_sha, require_selective_sync=actions)
+
+
+INSPECTOR_KUSTOMIZATION = [
+    "apiVersion: kustomize.config.k8s.io/v1beta1", "kind: Kustomization", "resources:",
+    "  - emergency-dataplane.yaml", "  - resources.yaml", "  - capture-stage/inspector.yaml",
+    "  - capture-stage/inspector-networkpolicy.yaml",
+]
+
+
+def inspector_kustomization_guard(kustomization):
+    require(kustomization.read_text().splitlines() == INSPECTOR_KUSTOMIZATION,
+            "inspector-only capture source differs from reviewed shape")
 
 
 def fenced_kustomization_guard(kustomization):
     require(kustomization.read_text().splitlines() == [
-        "apiVersion: kustomize.config.k8s.io/v1beta1", "kind: Kustomization", "resources:",
-        "  - emergency-dataplane.yaml", "  - resources.yaml", "  - capture-stage/inspector.yaml",
-        "  - capture-stage/inspector-networkpolicy.yaml",
-        "components:",
-        "  - capture-stage"], "fenced capture source differs from reviewed shape")
+        *INSPECTOR_KUSTOMIZATION, "components:", "  - capture-stage"],
+        "fenced capture source differs from reviewed shape")
 
 
-def argo_guard(context, expected_sha):
+def argo_guard(context, expected_sha, *, require_selective_sync=False):
     application = json_output("kubectl", "--context", context, "-n", "argocd", "get",
                               "application", "octelium-enterprise", "-o", "json")
     spec = application.get("spec", {})
@@ -152,17 +186,81 @@ def argo_guard(context, expected_sha):
             and source.get("repoURL") == "https://github.com/Stuhlmuller/homelab.git"
             and sync.get("status") == "Synced" and revisions[0] == expected_sha,
             "Octelium Enterprise Argo CD state is not synced to reviewed main")
+    if require_selective_sync:
+        require("ApplyOutOfSyncOnly=true" in spec.get("syncPolicy", {}).get("syncOptions", []),
+                "Octelium Enterprise selective sync is not active")
 
 
-def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid):
+def writer_runtime(writer):
+    status = writer["status"]
+    containers = status.get("containerStatuses", [])
+    require(len(containers) == 1 and containers[0].get("name") == "rscstore",
+            "resource-store writer container identity is unavailable")
+    container = containers[0]
+    ready = container.get("ready")
+    conditions = [item.get("status") for item in status.get("conditions", []) if item.get("type") == "Ready"]
+    if ready is True:
+        require(conditions == ["True"], "resource-store writer readiness views disagree")
+        container_id = container.get("containerID", "")
+    else:
+        state = container.get("state", {})
+        last_exit = container.get("lastState", {}).get("terminated", {})
+        container_id = last_exit.get("containerID", "")
+        require(ready is False and conditions == ["False"] and set(state) == {"waiting"}
+                and state["waiting"].get("reason") == "CrashLoopBackOff"
+                and type(last_exit.get("exitCode")) is int and last_exit["exitCode"] > 0
+                and container.get("containerID") in (None, "", container_id),
+                "resource-store writer has no verified crash-loop state")
+    require(re.fullmatch(r"containerd://[0-9a-f]{64}", container_id),
+            "resource-store writer container identity is unavailable")
+    return container_id, ready
+
+
+def writer_guard(context, deployment, pods):
+    writers = [pod for pod in pods if pod["metadata"]["name"].startswith(DEPLOYMENT + "-")
+               and pod["status"]["phase"] not in ("Succeeded", "Failed")]
+    require(len(writers) == 1, "exactly one live resource-store writer is required before fencing")
+    writer = writers[0]
+    metadata, spec, status = writer["metadata"], writer["spec"], writer["status"]
+    require(metadata["namespace"] == NAMESPACE and not metadata.get("deletionTimestamp")
+            and UID.fullmatch(metadata.get("uid", "")) and status["phase"] == "Running",
+            "resource-store writer Pod identity is unavailable")
+    writer_runtime(writer)
+    controllers = [owner for owner in metadata.get("ownerReferences", []) if owner.get("controller") is True]
+    require(len(controllers) == 1 and controllers[0].get("kind") == "ReplicaSet"
+            and re.fullmatch(rf"{DEPLOYMENT}-[a-z0-9]+", controllers[0].get("name", ""))
+            and UID.fullmatch(controllers[0].get("uid", "")),
+            "resource-store writer ReplicaSet ownership is unverified")
+    owner = controllers[0]
+    replica_set = json_output("kubectl", "--context", context, "-n", NAMESPACE, "get",
+                              "replicaset", owner["name"], "-o", "json")["metadata"]
+    require(replica_set["uid"] == owner["uid"] and not replica_set.get("deletionTimestamp")
+            and any(ref.get("controller") is True and ref.get("kind") == "Deployment"
+                    and ref.get("name") == DEPLOYMENT and ref.get("uid") == deployment["metadata"]["uid"]
+                    for ref in replica_set.get("ownerReferences", [])),
+            "resource-store writer is not owned by the current Deployment")
+    volumes = [volume for volume in spec.get("volumes", [])
+               if volume.get("persistentVolumeClaim", {}).get("claimName") == CLAIM]
+    mounts = [mount for container in spec.get("containers", []) if container.get("name") == "rscstore"
+              for mount in container.get("volumeMounts", []) if mount.get("mountPath") == "/octelium-data"]
+    require(len(volumes) == len(mounts) == 1 and volumes[0]["name"] == mounts[0]["name"]
+            and not volumes[0]["persistentVolumeClaim"].get("readOnly") and not mounts[0].get("readOnly"),
+            "resource-store writer does not mount the reviewed PVC")
+    return writer
+
+
+def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid, *, writer=None):
     require(deployment["metadata"]["namespace"] == NAMESPACE
             and deployment["metadata"]["name"] == DEPLOYMENT,
             "wrong resource-store Deployment")
-    require(deployment["spec"].get("replicas") == 0
+    replicas = 0 if writer is None else 1
+    ready = 0 if writer is None else int(writer_runtime(writer)[1])
+    require(deployment["spec"].get("replicas") == replicas
             and deployment["status"].get("observedGeneration", 0) >= deployment["metadata"]["generation"]
-            and all(deployment["status"].get(field, 0) == 0 for field in
-                    ("replicas", "readyReplicas", "availableReplicas")),
-            "resource-store writer is not fenced")
+            and deployment["status"].get("replicas", 0) == replicas
+            and all(deployment["status"].get(field, 0) == ready for field in ("readyReplicas", "availableReplicas")),
+            "resource-store writer is not fenced" if writer is None
+            else "exactly one current resource-store writer must remain before fencing")
     require(UID.fullmatch(expected_pvc_uid or "") and UID.fullmatch(expected_pv_uid or ""),
             "exact PVC and PV UIDs required")
     require(pvc["metadata"]["namespace"] == NAMESPACE and pvc["metadata"]["name"] == CLAIM
@@ -184,7 +282,7 @@ def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid
     for pod in active:
         mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName") == CLAIM
                            for volume in pod["spec"].get("volumes", []))
-        require(pod is inspector or not mounts_claim, "another active Pod mounts the PVC")
+        require(pod is inspector or pod is writer or not mounts_claim, "another active Pod mounts the PVC")
     metadata, spec, status = inspector["metadata"], inspector["spec"], inspector["status"]
     labels = metadata.get("labels", {})
     require(metadata["namespace"] == NAMESPACE and not metadata.get("deletionTimestamp")
@@ -241,7 +339,7 @@ def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid
             "inspector_uid": metadata["uid"]}
 
 
-def node_runtime_guard(context, talosconfig, pods, inspector_uid):
+def node_runtime_guard(context, talosconfig, pods, inspector_uid, *, actions=False, writer=None):
     """Require current API, kubelet desired/runtime, and Talos CRI views to agree."""
     require(talosconfig.is_absolute() and talosconfig.is_file(),
             "explicit readable Talos config required")
@@ -289,6 +387,13 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
     inspector_container_id = statuses[0]["containerID"]
     inspector_cri_id = (f"{NAMESPACE}/{INSPECTOR}:inspection:"
                         f"{inspector_container_id.removeprefix('containerd://')[:12]}")
+    writer_identity = writer_node = writer_container_id = None
+    writer_ready = False
+    if writer is not None:
+        writer_identity = (writer["metadata"]["name"], writer["metadata"]["uid"])
+        writer_node = writer["spec"].get("nodeName")
+        require(writer_node == inspector_node, "resource-store writer placement is unverified")
+        writer_container_id, writer_ready = writer_runtime(writer)
     boot_ids = {}
     for node in nodes["items"]:
         name = node["metadata"]["name"]
@@ -306,13 +411,14 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                                f"/api/v1/nodes/{name}/proxy/{path}")
             require(view.get("kind") == "PodList" and isinstance(view.get("items"), list),
                     "kubelet Pod inventory is incomplete")
-            inspector_count = 0
+            inspector_count = writer_count = 0
             for pod in view["items"]:
                 metadata = pod["metadata"]
                 if metadata.get("namespace") != NAMESPACE:
                     continue
                 identity = (metadata.get("name"), metadata.get("uid"))
-                require(identity in api_pods and not identity[0].startswith(DEPLOYMENT + "-"),
+                require(identity in api_pods and (identity == writer_identity
+                        or not identity[0].startswith(DEPLOYMENT + "-")),
                         "kubelet retains a writer or orphan Octelium Pod")
                 if identity == (INSPECTOR, inspector_uid):
                     inspector_count += 1
@@ -322,28 +428,37 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                         require(len(kubelet_statuses) == 1
                                 and kubelet_statuses[0].get("containerID") == inspector_container_id,
                                 "kubelet inspector container identity differs")
+                if identity == writer_identity:
+                    writer_count += 1
+                    require(name == writer_node, "resource-store writer runs on another node")
+                    if not running:
+                        require(writer_runtime(pod) == (writer_container_id, writer_ready),
+                                "kubelet resource-store writer container identity differs")
                 api_pod = api_pods[identity]
                 api_mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                        == CLAIM for volume in api_pod["spec"].get("volumes", []))
-                require(not api_mounts_claim or (identity == (INSPECTOR, inspector_uid)
-                                                 and name == inspector_node),
+                reviewed_mount = (identity == (INSPECTOR, inspector_uid) and name == inspector_node
+                                  or identity == writer_identity and name == writer_node)
+                require(not api_mounts_claim or reviewed_mount,
                         "kubelet retains another PVC mount user")
                 if not running:
                     mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                        == CLAIM for volume in pod.get("spec", {}).get("volumes", []))
-                    require(not mounts_claim or (identity == (INSPECTOR, inspector_uid)
-                                                 and name == inspector_node),
+                    require(not mounts_claim or reviewed_mount,
                             "kubelet retains another PVC mount user")
             require(inspector_count == (1 if name == inspector_node else 0),
                     "kubelet inspector Pod is missing or duplicated")
+            expected_writer_count = 1 if name == writer_node else 0
+            require(writer_count == expected_writer_count or (running and not writer_ready and writer_count == 0),
+                    "kubelet resource-store writer Pod is missing or duplicated")
         inventory = output("talosctl", "--talosconfig", str(talosconfig),
-                           "--endpoints", NODES["acer"], "--nodes", address,
+                           "--endpoints", ACTIONS_TALOS_ENDPOINT if actions else NODES["acer"], "--nodes", address,
                            "containers", "-k")
         lines = inventory.splitlines()
         require(lines and lines[0].split() == ["NODE", "NAMESPACE", "ID", "IMAGE",
                                                 "PID", "STATUS"] and len(lines) > 1,
                 "Talos CRI inventory is incomplete")
-        inspector_sandboxes = inspector_containers = 0
+        inspector_sandboxes = inspector_containers = writer_sandboxes = writer_containers = 0
         for line in lines[1:]:
             columns = line.split(maxsplit=2)
             require(len(columns) == 3 and columns[:2] == [address, "k8s.io"]
@@ -355,8 +470,8 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                     "Talos CRI container ID format changed")
             if container_id.startswith(f"{NAMESPACE}/"):
                 pod_name = container_id.split(":", 1)[0].split("/", 1)[1]
-                require(pod_name in api_by_name
-                        and not pod_name.startswith(DEPLOYMENT + "-"),
+                pod = api_by_name.get(pod_name)
+                require(pod and (pod is writer or not pod_name.startswith(DEPLOYMENT + "-")),
                         "Talos CRI retains a resource-store or orphan Octelium Pod")
                 if pod_name == INSPECTOR:
                     require(name == inspector_node, "Talos CRI inspector runs on another node")
@@ -370,26 +485,52 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                                 and fields[-1] == "SANDBOX_READY",
                                 "Talos CRI inspector sandbox differs")
                         inspector_sandboxes += 1
-                pod = api_by_name[pod_name]
+                if pod is writer:
+                    require(name == writer_node, "Talos CRI resource-store writer runs on another node")
+                    if fields[0] in ("└─", "├─"):
+                        writer_id = writer_container_id.removeprefix("containerd://")[:12]
+                        cri_state = "CONTAINER_RUNNING" if writer_ready else "CONTAINER_EXITED"
+                        require(container_id == f"{NAMESPACE}/{pod_name}:rscstore:{writer_id}"
+                                and fields[-1] == cri_state,
+                                "Talos CRI resource-store writer container identity differs")
+                        writer_containers += 1
+                    else:
+                        require(container_id == f"{NAMESPACE}/{pod_name}" and fields[-1] == "SANDBOX_READY",
+                                "Talos CRI resource-store writer sandbox differs")
+                        writer_sandboxes += 1
                 mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                    == CLAIM for volume in pod["spec"].get("volumes", []))
                 require(not mounts_claim or (pod_name == INSPECTOR
                                              and pod["metadata"]["uid"] == inspector_uid
-                                             and name == inspector_node),
+                                             and name == inspector_node) or (pod is writer and name == writer_node),
                         "Talos CRI retains another PVC mount user")
         require(inspector_sandboxes == inspector_containers == (1 if name == inspector_node else 0),
                 "Talos CRI inspector sandbox or container is missing or duplicated")
+        require(writer_sandboxes == writer_containers == (1 if name == writer_node else 0),
+                "Talos CRI resource-store writer sandbox or container is missing or duplicated")
     return dict(sorted(boot_ids.items()))
 
 
-def cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha):
-    argo_guard(context, expected_sha)
+def cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, *, actions=False, fenced=True):
+    argo_guard(context, expected_sha, require_selective_sync=actions)
     prefix = ("kubectl", "--context", context, "-n", NAMESPACE)
     deployment = json_output(*prefix, "get", "deployment", DEPLOYMENT, "-o", "json")
     pvc = json_output(*prefix, "get", "pvc", CLAIM, "-o", "json")
     pv_name = pvc["spec"].get("volumeName")
     require(pv_name, "source PVC is not bound")
     pv = json_output("kubectl", "--context", context, "get", "pv", pv_name, "-o", "json")
+    if actions and not fenced and pvc_uid is None and pv_uid is None:
+        pvc_uid, pv_uid = pvc["metadata"]["uid"], pv["metadata"]["uid"]
+    if actions:
+        policy = json_output(*prefix, "get", "networkpolicy", INSPECTOR_POLICY, "-o", "json")
+        spec = policy["spec"]
+        require(policy["metadata"]["name"] == INSPECTOR_POLICY
+                and policy["metadata"]["namespace"] == NAMESPACE
+                and not policy["metadata"].get("deletionTimestamp")
+                and spec["podSelector"] == {"matchLabels": {"app.kubernetes.io/name": INSPECTOR}}
+                and set(spec["policyTypes"]) == {"Ingress", "Egress"}
+                and not spec.get("ingress") and not spec.get("egress"),
+                "inspector deny-all NetworkPolicy differs from reviewed shape")
     pod_list = json_output("kubectl", "--context", context, "get", "--raw",
                            f"/api/v1/namespaces/{NAMESPACE}/pods")
     require(pod_list.get("apiVersion") == "v1" and pod_list.get("kind") == "PodList"
@@ -399,9 +540,12 @@ def cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha):
             and not pod_list["metadata"].get("continue"),
             "namespaced PodList is incomplete")
     pods = pod_list["items"]
-    source = inspector_guard(deployment, pvc, pv, pods, pvc_uid, pv_uid)
+    writer = None if fenced else writer_guard(context, deployment, pods)
+    source = inspector_guard(deployment, pvc, pv, pods, pvc_uid, pv_uid, writer=writer)
     source["node_boot_ids"] = node_runtime_guard(context, talosconfig, pods,
-                                                  source["inspector_uid"])
+                                                  source["inspector_uid"], actions=actions, writer=writer)
+    if writer is not None:
+        source["writer_uid"] = writer["metadata"]["uid"]
     return source
 
 
@@ -566,16 +710,36 @@ def validate_bundle(directory, record=None):
     return record
 
 
-def capture(workspace, expected_sha, context, talosconfig, pvc_uid, pv_uid):
+def require_capture_space(workspace, archive_size):
+    require(1024 <= archive_size <= MAX_ARCHIVE, "PVC archive size is out of bounds")
+    require(shutil.disk_usage(workspace).free > archive_size * 5 + 64 * 1024**2,
+            "off-NAS workspace lacks space for capture, publication and proof")
+
+
+def preflight_actions(workspace, expected_sha, talosconfig):
     workspace = private_parent(workspace)
-    release_guard(expected_sha, context)
-    source = cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha)
+    release_guard(expected_sha, ACTIONS_CONTEXT, actions=True, fenced=False)
+    source = cluster_guard(ACTIONS_CONTEXT, talosconfig, None, None, expected_sha,
+                           actions=True, fenced=False)
+    pvc_uid, pv_uid = source["pvc_uid"], source["pv_uid"]
+    archive = tar_stream(ACTIONS_CONTEXT, INSPECTOR)
+    require_capture_space(workspace, archive["bytes"])
+    require(cluster_guard(ACTIONS_CONTEXT, talosconfig, pvc_uid, pv_uid, expected_sha,
+                          actions=True, fenced=False) == source,
+            "cluster identity changed during the inspector read")
+    release_guard(expected_sha, ACTIONS_CONTEXT, actions=True, fenced=False)
+    return {"pvc_uid": pvc_uid, "pv_uid": pv_uid}
+
+
+def capture(workspace, expected_sha, context, talosconfig, pvc_uid, pv_uid, *, actions=False):
+    workspace = private_parent(workspace)
+    release_guard(expected_sha, context, actions=actions)
+    source = cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, actions=actions)
     pod = INSPECTOR
     before = tar_stream(context, pod)
-    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha) == source,
+    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, actions=actions) == source,
             "cluster identity changed after preflight")
-    require(shutil.disk_usage(workspace).free > before["bytes"] * 5 + 64 * 1024**2,
-            "off-NAS workspace lacks space for capture, publication and proof")
+    require_capture_space(workspace, before["bytes"])
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     directory = workspace / (".partial-" + stamp)
     complete = workspace / stamp
@@ -602,10 +766,11 @@ def capture(workspace, expected_sha, context, talosconfig, pvc_uid, pv_uid):
             os.fsync(stream.fileno())
     require(archive == before and written == [threshold, before["bytes"] - threshold],
             "source changed during archive stream")
-    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha) == source,
+    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, actions=actions) == source,
             "cluster identity changed during archive stream")
     after = tar_stream(context, pod)
-    require(after == before and cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha) == source,
+    require(after == before and cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha,
+                                              actions=actions) == source,
             "source or cluster identity changed after archive stream")
     inspection = inspect_archive(directory)
     record = {"format": 1, "capture_method": "complete-pvc-tar-v1", "captured_at": stamp,
@@ -623,9 +788,9 @@ def capture(workspace, expected_sha, context, talosconfig, pvc_uid, pv_uid):
             hashes.append(f"{hashlib.file_digest(stream, 'sha256').hexdigest()}  {name}\n")
     write_new(directory / "SHA256SUMS", "".join(hashes).encode())
     fsync_directory(directory)
-    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha) == source,
+    require(cluster_guard(context, talosconfig, pvc_uid, pv_uid, expected_sha, actions=actions) == source,
             "source or cluster identity changed before receipt")
-    release_guard(expected_sha, context)
+    release_guard(expected_sha, context, actions=actions)
     directory.rename(complete)
     fsync_directory(workspace)
     return stamp
@@ -705,13 +870,16 @@ def prove_downloaded_bundle(retrieval, proof, expected_id):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    capture_command = commands.add_parser("capture")
-    capture_command.add_argument("--workspace", type=Path, required=True)
-    capture_command.add_argument("--expected-sha", required=True)
-    capture_command.add_argument("--context", required=True)
-    capture_command.add_argument("--talosconfig", type=Path, required=True)
-    capture_command.add_argument("--expected-pvc-uid", required=True)
-    capture_command.add_argument("--expected-pv-uid", required=True)
+    for command in ("capture", "preflight-actions", "capture-actions"):
+        capture_command = commands.add_parser(command)
+        capture_command.add_argument("--workspace", type=Path, required=True)
+        capture_command.add_argument("--expected-sha", required=True)
+        capture_command.add_argument("--talosconfig", type=Path, required=True)
+        if command != "preflight-actions":
+            capture_command.add_argument("--expected-pvc-uid", required=True)
+            capture_command.add_argument("--expected-pv-uid", required=True)
+        if command == "capture":
+            capture_command.add_argument("--context", required=True)
     proof_command = commands.add_parser("prove-retrieval")
     proof_command.add_argument("--workspace", type=Path, required=True)
     proof_command.add_argument("--id", required=True)
@@ -725,14 +893,22 @@ def main():
             stamp = capture(args.workspace, args.expected_sha, args.context, args.talosconfig,
                             args.expected_pvc_uid, args.expected_pv_uid)
             print(f"Private PVC capture complete: {stamp}. Publish and retrieve before recovery review.")
+        elif args.command == "capture-actions":
+            print(capture(args.workspace, args.expected_sha, ACTIONS_CONTEXT, args.talosconfig,
+                          args.expected_pvc_uid, args.expected_pv_uid, actions=True))
+        elif args.command == "preflight-actions":
+            print(json.dumps(preflight_actions(args.workspace, args.expected_sha, args.talosconfig)))
         else:
             prove_retrieval(args.workspace, args.id, args.proof, args.aws_cli, args.profile)
             print("Versioned archive extraction proof complete; DuckDB reopen remains unverified.")
         return 0
     except (OSError, ValueError, KeyError, TypeError, IndexError, tarfile.TarError,
             subprocess.SubprocessError):
-        print("Rscstore capture/proof failed; retain private scratch and keep the writer fenced.",
-              file=sys.stderr)
+        if args.command == "preflight-actions":
+            print("Rscstore backup preflight failed; live details withheld.", file=sys.stderr)
+        else:
+            print("Rscstore capture/proof failed; retain private scratch and keep the writer fenced.",
+                  file=sys.stderr)
         return 1
 
 
