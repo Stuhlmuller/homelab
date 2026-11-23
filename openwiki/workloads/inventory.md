@@ -910,8 +910,9 @@ nonroot replica, a DNS-only `homelab-adguard` Tailscale proxy and private
 Cloudflare malware resolvers; private `stinkyboi.com` queries use the existing
 cluster-local tailnet resolver. MagicDNS and the existing split-DNS policy are
 preserved. No automatic unfiltered fallback is configured. The authenticated Query Log holds at most 1,000 recent queries in memory with
-anonymized client IPs. Restart clears it; file query logs and statistics remain
-disabled. The retained 1Gi NFS claim holds replaceable filter cache.
+anonymized client IPs. Restart clears the query log, and file query logging
+is disabled. Dashboard statistics use a one-day interval and are stored
+alongside the filter cache on the retained 1 GiB NFS claim.
 
 Source registration does not activate global tailnet DNS. After image publication,
 GitOps rollout, verified peer identity and live direct/admin/recovery checks,
