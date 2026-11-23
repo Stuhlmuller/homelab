@@ -882,7 +882,7 @@ no new public route. These are desired-state declarations, not a live rollout
 receipt.
 
 The [catalog](../../clusters/homelab/apps/uptime-kuma/monitors.json) classifies
-62 source/live app entries and maps them to 55 app/service monitors. Active
+65 source/live app entries and maps them to 59 app/service monitors. Active
 entries require direct health or exact supporting workload signals; suspended,
 staged, retired and configuration-only entries retain explicit evidence and
 ownership. Prometheus predicates require actual readiness and fresh source
