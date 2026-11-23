@@ -242,7 +242,7 @@ jobs:
 
       - name: Retain Only Encrypted Failure Diagnostic
         if: failure()
-        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2-r0
         with:
           name: harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/harbor-publication-error.gpg
