@@ -253,7 +253,7 @@ persisted writes. This source-owned operation and its backup, outage, and
 live checks are not implemented; activation remains blocked.
 
 [The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
-checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
+checks complete Service, Pod, and EndpointSlice lists against the 24 emergency
 Deployment selectors. It records Service identities and Ready Pod target UIDs,
 not endpoint addresses, and keeps admission unproven. The dated 25/29 counts
 do not identify all 54 Services; a fresh private report and owner-reviewed
