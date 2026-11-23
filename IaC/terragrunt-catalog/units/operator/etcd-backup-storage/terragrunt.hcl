@@ -8,7 +8,7 @@ terraform {
 }
 
 locals {
-  destination = read_terragrunt_config("${get_repo_root()}/IaC/etcd-backup-storage.hcl").inputs
+  destination = read_terragrunt_config("${get_repo_root()}/IaC/homelab/us-west-2/operator/etcd-backup-storage.hcl").inputs
 }
 
 generate "aws_provider" {

@@ -20,7 +20,7 @@ key_pattern="^langfuse/postgresql/${EXPECTED_SHA}/[1-9][0-9]*/1/langfuse[.]dump$
 [[ "${OBJECT_KEY:-}" =~ $key_pattern ]] || exit 2
 [[ "$GITHUB_SHA" == "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" ]] || exit 1
 
-bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/homelab/us-west-2/operator/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
 [[ "$(aws --region us-east-1 sts get-caller-identity --query Account --output text)" == "$account" ]] || exit 1

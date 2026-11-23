@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'ee994058c05213e979497d81e7c949c335c27722fecc42a44f8e9fa5ea004d40  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'a7118ba8bb684fda79a4cd135e49196946ad96a58fb11379d7f10ac722c286ab  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -414,7 +414,7 @@ fi`)
 	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
   printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
 fi`)
-	contains(step.run, concat("", [`sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'fac3034c426bd1539fee8cad06cb838e9b55681784d6eadd12fda30ea79a63fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'97c41edc52cc7370f97433824f3d9211e9f1ae8497e52a80c7cf75191c6a5037  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
@@ -1046,6 +1046,9 @@ case "$IMAGE_SCOPE" in
   renovate)
     bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
     ;;
+  n8n)
+    bash scripts/ci/harbor-publish.sh mirror-n8n --tailscale
+    ;;
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
     ;;
@@ -1074,7 +1077,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'72f431c67abab37e7c47c4e949d65bd602b3e3b768addeea143584e2e5034ae3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5b741465a823256d3b722b30aa2f2bc7d005d17ba3d6c5d51366957e4a1ebcf7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1178,7 +1181,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "ac4d35e628c59b45ff93e0928fe11e69faba16586464df437bdf57e70c670489"
+	crypto.sha256(json.marshal(canonical)) == "41e23fc6f1a9c7199442730bb1fdc4c322d53350eeaa4bcd61e3ff2a18d00f41"
 }
 
 tailnet_workflow_requested if {

@@ -45,7 +45,7 @@ class RecoveryTests(unittest.TestCase):
 
     def test_exact_protected_parameter_and_metadata_only(self):
         account = re.search(r'account_id\s*=\s*"(\d{12})"',
-                            (ROOT / 'IaC/application-backup-storage.hcl').read_text())[1]
+                            (ROOT / 'IaC/homelab/us-west-2/operator/application-backup-storage.hcl').read_text())[1]
         parameter = {'ARN': f'arn:aws:ssm:us-west-2:{account}:parameter/homelab/adguard/admin-password',
                      'Name': RECOVERY.PARAMETER, 'Type': 'SecureString', 'Version': 1,
                      'Value': 'fixture1' * 4}

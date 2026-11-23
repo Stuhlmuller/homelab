@@ -288,8 +288,7 @@ echo "::endgroup::"
 echo "::group::n8n inactive maintenance fence"
 python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
 bash scripts/ci/n8n-maintenance-fence-check.sh
-python3 -I scripts/ci/n8n-paired-checkpoint-test.py
-python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+# Paired checkpoint and PVC restore unit tests run in the verified Nix offline suite.
 echo "::endgroup::"
 
 echo "::group::Secret scan"

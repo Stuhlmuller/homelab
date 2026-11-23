@@ -5,6 +5,30 @@
 Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
 Source publication does not authorize key installation or a live dispatch.
 
+## Pull-through cache projects
+
+Harbor's PostSync bootstrap reconciles three private cache projects for public
+upstream images. Authenticate to Harbor with a principal that has pull access to
+the cache project, then use the project's repository prefix.
+
+| Upstream | Example Harbor reference |
+| --- | --- |
+| Docker Hub | `harbor.stinkyboi.com/proxy-dockerhub/library/nginx:1.28` |
+| GitHub Container Registry | `harbor.stinkyboi.com/proxy-ghcr/stefanprodan/podinfo:6.9.0` |
+| Quay | `harbor.stinkyboi.com/proxy-quay/prometheus/prometheus:latest` |
+
+Harbor fetches uncached references on the first pull without a catalog entry or
+publication workflow. For Kubernetes, use the workload's approved digest and a
+namespace-scoped pull secret. The caches connect to the upstreams anonymously
+with TLS verification. New projects inherit Harbor's seven-day retention
+policy. Automatic scanning is enabled. Check the scan and SBOM separately from
+pull verification.
+
+After Harbor syncs, verify each project's privacy and endpoint. Make a complete
+authenticated pull of a digest absent from that cache, verify the manifest and
+blobs, then confirm the artifact is listed in Harbor. Migrate workloads using
+the current `mirror` prefix once the workload has pull authorization and the
+cache path has been verified.
 
 ## Helm charts
 
@@ -16,6 +40,12 @@ fetches those upstream packages, checks their identity and bytes, and pushes
 them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
 separate mirror reader robot and compares the package SHA-256. A retry checks
 existing artifacts before pushing; a mismatched artifact stops publication.
+
+Harbor bootstrap reconciles one immutable-tag rule for `helm/**` in the
+`mirror` project. After Argo CD reports that the bootstrap hook succeeded at
+the merged revision, inspect a published chart tag with Harbor's artifact
+API and verify that Harbor reports it immutable. The publication workflow
+verifies package bytes with the independent reader.
 
 Publish and verify all chart packages before changing Argo CD sources. Argo CD
 uses the repository Secret in `clusters/homelab/argocd/self-management` and its
@@ -300,6 +330,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    it at exact current `main` and require eight complete authenticated
    pulls before merging any consuming Renovate PR.
 
+   For the n8n upgrade, use `image_scope=n8n` to publish and fully verify the
+   single versioned digest in `scripts/config/harbor-n8n-images.json`.
+   This scope keeps n8n publication independent of the shared Renovate batch.
+
    The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
    `afc7e2d` and `7d38526` pins remain for existing consumers.
 
@@ -400,8 +434,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures recheck the private Harbor TLS registry
-   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Transient authenticated pull failures, including HTTP/2 peer stream resets,
+   recheck the private Harbor TLS registry challenge before retrying Docker
+   manifests or OCI indexes. The direct
    Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
