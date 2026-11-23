@@ -8,10 +8,6 @@ sources:
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
-  - id: openwiki-source-18a0bbca47813e2e084aa71b
-    resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
-  - id: openwiki-source-448cbe27130e9e3c4e8b10b3
-    resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-259f9ac5704d0293a7850944
     resource: repo://clusters/homelab/apps/mastodon/namespace.yaml
   - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
@@ -76,16 +72,6 @@ Most existing non-privileged namespaces declare baseline Pod Security. The
 unsynced Enterprise foundation declares restricted enforcement for both
 `openclaw-system` and `openclaw-agents`; this is source intent, not live
 namespace acceptance.
-
-Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
-replaced the operator-generated `monitoring/kiali` rule without changing its
-Pod selector or source-unrestricted TCP 20001/9090 ports. Argo CD applies
-`kiali-server-ingress` at wave 0; the [Kiali CR](../../clusters/homelab/apps/kiali/values.yaml)
-disables the operator policy at wave 1. The [October 19 read-only recheck](../../docs/evidence/openclaw-enterprise-policy-review.json)
-found the old policy absent and the replacement's complete spec equal to the
-former rule and source manifest. This proves ownership convergence, not narrower
-access or enforcement. Octelium access, Prometheus scraping, and the isolated
-enforcement canary remain open under [T018](../../specs/003-replace-openclaw-enterprise/tasks.md).
 
 ## Declared peer narrowing
 
@@ -267,7 +253,7 @@ persisted writes. This source-owned operation and its backup, outage, and
 live checks are not implemented; activation remains blocked.
 
 [The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
-checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
+checks complete Service, Pod, and EndpointSlice lists against the 24 emergency
 Deployment selectors. It records Service identities and Ready Pod target UIDs,
 not endpoint addresses, and keeps admission unproven. The dated 25/29 counts
 do not identify all 54 Services; a fresh private report and owner-reviewed

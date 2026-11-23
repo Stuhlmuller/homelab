@@ -323,6 +323,60 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
 
+    def test_targeted_retirement_selects_only_a_removed_application(self):
+        retired = "IaC/live/argocd-apps/retired"
+        setup = f"deleted='IaC/live/azuread-applications/identity\n{retired}'\n"
+        self.assertEqual(self.shell(setup + 'terragrunt_retired_argocd_app_path retired "$deleted"'), retired)
+        for name in ("kept", "retired/../kept", "identity"):
+            with self.subTest(name=name), self.assertRaisesRegex(AssertionError, "Unknown deleted Argo CD Application"):
+                self.shell(setup + f'terragrunt_retired_argocd_app_path "{name}" "$deleted"')
+
+    def test_kiali_teardown_requires_custom_resource_and_server_absence(self):
+        setup = '''kubectl() {
+  [[ "$*" == "--request-timeout=15s -n monitoring get kialis.kiali.io/kiali deployment.apps/kiali service/kiali --ignore-not-found -o name" ]] || return 95
+  printf '%s' "$remaining"
+}
+'''
+        self.shell(setup + "remaining='' terragrunt_kiali_teardown_complete")
+        for resource in ("kiali.kiali.io/kiali", "deployment.apps/kiali", "service/kiali"):
+            with self.subTest(resource=resource), self.assertRaisesRegex(AssertionError, "still exist"):
+                self.shell(setup + f'remaining="{resource}" terragrunt_kiali_teardown_complete')
+        with self.assertRaisesRegex(AssertionError, "Unable to verify Kiali teardown"):
+            self.shell("kubectl() { return 23; }; terragrunt_kiali_teardown_complete")
+
+    def test_targeted_retirement_plan_rejects_unrelated_changes_and_missing_finalizer(self):
+        app = {
+            "apiVersion": "argoproj.io/v1alpha1",
+            "kind": "Application",
+            "metadata": {"name": "retired", "namespace": "argocd"},
+        }
+        live = {**app, "metadata": {
+            **app["metadata"], "finalizers": ["resources-finalizer.argocd.argoproj.io"],
+        }}
+        change = {
+            "address": "kubernetes_manifest.this", "mode": "managed", "type": "kubernetes_manifest",
+            "change": {"actions": ["delete"], "before": {"manifest": app, "object": app}},
+        }
+        plan = self.root / "plan.json"
+
+        def verify(changes, live_application, valid):
+            plan.write_text(json.dumps({"resource_changes": changes}))
+            cmd = f"terragrunt_retired_argocd_app_plan retired '{json.dumps(live_application)}' plan.json"
+            if valid:
+                self.shell(cmd)
+            else:
+                with self.assertRaises(AssertionError):
+                    self.shell(cmd)
+
+        verify([change], live, True)
+        verify([change], None, True)
+        verify([], None, True)
+        verify([], live, False)
+        verify([change], app, False)
+        verify([change, {**change, "address": "kubernetes_manifest.other"}], live, False)
+        verify([{**change, "change": {**change["change"], "actions": ["delete", "create"]}}], live, False)
+        verify([change], {**live, "metadata": {**live["metadata"], "name": "other"}}, False)
+
     def test_deleted_app_preserves_backend_and_state_encryption_contract(self):
         for name in ("root.hcl", "kubernetes-provider.hcl"):
             shutil.copyfile(ROOT / "IaC" / name, self.root / "IaC" / name)

@@ -33,6 +33,9 @@
     "uptime-kuma.stinkyboi.com",
     "immich.stinkyboi.com"
   ],
+  "retired_private_hostnames": [
+    "kiali.stinkyboi.com"
+  ],
   "retired_hostnames": [
     "octelium-transport.stinkyboi.com",
     "kubernetes-api-ci.stinkyboi.com",

@@ -253,55 +253,6 @@ if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
 fi
 echo "::endgroup::"
 
-echo "::group::Kiali server digest and Prometheus readiness"
-kiali_values="clusters/homelab/apps/kiali/values.yaml"
-yq -o=json '.' "$kiali_values" |
-  jq -e --slurpfile catalog scripts/config/harbor-images.json '
-    .cr.spec.deployment as $deployment |
-    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
-    $deployment.image_digest == "sha256" and
-    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
-    ([$catalog[0].images[] |
-      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
-    ] | length == 1)
-  ' >/dev/null
-yq -o=json '.' "$kiali_values" |
-  jq -e '
-    [
-      .cr.spec.deployment.additional_pod_init_containers_yaml[]
-      | select(.name == "wait-for-prometheus")
-    ] | (
-      length == 1 and
-      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
-      .[0].imagePullPolicy == "IfNotPresent" and
-      .[0].command == ["curl"] and
-      .[0].args == [
-        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
-        "--retry-delay", "5", "--retry-all-errors",
-        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
-      ] and
-      .[0].securityContext.runAsUser == 100 and
-      .[0].securityContext.runAsGroup == 101 and
-      .[0].securityContext.runAsNonRoot == true and
-      .[0].securityContext.allowPrivilegeEscalation == false and
-      .[0].securityContext.privileged == false and
-      .[0].securityContext.readOnlyRootFilesystem == true and
-      .[0].securityContext.capabilities.drop == ["ALL"] and
-      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
-    )
-  ' >/dev/null
-jq -e '
-  [
-    .consumers[]
-    | select(.consumer_id == "kiali-prometheus-readiness")
-  ] |
-  length == 1 and
-  .[0].image_id == "chainguard-curl" and
-  .[0].migration_status == "candidate" and
-  .[0].automation_status == "not-enrolled"
-' clusters/homelab/apps/harbor/image-automation.json >/dev/null
-echo "::endgroup::"
-
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -1013,7 +964,7 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
 .github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
-.github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
+.github/workflows/terragrunt-apply.yml dff2d6caa6269456bfbbfbd4b072f9a85a95607546e96b11091243cc3e773c1b
 .github/workflows/terragrunt-plan.yml fd14da374b313d09e6cd4789c96d0f1a7c7370c70d412a2e9ef829cf7ca8c76f
 .github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
 EOF
@@ -1203,7 +1154,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}") and contains("Retire {0} @ {1}")) and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -1221,6 +1172,11 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "required": false,
       "default": false,
       "type": "boolean"
+    } and
+    .on.workflow_dispatch.inputs.retire_argocd_app == {
+      "description": "Optional exact deleted Argo CD Application unit to retire",
+      "required": false,
+      "type": "string"
     } and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
@@ -1240,13 +1196,15 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_EXISTING_ARGOCD_ONLY",
-      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE",
+      "TERRAGRUNT_RETIRE_ARGOCD_APP"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_EXISTING_ARGOCD_ONLY == "${{ inputs.existing_argocd_only }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_RETIRE_ARGOCD_APP == "${{ inputs.retire_argocd_app }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false,
