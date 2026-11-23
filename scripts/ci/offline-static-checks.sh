@@ -749,6 +749,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .on.pull_request.branches == ["main"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
+    .concurrency == null and
     (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
     .jobs["static-policy"].steps[0].with["fetch-depth"] == 0 and
@@ -760,6 +761,13 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     ($conftest[0].run | contains("bash scripts/ci/nix-checks.sh --policy")) and
     ($conftest[0].run | contains("git show origin/main:scripts/config/nix-cache.json")) and
     .jobs["terragrunt-plan"].needs == ["static-policy"] and
+    .jobs["terragrunt-plan"].concurrency == {
+      "group": "terragrunt-plan-${{ github.event.pull_request.number }}",
+      "cancel-in-progress": false,
+      "queue": "max"
+    } and
+    .jobs["static-policy"].concurrency == null and
+    .jobs["terragrunt-gate"].concurrency == null and
     (.jobs["terragrunt-plan"].if |
       contains("github.event.pull_request.head.repo.full_name == github.repository") and
       contains("needs.static-policy.outputs.requires-live-plan == '\''true'\''")) and
@@ -1006,7 +1014,7 @@ done <<'EOF'
 .github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml 2e77323aaf87b025378659ce023119e29671c0cefb7ff8ba824a0d78f4945d7e
+.github/workflows/terragrunt-plan.yml fd14da374b313d09e6cd4789c96d0f1a7c7370c70d412a2e9ef829cf7ca8c76f
 .github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
 EOF
 echo "::endgroup::"

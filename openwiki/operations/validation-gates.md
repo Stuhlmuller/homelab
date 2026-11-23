@@ -1844,9 +1844,10 @@ that route is the failed dependency, restore reviewed
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
-Terragrunt Plan serializes runs per PR and keeps them queued while an earlier
-run finishes. Interrupting OpenTofu while it holds an S3 backend lock can leave
-a stale lock that blocks later plans. Terragrunt Apply keeps its separate
+Terragrunt Plan serializes protected live jobs per PR. Static checks for a
+new revision can start while an older live plan is running. Interrupting
+OpenTofu while it holds an S3 backend lock can leave a stale lock that blocks
+later plans. Terragrunt Apply keeps its separate
 production lock and queues each pending apply, subject to GitHub's queue limit.
 
 ## Live Rollout Rule
