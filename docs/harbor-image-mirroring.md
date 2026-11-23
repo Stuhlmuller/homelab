@@ -41,6 +41,12 @@ them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
 separate mirror reader robot and compares the package SHA-256. A retry checks
 existing artifacts before pushing; a mismatched artifact stops publication.
 
+Harbor bootstrap reconciles one immutable-tag rule for `helm/**` in the
+`mirror` project. After Argo CD reports that the bootstrap hook succeeded at
+the merged revision, inspect a published chart tag with Harbor's artifact
+API and verify that Harbor reports it immutable. The publication workflow
+verifies package bytes with the independent reader.
+
 Publish and verify all chart packages before changing Argo CD sources. Argo CD
 uses the repository Secret in `clusters/homelab/argocd/self-management` and its
 read-only mirror credential. If Harbor cannot serve charts, restore its registry

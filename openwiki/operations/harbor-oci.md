@@ -227,6 +227,44 @@ for the Kubernetes Service hostname, as declared in
 verify Harbor TLS. A shared ingress hardening change should establish a trusted
 upstream server name/CA and remove this bypass across the service catalog.
 
+## Repository and lifecycle audit
+
+On November 21, 2026, the public registry listed 159 `mirror` repositories
+and an empty default `library` project. The `homelab` project required
+authentication. The existing project boundary preserves upstream paths in
+`mirror` and keeps private builds and Chainguard verification imports in
+`homelab`. Bootstrap uses separate project-scoped pull and publisher robots.
+See [project bootstrap](../../clusters/homelab/apps/harbor/bootstrap.py).
+
+The snapshot at `818a8442` found 13 of 234 catalog repository/digest pairs
+missing from Harbor. Five were kagent runtime images referenced by the
+workload. The remaining eight were entries in the image-policy catalog
+without a direct workload pin. Keep publication evidence tied to exact
+digests. The [kagent mirror scope](../../scripts/config/harbor-kagent-images.json)
+includes its five runtime images and PostgreSQL. The
+[protected publisher](../../.github/workflows/harbor-mirror.yml) verifies
+the manifest digest and a complete download with the reader robot.
+
+The audit also found that the chart publisher's preflight rejected the
+inventory because Cilium `1.20.5` lacked a checksum. The package inventory
+now includes the digest from the [official Cilium index](https://helm.cilium.io/index.yaml),
+and offline PR checks exercise the same preflight. The publisher normalizes
+timestamps only in packages built from the two pinned Git sources so the
+reviewed checksums are reproducible. The protected
+[chart publication](https://github.com/Stuhlmuller/homelab/actions/runs/45042781938)
+succeeded before the Tailnet DNS chart switched to Harbor. The Helm
+immutability rule is independent of the five Kubernetes `v1.35.9` upgrade aliases.
+Those matched their expected digests during the audit and Harbor reported
+them mutable. See the [Kubernetes activation prerequisites](../../docs/harbor-image-mirroring.md#updates-and-coverage).
+
+Check actual quota, storage growth, cleanup schedules, and the live and
+rollback keep set before configuring retention or garbage collection. The
+public API could not verify administrator-only policy or private artifacts.
+Artifact presence alone does not measure a complete pull or live node state.
+All public repository descriptions were empty in the snapshot. Use Harbor
+descriptions or labels to expose upstream and ownership metadata without
+changing the mirror manifests. See [Harbor retention](https://goharbor.io/docs/2.15.0/working-with-projects/working-with-images/create-tag-retention-rules/).
+
 ## Private node registry foundation
 
 Before the October 10 rollout, read-only Talos inspection found no configured

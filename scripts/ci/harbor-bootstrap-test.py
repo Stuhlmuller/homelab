@@ -39,6 +39,7 @@ class HarborAPI:
         self.passwords = {}
         self.repositories = []
         self.artifacts = {}
+        self.immutable_rules = {}
         self.registries = {"cgr.dev": {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
                                         "type": "docker-registry", "insecure": False}}
         self.replication_policies = {}
@@ -102,6 +103,20 @@ class HarborAPI:
                                    "metadata": copy.deepcopy(body["metadata"]),
                                    "registry_id": body.get("registry_id")}
             return 201, b"", {}
+        rules_path = "/projects/mirror/immutabletagrules"
+        if path.startswith(rules_path + "?") and method == "GET":
+            rules = [{key: value for key, value in rule.items()
+                      if key != "project_id" and not (key in {"disabled", "priority"} and not value)}
+                     for rule in self.immutable_rules.values()]
+            return 200, rules, {"X-Total-Count": str(len(rules))}
+        if path == rules_path and method == "POST":
+            identifier = max(self.immutable_rules, default=0) + 1
+            self.immutable_rules[identifier] = {**copy.deepcopy(body), "id": identifier}
+            return 201, b"", {}
+        if path.startswith(rules_path + "/") and method == "PUT":
+            identifier = int(path.rsplit("/", 1)[1])
+            self.immutable_rules[identifier] = copy.deepcopy(body)
+            return 200, b"", {}
         if path.startswith("/projects/homelab/repositories"):
             parsed = urllib.parse.urlsplit(path)
             query = urllib.parse.parse_qs(parsed.query)
@@ -180,7 +195,7 @@ class KubernetesTagClient:
         if method == "GET" and path.startswith(artifact_prefix):
             encoded = path[len(artifact_prefix):].split("/artifacts/", 1)[0]
             repository = urllib.parse.unquote(urllib.parse.unquote(encoded))
-            desired = bootstrap.kubernetes_immutable_rule(repository, 7)
+            desired = bootstrap.mirror_immutable_rule(repository, bootstrap.KUBERNETES_TAG, 7)
             locked = any(all(rule.get(key) == value for key, value in desired.items())
                          for rule in self.rules)
             return {"digest": self.digests[repository], "tags": [
@@ -258,31 +273,42 @@ class BootstrapTest(unittest.TestCase):
         self.assertTrue({entry["source"] for entry in catalog["images"]}.issuperset(pins))
         self.assertFalse(bootstrap.KUBERNETES_TAG_LOCK_ENABLED)
 
-    def test_kubernetes_tag_lock_is_dormant_until_reviewed_activation(self):
+    def test_mirror_locks_chart_versions_without_locking_image_aliases(self):
         client = KubernetesTagClient()
-        bootstrap.reconcile_kubernetes_tag_lock(client, 7)
-        self.assertEqual(client.calls, [])
+        bootstrap.reconcile_mirror_tag_locks(client, 7)
+        self.assertEqual(len(client.rules), 1)
+        self.assertEqual([item["pattern"] for item in client.rules[0]["scope_selectors"]["repository"]], ["helm/**"])
+        self.assertEqual([item["pattern"] for item in client.rules[0]["tag_selectors"]], ["**"])
+        self.assertFalse(any("/artifacts/" in path for _, path, _ in client.calls))
+
+    def test_mirror_tag_locks_reject_ambiguous_existing_rule(self):
+        client = KubernetesTagClient()
+        rule = bootstrap.mirror_immutable_rule("helm/**", "**", 7)
+        client.rules = [{**rule, "id": identifier} for identifier in (1, 2)]
+        with self.assertRaisesRegex(bootstrap.BootstrapError, "ambiguous"):
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
+        self.assertTrue(all(method == "GET" for method, _, _ in client.calls))
 
     def test_kubernetes_tag_lock_prechecks_all_digests_before_writing(self):
         client = KubernetesTagClient()
         client.digests["ghcr.io/siderolabs/kubelet"] = "sha256:" + "0" * 64
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
                 self.assertRaises(bootstrap.BootstrapError):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
         self.assertFalse([call for call in client.calls if call[0] != "GET"])
 
     def test_kubernetes_tag_lock_reads_back_and_repairs_exact_rules(self):
         client = KubernetesTagClient()
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
-            self.assertEqual(len(client.rules), 5)
-            self.assertEqual(len([call for call in client.calls if call[0] == "POST"]), 5)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
+            self.assertEqual(len(client.rules), 6)
+            self.assertEqual(len([call for call in client.calls if call[0] == "POST"]), 6)
             client.calls.clear()
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
             self.assertFalse([call for call in client.calls if call[0] != "GET"])
             client.rules[0]["disabled"] = True
             client.calls.clear()
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
             self.assertEqual(len([call for call in client.calls if call[0] == "PUT"]), 1)
 
     def test_kubernetes_tag_lock_rejects_missing_immutable_readback(self):
@@ -290,7 +316,7 @@ class BootstrapTest(unittest.TestCase):
         client.report_immutable = False
         with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
                 self.assertRaisesRegex(bootstrap.BootstrapError, "digest or lock"):
-            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            bootstrap.reconcile_mirror_tag_locks(client, 7)
 
     def test_paused_policy_disables_native_rules(self):
         rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]
@@ -458,6 +484,7 @@ class BootstrapTest(unittest.TestCase):
 
     def test_initial_bootstrap_and_repeat_preserve_identities_and_least_privilege(self):
         self.assertEqual(self.main()[0], 0)
+        self.assertEqual(len(self.api.immutable_rules), 1)
         self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"})
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
