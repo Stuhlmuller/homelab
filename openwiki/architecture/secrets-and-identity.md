@@ -237,6 +237,16 @@ cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
 
+The dormant [hosted Renovate relay](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+proposes separate Tailnet Lock-signed enrollment for an ephemeral hosted
+runner and a persistent registry relay. The runner would receive its
+credential through the companion repository's main-only `renovate-production`
+environment and reach only the dedicated registry tag on TCP 443. The relay's
+Kubernetes Role grants `get`, `update`, and `patch` on a single pre-created
+state Secret. Only the Tailscale container mounts the projected token. A
+separate activation must provision the signed credentials and state Secret,
+bind the protected workflow, and verify the signed node survives a restart.
+
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
 `aws:ViaAWSService` is false. SSM must still forward the caller's authorization

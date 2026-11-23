@@ -345,6 +345,17 @@ expected public or unauthorized responses, and actual version discovery
 before writer cutover. If an eligible private source needs a Harbor credential,
 add a reviewed secret contract before enabling writes.
 
+The [hosted Renovate relay candidate](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+is a standalone Kustomization at zero replicas outside the active Traefik
+Application. It prepares a private TCP 443 route from the dedicated hosted
+runner to the registry-only listener, with Harbor TLS, SNI, and the token
+realm preserved. The [offline fixture](../../scripts/ci/renovate-registry-relay-test.py)
+checks that the active overlay excludes it and verifies the route and its
+identity boundary. A separate activation must verify signed Tailnet Lock
+enrollment, persistent relay state, the protected companion workflow, and a
+read-only OCI lookup plus access denials before using the route for hosted
+Renovate runs.
+
 ## Identity And State
 
 The SSM catalog declares twelve Harbor SecureStrings. `harbor-secrets` renders
