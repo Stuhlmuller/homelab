@@ -205,6 +205,12 @@ policy and have no replication or backup; they are development scratch space,
 not durable workload storage. The provisioner and its `hostPath` helper Pods
 run in the dedicated privileged `cordium-storage` namespace so the broader
 `storage` namespace can keep baseline Pod Security enforcement.
+The helper image pins the cataloged Wolfi base with packaged BusyBox, which
+provides an APK inventory for both Linux architectures. Verify the protected
+mirror pull and fresh native scan and SBOM receipts before rollout, then
+verify the scratch PVC lifecycle. The [package-coverage receipt](../../docs/evidence/cordium-helper-package-coverage-2026-11-21.json)
+records the scanned digests and separate rollout checks under
+[#920](https://github.com/Stuhlmuller/homelab/issues/920).
 The Cordium worker patch also sets `user.max_user_namespaces=28633` only on
 `zimaboard-1`, because each Workspace starts a rootless Podman container and
 Talos otherwise disables the required user namespaces. The Cordium Application
