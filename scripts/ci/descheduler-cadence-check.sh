@@ -30,8 +30,7 @@ yq -o=json '.' "$values" |
 # Exercise the Argo chart parameters against both values revisions. Deployment
 # mode ignores the CronJob settings, so validate the rendered workload kind.
 rendered="$(mktemp)"
-old_values="$(mktemp)"
-trap 'rm -f "$rendered" "$old_values"' EXIT
+trap 'rm -f "$rendered"' EXIT
 
 render_stage() {
   helm template descheduler descheduler --repo https://kubernetes-sigs.github.io/descheduler \
@@ -49,8 +48,7 @@ render_stage() {
 render_stage "$values"
 python3 -I scripts/ci/descheduler-policy-check.py "$rendered"
 
-# Before the repaired values arrive on main, the previously deployed values
-# must also render one suspended CronJob under the same overrides.
-git show "934770124f6e3b3c1b0857ce8e510e0ea7a1e894:$values" >"$old_values"
-render_stage "$old_values"
+# Exact previously deployed values from 934770124f6e3b3c1b0857ce8e510e0ea7a1e894,
+# at the same path as $values. Keep the fixture available to shallow checkouts.
+render_stage scripts/ci/fixtures/descheduler-pre-stage-values.yaml
 echo "Descheduler: chart overrides render only a suspended CronJob with both values revisions"
