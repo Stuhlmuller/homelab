@@ -88,6 +88,10 @@ python3 -I scripts/ci/openclaw-enterprise-registration-test.py
 python3 -I scripts/ci/envoy-gateway-registration-test.py
 python3 -I scripts/ci/network-policy-registration-test.py
 
+echo "::group::Argo CD command-parameter ownership handoff"
+bash scripts/ci/argocd-command-params-check.sh
+echo "::endgroup::"
+
 echo "::group::Operator OpenTofu validation"
 (
   cd IaC/homelab/us-west-2/operator/tailscale-access

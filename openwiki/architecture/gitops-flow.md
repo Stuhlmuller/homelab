@@ -72,6 +72,14 @@ revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
 
+During the ownership handoff, bootstrap Helm and the self-management manifest
+both declare the command parameters and set `Prune=false` and
+`IgnoreExtraneous` on `argocd-cmd-params-cm`. The static gate renders both
+sources, checks the parameters and annotations, and verifies the Helm
+controller restart marker. Use a protected bootstrap apply and verify the live
+Helm ownership, parameters, annotations, and controller health before removing
+the self-management copy in a follow-up.
+
 Terragrunt and private-access catalog applies reuse [Deployment Checks](../../.github/workflows/deployment-checks.yml)
 to validate the exact current `main` checkout before production access.
 Protected apply uses the existing deployment commands and their exit codes.

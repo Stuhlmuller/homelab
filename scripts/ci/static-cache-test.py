@@ -76,7 +76,11 @@ python3() {
   esac
 }
 node() { :; }
-bash() { :; }
+bash() {
+  if [[ "${1:-}" == scripts/ci/argocd-command-params-check.sh ]]; then
+    command terragrunt --working-dir IaC/homelab/us-west-2/bootstrap/argocd render >/dev/null
+  fi
+}
 checkov() { :; }
 source "$1" --offline-verified
 '''
@@ -121,6 +125,10 @@ source "$1" --offline-verified
         tested = {Path(call["cwd"]).name for call in calls if "test" in call["args"]}
         self.assertLessEqual({"entra-stuhlmuller-domain", "entra-stuhlmuller-pilot-user"}, tested)
         self.assertGreaterEqual(sum(call["args"] == ["render"] for call in calls), 3)
+        self.assertIn(
+            ["--working-dir", "IaC/homelab/us-west-2/bootstrap/argocd", "render"],
+            [call["args"] for call in calls],
+        )
 
     def test_init_failure_cleans_private_cache(self):
         result, _ = self.run_gate("init")

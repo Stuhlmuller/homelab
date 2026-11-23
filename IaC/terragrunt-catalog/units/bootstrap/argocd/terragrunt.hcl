@@ -120,6 +120,10 @@ inputs = {
         }
 
         params = {
+          annotations = {
+            "argocd.argoproj.io/compare-options" = "IgnoreExtraneous"
+            "argocd.argoproj.io/sync-options"    = "Prune=false"
+          }
           "controller.sync.timeout.seconds" = "900"
           "server.insecure"                 = "true"
         }
@@ -140,7 +144,7 @@ inputs = {
         podManagementPolicy = "Parallel"
         metrics             = local.argocd_metrics
         podAnnotations = {
-          "homelab.stuhlmuller.dev/sync-timeout-revision" = "v1"
+          "homelab.stuhlmuller.dev/sync-timeout-revision" = "v2"
         }
       }
 
