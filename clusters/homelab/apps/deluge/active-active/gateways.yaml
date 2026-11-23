@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: deluge-vpn-a
+      namespace: media
+      annotations: &gatewayChecks
+        checkov.io/skip1: CKV_K8S_23=The bounded WireGuard and nftables process needs root to retain NET_ADMIN across subprocesses.
+        checkov.io/skip2: CKV_K8S_25=The gateway has only NET_ADMIN to install its pod firewall and WireGuard interfaces.
+        checkov.io/skip3: CKV_K8S_40=The bounded WireGuard and nftables process needs UID 0.
+        checkov.io/skip4: CKV_K8S_43=Inactive source is pinned to the published digest in the Kustomize image override before GitOps registration.
+        checkov.io/skip5: CKV2_K8S_6=The gateway starts its default-deny nftables firewall before accepting tunnel traffic.
+        checkov.io/skip6: CKV_K8S_15=The immutable image can restart from the node cache during a Harbor outage.
+    spec:
+      replicas: 1
+      strategy: {type: Recreate}
+      selector:
+        matchLabels: {app.kubernetes.io/name: deluge-vpn-a}
+      template:
+        metadata:
+          labels: {app.kubernetes.io/name: deluge-vpn-a}
+          annotations: &profileAnnotations
+            homelab.rst.io/vpn-profile-revision: "1"
+        spec: &gatewayPod
+          automountServiceAccountToken: false
+          imagePullSecrets:
+            - name: deluge-vpn-harbor-pull
+          nodeSelector: {kubernetes.io/hostname: zimaboard-1}
+          dnsPolicy: None
+          dnsConfig: {nameservers: [127.0.0.1]}
+          securityContext: {seccompProfile: {type: RuntimeDefault}}
+          containers:
+            - &gateway
+              name: gateway
+              image: harbor.stinkyboi.com/homelab/homelab-deluge-vpn:staged
+              imagePullPolicy: IfNotPresent
+              command: [python3, /opt/deluge-vpn/network.py, gateway, a]
+              ports:
+                - {name: transit, containerPort: 51820, protocol: UDP}
+              readinessProbe:
+                exec:
+                  command: [test, -f, /run/deluge-vpn/ready]
+                periodSeconds: 3
+              livenessProbe:
+                exec:
+                  command:
+                    - /bin/sh
+                    - -ec
+                    - nft list table inet deluge_vpn >/dev/null && wg show transit >/dev/null && wg show airvpn >/dev/null
+                initialDelaySeconds: 15
+                periodSeconds: 15
+              resources:
+                requests: {cpu: 100m, memory: 64Mi}
+                limits: {cpu: 600m, memory: 128Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsUser: 0
+                capabilities:
+                  drop: [ALL]
+                  add: [NET_ADMIN]
+              volumeMounts:
+                - {name: transit, mountPath: /vpn/transit, readOnly: true}
+                - {name: airvpn, mountPath: /vpn/airvpn, readOnly: true}
+                - {name: runtime, mountPath: /run/deluge-vpn}
+          volumes:
+            - name: transit
+              secret: {secretName: deluge-vpn-a-transit, defaultMode: 256}
+            - name: airvpn
+              secret: {secretName: deluge-vpn-a-airvpn, defaultMode: 256}
+            - name: runtime
+              emptyDir: {medium: Memory, sizeLimit: 1Mi}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: deluge-vpn-b
+      namespace: media
+      annotations: *gatewayChecks
+    spec:
+      replicas: 1
+      strategy: {type: Recreate}
+      selector:
+        matchLabels: {app.kubernetes.io/name: deluge-vpn-b}
+      template:
+        metadata:
+          labels: {app.kubernetes.io/name: deluge-vpn-b}
+          annotations: *profileAnnotations
+        spec:
+          <<: *gatewayPod
+          nodeSelector: {kubernetes.io/hostname: zimaboard-2}
+          containers:
+            - <<: *gateway
+              command: [python3, /opt/deluge-vpn/network.py, gateway, b]
+          volumes:
+            - name: transit
+              secret: {secretName: deluge-vpn-b-transit, defaultMode: 256}
+            - name: airvpn
+              secret: {secretName: deluge-vpn-b-airvpn, defaultMode: 256}
+            - name: runtime
+              emptyDir: {medium: Memory, sizeLimit: 1Mi}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: deluge-vpn-a
+      namespace: media
+    spec: &gatewayService
+      type: ClusterIP
+      clusterIP: 10.96.10.61
+      ipFamilyPolicy: SingleStack
+      ipFamilies: [IPv4]
+      selector: {app.kubernetes.io/name: deluge-vpn-a}
+      ports:
+        - {name: transit, port: 51820, targetPort: transit, protocol: UDP}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: deluge-vpn-b
+      namespace: media
+    spec:
+      <<: *gatewayService
+      clusterIP: 10.96.10.62
+      selector: {app.kubernetes.io/name: deluge-vpn-b}

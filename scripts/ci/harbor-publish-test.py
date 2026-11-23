@@ -180,7 +180,7 @@ class HarborPublicationGates(unittest.TestCase):
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
                         core=False, cordium=False, enterprise=False,
-                        forward_start_delay=0, canary=False):
+                        forward_start_delay=0, canary=False, deluge=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -188,6 +188,9 @@ class HarborPublicationGates(unittest.TestCase):
             names = ["busybox"]
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
+        if deluge:
+            names = ["homelab-deluge-vpn"]
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/deluge-vpn-image.yml@refs/heads/main"
         if enterprise:
             names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli",
                      "homelab-oce-operator"]
@@ -2178,6 +2181,23 @@ printf '%s\n' {SHA}
         self.assertNotIn("homelab-nofx", output)
         self.assertEqual(len(self.calls_for("cosign")), 2)
         self.assert_cleaned()
+
+    def test_deluge_publication_uses_only_the_signed_runtime_digest(self):
+        self.transport_mocks(deluge=True)
+        result = self.run_helper(mode="publish-deluge-vpn")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        digest = self.published_digests["homelab-deluge-vpn"]
+        repository = "harbor.stinkyboi.com/homelab/homelab-deluge-vpn"
+        self.assertEqual((self.root / "outputs").read_text(), f"image={repository}:homelab-{SHA}@{digest}\n")
+        self.assertEqual([args[-1] for args in self.calls_for("cosign")], [f"{repository}@{digest}"])
+        self.assert_cleaned()
+
+    def test_deluge_publication_refuses_unrelated_workflow_and_implicit_push(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/nofx-images.yml@refs/heads/main"
+        self.rejected(mode="publish-deluge-vpn")
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/deluge-vpn-image.yml@refs/heads/main"
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-deluge-vpn")
 
     def test_cordium_push_cannot_reach_credentials_or_publication(self):
         self.env["GITHUB_EVENT_NAME"] = "push"

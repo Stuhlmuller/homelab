@@ -637,6 +637,12 @@ It introduces no persistent data or external service. See
 [Deluge CPU Audit — 2026-09-05](../operations/deluge-cpu-audit-2026-09-05.md) for the open diagnosis, live verification,
 and required disable rollout.
 
+Deluge's [staged active-active AirVPN profile](../../docs/deluge-active-active-vpn.md)
+keeps one Deluge daemon and uses two WireGuard gateways on separate workers.
+A pod-local firewall blocks direct public egress, with connection-tracked
+routing through healthy AirVPN paths. The existing Argo CD application
+continues using Gluetun until canary verification and a cutover revision.
+
 ## GitOps Project Boundary
 
 Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use the namespace-limited

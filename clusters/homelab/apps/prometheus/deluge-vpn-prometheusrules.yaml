@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: deluge-vpn
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: deluge-vpn
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  groups:
+    - name: homelab.deluge-vpn
+      interval: 15s
+      rules:
+        - alert: DelugeVpnPathDown
+          expr: |
+            sum(deluge_vpn_path_healthy{namespace="media",service="deluge-metrics"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Deluge is operating with one AirVPN path.
+            description: Check both Deluge gateway deployments and per-path VPN health.
+        - alert: DelugeVpnUnavailable
+          expr: |
+            (sum(deluge_vpn_path_healthy{namespace="media",service="deluge-metrics"}) == 0)
+            or
+            (
+              (count(kube_service_info{namespace="media",service="deluge-metrics"}) > 0)
+              unless
+              (count(deluge_vpn_path_healthy{namespace="media",service="deluge-metrics"}) > 0)
+            )
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Deluge has no observable healthy AirVPN path.
+            description: Check the Deluge VPN health controller and both gateways. Public traffic should fail closed.
