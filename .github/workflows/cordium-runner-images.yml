@@ -8,6 +8,8 @@ on:
       - '.cordium/**'
       - 'builds/cordium-runner/Dockerfile*'
       - 'builds/cordium-runner/build.sh'
+      - 'builds/cordium-runner/nix-packages.nix'
+      - 'flake.lock'
       - 'scripts/cordium-*.py'
       - 'scripts/ci/install-octelium-client.sh'
       - 'scripts/ci/install-cordium-client.sh'
