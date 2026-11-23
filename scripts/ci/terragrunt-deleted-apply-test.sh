@@ -6,7 +6,7 @@ fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
 fixture="$(cd "$fixture" && pwd -P)"
 cd "$fixture"
-git init -q
+git init -qb main
 git config user.name Fixture
 git config user.email fixture@example.invalid
 git config commit.gpgsign false
@@ -33,9 +33,10 @@ HCL
 git add catalog IaC
 git commit -qm 'test: add generated unit'
 APPLY_BASE_SHA="$(git rev-parse HEAD)"
-export APPLY_BASE_SHA
+export APPLY_BASE_SHA TERRAGRUNT_FILTER_HEAD_SHA=HEAD
 terragrunt stack run --working-dir "$stack_dir" --non-interactive -- apply -auto-approve >setup.log 2>&1 ||
   { cat setup.log >&2; exit 1; }
+git switch -qc remove-unit
 sed 's/path   = "retired"/path   = "kept"/' "$stack_dir/terragrunt.stack.hcl" >kept.hcl
 mv kept.hcl "$stack_dir/terragrunt.stack.hcl"
 git add "$stack_dir/terragrunt.stack.hcl"
@@ -73,9 +74,10 @@ cat >run-apply <<'SH'
 source "$1/terragrunt-filter-base.sh"
 repo_root="$PWD"
 cleanup_dirs=()
-TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="$(git rev-parse HEAD)"
+prepare_terragrunt_filter_base
+affected_units="$(terragrunt_affected_units)"
 verify_current_main_commit() { :; }
-source <(sed -n '/^destroy_deleted_terragrunt_units() {$/,/^}$/p' "$1/terragrunt-apply.sh")
+source <(sed -n '/^exclude_other_affected_units() {$/,/^}$/p; /^destroy_deleted_terragrunt_units() {$/,/^}$/p' "$1/terragrunt-apply.sh")
 destroy_deleted_terragrunt_units
 SH
 

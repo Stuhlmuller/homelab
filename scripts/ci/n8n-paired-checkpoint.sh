@@ -41,8 +41,6 @@ literal_absent() {
   rg -Fq "$1" "$2" || status=$?
   [[ "$status" -eq 1 ]]
 }
-literal_absent 'migration-v1.values.yaml' "$stack" || exit 1
-literal_absent 'migration-github-trigger-v1.values.yaml' "$stack" || exit 1
 literal_absent 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 literal_absent 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 

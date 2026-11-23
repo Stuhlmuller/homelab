@@ -219,8 +219,9 @@ control-plane node and its system disk. GitOps explicitly declares the retained
 creates the backup target independently of the active StatefulSet.
 
 Before placing or expanding retained local state, check per-node `/var` free
-bytes, inodes and depletion rate in the
+bytes, inodes, depletion rate and recent node I/O pressure in the
 [EPHEMERAL monitoring runbook](../../docs/talos-ephemeral-monitoring.md).
+Device latency, error and wear telemetry remains a separate acceptance item.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
@@ -520,6 +521,9 @@ candidate validation first; do not edit the live PVC manually. See the
 [Enterprise README](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/octelium-enterprise/README.md)
 and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
 
+The Enterprise Application uses selective sync so an inspector-only change
+can leave the in-sync store Deployment untouched.
+
 The November 1 resource-store capture candidate is dormant under
 `clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
 activated and observed Ready before a separate GitOps fence reduces only
@@ -588,10 +592,10 @@ take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
 instead of changing the major image in place, then verify SQL, n8n readiness,
 and the public webhook before retiring the old PVC.
 
-The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
-renders the Deployment at zero replicas only when a reviewed GitOps revision
-adds it to Helm `valueFiles`; the active stack omits it. A future paired
-checkpoint must verify that Argo CD synced the exact fence revision, no n8n
+The n8n stack includes the [maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+in Helm `valueFiles`, so the declared Deployment renders at zero replicas.
+After the targeted Terragrunt Apply, the paired checkpoint must verify that
+Argo CD synced the exact fence revision, no n8n
 writer Pods or Jobs remain, PostgreSQL is Ready, and both PVC/PV bindings stay
 fixed across the dump and PVC archive. An off-NAS receipt and isolated restore
 are still required before a separate GitOps revision restores one n8n replica.
@@ -609,9 +613,8 @@ removes the Job and its Pods before the deny-all policy. A mismatch leaves the
 fence and policy in place. The checkpoint script
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
 downloads and restores both in disposable runner storage, then publishes a
-checksum-bound manifest. This is source preparation, not a completed backup;
-activation still needs a separate reviewed fence revision and successful live
-receipt.
+checksum-bound manifest. The successful live checkpoint receipt records
+completion of the backup and isolated restore.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
@@ -921,3 +924,7 @@ in local scratch containers, recording source and credential versions privately.
 It never mounts production claims. Preserve independent AWS/encrypted-state
 recovery access; a retained PVC alone is not proof of recoverable credentials.
 Live private routing and normal-client acceptance are separate checks.
+
+The [Octelium storage policy](../../clusters/homelab/apps/octelium-storage/networkpolicy.yaml)
+limits PostgreSQL backup egress to CoreDNS and the PostgreSQL pod.
+PostgreSQL and Redis serve inbound clients without initiating egress.

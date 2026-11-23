@@ -68,8 +68,9 @@ provider constraints and all release inputs/outputs while removing that duplicat
 policy; no backend key or resource address migration is involved.
 
 Authenticated planning found the legacy application-backup-storage state was
-plaintext after the shared-encryption change. The root now permits plaintext
-reads only for that exact homelab unit, preserving AES-GCM writes and its existing
-backend key. All other units remain enforced. A read-only plan leaves the state
-untouched; remove this scoped fallback after the first declared encrypted apply
-is verified. See [migration behavior](../../docs/state-encryption.md).
+plaintext after the shared-encryption change. The shared SSM parameter state
+also predates client-side encryption. Its legacy payload blocks applying the
+declared Bedrock reader grant. The SSM unit owns its scoped read exception.
+Both units use AES-GCM for new writes. After each declared apply,
+verify the encrypted write and remove its fallback. See
+[migration behavior](../../docs/state-encryption.md).
