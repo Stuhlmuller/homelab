@@ -2,7 +2,6 @@ name: Verify Native Chainguard Receipt Provenance
 
 on:
   push:
-    branches: [main]
   # A completed unprivileged PR check supplies only bounded event metadata.
   workflow_run:
     workflows: [Terragrunt Plan]
@@ -11,14 +10,16 @@ on:
 permissions: {}
 
 concurrency:
-  group: native-chainguard-receipt-provenance
+  group: native-chainguard-receipt-provenance-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   verify:
-    name: Native Chainguard Receipt Provenance
+    name: Publish Native Chainguard Receipt Status
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    environment:
+      name: homelab-production
     permissions:
       actions: read
       contents: read

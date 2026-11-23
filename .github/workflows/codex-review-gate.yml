@@ -17,15 +17,16 @@ permissions: {}
 jobs:
   verify:
     if: >-
-      github.ref == 'refs/heads/main' &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event.issue.pull_request && github.event.comment.user.id == 199175422))
     runs-on: ubuntu-slim
     timeout-minutes: 5
     concurrency:
-      group: codex-review-${{ github.event.issue.number || inputs.pull_request }}
+      group: codex-review-${{ github.ref }}-${{ github.event.issue.number || inputs.pull_request }}
       # Every run reads the current head and review receipt from GitHub.
       cancel-in-progress: true
+    environment:
+      name: homelab-production
     permissions:
       contents: read
       pull-requests: read

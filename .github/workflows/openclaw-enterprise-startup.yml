@@ -28,12 +28,10 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
@@ -59,7 +57,7 @@ jobs:
   startup:
     name: Protected Startup Secret Create
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     environment:
@@ -69,14 +67,12 @@ jobs:
     steps:
       - name: Verify Current Main Before Credentials
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
@@ -103,7 +99,7 @@ jobs:
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          sha256sum --check --status <<<'1ea9b290420dfbb2db5ce70331c16f664b91b6cffbb3618bb38b9d492cbf22a8  scripts/openclaw-enterprise-startup.py'
+          sha256sum --check --status <<<'1fc1c95e83602d8513fd98afb5639bea0205ac8f9c435db0651a7bd6bd3c09f3  scripts/openclaw-enterprise-startup.py'
           python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
           EOF
           then

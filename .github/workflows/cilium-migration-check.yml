@@ -3,7 +3,6 @@ name: Cilium migration trial
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review, edited]
     paths:
       - .github/workflows/cilium-migration-check.yml
@@ -11,7 +10,6 @@ on:
       - clusters/homelab/platform/multus/multus.yaml
       - scripts/ci/cilium-migration-check.py
   push:
-    branches: [main]
     paths:
       - .github/workflows/cilium-migration-check.yml
       - clusters/homelab/platform/cilium/**

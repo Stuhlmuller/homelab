@@ -26,7 +26,7 @@ if [[ "$mode" == publish-harbor-core ]]; then
   mode=publish
   publish_names=(homelab-harbor-core)
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
-  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
+  [[ "${GITHUB_WORKFLOW_REF%%@*}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml ]]
 fi
 if [[ "$mode" == publish-cordium ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
@@ -37,7 +37,7 @@ fi
 if [[ "$mode" == publish-openclaw-enterprise ]]; then
   enterprise_publication=true
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
-  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
+  [[ "${GITHUB_WORKFLOW_REF%%@*}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml ]]
   mode=publish
   publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli homelab-oce-operator)
   publish_outputs=(controller runtime cli operator)
@@ -99,7 +99,6 @@ elif [[ "$mode" == mirror-image-updater-canary ]]; then
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
-[[ "${GITHUB_REF:-}" == refs/heads/main ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
 if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]; then
   [[ "${EXPECTED_SHA:-}" == "$GITHUB_SHA" ]]
@@ -192,7 +191,7 @@ if [[ "$mode" == publish ]]; then
 fi
 if "$tailnet_https"; then
   [[ "$mode" == mirror && "${GITHUB_EVENT_NAME:-}" == workflow_dispatch &&
-     "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main ]] || exit 2
+     "${GITHUB_WORKFLOW_REF%%@*}" == Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml ]] || exit 2
 else
   : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
   [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]

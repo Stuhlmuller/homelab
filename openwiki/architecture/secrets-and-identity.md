@@ -775,9 +775,11 @@ Deployment remain disabled pending identity, isolation, publication, and
 cold-pull acceptance. See the [runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md).
 
 `homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
-owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
-separate workload identity with bounded sessions and workspace lifecycle/exec
-permissions; bootstrap management credentials are not shared. A catch-all
+owner, main workflow, audience, environment subject, and dispatch event. The
+`homelab-cordium-ci` GitHub environment allows only `main` deployments. The
+Octelium user with the same name has bounded sessions and permissions for the
+workspace lifecycle and command execution. It receives no bootstrap management
+credentials. A catch-all
 post-authentication denial and priority -4 method denial close upstream
 default allowances. The fixed `scripts/cordium-ci-reconcile.py` path previews
 only these three resources by default. Execution requires clean, exact reviewed

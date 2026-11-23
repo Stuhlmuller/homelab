@@ -2,8 +2,6 @@ name: Terragrunt Apply Request
 
 on:
   push:
-    branches:
-      - main
 
 permissions: {}
 
@@ -11,6 +9,8 @@ jobs:
   request:
     name: Request Latest Main Apply
     runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
     steps:
       - name: Show Exact Apply Command
         env:

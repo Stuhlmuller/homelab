@@ -262,7 +262,6 @@ sys.stdout.buffer.write(chunk)
                 result = subprocess.run(['bash', '-c', textwrap.dedent(recheck.group(1))],
                                         cwd=ROOT, env={**os.environ,
                                                        'PATH': f'{directory}:{os.environ["PATH"]}',
-                                                       'ACTUAL_REF': 'refs/heads/main',
                                                        'ACTUAL_SHA': 'a' * 40,
                                                        'EXPECTED_SHA': 'a' * 40,
                                                        'FAKE_MAIN_SHA': current_main,
@@ -277,8 +276,7 @@ sys.stdout.buffer.write(chunk)
                              workflow, re.S)
         self.assertIsNotNone(dispatch)
         guard = textwrap.dedent(dispatch.group(1))
-        base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
-                'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
+        base = {**os.environ, 'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
                 'BASELINE_REF': '', 'ARCHIVE_REF': '', 'CACHE_REF': '', 'PRIOR_RUN_ID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
@@ -348,7 +346,6 @@ sys.stdout.buffer.write(chunk)
                 (fake / name).chmod(0o755)
             base = {**os.environ, 'PATH': f'{fake}:{os.environ["PATH"]}',
                     'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha, 'EXPECTED_SHA': sha,
-                    'GITHUB_REF': 'refs/heads/main',
                     'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
                     'OCTELIUM_AUTH_TOKEN': 'test', 'GH_REPO': 'Stuhlmuller/homelab',
                     'GH_TOKEN': 'test', 'FAKE_MAIN_SHA': 'b' * 40,
@@ -356,7 +353,7 @@ sys.stdout.buffer.write(chunk)
             for stage, overrides in (
                     ('full-sync', {}), ('reconcile', {}), ('stop', {}),
                     ('verification', {}), ('restore', {}), ('acceptance', {}),
-                    ('full-sync', {'GITHUB_REF': 'refs/heads/feature',
+                    ('full-sync', {'GITHUB_SHA': 'b' * 40,
                                    'FAKE_MAIN_SHA': sha}),
                     ('full-sync', {'GITHUB_REPOSITORY': 'foreign/homelab',
                                    'FAKE_MAIN_SHA': sha})):

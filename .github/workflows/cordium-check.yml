@@ -28,12 +28,9 @@ concurrency:
 
 jobs:
   check:
-    if: >-
-      github.ref == 'refs/heads/main' ||
-      (github.ref == 'refs/heads/codex/cordium-oidc-denial' && inputs.mode == 'deny-ref')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
-    # Keep the branch OIDC subject; an environment would change its identity.
+    environment: ${{ inputs.mode == 'deny-ref' && 'homelab-cordium-denial' || 'homelab-cordium-ci' }}
     permissions:
       contents: read
       id-token: write
@@ -41,18 +38,12 @@ jobs:
       - name: Verify Dispatch Commit
         timeout-minutes: 1
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           CHECK_MODE: ${{ inputs.mode }}
         run: |
           case "${CHECK_MODE}" in
-            checks | force-failure | runner-probe | forbidden-method)
-              test "${ACTUAL_REF}" = "refs/heads/main"
-              ;;
-            deny-ref)
-              test "${ACTUAL_REF}" = "refs/heads/codex/cordium-oidc-denial"
-              ;;
+            checks | force-failure | runner-probe | forbidden-method | deny-ref) ;;
             *) exit 1 ;;
           esac
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"

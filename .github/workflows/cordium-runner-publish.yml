@@ -22,12 +22,10 @@ jobs:
       - name: Verify Dispatch Commit
         if: github.event_name == 'workflow_dispatch'
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
@@ -41,7 +39,7 @@ jobs:
     name: Publish Reviewed Main Images
     needs:
       - test-build
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.repository == 'Stuhlmuller/homelab' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     concurrency:
@@ -76,13 +74,11 @@ jobs:
         run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
       - name: Verify Current Main Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EVENT_NAME: ${{ github.event_name }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
             test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"

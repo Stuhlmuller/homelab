@@ -86,14 +86,14 @@ class StartupContract(unittest.TestCase):
              patch.object(startup, "kube", side_effect=startup.Blocked("lost response")):
             startup.execute(SHA, self.candidate)
 
-    def test_execute_requires_dispatch_main_and_clean_checkout(self):
+    def test_execute_requires_dispatch_sha_and_clean_checkout(self):
         environment = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_NAME": "workflow_dispatch",
-                       "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": SHA}
+                       "GITHUB_SHA": SHA}
         with patch.dict(os.environ, environment, clear=True), \
              patch.object(startup, "command", side_effect=["", SHA + "\n",
                                                         SHA + "\trefs/heads/main\n"]):
             startup.reviewed_main(SHA)
-        with patch.dict(os.environ, {**environment, "GITHUB_REF": "refs/heads/feature"},
+        with patch.dict(os.environ, {**environment, "GITHUB_SHA": "b" * 40},
                         clear=True), patch.object(startup, "command") as command:
             with self.assertRaises(startup.Blocked):
                 startup.reviewed_main(SHA)

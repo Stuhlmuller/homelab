@@ -21,7 +21,7 @@ SPEC.loader.exec_module(MODULE)
 SHA = "a" * 40
 ENVIRONMENT = {
     "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
-    "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
+    "GITHUB_EVENT_NAME": "workflow_dispatch",
     "GITHUB_SHA": SHA, "EXPECTED_SHA": SHA,
     "ARM_CLIENT_ID": "11111111-1111-4111-8111-111111111111",
     "ARM_TENANT_ID": "22222222-2222-4222-8222-222222222222",
@@ -100,7 +100,7 @@ class VerifyTest(unittest.TestCase):
                 self.assertEqual(status, 1)
                 self.assertEqual(calls, [])
         for key, value in (("ARM_CLIENT_SECRET", "synthetic-private-secret"),
-                           ("GITHUB_REF", "refs/heads/other"), ("EXPECTED_SHA", "b" * 40),
+                           ("EXPECTED_SHA", "b" * 40),
                            ("ARM_USE_CLI", "true"), ("ARM_USE_MSI", "true"),
                            ("ARM_CLIENT_ID", "invalid")):
             with self.subTest(key=key):

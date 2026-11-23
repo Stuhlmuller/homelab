@@ -5,9 +5,14 @@ import rego.v1
 deny contains msg if {
 	events := workflow_events
 	has_event(events, "pull_request_target")
-	not native_receipt_provenance_workflow
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must not use pull_request_target for infrastructure checks", [name])
+}
+
+deny contains msg if {
+	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
+	not native_receipt_provenance_workflow
+	msg := "Native receipt provenance requires a protected environment and bounded workflow-run metadata"
 }
 
 deny contains msg if {
@@ -191,20 +196,19 @@ approved_openclaw_startup if {
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
 	static.steps[0].name == "Verify Dispatch Commit"
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
-	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	static.steps[0].env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
 	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
 	static.steps[3].name == "Run Static Checks"
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.startup
 	job.needs == ["static-policy"]
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.if == "github.repository == 'Stuhlmuller/homelab'"
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
 	count(job.steps) == 4
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Create Or Attest Fixed Startup Secret"]
 	verify := job.steps[0]
-	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	verify.env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(verify.run, "\n") == openclaw_startup_main_check
 	run := job.steps[3]
 	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
@@ -212,7 +216,6 @@ approved_openclaw_startup if {
 }
 
 openclaw_startup_main_check := `set -euo pipefail
-test "${ACTUAL_REF}" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
 
@@ -223,7 +226,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 bash scripts/ci/install-kubeconfig.sh
-sha256sum --check --status <<<'1ea9b290420dfbb2db5ce70331c16f664b91b6cffbb3618bb38b9d492cbf22a8  scripts/openclaw-enterprise-startup.py'
+sha256sum --check --status <<<'1fc1c95e83602d8513fd98afb5639bea0205ac8f9c435db0651a7bd6bd3c09f3  scripts/openclaw-enterprise-startup.py'
 python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
 EOF
 then
@@ -259,7 +262,7 @@ approved_platform_maintenance if {
 	count(static.steps) == 4
 	count(object.keys(static.steps[0])) == 3
 	static.steps[0].name == "Verify Dispatch Commit"
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}
+	static.steps[0].env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}
 	trim(static.steps[0].run, "\n") == platform_maintenance_dispatch_check
 	static.steps[1] == platform_maintenance_static_checkout
 	static.steps[2] == platform_maintenance_install_nix
@@ -275,18 +278,18 @@ approved_platform_maintenance if {
 	job.environment.name == "homelab-production"
 	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
 	job.permissions == {"contents": "read", "id-token": "write"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.if == "github.repository == 'Stuhlmuller/homelab'"
 	count(job.steps) == 6
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
 	verify := job.steps[0]
 	count(object.keys(verify)) == 3
-	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	verify.env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(verify.run, "\n") == platform_maintenance_owner_main_check
 	job.steps[1] == platform_maintenance_private_checkout
 	job.steps[2] == platform_maintenance_install_nix
 	recheck := job.steps[3]
 	count(object.keys(recheck)) == 3
-	recheck.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	recheck.env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(recheck.run, "\n") == platform_maintenance_main_check
 	job.steps[4] == platform_maintenance_aws_credentials
 	some run in job.steps
@@ -296,8 +299,7 @@ approved_platform_maintenance if {
 	trim(run.run, "\n") == platform_maintenance_private_run
 }
 
-platform_maintenance_dispatch_check := `test "${ACTUAL_REF}" = refs/heads/main
-test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+platform_maintenance_dispatch_check := `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 if [ "$RUN_STAGE" = ownership-approve ]; then
   test "$GITHUB_ACTOR_ID" = 57728706
   test "$GITHUB_RUN_ATTEMPT" = 1
@@ -317,12 +319,10 @@ platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "u
 platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
 
 platform_maintenance_main_check := `set -euo pipefail
-test "$ACTUAL_REF" = refs/heads/main
 test "$ACTUAL_SHA" = "$EXPECTED_SHA"
 test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
 
 platform_maintenance_owner_main_check := `set -euo pipefail
-test "$ACTUAL_REF" = refs/heads/main
 test "$ACTUAL_SHA" = "$EXPECTED_SHA"
 if [ "$RUN_STAGE" = ownership-approve ]; then
   test "$GITHUB_ACTOR_ID" = 57728706
@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'dbca0e4cd8cff056cfcd566eb5c59c50c29db19504f8a1378809eb6060703139  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -369,10 +369,10 @@ approved_openclaw_legacy_operation if {
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job["timeout-minutes"] == 360
 	job.permissions == {"actions": "read", "contents": "read", "id-token": "write"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
 	count(job.steps) == 8
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name, job.steps[6].name, job.steps[7].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Verify Prior Restore Run", "Verify Protected Inputs", "Verify AWS Role Input", "Configure AWS Credentials", "Run Legacy Stage"]
-	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	job.steps[0].env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
 	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
 	job.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
@@ -429,20 +429,20 @@ approved_openclaw_enterprise_operation if {
 	static := input.jobs["static-policy"]
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}
+	static.steps[0].env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}
 	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.enterprise
 	job["runs-on"] == "ubuntu-24.04"
 	job["timeout-minutes"] == 150
 	job.needs == ["static-policy"]
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
 	count(job.steps) == 5
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
-	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	job.steps[0].env == {"ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
 	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
 	job.steps[1].with["persist-credentials"] == false
@@ -456,7 +456,7 @@ approved_openclaw_enterprise_operation if {
 	binding := input.jobs.binding
 	binding["runs-on"] == "ubuntu-24.04"
 	binding.needs == ["static-policy"]
-	binding.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'"
+	binding.if == "github.repository == 'Stuhlmuller/homelab' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'"
 	binding.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	binding.environment.name == "homelab-production"
 	binding.permissions == {"contents": "read"}
@@ -476,7 +476,6 @@ approved_openclaw_enterprise_operation if {
 }
 
 openclaw_dispatch_guard := `set -euo pipefail
-test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
   inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
@@ -523,9 +522,9 @@ umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
-  sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
-  sha256sum --check --status <<<'61a3dd43e7a14a452daa1e4e9f65c68fd6af6d80304fbf80f245f65a0cd90370  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  sha256sum --check --status <<<'83da6b67e62edd35f755da82ede14e162e15710d5a7f08654a60650ca883517e  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'5375517eb4461325f54736752b8e09cc3734fcf0156adbd56bb431804e0e14b2  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'93391ac322fc7cbf63e066a18473dfcfabbf511ceabe5362ad95122cd4d04a17  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'
@@ -633,10 +632,10 @@ protected_workflow_run_settings if {
 native_receipt_provenance_workflow if {
 	count(input) == 5
 	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
-	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance-${{ github.ref }}", "cancel-in-progress": false}
 	workflow_events == {
-		"push": {"branches": ["main"]},
-		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+		"push": null,
+		"workflow_run": {"workflows": ["Terragrunt Plan"], "types": ["completed"]},
 	}
 	object.get(input, "permissions", {}) == {}
 	jobs := object.get(input, "jobs", {})
@@ -644,9 +643,10 @@ native_receipt_provenance_workflow if {
 }
 
 native_receipt_provenance_job := {
-	"name": "Native Chainguard Receipt Provenance",
+	"name": "Publish Native Chainguard Receipt Status",
 	"runs-on": "ubuntu-24.04",
 	"timeout-minutes": 20,
+	"environment": {"name": "homelab-production"},
 	"permissions": {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"},
 	"steps": [
 		{
@@ -674,11 +674,16 @@ trap 'rm -f "$token_file" "$pulls_file" "$all_heads_file" "$heads_file"' EXIT
 printf '%s' "$GH_TOKEN" >"$token_file"
 gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
 jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
-if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
-  event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+  jq -e --arg repository "$GITHUB_REPOSITORY" '
+    .action == "completed" and
+    .repository.full_name == $repository and
+    .workflow_run.name == "Terragrunt Plan" and
+    .workflow_run.event == "pull_request"
+  ' "$GITHUB_EVENT_PATH" >/dev/null
+  event_head="$(jq -er '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")"
   [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
-  verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
-    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"
+  grep -Fxq -- "$event_head" "$all_heads_file" || exit 0
   printf '%s\n' "$event_head" >"$heads_file"
 else
   [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
@@ -1079,7 +1084,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5b741465a823256d3b722b30aa2f2bc7d005d17ba3d6c5d51366957e4a1ebcf7  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'6ac59d4db7e818e5c5d00541a0c37df03031364d5d8ef5b2bd0457c37302f329  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1183,7 +1188,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "41e23fc6f1a9c7199442730bb1fdc4c322d53350eeaa4bcd61e3ff2a18d00f41"
+	crypto.sha256(json.marshal(canonical)) == "45f9f43769e28e1853efaad1ef71e32a97d888439b0a15932b78fecfd33c80c0"
 }
 
 tailnet_workflow_requested if {

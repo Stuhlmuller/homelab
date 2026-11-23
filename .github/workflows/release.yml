@@ -4,8 +4,6 @@ permissions: {}
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   release:
@@ -13,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: semantic-release-main
+      group: semantic-release-${{ github.ref }}
       cancel-in-progress: false
       queue: max
+    environment:
+      name: release
     permissions:
       contents: write # for creating releases
     steps:

@@ -3,8 +3,7 @@ set -euo pipefail
 
 [[ "${GITHUB_ACTIONS:-}" == true ]] || exit 0
 
-if [[ "${GITHUB_REF:-}" != refs/heads/main ||
-  "${GITHUB_REPOSITORY:-}" != Stuhlmuller/homelab ||
+if [[ "${GITHUB_REPOSITORY:-}" != Stuhlmuller/homelab ||
   ! "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Invalid production commit context; refusing to change live state." >&2
   exit 1

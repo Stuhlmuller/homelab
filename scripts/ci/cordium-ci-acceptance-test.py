@@ -151,11 +151,9 @@ class Context(unittest.TestCase):
     def test_real_fixed_contexts_are_required(self):
         for mode in ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "deny-workflow"):
             acceptance.verify_context(mode, environment(mode))
-        for mode in ("checks", "force-failure", "runner-probe", "forbidden-method"):
+        for mode in ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref"):
             with self.assertRaises(ValueError):
-                acceptance.verify_context(mode, environment("deny-ref"))
-        with self.assertRaises(ValueError):
-            acceptance.verify_context("deny-ref", environment("checks"))
+                acceptance.verify_context(mode, environment("deny-workflow"))
         with self.assertRaises(ValueError):
             acceptance.verify_context("deny-workflow", environment("checks"))
 
@@ -176,20 +174,20 @@ class Workflow(unittest.TestCase):
         workflow = Path(__file__).resolve().parents[2] / ".github/workflows" / filename
         return json.loads(subprocess.check_output(["yq", "-o=json", f".jobs.{job}", str(workflow)], text=True))
 
-    def test_dispatch_gate_keeps_workspace_modes_on_main(self):
-        run = self.job()["steps"][0]["run"]
+    def test_dispatch_uses_native_branch_policies_and_checks_exact_sha(self):
+        job = self.job()
+        self.assertEqual(job["environment"],
+                         "${{ inputs.mode == 'deny-ref' && 'homelab-cordium-denial' || 'homelab-cordium-ci' }}")
+        self.assertNotIn("if", job)
+        run = job["steps"][0]["run"]
         for mode in ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "arbitrary"):
-            for ref in ("refs/heads/main", DENIED_REF, "refs/heads/other"):
-                for expected in (SHA, "b" * 40):
-                    allowed = (expected == SHA and
-                               ((mode == "deny-ref" and ref == DENIED_REF) or
-                                (mode in ("checks", "force-failure", "runner-probe", "forbidden-method")
-                                 and ref == "refs/heads/main")))
-                    result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", run],
-                                            env={**os.environ, "CHECK_MODE": mode, "ACTUAL_REF": ref,
-                                                 "ACTUAL_SHA": SHA, "EXPECTED_SHA": expected},
-                                            capture_output=True, text=True, timeout=5)
-                    self.assertEqual(result.returncode == 0, allowed, (mode, ref, expected))
+            for expected in (SHA, "b" * 40):
+                result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", run],
+                                        env={**os.environ, "CHECK_MODE": mode,
+                                             "ACTUAL_SHA": SHA, "EXPECTED_SHA": expected},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode == 0, expected == SHA and mode in acceptance.MODES,
+                                 (mode, expected))
 
     def test_intentional_failure_stays_failed_and_requires_cleanup_receipt(self):
         run = self.job()["steps"][-1]["run"]
@@ -213,6 +211,7 @@ class Workflow(unittest.TestCase):
 
     def test_login_denial_keeps_fixed_mode_and_cleanup_budget(self):
         job = self.job("cordium-login-denial.yml", "deny")
+        self.assertEqual(job["environment"], "homelab-cordium-ci")
         self.assertLess(sum(step["timeout-minutes"] for step in job["steps"]), job["timeout-minutes"])
         self.assertIn("deny-workflow", job["steps"][-1]["run"])
         self.assertNotIn("cordium-check.py", job["steps"][-1]["run"])

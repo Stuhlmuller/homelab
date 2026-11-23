@@ -26,7 +26,7 @@ class FullSync(unittest.TestCase):
         self.assertIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', stage)
         self.assertIn('durable private journal runner is not declared', stage)
 
-    def run_stage(self, *, phase="lifecycle-validation", ref="refs/heads/main",
+    def run_stage(self, *, phase="lifecycle-validation", dispatch_sha=SHA,
                   upstream=UPSTREAM, enterprise_enabled=False, foundation_path=None,
                   enterprise_path=None, enterprise_sync_exit=0,
                   foundation_sync_options=None, enterprise_sync_options=None,
@@ -103,7 +103,7 @@ elif name == "kubectl":
             result = subprocess.run(
                 ["bash", str(SCRIPT)], cwd=root, capture_output=True, text=True,
                 env={**os.environ, "PATH": str(root / "bin") + os.pathsep + os.environ["PATH"],
-                     "GITHUB_ACTIONS": "true", "GITHUB_REF": ref, "GITHUB_SHA": SHA,
+                     "GITHUB_ACTIONS": "true", "GITHUB_SHA": dispatch_sha,
                      "EXPECTED_SHA": SHA, "GH_REPO": "Stuhlmuller/homelab", "CALLS": str(calls),
                      "REPO": REPO, "UPSTREAM": upstream,
                      "FOUNDATION_PATH": foundation_path or "clusters/homelab/apps/openclaw-enterprise-foundation",
@@ -140,7 +140,7 @@ elif name == "kubectl":
                               "--apply-out-of-sync-only", "--async")))
 
     def test_incomplete_or_drifted_inputs_block_before_sync(self):
-        for options in ({"phase": "unselected"}, {"ref": "refs/heads/feature"},
+        for options in ({"phase": "unselected"}, {"dispatch_sha": "b" * 40},
                         {"upstream": "b" * 40}, {"enterprise_enabled": True},
                         {"foundation_path": "clusters/homelab/apps/openclaw"},
                         {"enterprise_path": "clusters/homelab/apps/openclaw"},

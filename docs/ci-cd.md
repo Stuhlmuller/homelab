@@ -88,8 +88,8 @@ their own conditions.
 
 PR checks use a concurrency group for each pull request. When an update
 triggers the same check workflow, GitHub cancels its older queued or running
-run because the results apply to an earlier revision. Branch and path filters
-still decide which workflows start. Push, scheduled and manually dispatched
+run because the results apply to an earlier revision. Workflows keep their
+path filters and check pull requests across base branches. Push, scheduled and manually dispatched
 runs use separate groups where they share a workflow with these PR checks.
 
 Terragrunt and Release runs are exempt from supersession. Terragrunt Plan
@@ -100,11 +100,10 @@ independently. GitHub manages scheduling for Code Quality scans.
 
 ## Release publication
 
-The release publisher takes one non-canceling `semantic-release-main` lock,
-then checks out current `main`. Each publisher analyzes every commit since the
+The release environment only allows deployments from `main`. The publisher
+takes a non-canceling lock for its ref, then checks out current `main`. Each publisher analyzes every commit since the
 last tag, including intervening pushes. Repeated runs with no new releasable
-commits create no tag. The publisher runs on pushes to `main` and times out
-after 15 minutes.
+commits create no tag. The publisher job times out after 15 minutes.
 
 The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
 with package integrity hashes. `npm ci --ignore-scripts` installs without a
@@ -338,13 +337,17 @@ References:
 
 ## GitHub Configuration
 
-Create two GitHub environments:
+GitHub Actions uses these environments.
 
 - `homelab-plan`: used by same-repository pull request plans. No required
   reviewers. PR code executes automatically with live write-capable identities;
   the same-repository workflow trust check remains required.
-- `homelab-production`: used by post-merge applies and main-only diagnostics.
-  No required reviewers; allow only the exact `main` branch (no tags).
+- `homelab-production` protects post-merge applies, operational dispatches,
+  and trusted status publishers. GitHub allows only the exact `main` branch,
+  with no tag rules or required reviewers. Commit checks still reject stale
+  deployments when a workflow requires the current reviewed commit.
+- `release` allows the release publisher to run from the exact `main` branch.
+  Provision its branch policy before enabling the publisher workflow.
 
 The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
 in [github-iac](https://github.com/Stuhlmuller/github-iac). Apply its documented

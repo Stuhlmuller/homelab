@@ -58,7 +58,7 @@ def command(args, operation, *, detailed_exitcode=False):
 def verify_context():
     expected = {
         "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
-        "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
+        "GITHUB_EVENT_NAME": "workflow_dispatch",
         "ARM_USE_OIDC": "true", "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
     }
     if any(os.environ.get(key) != value for key, value in expected.items()):

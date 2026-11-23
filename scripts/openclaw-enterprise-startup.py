@@ -63,7 +63,6 @@ def source_contract():
 def reviewed_main(expected):
     if (not SHA.fullmatch(expected) or os.environ.get("GITHUB_ACTIONS") != "true" or
             os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch" or
-            os.environ.get("GITHUB_REF") != "refs/heads/main" or
             os.environ.get("GITHUB_SHA") != expected):
         raise Blocked("protected exact-main dispatch is required")
     if command(["git", "status", "--porcelain=v1", "--untracked-files=all",

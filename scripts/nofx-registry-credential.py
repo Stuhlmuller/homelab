@@ -125,7 +125,6 @@ def github_user(token):
 def validate_context():
     if (os.environ.get("GITHUB_ACTIONS") != "true"
             or os.environ.get("GITHUB_REPOSITORY") != REPO
-            or os.environ.get("GITHUB_REF") != "refs/heads/main"
             or os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"):
         raise Failure("Run only through the protected NOFX Registry Credential workflow on main")
     sha = os.environ.get("GITHUB_SHA", "")

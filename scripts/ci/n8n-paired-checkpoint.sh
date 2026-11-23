@@ -4,7 +4,7 @@ umask 077
 
 uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab &&
-   "${GITHUB_REF:-}" == refs/heads/main && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
+   "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
    "${EXPECTED_SHA:-}" == "$GITHUB_SHA" && "${EXPECTED_N8N_PVC_UID:-}" =~ $uuid &&
    "${EXPECTED_N8N_PV_UID:-}" =~ $uuid && "${EXPECTED_PG_PVC_UID:-}" =~ $uuid &&
    "${EXPECTED_PG_PV_UID:-}" =~ $uuid && "${GITHUB_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&

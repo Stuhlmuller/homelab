@@ -783,7 +783,6 @@ def finish_started_stage(config, stage, source_sha, receipt_dir, store=None):
 
 def protected_context(source_sha):
     if (os.environ.get("GITHUB_ACTIONS") != "true" or
-            os.environ.get("GITHUB_REF") != "refs/heads/main" or
             os.environ.get("GITHUB_SHA") != source_sha):
         raise ValueError("maintenance requires protected current-main workflow context")
 

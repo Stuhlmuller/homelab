@@ -3,11 +3,8 @@ name: validate
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, edited]
   push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -157,13 +154,12 @@ jobs:
           fi
           bash scripts/ci/nix-checks.sh --policy "$cache_policy"
 
-      # Verify signed offline outputs before restoring any GitHub Actions store archive.
-      - name: Cache Nix Store
+      - name: Restore Nix Store Cache
+        if: github.event_name == 'pull_request'
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          lookup-only: ${{ github.event_name == 'push' }}
-          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          save: 'false'
 
       - name: Check flake
         run: nix flake check --no-build --all-systems
@@ -219,3 +215,29 @@ jobs:
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh
+
+  cache-publish:
+    name: Publish Validation Nix Cache
+    if: github.event_name == 'push'
+    needs: repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: homelab-production
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Publish Nix Store Cache On Miss
+        id: cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-validate-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          lookup-only: 'true'
+          save: 'true'
+      - name: Realize Pinned Validation Dependencies
+        if: steps.cache.outputs.hit-primary-key != 'true'
+        run: nix develop --command true

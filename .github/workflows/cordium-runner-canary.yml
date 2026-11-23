@@ -24,19 +24,18 @@ concurrency:
 
 jobs:
   canary:
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab'
     runs-on: [self-hosted, Linux, X64, cordium-canary]
     timeout-minutes: 120
+    environment: homelab-cordium-ci
     steps:
       - name: Verify Dispatch Commit
         env:
-          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           CHECK_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$RUNNER_ENVIRONMENT" = self-hosted
           [[ "$RUNNER_NAME" =~ ^cordium-[a-z0-9][a-z0-9-]*$ ]]

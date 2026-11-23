@@ -746,7 +746,6 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
     (.on | keys) == ["pull_request"] and
-    .on.pull_request.branches == ["main"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
     .on.pull_request.paths == null and
     (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan"] and
@@ -886,6 +885,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-runner-publish.yml:published-digests' \
     '.github/workflows/cordium-runner-publish.yml:test-build' \
     '.github/workflows/deployment-checks.yml:validate' \
+    '.github/workflows/entra-oidc-verify.yml:authorize' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
@@ -934,6 +934,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:static-policy' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
+    '.github/workflows/validate.yml:cache-publish' \
     '.github/workflows/validate.yml:harbor-core-compatibility' \
     '.github/workflows/validate.yml:repo' \
     '.github/workflows/validate.yml:runtime-scope'
@@ -949,12 +950,12 @@ expected_credentialed_job_inventory="$({
 for workflow in .github/workflows/*.yml; do
   workflow_json="$(yq -o=json '.' "$workflow")"
   jq -e '
+    all((.on // {} | objects | .[] | objects); has("branches") or has("branches-ignore") | not) and
     if (.on // {} | has("pull_request")) then
-      .on.pull_request.branches == ["main"] and
       (.on.pull_request.types | index("edited") != null)
     else true end
   ' <<<"$workflow_json" >/dev/null || {
-    echo "Pull-request workflow must target main and run when retargeted: $workflow" >&2
+    echo "Workflows must leave branch filtering to environments and check pull requests when retargeted: $workflow" >&2
     exit 1
   }
   jq -e '
@@ -974,40 +975,40 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/codex-review-gate.yml 1adf9da4236b2427450c6418b14f6e46e250acd738b2534893bb89984d7e8102
-.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
-.github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
-.github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
-.github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
-.github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
-.github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/codex-review-gate.yml 8169b12c7d6ea1a3ecfcefff9c32cbbb50d1f123cde2af6afc949f685defece1
+.github/workflows/bulldozer-credential.yml 438d91af9ba8e9153d01e41db8d514260dc1ad3cd785a9428a9ff72c01d3ceae
+.github/workflows/cordium-check.yml bbf08e1c11b3e2135327878c1c9d72776621305a80d836b7f9f028b1ead3112e
+.github/workflows/cordium-runner-canary.yml e3466e10ba9e5807a3ea1bdb29abc090969eddc6ff63cf3c69f3f54efd416edf
+.github/workflows/cordium-login-denial.yml b870565ba14be90b4cb05bc6f6eddaeb17165a448e74bcfb16cdc5fe86011498
+.github/workflows/cordium-runner-credentials.yml 9c5ebcc4df864845cb2df8bfb294a3c370c711d60ea28b24fbc5bc3757985c4a
+.github/workflows/cordium-runner-publish.yml 5a784789a613902499d2c98677a33c7f7010217245cb4da9602fc033a6bfb780
 .github/workflows/deployment-checks.yml 2cfeeda43c50b922216f047a7eb7cdeb65d76a1f3a8ad0f73d1333db956c14da
-.github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
-.github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 633f32e84ef92f83a505ac7954baee7b8991e171d29de1fedc20e9c103a87a99
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
-.github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
-.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
-.github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
-.github/workflows/lint.yml a0348d00b52e0e8d7269fa1ba98ed45615bee45c5ce94cef3d8e300e06b76819
-.github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
-.github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
-.github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 7dbee4f31068b8106cc290b2d1b98ed92ef7a23046f8d7c3332419388bd5a229
-.github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml f4a39b5c18a46575a1c5fe4b1271486550e22dbf75b40a739a534ed2375bb0e0
-.github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
-.github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
-.github/workflows/mastodon-public-dns.yml a7eb99576302d118f72057b33c3724ae61435aa597fbd029fd782afd8d05ee98
-.github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/n8n-paired-checkpoint.yml 5b8abf222e32d7ab2f35cf0f138add6e8291837cd9e5adf6f9179cec8daab5de
+.github/workflows/entra-oidc-verify.yml 9e88a954b35170d65ee55ebec2abf383a3cdb9f30509b06fd7d9cac490423685
+.github/workflows/codeql.yml 914692d49c9564653987f570756add39880fcf6a4eb8a08b4d6ecec217992f0d
+.github/workflows/harbor-core-images.yml d9acd1981aec36e8e86d369c66e3b59e3653a12c990e3e6192da92bcf2e6ff9f
+.github/workflows/harbor-mirror.yml 78f6f636f86cdd7f9c6ef44eff904b1e0f44a7d4826d9741ab6fd6fde094a1e4
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 02b894878aa7b4a6d165f1e5d91cf659e7206a5bd8f33ccb64892373c612fa38
+.github/workflows/harbor-native-chainguard-receipt.yml c388da307b80856bdc992369e74a450c77624ddcd4e209fd41390baf592d3220
+.github/workflows/langfuse-postgres-checkpoint.yml 594136a7804846bcf9f4e4ad9b95db47446b43f89901eeb1b1e1471140e5ed42
+.github/workflows/langfuse-postgres-object-restore.yml 9bd739f2b07891588c25b8ec753d1309c18f64c6f1a0d61eca333f5a82075517
+.github/workflows/lint.yml f1154bba8c556b076e0f27cadb73f3b40007b2556536969d1fe989f19bfd1c49
+.github/workflows/nofx-images.yml dd49f5dce5278fc3344d92a7acadc15e68ee0f09a8e2288e0c983c8974897acf
+.github/workflows/openclaw-enterprise-images.yml 60142254a2d8d644e591a01b3007de7a36195bad420ecb3bc5c2a7590cd63322
+.github/workflows/openclaw-enterprise-model-credential.yml c94744c908c8da44e1501d68f2f83f59492be0fec4924d4a340441857af63cdb
+.github/workflows/openclaw-enterprise-operations.yml 15074fd51c980e62338639d41ef2b0ac09613cba27ab561bba38c0e1a04bfcc9
+.github/workflows/openclaw-enterprise-startup.yml 2a84a47c8bd3b343fd2fa31714ac243f887fc711a199d0c2919b176223f7ee0a
+.github/workflows/platform-maintenance.yml de80975fe3dcc88774e66d257b62eb6ffb89a1caf7bc78abe90c3c33b5ef09e5
+.github/workflows/nofx-registry-credential.yml 026cb29a63d09d80e2d2308a560acb9d262be3521d24678c231b47e83ddff43f
+.github/workflows/litellm-provider-credential.yml 3c9489d59a7e73e752b90a4c958f44b7359171c2962896b2a18f214520d8ca55
+.github/workflows/mastodon-public-dns.yml 6278bb9a41e6f1dd341f35c46472bafe017093530bf7168725e289ab313ac4f1
+.github/workflows/mastodon-smtp-credential.yml e657363617c24f329ddd2a51182a0e6b2e1a2dfc2731a79d477f49859bb6ff2b
+.github/workflows/n8n-paired-checkpoint.yml 4735996aab654c4c32192a10fe8b2656f17316c6d2788558f412031eace508c6
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
-.github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
-.github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
+.github/workflows/release.yml be119321ff94766bf7dd072f8a9b1893721a9d414e3857089f000412176fdce6
+.github/workflows/terragrunt-apply-request.yml 73a3bd6646a40f67f6d646e5d5bc1f55d884f4d813411c549711366f2df8c30c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml 2e77323aaf87b025378659ce023119e29671c0cefb7ff8ba824a0d78f4945d7e
-.github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
+.github/workflows/terragrunt-plan.yml 4221cf23d059b40fb52be932cfa15006c42ff40ec81f3fb128507ccaaf4d3787
+.github/workflows/validate.yml 50e9d83a4d18230371dbca7b84c5167f0b97f33c93ce121dfb7a31c05cd32ee2
 EOF
 echo "::endgroup::"
 
@@ -1042,10 +1043,8 @@ for workflow_job in \
     jq -e --arg job "$job" '
       .on.workflow_dispatch.inputs.expected_sha.required == true and
       .jobs[$job].steps[0].name == "Verify Dispatch Commit" and
-      .jobs[$job].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
       .jobs[$job].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
       .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
-      (.jobs[$job].steps[0].run | contains("refs/heads/main")) and
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
@@ -1103,17 +1102,17 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
     (.on | keys | sort) == ["push", "workflow_run"] and
-    .on.push == {"branches": ["main"]} and
+    (.on | has("push")) and .on.push == null and
     .on.workflow_run == {"workflows": ["Terragrunt Plan"], "types": ["completed"]} and
     .permissions == {} and
-    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
+    .concurrency == {"group": "native-chainguard-receipt-provenance-${{ github.ref }}", "cancel-in-progress": false} and
     .env == null and
     (.jobs | keys) == ["verify"] and
-    .jobs.verify.name == "Native Chainguard Receipt Provenance" and
+    .jobs.verify.name == "Publish Native Chainguard Receipt Status" and
     .jobs.verify["runs-on"] == "ubuntu-24.04" and
     .jobs.verify["timeout-minutes"] == 20 and
     .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
-    .jobs.verify.environment == null and
+    .jobs.verify.environment == {"name": "homelab-production"} and
     .jobs.verify.env == null and
     (.jobs.verify.steps | length) == 2 and
     ($checkout | length) == 1 and
@@ -1171,13 +1170,13 @@ EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '
     (.on | keys) == ["push"] and
-    .on.push == {"branches": ["main"]} and
+    (.on | has("push")) and .on.push == null and
     .permissions == {} and
     .env == null and
     (.jobs | keys) == ["request"] and
     .concurrency == null and
     .jobs.request.concurrency == null and
-    .jobs.request.environment == null and
+    .jobs.request.environment == {"name": "homelab-production"} and
     .jobs.request.env == null and
     .jobs.request.permissions == null and
     (.jobs.request | tostring | contains("secrets") | not) and
@@ -1266,8 +1265,11 @@ yq -o=json '.' .github/workflows/entra-oidc-verify.yml |
     .name == "Entra OIDC Verify" and
     ."run-name" == "Entra OIDC verification @ ${{ github.sha }}" and
     .permissions == {} and
-    (.jobs | keys) == ["verify"] and
-    .jobs.verify.if == "github.repository == '\''Stuhlmuller/homelab'\'' && github.ref == '\''refs/heads/main'\''" and
+    (.jobs | keys) == ["authorize", "verify"] and
+    .jobs.authorize.if == "github.repository == '\''Stuhlmuller/homelab'\''" and
+    .jobs.authorize.environment == {"name": "homelab-production"} and
+    .jobs.authorize.permissions == null and
+    .jobs.verify.needs == "authorize" and
     .jobs.verify.strategy == {"fail-fast": false, "matrix": {"include": [
       {"identity": "plan", "environment": "homelab-plan"},
       {"identity": "apply", "environment": "homelab-production"}
