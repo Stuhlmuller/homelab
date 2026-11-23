@@ -23,7 +23,10 @@ class Preflight(unittest.TestCase):
             "status": {
                 "sync": {"revisions": ["2.3.3"], "status": "Synced"},
                 "health": {"status": "Healthy"},
-                "resources": [{"group": "apps", "kind": "Deployment"}],
+                "resources": [
+                    {"group": group, "kind": kind, "namespace": namespace, "name": name}
+                    for group, kind, namespace, name in check.CHART_RESOURCES
+                ],
             },
         }
         self.resources = {
@@ -75,6 +78,13 @@ class Preflight(unittest.TestCase):
             {"group": "apiextensions.k8s.io", "kind": "CustomResourceDefinition"},
         )
         with self.assertRaisesRegex(ValueError, "unexpected kind"):
+            check.preflight()
+
+    def test_argo_tracks_wrong_resource_of_allowed_kind(self):
+        tracked = self.app["status"]["resources"]
+        role = next(resource for resource in tracked if resource["kind"] == "ClusterRole")
+        role["name"] = "unexpected-crossplane-role"
+        with self.assertRaisesRegex(ValueError, "resource identities differ"):
             check.preflight()
 
     def test_active_pod_or_existing_volume(self):

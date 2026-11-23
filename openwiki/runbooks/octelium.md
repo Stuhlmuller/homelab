@@ -153,3 +153,35 @@ A live acceptance test froze only the managed client with SIGSTOP. The
 supervisor reaped it, launchd restarted the connection, HTTP returned 200, and
 the same desktop Autopilot page recovered to show 13 entries without an app
 restart. The offline regression exercises a running but unresponsive child.
+
+## Generated proxy alerts
+
+Prometheus monitors the generated `svc-*` and `upstream-svc-*` resources
+in the `octelium` namespace. Argo reports on resources in its application
+tree, which omits these controller-generated Deployments.
+
+- `OcteliumGeneratedProxyUnavailable` fires after five minutes when a
+  generated Service exists and its same-name Deployment has no available
+  replica. Inspect the Service, Deployment, and related Pod scheduling
+  events in the authenticated operator context. The check matches the native
+  Deployment name. Emergency fallback Deployments use separate names.
+- `OcteliumGeneratedProxyStaleTerminating` fires when a generated
+  ReplicaSet-owned Pod has been terminating for more than 15 minutes and
+  the condition persists for another five minutes. Match the Pod UID
+  before investigating its deletion, finalizers, and node health.
+
+For an Octelium Deployment with fewer available replicas than requested,
+check `KubeDeploymentReplicasMismatch` in Prometheus Alerts. Filter by
+namespace and Deployment. This alert can fire while Argo reports Healthy.
+Alertmanager routes it to `homelab-notifications`. Use the
+[read-only Prometheus verification path](../operations/monitoring-resource-requests.md)
+to inspect its firing state.
+
+The Service supplies the expected inventory for each generated proxy.
+Detecting simultaneous loss of a Service and its Deployment requires a
+separate desired-Service inventory. Detecting an entirely absent control-plane
+or dataplane role requires an explicit role inventory. Use separate probes for
+endpoint reachability, public gRPC, and authorization.
+
+Run `bash scripts/ci/octelium-proxy-alert-check.sh` in the repository's Nix
+devShell to exercise generated-proxy failure and recovery.

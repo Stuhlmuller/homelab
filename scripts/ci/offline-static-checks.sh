@@ -817,7 +817,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "22c70ea54b7675e4b43d232adad1d2922d5de5ce115e7f1c9f50449533910d69" ]] || {
+[[ "$scope_body_sha256" == "1fee4aac6decf54b55fd68f4a1f530b26160a1c57f7181d534443d71e10d4807" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -976,7 +976,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/codex-review-gate.yml 0595db0f3360266d1da816855660f4bac5925b6b1142677c5d07163bd9f5e371
+.github/workflows/codex-review-gate.yml 1adf9da4236b2427450c6418b14f6e46e250acd738b2534893bb89984d7e8102
 .github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
@@ -987,7 +987,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 0e8f15226a4ace9420d3bc32ef2220a053c5172265952f1b7bc7445fd3464eb1
+.github/workflows/harbor-mirror.yml 633f32e84ef92f83a505ac7954baee7b8991e171d29de1fedc20e9c103a87a99
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
@@ -996,19 +996,19 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml b5793e22a26609aa74ced9fcbb64e2dbc71760ab74dab11f0b34df6ad2198cec
+.github/workflows/openclaw-enterprise-operations.yml 7dbee4f31068b8106cc290b2d1b98ed92ef7a23046f8d7c3332419388bd5a229
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml fff492bc7e64e1b337dd0dba9eecd7472a4bb9834266ceda37848a5fc71bc647
+.github/workflows/platform-maintenance.yml f4a39b5c18a46575a1c5fe4b1271486550e22dbf75b40a739a534ed2375bb0e0
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml a7eb99576302d118f72057b33c3724ae61435aa597fbd029fd782afd8d05ee98
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/n8n-paired-checkpoint.yml efc6203ae41d43630c075f22a1a079e0a674371c7f746b187b73dced96497454
+.github/workflows/n8n-paired-checkpoint.yml 5b8abf222e32d7ab2f35cf0f138add6e8291837cd9e5adf6f9179cec8daab5de
 .github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
 .github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
 .github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
 .github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
-.github/workflows/terragrunt-plan.yml ea1ebc7a28bae384177c573351f4aa3506f2fb650121bc6d5331deef06b55940
+.github/workflows/terragrunt-plan.yml 2e77323aaf87b025378659ce023119e29671c0cefb7ff8ba824a0d78f4945d7e
 .github/workflows/validate.yml 876de14f60a20bf9b85c2ba61e58b6d043aa1b7442affff6702627790d1ba875
 EOF
 echo "::endgroup::"
