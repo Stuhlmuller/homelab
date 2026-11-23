@@ -711,6 +711,11 @@ availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
 
+Home Assistant's mirror stages the full OCI layout with its upstream index
+and attestations intact. The publisher sends large blobs in bounded chunks,
+then requires the normal exact-digest verification and authenticated pull
+from Harbor. See the [publication runbook](../../docs/harbor-image-mirroring.md).
+
 ### Harbor 2.15.4 catalog prerequisite
 
 The [full image catalog](../../scripts/config/harbor-images.json) stages all nine

@@ -194,7 +194,7 @@ class HarborPublicationGates(unittest.TestCase):
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
                         core=False, cordium=False, enterprise=False,
-                        forward_start_delay=0, canary=False):
+                        forward_start_delay=0, canary=False, home_assistant=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -223,10 +223,11 @@ class HarborPublicationGates(unittest.TestCase):
             self.mirror_manifest = {"images": []}
             for registry, name in zip(registries, names):
                 digest = self.published_digests[name]
-                source = f"{registry}/library/{name}:stable@{digest}"
+                repository = "ghcr.io/home-assistant/home-assistant" if home_assistant else f"{registry}/library/{name}"
+                source = f"{repository}:stable@{digest}"
                 self.mirror_manifest["images"].append({"source": source})
-                destination = f"harbor.stinkyboi.com/mirror/{registry}/library/{name}"
-                manifests[f"{registry}/library/{name}@{digest}"] = published_manifests[name]
+                destination = f"harbor.stinkyboi.com/mirror/{repository}"
+                manifests[f"{repository}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}:{digest.removeprefix('sha256:')}"] = published_manifests[name]
                 manifests[f"{destination}:stable"] = published_manifests[name]
@@ -387,6 +388,10 @@ class HarborPublicationGates(unittest.TestCase):
                     if args[-1].startswith("dir:"):
                         sys.stdout.write((Path(args[-1][4:]) / "manifest.json").read_text())
                         raise SystemExit(0)
+                    if args[-1].startswith("oci:"):
+                        directory = Path(args[-1].removeprefix("oci:").removesuffix(":mirror"))
+                        sys.stdout.write((directory / "manifest.json").read_text())
+                        raise SystemExit(0)
                     reference = args[-1].removeprefix("docker://")
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0].split(":", 1)[0]
                     published_file = root / "published-images.json"
@@ -539,10 +544,36 @@ class HarborPublicationGates(unittest.TestCase):
                     assert user in {"robot$mirror+publisher", "robot$mirror+pull"}
                     config.write_text(json.dumps({"username": user}))
                     assert config.stat().st_mode & 0o077 == 0
+                elif args[:2] == ["registry", "set"]:
+                    assert config.name == "regctl-chunked-publisher.json"
+                    assert json.loads(config.read_text()) == {"username": "robot$mirror+publisher"}
+                    assert args[2:] == ["harbor.stinkyboi.com", "--blob-chunk", "8388608", "--blob-max", "8388608"]
+                    config.write_text(json.dumps({"username": "robot$mirror+publisher", "blob_chunk": 8388608}))
                 elif args[:2] == ["image", "copy"]:
                     source, target = args[-2:]
+                    config_data = json.loads(config.read_text())
+                    if source.startswith("ghcr.io/home-assistant/home-assistant@"):
+                        assert config_data == {}
+                        assert args[2:-2] == ["--force-recursive"] and target.startswith("ocidir://")
+                        directory = Path(target.removeprefix("ocidir://").removesuffix(":mirror"))
+                        raw = FIXTURE["manifests"][source]
+                        if FIXTURE["failure"] == "upstream-digest":
+                            raw += "corrupted upstream index"
+                        (directory / "manifest.json").write_text(raw)
+                        raise SystemExit(0)
+                    if source.startswith("ocidir://"):
+                        assert config_data == {"username": "robot$mirror+publisher", "blob_chunk": 8388608}
+                        assert args[2:-2] == ["--force-recursive"]
+                        assert target.startswith("harbor.stinkyboi.com/mirror/ghcr.io/home-assistant/home-assistant:")
+                        directory = Path(source.removeprefix("ocidir://").removesuffix(":mirror"))
+                        assert (directory / "manifest.json").read_text() == FIXTURE["manifests"][target]
+                        if FIXTURE["failure"] == "mirror-destination":
+                            print("failed to send blob chunk private-test-credential-must-never-appear", file=sys.stderr)
+                            raise SystemExit(20)
+                        (root / "published-images.json").write_text(json.dumps({target: FIXTURE["manifests"][target]}))
+                        raise SystemExit(0)
                     assert "@sha256:" in source
-                    user = json.loads(config.read_text())["username"]
+                    user = config_data["username"]
                     if target.startswith("ocidir://"):
                         assert user == "robot$mirror+pull"
                         assert args[2:-2] == ["--force-recursive"]
@@ -921,6 +952,41 @@ printf '%s\n' {SHA}
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-home-assistant")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_home_assistant_mirror_uploads_verified_local_oci_layout_in_chunks(self):
+        self.transport_mocks(mirror=True, registries=("ghcr.io",), oci_index=True, home_assistant=True)
+        result = self.run_helper("mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls_for("regctl")
+        copies = [args for args in calls if args[:2] == ["image", "copy"]]
+        self.assertEqual(len(copies), 4)
+        self.assertTrue(copies[0][-1].startswith("ocidir://"))
+        self.assertEqual(copies[0][-1], copies[1][-2])
+        self.assertTrue(copies[-1][-1].startswith("ocidir://"))
+        self.assertTrue((self.root / "summary").is_file())
+        self.assert_cleaned()
+
+    def test_home_assistant_mirror_refuses_corrupt_staging_before_upload(self):
+        self.transport_mocks(failure="upstream-digest", mirror=True, registries=("ghcr.io",),
+                             oci_index=True, home_assistant=True)
+        result = self.run_helper("mirror")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(len([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]), 1)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("category=digest-mismatch\n", self.public_status)
+        self.assert_cleaned()
+
+    def test_home_assistant_mirror_stops_without_receipt_on_chunked_upload_error(self):
+        self.transport_mocks(failure="mirror-destination", mirror=True, registries=("ghcr.io",),
+                             oci_index=True, home_assistant=True)
+        result = self.run_helper("mirror")
+        self.assertEqual(result.returncode, 20)
+        self.assertEqual(len([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]), 2)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("phase=destination-copy\n", self.public_status)
+        self.assertIn("category=blob-upload-failed\n", self.public_status)
+        self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr + self.public_status)
+        self.assert_cleaned()
 
     def test_homepage_scope_only_accepts_the_reviewed_catalog_image(self):
         source = (

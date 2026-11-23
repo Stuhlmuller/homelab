@@ -289,7 +289,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    digest and platform verification and complete authenticated pulls before
    registering the consuming chart.
 
-   For Home Assistant onboarding, use `image_scope=home-assistant`. Its fixed
+   For Home Assistant onboarding, use `image_scope=home-assistant`. The
+   publisher stages the full upstream OCI layout and checks its exact index
+   digest before uploading through an isolated registry configuration. Blobs
+   larger than 8 MiB use 8 MiB upload chunks, and the job still requires the
+   authenticated digest and full pull from Harbor. Its fixed
    inventory selects only the reviewed Home Assistant Container image and
    uses the same all-platform copy and authenticated pull verification.
 
