@@ -249,6 +249,26 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def request_family(path):
+    # Classify the route shape, never its project, repository, ID or query values.
+    parts = path.partition("?")[0].removeprefix("/").split("/")
+    if parts[0] == "projects":
+        if parts[2:3] == ["repositories"]:
+            if parts[4:5] == ["artifacts"]:
+                return {5: "artifact-list", 6: "artifact-read", 7: "artifact-action"}.get(
+                    len(parts), "artifacts")
+            return "repositories"
+        if parts[2:3] == ["immutabletagrules"]:
+            return "tag-locks"
+    return {
+        "configurations": "configuration",
+        "projects": "projects",
+        "registries": "registries",
+        "replication": "replication",
+        "robots": "robots",
+    }.get(parts[0], "other")
+
+
 class Client:
     def __init__(self, admin_password, endpoint=ENDPOINT):
         self.endpoint = endpoint
@@ -256,7 +276,7 @@ class Client:
         self.headers = {"Authorization": f"Basic {credential}", "Accept": "application/json"}
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
-    def request(self, method, path, body=None, expected=(200,), json_response=True):
+    def request(self, method, path, body=None, expected=(200,), json_response=True, *, readiness=False):
         headers = dict(self.headers)
         data = None
         if body is not None:
@@ -264,10 +284,14 @@ class Client:
             headers["Content-Type"] = "application/json"
         req = urllib.request.Request(self.endpoint + "/api/v2.0" + path,
                                      data=data, headers=headers, method=method)
+        started = time.monotonic_ns()
+        phase = "open"
         try:
             with self.opener.open(req, timeout=10) as response:
                 status = response.status
+                phase = "body-read"
                 raw = response.read(MAX_RESPONSE_BYTES + 1)
+                phase = "response-close"
                 response_headers = response.headers
         except urllib.error.HTTPError as error:
             status = error.code
@@ -276,6 +300,10 @@ class Client:
                 return None, {}
             raise APIError(status) from None
         except (urllib.error.URLError, TimeoutError, OSError):
+            family = "readiness" if readiness else request_family(path)
+            elapsed_ms = (time.monotonic_ns() - started) // 1_000_000
+            print(f"Harbor API transport diagnostic: family={family} phase={phase} elapsed_ms={elapsed_ms}",
+                  file=sys.stderr)
             raise BootstrapError("Harbor API connection failed") from None
         if status not in expected:
             raise APIError(status)
@@ -693,7 +721,7 @@ def main():
         # fallback identity or a retry that might duplicate a created resource.
         for attempt in range(12):
             try:
-                config, _ = client.request("GET", "/configurations")
+                config, _ = client.request("GET", "/configurations", readiness=True)
                 config_values(config)
                 break
             except APIError as error:

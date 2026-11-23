@@ -74,9 +74,9 @@ The current service access contract is:
 | `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrapes Grafana metrics. |
 | `grafana` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
-| `compass` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
-| `compass` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrape access. |
-| `compass` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
+| Homepage (`compass` Service) | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
+| Homepage (`compass` Service) | `monitoring` | `cluster.local/ns/traefik/sa/traefik` | Tailnet browser access through Traefik. |
+| Homepage (`compass` Service) | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Prometheus datasource queries. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus self-scrape and in-stack access. |
 | `alertmanager` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Alertmanager datasource and contact point. |
@@ -164,10 +164,10 @@ existing node safely admits the isolated canary.
 
 ### Private ingress on an existing worker (candidate, 2026-11-01)
 
-Traefik is currently Ready on `zimaboard-1`; its operator-managed
-`traefik-private` Tailscale proxy is a separate Pod on that node. The November 1
-read-only recheck found 6,612 MiB requested against 7,282 MiB allocatable on
-that worker. A sampled 24-hour Pod peak plus current host overhead leaves only
+On November 1, Traefik and its separate operator-managed `traefik-private`
+Tailscale proxy Pod were Ready on `zimaboard-1`. The read-only recheck found
+6,612 MiB requested against 7,282 MiB allocatable on that worker. A sampled
+24-hour Pod peak plus current host overhead leaves only
 about 580 MiB, below the canary's 768 MiB memory limit; the live controller
 also allows one surge Pod. Stage the separate canary on `acer` instead. It has
 13,390 MiB requested against 15,261 MiB allocatable; the same sampled estimate

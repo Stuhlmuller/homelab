@@ -135,11 +135,11 @@ requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
 
 The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-an-existing-worker-candidate-2026-11-01)
-keeps live Traefik on `zimaboard-1` and stages a second Traefik controller on
-`acer` with a userspace Tailscale sidecar, leaving the old controller and
-LoadBalancer serving during tests. Its Pod must match no existing private,
-Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
-only to Pod loopback, with raw TCP Serve exposing HTTPS 443 first while Traefik
+stages a second Traefik controller on `acer` with a userspace Tailscale
+sidecar while the live controller and LoadBalancer serve traffic. Its Pod must
+match no existing private, Funnel, or registry Service selector. Private HTTP
+and HTTPS listeners would bind only to Pod loopback, with raw TCP Serve
+exposing HTTPS 443 first while Traefik
 retains TLS termination. Port 80 needs separate review. This could close the
 private listener when kube-router or the sidecar is absent, without clearing
 another worker. Its source is staged but the runtime is not deployed or
