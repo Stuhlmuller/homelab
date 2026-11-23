@@ -51,6 +51,33 @@ python3 -I scripts/ci/descheduler-policy-check.py "$rendered"
 
 # Before the repaired values arrive on main, the previously deployed values
 # must also render one suspended CronJob under the same overrides.
-git show "934770124f6e3b3c1b0857ce8e510e0ea7a1e894:$values" >"$old_values"
+# Keep the exact values from 934770124f6e3b3c1b0857ce8e510e0ea7a1e894 in the fixture
+# so the same check can run in both shallow and full checkouts.
+cat >"$old_values" <<'HELM_VALUES'
+kind: Deployment
+image:
+  repository: harbor.stinkyboi.com/mirror/registry.k8s.io/descheduler/descheduler
+  tag: v0.33.0@sha256:de38c88dcb1e7d822c4bd320551cc55e541c160c6ba380d99772949b0c967ab0
+deschedulerPolicy:
+  profiles:
+    - name: conservative
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            evictSystemCriticalPods: false
+            ignorePvcPods: true
+            minReplicas: 2
+      plugins:
+        balance:
+          enabled:
+            - LowNodeUtilization
+        deschedule:
+          enabled:
+            - RemovePodsViolatingInterPodAntiAffinity
+deschedulingInterval: 30m
+HELM_VALUES
+printf '%s  %s\n' \
+  '485464193b084cae0385248894e1c969e793c805eb3d7b2d4139d649418c5c76' "$old_values" |
+  sha256sum --check >/dev/null
 render_stage "$old_values"
 echo "Descheduler: chart overrides render only a suspended CronJob with both values revisions"
