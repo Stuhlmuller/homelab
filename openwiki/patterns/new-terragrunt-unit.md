@@ -71,6 +71,14 @@ App identity inputs live beside each app stack in `identity.hcl` (and Fleet's
 `azuread-oidc-application` module owns the shared registration, SSO password,
 owner lookup and parameter resources at their existing root resource addresses.
 
+Langfuse blob-storage inputs live beside its stack in
+[`blob-storage.hcl`](../../IaC/homelab/us-west-2/apps/langfuse/blob-storage.hcl)
+and reach the catalog template through unit `values`.
+
+After generation, run `terragrunt find --filter 'type=unit'` with
+`--working-dir IaC/homelab/us-west-2` to discover live units
+without including catalog templates.
+
 Account metadata comes from the nearest `account.hcl`; deployment region comes
 from the nearest `region.hcl`. The root retains the historical Homelab fallback
 for legacy destroy/recovery paths outside that hierarchy. Backend location and
