@@ -140,9 +140,9 @@ continue to reach the application unchanged. Prometheus has no ingress.
 The shared Istio gateway and old app VirtualServices remain during cutover.
 Traefik uses application Services directly, except for Mastodon's existing web/streaming gateway and the retained console
 redirect compatibility route. See the [Traefik route boundaries](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/README.md).
-Compass keeps its existing launch hostnames and discovery-only Ingress entries;
-those names resolve to private Traefik after DNS cutover. Changing its catalog
-is separate from this transport change.
+Homepage uses the established dashboard hostname and discovery-only Ingress
+entries. The catalog records supply launch URLs, and the file provider routes
+those hostnames to their backends.
 
 ## Tailnet Exit Node And LAN Route
 

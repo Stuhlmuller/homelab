@@ -1,0 +1,457 @@
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: compass-discovery
+  labels:
+    app.kubernetes.io/name: compass
+    app.kubernetes.io/part-of: homelab
+spec:
+  controller: homelab.stinkyboi.com/compass-discovery
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-argocd
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Argo CD
+    gethomepage.dev/href: https://argocd.stinkyboi.com
+    gethomepage.dev/description: GitOps control plane and application sync status.
+    gethomepage.dev/icon: argo-cd.png
+    gethomepage.dev/group: Platform
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: argocd.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-compass
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Homepage
+    gethomepage.dev/href: https://compass.stinkyboi.com
+    gethomepage.dev/description: Homelab service catalog and operator launchpad.
+    gethomepage.dev/icon: homepage.png
+    gethomepage.dev/group: Platform
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: compass.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-deluge
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Deluge
+    gethomepage.dev/href: https://deluge.stinkyboi.com
+    gethomepage.dev/description: Torrent client reached through the Octelium app access plane.
+    gethomepage.dev/icon: deluge.png
+    gethomepage.dev/group: Media
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: deluge.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-dispatcharr
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Dispatcharr
+    gethomepage.dev/href: https://dispatcharr.stinkyboi.com
+    gethomepage.dev/description: IPTV stream and EPG manager reached through the Octelium app access plane.
+    gethomepage.dev/icon: dispatcharr.png
+    gethomepage.dev/group: Media
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: dispatcharr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-grafana
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Grafana
+    gethomepage.dev/href: https://grafana.stinkyboi.com
+    gethomepage.dev/description: Dashboards, alerts, and homelab observability.
+    gethomepage.dev/icon: grafana.png
+    gethomepage.dev/group: Observability
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: grafana.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-kiali
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Kiali
+    gethomepage.dev/href: https://kiali.stinkyboi.com
+    gethomepage.dev/description: Read-only Istio mesh topology and traffic view.
+    gethomepage.dev/icon: kiali.png
+    gethomepage.dev/group: Observability
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: kiali.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-litellm
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: LiteLLM
+    gethomepage.dev/href: https://litellm.stinkyboi.com
+    gethomepage.dev/description: AI model gateway used by homelab agents.
+    gethomepage.dev/icon: litellm.png
+    gethomepage.dev/group: AI and Automation
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: litellm.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-langfuse
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Langfuse
+    gethomepage.dev/href: https://langfuse.stinkyboi.com
+    gethomepage.dev/description: LLM tracing, token usage, and prompt logs.
+    gethomepage.dev/icon: mdi-chart-line
+    gethomepage.dev/group: Observability
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: langfuse.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-affine
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: AFFiNE
+    gethomepage.dev/href: https://affine.stinkyboi.com
+    gethomepage.dev/description: Collaborative documents, whiteboards, and knowledge base.
+    gethomepage.dev/icon: affine.png
+    gethomepage.dev/group: Productivity
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: affine.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-n8n
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: n8n
+    gethomepage.dev/href: https://n8n.stinkyboi.com
+    gethomepage.dev/description: Workflow automation editor and execution UI.
+    gethomepage.dev/icon: n8n.png
+    gethomepage.dev/group: AI and Automation
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: n8n.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-cordium
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Cordium
+    gethomepage.dev/href: https://cordium.stinkyboi.com
+    gethomepage.dev/description: Octelium-backed sandbox platform for users and AI agents.
+    gethomepage.dev/icon: mdi-cube-outline
+    gethomepage.dev/group: AI and Automation
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: cordium.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-openclaw
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: OpenClaw
+    gethomepage.dev/href: https://openclaw.stinkyboi.com
+    gethomepage.dev/description: Local agent gateway and homelab assistant runtime.
+    gethomepage.dev/icon: mdi-robot
+    gethomepage.dev/group: AI and Automation
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: openclaw.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-policy-bot
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Policy Bot
+    gethomepage.dev/href: https://policy-bot.stinkyboi.com
+    gethomepage.dev/description: GitHub App policy evaluator and webhook receiver.
+    gethomepage.dev/icon: mdi-shield-check
+    gethomepage.dev/group: AI and Automation
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: policy-bot.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-prowlarr
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Prowlarr
+    gethomepage.dev/href: https://prowlarr.stinkyboi.com
+    gethomepage.dev/description: Indexer manager for the media stack.
+    gethomepage.dev/icon: prowlarr.png
+    gethomepage.dev/group: Media
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: prowlarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-radarr
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Radarr
+    gethomepage.dev/href: https://radarr.stinkyboi.com
+    gethomepage.dev/description: Movie library automation.
+    gethomepage.dev/icon: radarr.png
+    gethomepage.dev/group: Media
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: radarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compass-discovery-sonarr
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/external: "true"
+    gethomepage.dev/name: Sonarr
+    gethomepage.dev/href: https://sonarr.stinkyboi.com
+    gethomepage.dev/description: TV library automation.
+    gethomepage.dev/icon: sonarr.png
+    gethomepage.dev/group: Media
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: sonarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
