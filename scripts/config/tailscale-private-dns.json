@@ -30,7 +30,8 @@
     "portal.stinkyboi.com",
     "console.oce.stinkyboi.com",
     "*.agents.oce.stinkyboi.com",
-    "uptime-kuma.stinkyboi.com"
+    "uptime-kuma.stinkyboi.com",
+    "immich.stinkyboi.com"
   ],
   "retired_hostnames": [
     "octelium-transport.stinkyboi.com",

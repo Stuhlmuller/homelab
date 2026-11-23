@@ -782,6 +782,20 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/immich/postgres-admin-password" = {
+      description = "Immich dedicated PostgreSQL administrator password for initialization and logical backup."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/immich/postgres-app-password" = {
+      description = "Immich database owner password for the server role without PostgreSQL superuser permissions."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/uptime-kuma/admin-password" = {
       description = "Uptime Kuma native owner password; generated once and retained."
       generated = {

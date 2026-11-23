@@ -6,6 +6,13 @@
   ],
   "findings": [
     {
+      "path": "clusters/homelab/apps/immich/externalsecret.yaml",
+      "check_id": "CKV_SECRET_6",
+      "fingerprint": "fc4b79ff2005c1bfacead828184f0c8aad8fd860",
+      "max_occurrences": 1,
+      "reason": "Public destination key for the Immich PostgreSQL admin ExternalSecret. The password value comes from the referenced SSM SecureString."
+    },
+    {
       "path": "clusters/homelab/apps/kagent/values.yaml",
       "check_id": "CKV_SECRET_6",
       "fingerprint": "fd347c1608ae0b15a70ea8769284aeb44f70db4c",
