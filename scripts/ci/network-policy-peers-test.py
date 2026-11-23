@@ -114,7 +114,7 @@ class PeerTests(unittest.TestCase):
         self.assertFalse(pod["automountServiceAccountToken"])
         self.assertEqual(pod["containers"][0]["args"], [
             "--dir=/data", "--max_size=2", "--http_address=0.0.0.0:8080",
-            "--grpc_address=none", "--htpasswd_file=/auth/htpasswd",
+            "--grpc_address=none", "--profile_address=none", "--htpasswd_file=/auth/htpasswd",
             "--allow_unauthenticated_reads",
         ])
         self.assertEqual(resources["ExternalSecret"]["data"], [{
