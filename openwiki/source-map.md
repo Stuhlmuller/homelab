@@ -84,8 +84,6 @@ sources:
     resource: repo://scripts/config/arr-playback-policy.json
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
-  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
-    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -148,7 +146,6 @@ desired state.
 | `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/terragrunt-catalog/modules/entra-owner-mail/` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
-| `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |
 | `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Retired Platform SSO boundary and historical identity evidence](architecture/secrets-and-identity.md#fleet-free-identity-boundaries) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
 | `docs/runtime-isolation.md` | [Runtime Isolation](runbooks/runtime-isolation.md) |

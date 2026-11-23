@@ -120,15 +120,6 @@ base intentionally adopts them again and the documentation explains why.
   cloud-provider CLIs, or provider web consoles to repair drift or unblock a
   rollout. If the required change cannot be expressed in this repository, stop
   and add or request the missing code path before changing live state.
-- Narrow exception: after direct user authorization, the existing Entra object
-  `08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45` may be converted once through Entra
-  admin center's official **Convert to internal user** action to exactly
-  `rodman@stuhlmuller.net`. This migration must follow a successful
-  `scripts/entra-owner-conversion.py prepare` receipt and a mandatory successful
-  `attest` receipt, after the immutable-ID Terraform refactor and tested
-  emergency administrator. Do not use Graph beta, Graph/API writes, browser
-  automation, user creation, alias changes, or another portal action; all other
-  manual cloud mutations remain prohibited.
 - Narrow Renovate NAS exception: after direct owner authorization and the
   reviewed dedicated-cache staging PR merges, one QTS setup may create only a
   20 GiB thick volume in existing Storage Pool 1 and its `renovate-cache`
