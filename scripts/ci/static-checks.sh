@@ -66,7 +66,7 @@ python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/codex-cloud-signer-test.py
 python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
-python3 -I scripts/ci/tailnet-dns-retry-test.py
+python3 -I scripts/ci/tailnet-dns-chart-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
@@ -277,6 +277,7 @@ echo "::endgroup::"
 
 echo "::group::LiteLLM runtime hardening"
 python3 -I scripts/ci/litellm-runtime-hardening-check.py
+python3 -I scripts/ci/multica-project-boundary-test.py --chart
 echo "::endgroup::"
 
 echo "::group::Descheduler cadence"
