@@ -30,3 +30,5 @@ state. Use a pre-upgrade backup if a downgrade needs older data.
 
 Publish the pinned image through Harbor before activating the Application.
 The registration uses the targeted Terragrunt apply workflow.
+Verify that Argo CD has reconciled the new namespace in the live
+`homelab` AppProject before registering the workload.
