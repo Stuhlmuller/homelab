@@ -30,6 +30,12 @@ PROJECTS = {
                "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
+PROXY_CACHES = {
+    "proxy-dockerhub": ("https://hub.docker.com", "docker-hub"),
+    "proxy-ghcr": ("https://ghcr.io", "github-ghcr"),
+    "proxy-quay": ("https://quay.io", "docker-registry"),
+}
+PROXY_METADATA = {"public": "false", "auto_scan": "true", "auto_sbom_generation": "true"}
 CHAINGUARD_REPLICATION = {
     "schedule": "0 0 * * * *",
     "source_registry": "cgr.dev",
@@ -168,23 +174,37 @@ def registry_matches(actual, desired):
     return True
 
 
-def reconcile_registry(client, name):
-    desired = desired_registry(name)
+def find_registry(client, name):
     query = urllib.parse.urlencode({"name": name})
-    registries, _ = client.request("GET", "/registries?" + query)
+    registries, headers = client.request("GET", "/registries?" + query)
+    # Harbor serializes an empty registry slice as null.
+    if registries is None and headers.get("X-Total-Count") == "0":
+        return None
     if not isinstance(registries, list) or len(registries) > 1:
-        raise BootstrapError("Chainguard source registry is ambiguous")
-    if not registries:
-        _, headers = client.request("POST", "/registries", desired, expected=(201,), json_response=False)
-        registry = {"id": created_id(headers, "/registries")}
-    else:
+        raise BootstrapError("Harbor upstream registry is ambiguous")
+    if registries:
         registry = registries[0]
         if not isinstance(registry, dict) or registry.get("name") != name:
             raise BootstrapError("Harbor returned the wrong source registry")
-        identifier = positive_id(registry.get("id"))
+        positive_id(registry.get("id"))
+        return registry
+    return None
+
+
+def create_registry(client, desired):
+    _, headers = client.request("POST", "/registries", desired, expected=(201,), json_response=False)
+    return created_id(headers, "/registries")
+
+
+def reconcile_registry(client, name):
+    desired = desired_registry(name)
+    registry = find_registry(client, name)
+    if registry is None:
+        identifier = create_registry(client, desired)
+    else:
+        identifier = registry["id"]
         if not registry_matches(registry, desired):
             client.request("PUT", f"/registries/{identifier}", desired, json_response=False)
-    identifier = positive_id(registry.get("id"))
     verified, _ = client.request("GET", f"/registries/{identifier}")
     if not isinstance(verified, dict) or not registry_matches(verified, desired):
         raise BootstrapError("Harbor source registry verification failed")
@@ -301,19 +321,62 @@ def config_values(document):
     return values
 
 
-def read_project(client, project_name):
+def read_project(client, project_name, *, proxy=False):
     project, _ = client.request("GET", f"/projects/{project_name}", expected=(200, 404))
     if project is None:
         return None
     if not isinstance(project, dict) or project.get("name") != project_name:
         raise BootstrapError("Harbor returned the wrong project")
     positive_id(project.get("project_id"))
-    if project.get("registry_id") not in (None, 0):
+    if proxy:
+        positive_id(project.get("registry_id"))
+    elif project.get("registry_id") not in (None, 0):
         raise BootstrapError("Harbor project must not be a proxy cache")
     metadata = project.get("metadata")
     if not isinstance(metadata, dict) or metadata.get("public") not in ("true", "false"):
         raise BootstrapError("Harbor project lacks a valid privacy setting")
     return project
+
+
+def verify_proxy_registry(registry, desired, identifier):
+    if (not isinstance(registry, dict) or registry.get("id") != identifier
+            or not registry_matches(registry, desired)):
+        raise BootstrapError("Harbor proxy endpoint does not match its declared upstream")
+    credential = registry.get("credential") or {}
+    if (not isinstance(credential, dict) or credential.get("access_key")
+            or credential.get("access_secret") or registry.get("ca_certificate")):
+        raise BootstrapError("Harbor proxy endpoint must use anonymous upstream TLS")
+
+
+def reconcile_proxy_caches(client):
+    caches = []
+    for name, (url, provider) in PROXY_CACHES.items():
+        desired = {"name": name, "url": url, "type": provider, "insecure": False}
+        registry = find_registry(client, name)
+        project = read_project(client, name, proxy=True)
+        identifier = registry["id"] if registry else None
+        if identifier is not None:
+            registry, _ = client.request("GET", f"/registries/{identifier}")
+            verify_proxy_registry(registry, desired, identifier)
+        if project and project["registry_id"] != identifier:
+            raise BootstrapError("Harbor proxy project is linked to a different upstream")
+        caches.append((name, desired, identifier, project))
+
+    for name, desired, identifier, project in caches:
+        if identifier is None:
+            identifier = create_registry(client, desired)
+            registry, _ = client.request("GET", f"/registries/{identifier}")
+            verify_proxy_registry(registry, desired, identifier)
+        if project is None:
+            client.request("POST", "/projects", {"project_name": name, "registry_id": identifier,
+                                                   "metadata": PROXY_METADATA},
+                           expected=(201,), json_response=False)
+        elif any(project["metadata"].get(key) != value for key, value in PROXY_METADATA.items()):
+            client.request("PUT", f"/projects/{name}", {"metadata": PROXY_METADATA}, json_response=False)
+        verified = read_project(client, name, proxy=True)
+        if (verified is None or verified["registry_id"] != identifier
+                or any(verified["metadata"].get(key) != value for key, value in PROXY_METADATA.items())):
+            raise BootstrapError("Harbor proxy project verification failed")
 
 
 def kubernetes_tag_artifact(client, repository, expected_digest, immutable=False):
@@ -328,37 +391,36 @@ def kubernetes_tag_artifact(client, repository, expected_digest, immutable=False
         raise BootstrapError("Kubernetes mirror tag does not match the reviewed digest or lock")
 
 
-def kubernetes_immutable_rule(repository, project_id):
-    return {"project_id": project_id, "priority": 0, "disabled": False,
+def mirror_immutable_rule(repository, tag, project_id):
+    return {"project_id": positive_id(project_id), "priority": 0, "disabled": False,
             "action": "immutable", "template": "immutable_template",
-            "tag_selectors": [{"kind": "doublestar", "decoration": "matches", "pattern": KUBERNETES_TAG}],
+            "tag_selectors": [{"kind": "doublestar", "decoration": "matches", "pattern": tag}],
             "scope_selectors": {"repository": [
                 {"kind": "doublestar", "decoration": "repoMatches", "pattern": repository}]}}
 
 
-def reconcile_kubernetes_tag_lock(client, project_id):
-    if not KUBERNETES_TAG_LOCK_ENABLED:
-        return
-    project_id = positive_id(project_id)
-    if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
-           for digest in KUBERNETES_TAG_DIGESTS.values()):
-        raise BootstrapError("Kubernetes mirror digest pin is invalid")
-    # Inspect every alias before the first write: an existing wrong alias must remain repairable.
-    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
-        kubernetes_tag_artifact(client, repository, digest)
+def reconcile_mirror_tag_locks(client, project_id):
+    locks = [mirror_immutable_rule("helm/**", "**", project_id)]
+    if KUBERNETES_TAG_LOCK_ENABLED:
+        if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+               for digest in KUBERNETES_TAG_DIGESTS.values()):
+            raise BootstrapError("Kubernetes mirror digest pin is invalid")
+        # Inspect every alias before the first write: a wrong alias must remain repairable.
+        for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+            kubernetes_tag_artifact(client, repository, digest)
+            locks.append(mirror_immutable_rule(repository, KUBERNETES_TAG, project_id))
     path = "/projects/mirror/immutabletagrules"
-    rules = read_pages(client, path, {}, max_count=15)
+    rules = read_immutable_rules(client, path)
     planned = []
-    for repository in KUBERNETES_TAG_DIGESTS:
-        desired = kubernetes_immutable_rule(repository, project_id)
+    for desired in locks:
         matches = [rule for rule in rules if rule.get("tag_selectors") == desired["tag_selectors"] and
                    rule.get("scope_selectors") == desired["scope_selectors"]]
         if len(matches) > 1:
-            raise BootstrapError("Kubernetes mirror tag lock is ambiguous")
+            raise BootstrapError("Harbor mirror tag lock is ambiguous")
         rule = matches[0] if matches else None
         if rule and any(rule.get(key) != value for key, value in desired.items()
                         if key not in ("disabled", "project_id")):
-            raise BootstrapError("Kubernetes mirror tag lock differs from reviewed policy")
+            raise BootstrapError("Harbor mirror tag lock differs from reviewed policy")
         planned.append((desired, rule))
     if len(rules) + sum(rule is None for _, rule in planned) > 15:
         raise BootstrapError("Harbor immutability rule capacity is exhausted")
@@ -369,12 +431,19 @@ def reconcile_kubernetes_tag_lock(client, project_id):
                                json_response=False)
         else:
             client.request("POST", path, desired, expected=(201,), json_response=False)
-        rules = read_pages(client, path, {}, max_count=15)
+        rules = read_immutable_rules(client, path)
         if sum(all(rule.get(key) == value for key, value in desired.items()
                    if key != "project_id") for rule in rules) != 1:
-            raise BootstrapError("Kubernetes mirror tag lock readback failed")
-    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
-        kubernetes_tag_artifact(client, repository, digest, immutable=True)
+            raise BootstrapError("Harbor mirror tag lock readback failed")
+    if KUBERNETES_TAG_LOCK_ENABLED:
+        for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+            kubernetes_tag_artifact(client, repository, digest, immutable=True)
+
+
+def read_immutable_rules(client, path):
+    # Harbor can omit zero-value fields in the Swagger response.
+    return [{"disabled": False, "priority": 0, **rule}
+            for rule in read_pages(client, path, {}, max_count=15)]
 
 
 def robot_name(name, project_name):
@@ -592,9 +661,10 @@ def reconcile(client, robot_passwords, replication_policy=None):
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
-    reconcile_kubernetes_tag_lock(client, projects["mirror"]["project_id"])
+    reconcile_mirror_tag_locks(client, projects["mirror"]["project_id"])
     if replication_policy is not None:
         reconcile_replication(client, replication_policy)
+    reconcile_proxy_caches(client)
     backfill_scans(client)
     print("Harbor homelab is private, mirror is public; project-scoped robots reconciled.")
 

@@ -30,7 +30,9 @@ RUN printf '%s\n' '[homelab-security]' 'name=Photon security updates' \
     'baseurl=https://packages.broadcom.com/photon/5.0/photon_updates_5.0_x86_64' \
     'gpgkey=file:///etc/pki/rpm-gpg/VMWARE-RPM-GPG-KEY-4096' 'gpgcheck=1' 'enabled=1' \
     > /etc/yum.repos.d/homelab-security.repo \
-    && tdnf install -y openssl-3.5.9-3.ph5 openssl-libs-3.5.9-3.ph5 pcre2-libs-10.40-12.ph5 \
+    && tdnf install -y \
+        openssl-3.5.9-3.ph5 openssl-libs-3.5.9-3.ph5 pcre2-libs-10.40-12.ph5 \
+        curl-8.23.0-1.ph5 curl-libs-8.23.0-1.ph5 expat-libs-2.10.0-1.ph5 \
     && tdnf clean all
 USER 10000
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \

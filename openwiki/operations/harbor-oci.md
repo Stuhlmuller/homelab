@@ -184,6 +184,12 @@ remains upstream for a cold-cluster restore.
 
 ## Ownership And Access
 
+The Harbor bootstrap declares private pull-through projects for Docker Hub,
+GitHub Container Registry, and Quay. An authenticated pull through a `proxy-*`
+project fetches a missing image from that project's public upstream without
+the publication catalog. Workload migration requires a scoped pull identity
+and release verification. See the [pull-through cache runbook](../../docs/harbor-image-mirroring.md#pull-through-cache-projects).
+
 Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
@@ -220,6 +226,44 @@ for the Kubernetes Service hostname, as declared in
 `docs/examples/octelium/homelab-services.yaml`. Public clients and CI still
 verify Harbor TLS. A shared ingress hardening change should establish a trusted
 upstream server name/CA and remove this bypass across the service catalog.
+
+## Repository and lifecycle audit
+
+On November 21, 2026, the public registry listed 159 `mirror` repositories
+and an empty default `library` project. The `homelab` project required
+authentication. The existing project boundary preserves upstream paths in
+`mirror` and keeps private builds and Chainguard verification imports in
+`homelab`. Bootstrap uses separate project-scoped pull and publisher robots.
+See [project bootstrap](../../clusters/homelab/apps/harbor/bootstrap.py).
+
+The snapshot at `818a8442` found 13 of 234 catalog repository/digest pairs
+missing from Harbor. Five were kagent runtime images referenced by the
+workload. The remaining eight were entries in the image-policy catalog
+without a direct workload pin. Keep publication evidence tied to exact
+digests. The [kagent mirror scope](../../scripts/config/harbor-kagent-images.json)
+includes its five runtime images and PostgreSQL. The
+[protected publisher](../../.github/workflows/harbor-mirror.yml) verifies
+the manifest digest and a complete download with the reader robot.
+
+The audit also found that the chart publisher's preflight rejected the
+inventory because Cilium `1.20.5` lacked a checksum. The package inventory
+now includes the digest from the [official Cilium index](https://helm.cilium.io/index.yaml),
+and offline PR checks exercise the same preflight. The publisher normalizes
+timestamps only in packages built from the two pinned Git sources so the
+reviewed checksums are reproducible. The protected
+[chart publication](https://github.com/Stuhlmuller/homelab/actions/runs/45042781938)
+succeeded before the Tailnet DNS chart switched to Harbor. The Helm
+immutability rule is independent of the five Kubernetes `v1.35.9` upgrade aliases.
+Those matched their expected digests during the audit and Harbor reported
+them mutable. See the [Kubernetes activation prerequisites](../../docs/harbor-image-mirroring.md#updates-and-coverage).
+
+Check actual quota, storage growth, cleanup schedules, and the live and
+rollback keep set before configuring retention or garbage collection. The
+public API could not verify administrator-only policy or private artifacts.
+Artifact presence alone does not measure a complete pull or live node state.
+All public repository descriptions were empty in the snapshot. Use Harbor
+descriptions or labels to expose upstream and ownership metadata without
+changing the mirror manifests. See [Harbor retention](https://goharbor.io/docs/2.15.0/working-with-projects/working-with-images/create-tag-retention-rules/).
 
 ## Private node registry foundation
 
@@ -344,6 +388,26 @@ discovery path. A post-convergence eligible lookup must show transport,
 expected public or unauthorized responses, and actual version discovery
 before writer cutover. If an eligible private source needs a Harbor credential,
 add a reviewed secret contract before enabling writes.
+
+### cert-manager v1.20.5 security prerequisite
+
+The [Harbor image catalog](../../scripts/config/harbor-images.json) retains
+the five deployed cert-manager v1.20.3 rollback digests and stages official
+v1.20.5 indexes for the controller, CA injector, webhook, ACME solver and
+startup API check. Anonymous scans of all ten Linux amd64 and arm64 images
+found package inventories and zero fixable HIGH or CRITICAL findings with the
+November 22, 2026 Trivy database. The latest v1.21.3 release still has fixable
+findings.
+
+The [Jetstack v1.20.5 chart package](https://charts.jetstack.io/charts/cert-manager-v1.20.5.tgz)
+has SHA-256 `1cd093ea8b069bd136acfdc8d20002096e880ce0944854e78b4448cfb7aa8a15`.
+The candidate render preserves the existing resource identities, webhook
+settings, RBAC and the CRD served and storage versions. Publish the five
+indexes using the existing full Harbor mirror scope at reviewed current main
+and verify complete authenticated pulls. Then update the Argo chart, chart
+inventory and five runtime digests together. Verify the exact GitOps revision,
+webhook readiness and non-production certificate issuance and renewal.
+See [issue #919](https://github.com/Stuhlmuller/homelab/issues/919).
 
 ## Identity And State
 
@@ -801,14 +865,13 @@ also failed with the same sanitized category. The [last passing main run](https:
 on October 28 retained five unresolved matches. A
 [commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
 shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
-workflow between the passing and failing main revisions. A fresh advisory
-database may now report an available fix; public logs deliberately withhold the
-finding, so the exact cause remains unverified. Inspect the private report,
-update the pinned runtime base or affected dependency as needed, then rerun the
+workflow between the passing and failing main revisions. A November 22 rebuild
+reproduced the available-fix finding with the current Grype database. The
+[Core Dockerfile](../../builds/harbor-core/Dockerfile) pins the signed Photon
+updates for cURL and Expat. The hosted
 [Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
-[full-image scan](../../builds/harbor-core/scan.sh). Keep the
-[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
-Grype database gate; do not suppress the match to clear unrelated PR checks.
+[full-image scan](../../builds/harbor-core/scan.sh) verify the package update
+before protected publication.
 
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.

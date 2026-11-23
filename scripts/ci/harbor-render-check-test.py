@@ -68,6 +68,27 @@ def volume_pod(kind, name):
 
 
 class HarborRenderPrerequisites(unittest.TestCase):
+    def test_proxy_cache_adapter_must_be_in_both_rendered_allowlists(self):
+        core = resource("ConfigMap", "harbor-core")
+        bootstrap = resource("ConfigMap", "harbor-bootstrap")
+        cache_key = "PERMITTED_REGISTRY_TYPES_FOR_PROXY_CACHE"
+        adapter_key = "REPLICATION_ADAPTER_WHITELIST"
+        core["data"] = {cache_key: "docker-hub,docker-registry",
+                        adapter_key: "docker-hub,docker-registry"}
+        bootstrap["data"] = {
+            "bootstrap.py": 'PROXY_CACHES = {"proxy-quay": ("https://quay.io", "docker-registry")}',
+        }
+        resources = [core, bootstrap]
+        self.assertEqual(CHECK.proxy_cache_adapter_errors(resources), [])
+        for key in (cache_key, adapter_key):
+            with self.subTest(key=key):
+                invalid = copy.deepcopy(resources)
+                invalid[0]["data"][key] = "docker-hub"
+                self.assertIn("proxy-quay", CHECK.proxy_cache_adapter_errors(invalid)[0])
+        bootstrap["data"]["bootstrap.py"] = bootstrap["data"]["bootstrap.py"].replace(
+            '"docker-registry"', '"quay"')
+        self.assertIn("rendered allowlists: quay", CHECK.proxy_cache_adapter_errors(resources)[0])
+
     def test_required_volume_resources_must_exist(self):
         for kind in CHECK.PREREQUISITES:
             with self.subTest(kind=kind):

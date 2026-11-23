@@ -31,6 +31,7 @@ terragrunt_generate_stack
 # Kuma catalog/freshness/ownership/recovery contracts run in the pinned offline
 # tool set. Real-image timed/network fixtures are a separate local delivery gate.
 command -v promtool >/dev/null
+bash scripts/ci/octelium-proxy-alert-check.sh
 python3 -I scripts/ci/uptime-kuma-check.py
 python3 -I scripts/ci/uptime-kuma-check-test.py
 node --test scripts/ci/uptime-kuma-test.js

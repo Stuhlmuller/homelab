@@ -372,6 +372,11 @@ remaining fixture groups concurrently. The offline Nix result requires each
 group's result.
 See [signed offline validation](../../docs/nix-cache.md).
 
+The required Codex review status is published on a lightweight GitHub runner.
+A new publisher run for the same PR replaces the prior run and reads the
+latest PR head and trusted review receipt. See the
+[CI/CD security model](../../docs/ci-cd.md#security-model).
+
 For Descheduler values or chart changes, run
 `bash scripts/ci/descheduler-cadence-check.sh`. It verifies Deployment mode,
 rejects a redundant CronJob schedule, and renders chart `0.33.0` to require
