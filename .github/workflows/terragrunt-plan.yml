@@ -184,19 +184,6 @@ jobs:
           bash scripts/ci/terragrunt-plan.sh
           EOF
 
-  terragrunt-plan-skipped:
-    name: Terragrunt Plan Skipped
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      needs.static-policy.outputs.requires-live-plan != 'true'
-    needs:
-      - static-policy
-    runs-on: ubuntu-24.04
-    permissions: {}
-    steps:
-      - name: Record Live Plan Skip
-        run: echo "No live Terragrunt plan inputs changed."
-
   terragrunt-gate:
     name: Terragrunt Gate
     # Report failed dependencies, but let superseded PR runs cancel.
@@ -204,7 +191,6 @@ jobs:
     needs:
       - static-policy
       - terragrunt-plan
-      - terragrunt-plan-skipped
     runs-on: ubuntu-24.04
     permissions: {}
     steps:
@@ -213,7 +199,6 @@ jobs:
           LIVE_PLAN_REQUIRED: ${{ needs.static-policy.outputs.requires-live-plan }}
           RUNTIME_CHECK_REQUIRED: ${{ needs.static-policy.outputs.requires-runtime-check }}
           LIVE_PLAN_RESULT: ${{ needs.terragrunt-plan.result }}
-          SKIP_NOTE_RESULT: ${{ needs.terragrunt-plan-skipped.result }}
           STATIC_RESULT: ${{ needs.static-policy.result }}
           TRUSTED_HEAD: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
@@ -243,26 +228,14 @@ jobs:
               echo "::error::Required live Terragrunt plan ended ${LIVE_PLAN_RESULT}."
               exit 1
             }
-            test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}; expected skipped."
-              exit 1
-            }
-          elif [[ "${TRUSTED_HEAD}" = "true" ]]; then
-            test "${LIVE_PLAN_RESULT}" = "skipped" || {
-              echo "::error::Non-applicable live Terragrunt plan ended ${LIVE_PLAN_RESULT}; expected skipped."
-              exit 1
-            }
-            test "${SKIP_NOTE_RESULT}" = "success" || {
-              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}."
-              exit 1
-            }
           else
             test "${LIVE_PLAN_RESULT}" = "skipped" || {
               echo "::error::Non-applicable live Terragrunt plan ended ${LIVE_PLAN_RESULT}; expected skipped."
               exit 1
             }
-            test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Forked pull requests must skip the live plan check; got ${SKIP_NOTE_RESULT}."
-              exit 1
-            }
+            if [[ "${LIVE_PLAN_REQUIRED}" = "false" ]]; then
+              echo "No live Terragrunt plan inputs changed."
+            else
+              echo "Live Terragrunt planning is restricted to trusted repository branches."
+            fi
           fi

@@ -33,6 +33,8 @@ spec:
     - oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds
     - ghcr.io/langfuse/langfuse-k8s/charts
     - ghcr.io/multica-ai/charts
+    - harbor.stinkyboi.com/mirror/helm
+    # Keep the current source permitted until the protected Application update.
     - codeberg.org/k8s-gateway/charts
     - docker.io/envoyproxy
   destinations:
