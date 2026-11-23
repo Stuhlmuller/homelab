@@ -5,6 +5,7 @@ Read a JSON array from stdin. This checks declared availability and Argo sync
 ordering; controller readiness and registry acceptance still need live checks.
 """
 
+import ast
 import importlib.util
 import json
 import sys
@@ -323,6 +324,29 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
     return errors
 
 
+def proxy_cache_adapter_errors(resources):
+    config_maps = {identity(resource): resource.get("data", {}) for resource in resources
+                   if resource.get("kind") == "ConfigMap"}
+    core = config_maps.get(("ConfigMap", NAMESPACE, "harbor-core"), {})
+    bootstrap = config_maps.get(("ConfigMap", NAMESPACE, "harbor-bootstrap"), {})
+    source = bootstrap.get("bootstrap.py")
+    if not source:
+        return ["Harbor rendered bootstrap is missing"]
+    definitions = [node.value for node in ast.parse(source).body
+                   if isinstance(node, ast.Assign) and any(
+                       isinstance(target, ast.Name) and target.id == "PROXY_CACHES"
+                       for target in node.targets)]
+    if len(definitions) != 1:
+        return ["Harbor rendered bootstrap must declare PROXY_CACHES once"]
+    permitted = set(core.get("PERMITTED_REGISTRY_TYPES_FOR_PROXY_CACHE", "").split(","))
+    adapters = set(core.get("REPLICATION_ADAPTER_WHITELIST", "").split(","))
+    return [
+        f"Harbor proxy cache {name} uses an adapter missing from the rendered allowlists: {adapter}"
+        for name, (_, adapter) in ast.literal_eval(definitions[0]).items()
+        if adapter not in permitted or adapter not in adapters
+    ]
+
+
 def main():
     if len(sys.argv) not in (1, 3, 5) or len(sys.argv[1:]) % 2:
         raise ValueError("usage: harbor-render-check.py [--automation-config FILE --automation-state FILE] < combined-render.json")
@@ -335,6 +359,7 @@ def main():
     resources = json.loads(source)
     errors = validate(resources)
     errors.extend(harbor_pull_secret_errors(resources))
+    errors.extend(proxy_cache_adapter_errors(resources))
     errors.extend(receipt_errors(
         resources,
         Path(options.get("--automation-config", DEFAULT_AUTOMATION)),
@@ -348,5 +373,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, TypeError, AttributeError, KeyError) as error:
+    except (ValueError, TypeError, AttributeError, KeyError, SyntaxError) as error:
         sys.exit(f"Harbor rendered prerequisites: {error}")
