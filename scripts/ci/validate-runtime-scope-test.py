@@ -30,11 +30,11 @@ class RuntimeScopeTest(unittest.TestCase):
                     "-c", "commit.gpgsign=false", "commit", "-qm", "fixture")
                 return git("rev-parse", "HEAD")
 
-            def scope(base_sha):
-                output = root / "output"
+            def scope(base_sha, checkout=root):
+                output = checkout / "output"
                 output.unlink(missing_ok=True)
                 result = subprocess.run(
-                    ["bash", str(SCOPE), base_sha], cwd=root, capture_output=True,
+                    ["bash", str(SCOPE), base_sha], cwd=checkout, capture_output=True,
                     env={**os.environ, "GITHUB_OUTPUT": str(output)}, check=False,
                 )
                 if result.returncode:
@@ -71,6 +71,12 @@ class RuntimeScopeTest(unittest.TestCase):
                 "image-policy": "true", "network-policy": "true", "harbor-core": "true",
             })
             self.assertIsNone(scope("1" * 40))
+
+            shallow_checkout = root / "shallow"
+            git("clone", "--quiet", "--depth=2", root.as_uri(), str(shallow_checkout))
+            self.assertEqual(scope(docs, shallow_checkout), {
+                "image-policy": "true", "network-policy": "true", "harbor-core": "true",
+            })
 
 
 if __name__ == "__main__":
