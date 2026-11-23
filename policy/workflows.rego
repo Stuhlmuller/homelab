@@ -1075,6 +1075,9 @@ case "$IMAGE_SCOPE" in
   bazel-cache)
     bash scripts/ci/harbor-publish.sh mirror-bazel-cache --tailscale
     ;;
+  home-assistant)
+    bash scripts/ci/harbor-publish.sh mirror-home-assistant --tailscale
+    ;;
   image-updater-canary)
     bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
     ;;
@@ -1082,7 +1085,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'d9fa8704f063d6d592a5406a46e0821a23f283706bc39cb09f086ccc24990783  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'31d1e34b53984abebb282e1e399a47c33aacbdfd0300f1ed25685866d6dab59b  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1186,7 +1189,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "07443a4dff3bce080b65db787c9edaeee363b67c7518e0ae05b4a07e90d7aba3"
+	crypto.sha256(json.marshal(canonical)) == "4d6fe8a2c4a031dfd57313d8cea50dcbab53b5a4c8b0b9d44050440eb7fcbc66"
 }
 
 tailnet_workflow_requested if {
