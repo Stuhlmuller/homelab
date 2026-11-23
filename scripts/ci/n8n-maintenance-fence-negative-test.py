@@ -30,7 +30,8 @@ class FenceSourceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_commented_safe_value_file_with_unrelated_active_file(self):
-        safe = 'valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml"]'
+        safe = next(line.strip() for line in STACK.read_text().splitlines()
+                    if line.lstrip().startswith("valueFiles"))
         self.rejects('# ' + safe + '\n          valueFiles = ["$values/clusters/homelab/apps/n8n/other.yaml"]', safe)
 
     def test_commented_chart_pin_with_changed_active_chart(self):
