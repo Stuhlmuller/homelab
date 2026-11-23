@@ -986,8 +986,10 @@ current commit as `expected_sha`. It requires the Cilium DaemonSet to be absent
 and checks the proposed Cilium pool against Kubernetes Pod and Service CIDRs
 and the four reviewed Talos nodes' routes. The encrypted, versioned
 `openclaw-enterprise/platform/<sha>/<run>/cilium-route-preflight-<attempt>.json`
-receipt records the failed phase or route-check result, including any overlapping
-prefix. A successful result requires the checksum-verified receipt.
+receipt records which credential check, transport setup, inventory read, or
+route comparison failed. A route comparison records any overlapping prefix.
+Transport output stays out of the receipt. A successful result requires the
+checksum-verified receipt.
 
 After Cilium coexistence is Synced and Healthy, use Platform Maintenance
 `stage=cilium-evacuate-worker` on current `main` to evacuate `zimaboard-2`.

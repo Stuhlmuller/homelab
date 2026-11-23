@@ -180,6 +180,49 @@ cleanup() { touch "$work/cleaned"; }
                         "exitCode": stage_status, "verified": stage_status == 0, "detail": detail,
                     })
 
+    def test_cilium_route_preflight_identifies_inventory_failure_without_recording_stderr(self):
+        source = STAGE.read_text()
+        functions = []
+        for start in ("connect_talos() {", "finish_cilium_preflight() {"):
+            functions.append(start + source.split(start, 1)[1].split("\n}\n", 1)[0] + "\n}")
+        body = source.split("  cilium-route-preflight)\n", 1)[1].split("    ;;", 1)[0]
+        fixture = """
+set -euo pipefail
+umask 077
+work="$1"
+GITHUB_SHA="$2"
+fixture_phase="$3"
+stage=cilium-route-preflight
+GITHUB_RUN_ATTEMPT=1
+GITHUB_RUN_ID=123
+unset OCTELIUM_AUTH_TOKEN OCE_OCTELIUM_CLIENT_AUTH_TOKEN OCE_TALOSCONFIG_B64
+retain_result() { cat "$1"; }
+cleanup() { :; }
+if [[ "$fixture_phase" != transport-inputs ]]; then
+  connect_talos() { :; }
+fi
+kubectl() {
+  case "$*" in
+    *"get daemonset cilium"*) return 0;;
+    "get nodes -o json")
+      if [[ "$fixture_phase" != kubernetes-node-inventory ]]; then printf '{}\\n'; return 0; fi;;
+  esac
+  printf 'sensitive fixture stderr\\n' >&2
+  return 49
+}
+"""
+        for phase, status in (("transport-inputs", 1), ("kubernetes-node-inventory", 49),
+                              ("kubernetes-service-cidr-inventory", 49)):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                result = subprocess.run(
+                    ["bash", "-c", "\n".join([*functions, fixture, body]), "test", directory, SHA, phase],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                self.assertEqual(result.returncode, status, result.stderr)
+                receipt = json.loads(result.stdout)
+                self.assertEqual((receipt["phase"], receipt["exitCode"], receipt["detail"]),
+                                 (phase, status, ""))
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)

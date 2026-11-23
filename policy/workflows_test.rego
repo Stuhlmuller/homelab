@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"7e80b04875a211af6e9b60866ed67a73058b096cebebd8918de67aac4afe2117",
+		"6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
