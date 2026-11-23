@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Verify projected-secret copying preserves private guards and detects bad input."""
+import fcntl
 import importlib.util
+import json
+import os
 import subprocess
 from pathlib import Path
 import tempfile
@@ -109,6 +112,75 @@ class Revision(unittest.TestCase):
                 (image / "unreviewed").write_text("dirty fixture")
                 with self.assertRaises(RuntimeError):
                     controller.reviewed_controller_main(source, mirror)
+
+
+class Health(unittest.TestCase):
+    def test_phase_deadlines_allow_long_job_but_not_stalled_poll_or_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(controller, "STATE", Path(directory)), \
+             patch.object(controller, "process_start", return_value="123"):
+            with (Path(directory) / "controller.lock").open("w") as lock:
+                json.dump([os.getpid(), "123"], lock)
+                lock.flush()
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                for phase, budget in controller.HEALTH_BUDGET.items():
+                    with self.subTest(phase=phase), patch.object(controller.time, "monotonic", return_value=100):
+                        controller.health_progress(phase)
+                        self.assertEqual((Path(directory) / "health.json").stat().st_mode & 0o777, 0o600)
+                    with patch.object(controller.time, "monotonic", return_value=100 + budget - 1):
+                        controller.healthcheck()
+                    with patch.object(controller.time, "monotonic", return_value=100 + budget + 1):
+                        with self.assertRaises(RuntimeError):
+                            controller.healthcheck()
+                self.assertGreater(controller.HEALTH_BUDGET["runner"], 360 * 60)
+
+    def test_missing_dead_reused_pid_unlocked_and_invalid_receipts_fail(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(controller, "STATE", Path(directory)), \
+             patch.object(controller.time, "monotonic", return_value=100), \
+             patch.object(controller, "process_start", return_value="123") as process:
+            with self.assertRaises(FileNotFoundError):
+                controller.healthcheck()
+            with (Path(directory) / "controller.lock").open("w") as lock:
+                json.dump([os.getpid(), "123"], lock)
+                lock.flush()
+                controller.health_progress("idle")
+                with self.assertRaises(RuntimeError):
+                    controller.healthcheck()
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                controller.healthcheck()
+                lock.seek(0)
+                lock.truncate()
+                json.dump([os.getpid(), "different-start"], lock)
+                lock.flush()
+                with self.assertRaises(RuntimeError):
+                    controller.healthcheck()
+                lock.seek(0)
+                lock.truncate()
+                json.dump([os.getpid(), "123"], lock)
+                lock.flush()
+                process.return_value = "124"
+                with self.assertRaises(RuntimeError):
+                    controller.healthcheck()
+                process.side_effect = ProcessLookupError("exited")
+                with self.assertRaises(ProcessLookupError):
+                    controller.healthcheck()
+                process.side_effect = None
+                process.return_value = "123"
+                path = Path(directory) / "health.json"
+                baseline = json.loads(path.read_text())
+                for changes in ({"pid": True}, {"pid": -1}, {"deadline": float("nan")},
+                                {"deadline": float("inf")}, {"deadline": 1000}, {"phase": "unknown"}):
+                    path.write_text(json.dumps({**baseline, **changes}))
+                    with self.assertRaises(RuntimeError):
+                        controller.healthcheck()
+
+    def test_proc_start_parser_handles_spaces_and_parentheses_and_rejects_zombies(self):
+        fields = ["S"] + ["0"] * 18 + ["123"] + ["0"] * 10
+        with patch.object(Path, "read_text", return_value=f"{os.getpid()} (controller (worker)) " + " ".join(fields)):
+            self.assertEqual(controller.process_start(os.getpid()), "123")
+        fields[0] = "Z"
+        with patch.object(Path, "read_text", return_value="1 (controller) " + " ".join(fields)):
+            with self.assertRaises(RuntimeError):
+                controller.process_start(1)
 
 
 if __name__ == "__main__":

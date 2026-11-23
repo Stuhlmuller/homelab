@@ -5,20 +5,26 @@ from litellm.integrations.custom_logger import CustomLogger
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.proxy._types import LitellmUserRoles
 from litellm.proxy.litellm_pre_call_utils import clean_headers
-from gateway import LOGGING_OVERRIDES, langfuse_config
+from gateway import BEDROCK_MODELS, FREE_MODEL, LOGGING_OVERRIDES, langfuse_config
 from native_keys import APPS, provider_api_key
 
 
 class AppAttribution(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         app = user_api_key_dict.key_alias
-        if user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN:
+        is_admin = user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN
+        if is_admin:
             app = "operator"
         if app not in (*APPS, "operator"):
             raise HTTPException(403, "Missing authenticated app identity")
         # The caller cannot disable telemetry or replace its authenticated identity.
         if LOGGING_OVERRIDES.intersection(data):
             raise HTTPException(400, "Request-level logging overrides are disabled")
+        model = data.get("model")
+        if model not in (FREE_MODEL, *BEDROCK_MODELS):
+            raise HTTPException(400, "Model is not configured for chat completions")
+        if model in BEDROCK_MODELS and not is_admin:
+            raise HTTPException(403, "Bedrock requires a gateway administrator")
         metadata_key = "litellm_metadata" if call_type == "aresponses" else "metadata"
         metadata = data.setdefault(metadata_key, {})
         if not isinstance(metadata, dict):
@@ -39,7 +45,8 @@ class AppAttribution(CustomLogger):
                 key: value for key, value in clean_headers(stored.get("headers", {})).items()
                 if not key.lower().startswith("langfuse_")
             }
-        data["api_key"] = await provider_api_key()
+        if model == FREE_MODEL:
+            data["api_key"] = await provider_api_key()
         return data
 
 

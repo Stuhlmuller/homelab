@@ -1,0 +1,45 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: renovate-cache-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: renovate-cache-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: homelab-automation
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Advisory scheduling capacity; this directory has no filesystem quota.
+  capacity:
+    storage: 20Gi
+  claimRef:
+    name: renovate-cache-local
+    namespace: automation
+  hostPath:
+    path: /var/lib/renovate-cache
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: renovate-cache-local
+  volumeMode: Filesystem

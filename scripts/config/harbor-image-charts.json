@@ -54,6 +54,12 @@
     "targetRevision": "4.4.0"
   },
   {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/homelab/us-west-2/apps/uptime-kuma/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
     "chart": "argo-cd",
     "repoURL": "https://argoproj.github.io/argo-helm",
     "source": "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl",
@@ -76,6 +82,12 @@
     "repoURL": "https://charts.jetstack.io",
     "source": "IaC/homelab/us-west-2/apps/cert-manager/stack.hcl",
     "targetRevision": "v1.20.3"
+  },
+  {
+    "chart": "cilium",
+    "repoURL": "https://helm.cilium.io",
+    "source": "IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl",
+    "targetRevision": "1.20.5"
   },
   {
     "chart": "cni",
@@ -116,7 +128,7 @@
   {
     "chart": "gateway-crds-helm",
     "repoURL": "docker.io/envoyproxy",
-    "source": "IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl",
+    "source": "IaC/homelab/us-west-2/apps/platform-gateway-api-crds/stack.hcl",
     "targetRevision": "v1.9.2"
   },
   {
@@ -157,9 +169,21 @@
   },
   {
     "chart": "k8s-gateway",
-    "repoURL": "codeberg.org/k8s-gateway/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
     "targetRevision": "4.0.0"
+  },
+  {
+    "chart": "kagent",
+    "repoURL": "ghcr.io/kagent-dev/kagent/helm",
+    "source": "IaC/homelab/us-west-2/apps/kagent/stack.hcl",
+    "targetRevision": "0.10.6"
+  },
+  {
+    "chart": "kagent-crds",
+    "repoURL": "ghcr.io/kagent-dev/kagent/helm",
+    "source": "IaC/homelab/us-west-2/apps/kagent/stack.hcl",
+    "targetRevision": "0.10.6"
   },
   {
     "chart": "kiali-operator",

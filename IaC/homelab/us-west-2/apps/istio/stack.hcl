@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["cert-manager"]
+  dependencies = ["../../cert-manager/argocd"]
   spec = {
     destination = {
       namespace = "istio-system"
@@ -76,9 +76,10 @@ inputs = {
           releaseName = "ztunnel"
           valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
           parameters = [
+            # ztunnel must start before the Harbor listener's ambient destination works.
             {
               name  = "image"
-              value = "harbor.stinkyboi.com/mirror/docker.io/istio/ztunnel:1.27.3-distroless@sha256:3837029816e78cb6fc88d928dc5c6c58522ab9346772a1409b7f7da00d9de4ce"
+              value = "docker.io/istio/ztunnel:1.27.3-distroless@sha256:3837029816e78cb6fc88d928dc5c6c58522ab9346772a1409b7f7da00d9de4ce"
             },
             {
               name  = "resources.requests.memory"

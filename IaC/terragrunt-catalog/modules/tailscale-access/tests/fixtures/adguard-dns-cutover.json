@@ -1,0 +1,52 @@
+{
+  "fixture_only": true,
+  "observed_ip": "100.99.0.1",
+  "before": {
+    "magic_dns": true,
+    "override_local_dns": false,
+    "search_paths": [],
+    "nameservers": [
+      {
+        "address": "1.1.1.2",
+        "use_with_exit_node": false
+      },
+      {
+        "address": "1.0.0.2",
+        "use_with_exit_node": false
+      }
+    ],
+    "split_dns": [
+      {
+        "domain": "stinkyboi.com",
+        "nameservers": [
+          {
+            "address": "100.71.150.27",
+            "use_with_exit_node": true
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "magic_dns": true,
+    "override_local_dns": true,
+    "search_paths": [],
+    "nameservers": [
+      {
+        "address": "100.99.0.1",
+        "use_with_exit_node": true
+      }
+    ],
+    "split_dns": [
+      {
+        "domain": "stinkyboi.com",
+        "nameservers": [
+          {
+            "address": "100.71.150.27",
+            "use_with_exit_node": true
+          }
+        ]
+      }
+    ]
+  }
+}

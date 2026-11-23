@@ -4,13 +4,13 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["octelium-cluster", "octelium-storage"]
+  dependencies = ["../../octelium-cluster/argocd", "../../octelium-storage/argocd"]
   spec = {
     destination = {
       namespace = "octelium"
     }
     syncPolicy = {
-      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true"]
+      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true", "ApplyOutOfSyncOnly=true"]
     }
     ignoreDifferences = [
       {

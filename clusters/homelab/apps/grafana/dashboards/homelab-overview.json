@@ -686,6 +686,108 @@
       ],
       "title": "Grafana Scrape Health",
       "type": "stat"
+    },
+    {
+      "id": 9,
+      "title": "Talos /var free space",
+      "description": "Filesystem capacity minus used bytes on the Talos EPHEMERAL partition. Writer quotas and reservations can reduce usable space.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_device:talos_ephemeral_free_bytes",
+          "legendFormat": "{{node}} {{device}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Talos /var free inodes",
+      "description": "Free inodes on each mapped EPHEMERAL partition.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_device:talos_ephemeral_free_inodes",
+          "legendFormat": "{{node}} {{device}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Talos /var time to full",
+      "description": "Estimated from a falling six-hour trend with at least 60 five-minute samples. Stable or growing free capacity has no estimate.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 28
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "node_device:talos_ephemeral_runway_hours",
+          "legendFormat": "{{node}} {{resource}}",
+          "range": true
+        }
+      ]
     }
   ],
   "preload": false,

@@ -1,0 +1,157 @@
+name: Langfuse PostgreSQL Object Restore
+
+# checkov:skip=CKV_GHA_7: expected_sha pins current main; object key and version are explicit.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit used for local capture
+        required: true
+        type: string
+      object_key:
+        description: Exact key from the pending local capture receipt
+        required: true
+        type: string
+      object_version:
+        description: Exact S3 version ID from the pending receipt
+        required: true
+        type: string
+      object_sha256:
+        description: SHA-256 digest from the pending receipt
+        required: true
+        type: string
+      object_bytes:
+        description: Dump byte count from the pending receipt
+        required: true
+        type: string
+      expected_pvc_uid:
+        description: Source PVC UID from the pending receipt
+        required: true
+        type: string
+      expected_pv_uid:
+        description: Source PV UID from the pending receipt
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: langfuse-postgres-checkpoint-production
+  cancel-in-progress: false
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  restore:
+    name: Protected Exact Object Restore
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protected AWS Role
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+        run: test -n "$AWS_APPLY_ROLE_ARN"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-duration-seconds: 14400
+          role-session-name: homelab-langfuse-restore-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Verify S3 Version In Networkless Docker
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_PVC_UID: ${{ inputs.expected_pvc_uid }}
+          EXPECTED_PV_UID: ${{ inputs.expected_pv_uid }}
+          OBJECT_KEY: ${{ inputs.object_key }}
+          OBJECT_VERSION: ${{ inputs.object_version }}
+          OBJECT_SHA256: ${{ inputs.object_sha256 }}
+          OBJECT_BYTES: ${{ inputs.object_bytes }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/langfuse-postgres-object-restore.sh >"$private_log" 2>&1; then
+            echo "::error::Langfuse PostgreSQL object restore failed; private diagnostics withheld."
+            exit 1
+          fi
+          echo "Langfuse PostgreSQL object restore passed; private diagnostics withheld."
+
+      - name: Publish Sanitized Restore Receipt
+        run: |
+          set -euo pipefail
+          receipt="${RUNNER_TEMP}/langfuse-checkpoint-receipt"
+          trap 'rm -f "$receipt"' EXIT
+          test "$(wc -l <"$receipt")" -eq 1
+          LC_ALL=C grep -Eqx 'Verified Langfuse PostgreSQL checkpoint: key=langfuse/postgresql/[0-9a-f]{40}/[1-9][0-9]*/1/langfuse\.dump version=[A-Za-z0-9._~+/=-]+ sha256=[0-9a-f]{64} bytes=[1-9][0-9]* tables=[1-9][0-9]* pvc_uid=[0-9a-f-]{36} pv=[a-z0-9-]+ pv_uid=[0-9a-f-]{36}' "$receipt"
+          cat "$receipt"

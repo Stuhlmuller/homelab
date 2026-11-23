@@ -16,6 +16,37 @@ test_rejects_gateway_attached_non_octelium_external_route if {
 	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
 }
 
+test_allows_internal_istio_egress_waypoint if {
+	violations := deny with input as internal_waypoint_fixture("ClusterIP", "HBONE")
+	count(violations) == 0
+}
+
+test_rejects_public_istio_egress_gateway if {
+	violations := deny with input as internal_waypoint_fixture("LoadBalancer", "HBONE")
+	some msg in violations
+	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
+}
+
+test_rejects_http_listener_on_istio_egress_waypoint if {
+	violations := deny with input as internal_waypoint_fixture("ClusterIP", "HTTP")
+	some msg in violations
+	contains(msg, "must declare homelab.rst.io/access-plane=octelium")
+}
+
+internal_waypoint_fixture(service_type, protocol) := {
+	"apiVersion": "gateway.networking.k8s.io/v1",
+	"kind": "Gateway",
+	"metadata": {
+		"name": "waypoint",
+		"namespace": "istio-egress",
+		"annotations": {"networking.istio.io/service-type": service_type},
+	},
+	"spec": {
+		"gatewayClassName": "istio-waypoint",
+		"listeners": [{"name": "mesh", "port": 15008, "protocol": protocol}],
+	},
+}
+
 test_allows_mesh_only_internal_route if {
 	violations := deny with input as {
 		"apiVersion": "networking.istio.io/v1",
@@ -54,11 +85,7 @@ test_allows_explicit_discovery_ingress if {
 
 test_rejects_hooked_cordium_bootstrap_application if {
 	resource := cordium_bootstrap_app("1", ["resources-finalizer.argocd.argoproj.io"], "clusters/homelab/apps/cordium-bootstrap", 0)
-	resource_with_hook := object.union(resource, {
-		"metadata": object.union(resource.metadata, {
-			"annotations": object.union(resource.metadata.annotations, {"argocd.argoproj.io/hook": "PostSync"}),
-		}),
-	})
+	resource_with_hook := object.union(resource, {"metadata": object.union(resource.metadata, {"annotations": object.union(resource.metadata.annotations, {"argocd.argoproj.io/hook": "PostSync"})})})
 	violations := deny with input as resource_with_hook
 	some msg in violations
 	contains(msg, "must be a normal resource")
@@ -96,6 +123,14 @@ test_rejects_retried_cordium_bootstrap_application if {
 	violations := deny with input as resource
 	some msg in violations
 	contains(msg, "must disable retries")
+}
+
+test_rejects_auto_sync_during_cordium_recovery if {
+	resource := cordium_bootstrap_app("1", ["resources-finalizer.argocd.argoproj.io"], "clusters/homelab/apps/cordium-bootstrap", 0)
+	unsafe := object.union(resource, {"spec": object.union(resource.spec, {"syncPolicy": object.union(resource.spec.syncPolicy, {"automated": {"enabled": true}})})})
+	violations := deny with input as unsafe
+	some msg in violations
+	contains(msg, "automated sync paused")
 }
 
 test_rejects_persistent_cordium_genesis_identity if {
@@ -227,7 +262,7 @@ cordium_bootstrap_app(wave, finalizers, path, retry_limit) := {
 		"annotations": {"argocd.argoproj.io/sync-wave": wave},
 	},
 	"spec": {
-		"syncPolicy": {"retry": {"limit": retry_limit}},
+		"syncPolicy": {"retry": {"limit": retry_limit}, "automated": {"enabled": false}},
 		"source": {
 			"repoURL": "https://github.com/Stuhlmuller/homelab.git",
 			"targetRevision": "main",
@@ -263,14 +298,10 @@ cordium_cleanup_job(hook, delete_policy, wave, automount) := {
 			"argocd.argoproj.io/sync-wave": wave,
 		},
 	},
-	"spec": {
-		"template": {
-			"spec": {
-				"automountServiceAccountToken": automount,
-				"serviceAccountName": "cordium-genesis-cleanup",
-			},
-		},
-	},
+	"spec": {"template": {"spec": {
+		"automountServiceAccountToken": automount,
+		"serviceAccountName": "cordium-genesis-cleanup",
+	}}},
 }
 
 cordium_genesis_job(spec) := {
@@ -359,10 +390,14 @@ test_allows_reviewed_funnel_callback if {
 	count(violations) == 0
 }
 
+test_allows_bulldozer_funnel_callback if {
+	resource := object.union(reviewed_callback, {"metadata": object.union(reviewed_callback.metadata, {"name": "bulldozer-hook"}), "spec": object.union(reviewed_callback.spec, {"tls": [{"hosts": ["bulldozer-hook"]}]})})
+	violations := deny with input as resource
+	count(violations) == 0
+}
+
 test_rejects_funnel_to_private_entrypoint if {
-	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {
-		"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}},
-	})})
+	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}}})})
 	violations := deny with input as resource
 	some msg in violations
 	contains(msg, "Funnel is restricted")
@@ -390,6 +425,14 @@ mastodon_secret(key) := {
 test_allows_mastodon_owned_credentials if {
 	violations := deny with input as mastodon_secret("/homelab/mastodon/postgres-password")
 	count(violations) == 0
+}
+
+test_argocd_can_read_only_harbor_pull_robot_password if {
+	allowed := deny with input as oce_secret("argocd", "/homelab/harbor/mirror-robot-pull-password")
+	count(allowed) == 0
+	denied := deny with input as oce_secret("argocd", "/homelab/harbor/mirror-robot-push-password")
+	some msg in denied
+	contains(msg, "outside its allowed application prefixes")
 }
 
 test_rejects_mastodon_reading_another_workload_secret if {
@@ -446,4 +489,80 @@ test_openclaw_enterprise_secret_names_are_exact_and_split_by_namespace if {
 	unknown_denials := deny with input as oce_secret("openclaw-agents", "/homelab/openclaw-enterprise/other-key")
 	some unknown_denial in unknown_denials
 	contains(unknown_denial, "outside its allowed application prefixes")
+}
+
+test_allows_codex_funnel_callback if {
+	resource := object.union(reviewed_callback, {"metadata": object.union(reviewed_callback.metadata, {"name": "codex-signer"}), "spec": object.union(reviewed_callback.spec, {"tls": [{"hosts": ["codex-signer"]}]})})
+	violations := deny with input as resource
+	count(violations) == 0
+}
+
+codex_signer_secret(key) := object.union(renovate_secret(key), {"metadata": {"name": "codex-cloud-signer", "namespace": "automation"}})
+
+adguard_secret(key) := object.union(renovate_secret(key), {"metadata": {"name": "adguard-config", "namespace": "automation"}})
+
+test_adguard_credential_is_exact_and_bound_to_its_secret if {
+	allowed := deny with input as adguard_secret("/homelab/adguard/admin-password")
+	count(allowed) == 0
+	every key in {"/homelab/adguard/", "/homelab/adguard/admin-password-extra", "/homelab/tailscale/codex-cloud-signer/auth-key"} {
+		violations := deny with input as adguard_secret(key)
+		some msg in violations
+		contains(msg, "outside its allowed application prefixes")
+	}
+	wrong_secret := deny with input as renovate_secret("/homelab/adguard/admin-password")
+	some msg in wrong_secret
+	contains(msg, "outside its allowed application prefixes")
+}
+
+test_codex_signer_reads_only_four_exact_runtime_credentials if {
+	every suffix in {"auth-key", "oauth-client-id", "oauth-client-secret", "webhook-secret"} {
+		violations := deny with input as codex_signer_secret(concat("", ["/homelab/tailscale/codex-cloud-signer/", suffix]))
+		count(violations) == 0
+	}
+	every suffix in {"cloud-auth-key", "auth-key-extra", "oauth-client-secret/other"} {
+		violations := deny with input as codex_signer_secret(concat("", ["/homelab/tailscale/codex-cloud-signer/", suffix]))
+		some msg in violations
+		contains(msg, "outside its allowed application prefixes")
+	}
+	violations := deny with input as renovate_secret("/homelab/tailscale/codex-cloud-signer/webhook-secret")
+	some msg in violations
+	contains(msg, "outside its allowed application prefixes")
+}
+
+test_uptime_kuma_secret_is_exact_and_monitoring_only if {
+	allowed := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/admin-password")
+	count(allowed) == 0
+	wrong_key := deny with input as oce_secret("monitoring", "/homelab/uptime-kuma/other-password")
+	some key_msg in wrong_key
+	contains(key_msg, "outside its allowed application prefixes")
+	wrong_namespace := deny with input as oce_secret("ai", "/homelab/uptime-kuma/admin-password")
+	some namespace_msg in wrong_namespace
+	contains(namespace_msg, "outside its allowed application prefixes")
+}
+
+kuma_identity_fixture := {
+	"kind": "Job", "metadata": {"name": "uptime-kuma-first-backup-v1", "namespace": "monitoring"},
+	"spec": {"template": {"spec": {
+		"securityContext": {"runAsUser": 10001, "runAsGroup": 10001, "fsGroup": 10001},
+		"containers": [{"name": "backup", "securityContext": {}}],
+	}}},
+}
+
+test_kuma_high_identity_and_mismatch_denial if {
+	allowed := deny with input as kuma_identity_fixture
+	count(allowed) == 0
+	every key in {"runAsUser", "runAsGroup", "fsGroup"} {
+		bad := json.patch(kuma_identity_fixture, [{"op": "replace", "path": sprintf("/spec/template/spec/securityContext/%s", [key]), "value": 1000}])
+		violations := deny with input as bad
+		"Kuma runtime identity must remain UID/GID/fsGroup 10001" in violations
+	}
+	bad_container := json.patch(kuma_identity_fixture, [{"op": "add", "path": "/spec/template/spec/containers/0/securityContext/runAsUser", "value": 0}])
+	denied := deny with input as bad_container
+	"Kuma containers must inherit or preserve high runtime identity" in denied
+}
+
+test_kuma_recursive_ownership_denied if {
+	bad := json.patch(kuma_identity_fixture, [{"op": "add", "path": "/spec/template/spec/initContainers", "value": [{"name": "01-ownership", "command": ["sh", "-ec", "chown -R 10001:10001 /app/data"]}]}])
+	denied := deny with input as bad
+	"Kuma ownership init must only own the initial data mount root" in denied
 }

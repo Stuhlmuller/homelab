@@ -1,44 +1,3 @@
-terraform {
-  required_version = ">= 1.9.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "6.63.0"
-    }
-  }
-}
-
-variable "bucket_name" {
-  type        = string
-  description = "Dedicated bucket name, including the owner account and region suffix."
-
-  validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.bucket_name))
-    error_message = "Use a 3-63 character lowercase, hyphenated S3 bucket name."
-  }
-}
-
-variable "expected_account_id" {
-  type        = string
-  description = "AWS account authorized to own the bucket."
-
-  validation {
-    condition     = can(regex("^[0-9]{12}$", var.expected_account_id))
-    error_message = "The expected owner must be a 12-digit AWS account ID."
-  }
-}
-
-variable "aws_region" {
-  type        = string
-  description = "Explicit region for both the bucket and its AWS-managed S3 KMS key."
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "Repository ownership and purpose tags."
-}
-
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
@@ -141,14 +100,57 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   depends_on = [aws_s3_bucket_versioning.backup]
 }
 
-output "bucket_name" {
-  value = aws_s3_bucket.backup.id
-}
-
-output "bucket_arn" {
-  value = aws_s3_bucket.backup.arn
-}
-
-output "region" {
-  value = var.aws_region
+# The optional publisher is a separate identity. Its permissions boundary caps
+# future attachments as well as this module's inline policy at one object path.
+locals {
+  publisher_policy = var.publisher == null ? null : jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "InspectRecoveryBucket"
+        Effect   = "Allow"
+        Action   = ["s3:GetBucketVersioning", "s3:GetEncryptionConfiguration"]
+        Resource = local.bucket_arn
+      },
+      {
+        Sid      = "ListRecoveryVersions"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucketVersions"]
+        Resource = local.bucket_arn
+        Condition = {
+          StringLike = { "s3:prefix" = "${var.publisher.object_prefix}*" }
+        }
+      },
+      {
+        Sid      = "ReadRecoveryObjects"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:GetObjectVersion"]
+        Resource = "${local.bucket_arn}/${var.publisher.object_prefix}*"
+      },
+      {
+        Sid      = "PublishKmsRecoveryObjects"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${local.bucket_arn}/${var.publisher.object_prefix}*"
+        # An absent header uses the bucket's SSE-KMS default; a caller may not
+        # override it with SSE-S3. Multipart part requests omit this header.
+        Condition = {
+          StringEqualsIfExists = { "s3:x-amz-server-side-encryption" = "aws:kms" }
+        }
+      },
+      {
+        Sid      = "UseOnlyBucketS3Key"
+        Effect   = "Allow"
+        Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+        Resource = "arn:aws:kms:${var.aws_region}:${var.expected_account_id}:key/*"
+        Condition = {
+          "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = "alias/aws/s3" }
+          StringEquals = {
+            "kms:ViaService"                   = "s3.${var.aws_region}.amazonaws.com"
+            "kms:EncryptionContext:aws:s3:arn" = local.bucket_arn
+          }
+        }
+      },
+    ]
+  })
 }

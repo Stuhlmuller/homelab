@@ -53,7 +53,8 @@ for name, service in services.items():
     original = service['loadBalancer']['servers'][0]['url']
     scheme = original.split(':', 1)[0]
     service['loadBalancer']['servers'] = [{'url': f'{scheme}://127.0.0.1:{backend_ports[name]}'}]
-routes['http']['serversTransports']['octelium-console']['rootCAs'] = [str(HERE/'backend.crt')]
+for name in ('octelium-console', 'mastodon'):
+    routes['http']['serversTransports'][name]['rootCAs'] = [str(HERE/'backend.crt')]
 
 tls = yaml(ROOT / 'clusters/homelab/apps/traefik/tls.yaml')
 for cert in tls['tls']['certificates']:
@@ -90,7 +91,7 @@ for (const [name, port] of Object.entries(PORTS)) {
       servername: req.socket.servername}));
   };
   const server = name === 'octelium-api' ? http2.createServer() :
-    name === 'octelium-console' ? https.createServer({cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY)}) :
+    ['octelium-console', 'mastodon'].includes(name) ? https.createServer({cert: fs.readFileSync(CERT), key: fs.readFileSync(KEY)}) :
     http.createServer();
   server.on('request', handle);
   server.on('upgrade', (req, socket) => {
@@ -109,7 +110,7 @@ args = [arg.replace('/etc/traefik/dynamic', str(DYNAMIC))
         .replace('trustedips=10.244.0.0/16', 'trustedips=127.0.0.1/32') for arg in args]
 
 
-def request(host, path='/', entry='websecure', headers=(), websocket=False):
+def request(host, path='/', entry='websecure', headers=(), websocket=False, method=None):
     secure = entry in ('websecure', 'registry')
     port = PORTS[entry]
     command = ['curl', '--silent', '--show-error', '--noproxy', '*', '--max-time', '3',
@@ -117,6 +118,8 @@ def request(host, path='/', entry='websecure', headers=(), websocket=False):
                f'{"https" if secure else "http"}://{host}:{port}{path}']
     for header in headers:
         command += ['-H', header]
+    if method:
+        command += ['--request', method]
     if websocket:
         command += ['--http1.1', '-H', 'Connection: Upgrade', '-H', 'Upgrade: websocket',
                     '-H', 'Sec-WebSocket-Version: 13', '-H',
@@ -174,8 +177,9 @@ try:
             assert data['version'] == '2.0', data
         if name == 'octelium-alias':
             assert data['headers']['host'] == 'stinkyboi.com', data
-        if name == 'octelium-console':
-            assert data['servername'] == 'console.stinkyboi.com', data
+        if name in ('octelium-console', 'mastodon'):
+            expected_host = 'console.stinkyboi.com' if name == 'octelium-console' else 'mastodon.stinkyboi.com'
+            assert data['servername'] == expected_host, data
         checks += 1
     for host in ('workspace.cordium.stinkyboi.com', 'portal.stinkyboi.com'):
         status,body = request(host)
@@ -202,7 +206,8 @@ try:
         assert request('fleet.stinkyboi.com',path)[0] == 200
         checks += 1
     for host, allowed in [('n8n-webhook.tail67beb.ts.net', ('/webhook','/webhook/one','/webhook-test/test','/webhook-waiting/wait')),
-                          ('policy-bot-hook.tail67beb.ts.net', ('/api/github/hook',))]:
+                          ('policy-bot-hook.tail67beb.ts.net', ('/api/github/hook',)),
+                          ('bulldozer-hook.tail67beb.ts.net', ('/api/github/hook',))]:
         for path in allowed:
             status,body = request(host,path,entry='funnel',headers=('X-Forwarded-Proto: https',))
             assert status == 200, (host,path,status,body)
@@ -211,6 +216,18 @@ try:
         for path in ('/','/rest/settings','/setup','/api/v1/setup','/api/github/hook-extra','/webhook-admin'):
             assert request(host,path,entry='funnel')[0] == 404, (host,path)
             checks += 1
+    emergency = '/webhook/7d4342d3-103b-437a-a941-811a75dacb2f'
+    for path in (emergency, emergency+'/', '/webhook//7d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/7D4342D3-103B-437A-A941-811A75DACB2F', emergency+'?retry=1',
+                 '/webhook/%37d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/./7d4342d3-103b-437a-a941-811a75dacb2f',
+                 '/webhook/other/../7d4342d3-103b-437a-a941-811a75dacb2f'):
+        assert request('n8n-webhook.tail67beb.ts.net', path, entry='funnel', method='POST')[0] == 404, path
+        checks += 1
+    for path in ('/webhook/another-workflow', emergency+'-other', '/webhook-test/test'):
+        status, body = request('n8n-webhook.tail67beb.ts.net', path, entry='funnel', method='POST')
+        assert status == 200 and json.loads(body)['name'] == 'n8n', (path, status, body)
+        checks += 1
     for path in ('/webhook/../rest/settings', '/webhook/%2e%2e/rest/settings',
                  '/webhook/%2f../rest/settings', '/webhook/%252e%252e%252frest/settings'):
         status, body = request('n8n-webhook.tail67beb.ts.net', path, entry='funnel')
@@ -240,6 +257,12 @@ try:
     for host in ('fleet.stinkyboi.com', 'grafana.stinkyboi.com', 'octelium-api.stinkyboi.com'):
         assert request(host, '/v2/', entry='registry')[0] == 404
         checks += 1
+    status, body = request('mastodon.stinkyboi.com', '/auth/sign_in')
+    assert status == 200 and json.loads(body)['url'] == '/auth/sign_in', (status, body)
+    assert json.loads(body)['headers']['host'] == f"mastodon.stinkyboi.com:{PORTS['websecure']}", body
+    assert request('mastodon.stinkyboi.com', '/api/v1/streaming', websocket=True)[0] == 101
+    assert request('mastodon.stinkyboi.com', '/auth/sign_in', entry='funnel')[0] == 404
+    checks += 3
     for name in ('multica', 'openclaw', 'cordium'):
         assert request(name+'.stinkyboi.com','/ws',websocket=True)[0] == 101
         checks += 1

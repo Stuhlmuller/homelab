@@ -40,8 +40,66 @@ Use this checklist before adding or changing a Terragrunt unit.
    outputs.
 10. Format and validate the smallest affected scope before planning or applying.
 
+The repository-local Application module fixes its API-owned computed fields:
+metadata annotations/labels, destination name, and qualifying multi-source
+chart/ref/directory paths. Callers supply the manifest, with no unused computed
+field override. The SSM-backed Kubernetes Secret module likewise fixes `Opaque`
+and rejects empty or `REPLACE_ME` values; ephemeral reads, write-only data and
+the caller's rotation revision remain unchanged. See the
+[Application module](../../IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf)
+and [Secret module](../../IaC/terragrunt-catalog/modules/kubernetes-secret-from-ssm/main.tf).
+The native HCL regression `scripts/ci/argocd-computed-fields-test.py` covers
+omitted, null, dot and explicit source paths. Use explicit null comparisons:
+OpenTofu's `contains` rejects a null search value, even in a list containing null.
+
 ## Knowledge-Base Update
 
 Update [GitOps Flow](../architecture/gitops-flow.md) and [Validation Gates](../operations/validation-gates.md) when the
 unit changes workflow, bootstrap behavior, module ownership, validation, or
 dependency structure.
+
+## State identity for additional units
+
+Application units ending in `/argocd` retain their historical Application state
+keys. Existing identity and storage units retain explicit legacy mappings in
+`IaC/root.hcl`. Additional app-local units use their full relative path as the
+state identity, so a new sibling cannot inherit the Application's state.
+The stack regression renders both units and checks their distinct backend keys.
+
+App identity inputs live beside each app stack in `identity.hcl` (and Fleet's
+`pilot-user.hcl`). Catalog units consume generated values. The local
+`azuread-oidc-application` module owns the shared registration, SSO password,
+owner lookup and parameter resources at their existing root resource addresses.
+
+Langfuse blob-storage inputs live beside its stack in
+[`blob-storage.hcl`](../../IaC/homelab/us-west-2/apps/langfuse/blob-storage.hcl)
+and reach the catalog template through unit `values`.
+
+After generation, run `terragrunt find --filter 'type=unit'` with
+`--working-dir IaC/homelab/us-west-2` to discover live units
+without including catalog templates.
+
+Account metadata comes from the nearest `account.hcl`; deployment region comes
+from the nearest `region.hcl`. The root retains the historical Homelab fallback
+for legacy destroy/recovery paths outside that hierarchy. Backend location and
+state encryption remain independent of the deployment region. Only units whose
+modules consume AWS region or tags pass those inputs; state encryption stays shared.
+
+Application dependency entries are paths relative to the generated unit, such as
+`../../cert-manager/argocd`, `../../../shared/aws-ssm-parameters`, or
+`../blob-storage`. The template joins these paths without interpreting app names.
+
+The [local catalog guide](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/IaC/terragrunt-catalog/README.md) maps module,
+template and live-input ownership with existing examples. Catalog discovery
+includes both the local catalog and the external repository.
+
+## Module File Organization
+
+Local modules keep input declarations in `variables.tf`, outputs in `outputs.tf`
+and provider requirements in `versions.tf`. State encryption belongs to the shared
+Terragrunt root, which generates the compatible backend policy.
+Larger modules separate publisher IAM, reader IAM and credential publication
+into responsibility-specific files within the same module directory.
+The owning Terragrunt stacks show how each module is used.
+These file boundaries preserve resource addresses and the historical backend
+key mappings in `IaC/root.hcl`.

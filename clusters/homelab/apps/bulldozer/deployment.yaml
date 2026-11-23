@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bulldozer
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV2_K8S_6=bulldozer is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    homelab.stuhlmuller.dev/replicas: "Awaiting a dedicated GitHub App and real SSM credentials."
+  labels:
+    app.kubernetes.io/name: bulldozer
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bulldozer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bulldozer
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bulldozer
+          image: palantirtechnologies/bulldozer:1.19.3@sha256:fceda09f589dd5d04a70886d9795e3c1c287cbc2a6065258fd41bb911ff5e0ca
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /api/metrics
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/metrics
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: config
+              mountPath: /secrets
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          secret:
+            secretName: bulldozer-config
+        - name: tmp
+          emptyDir: {}

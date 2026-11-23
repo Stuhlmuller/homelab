@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312",
+		"ee994058c05213e979497d81e7c949c335c27722fecc42a44f8e9fa5ea004d40",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -190,7 +190,7 @@ platform_maintenance_fixture := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"stage": {"options": ["inspect", "cilium-route-preflight", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
 		"cleanup_run_id": {"required": false, "type": "string"},
 		"qualification_run_id": {},
 		"evidence_source_sha": {},
@@ -257,13 +257,13 @@ test_rejects_openclaw_operations_run_overrides if {
 		with_job_run_env(workflow, "legacy", {"BASH_ENV": "unreviewed"}),
 		with_job_run_env(workflow, "enterprise", {"ENV": "unreviewed"}),
 		with_job_run_env(workflow, "binding", {"BASH_ENV": "unreviewed"}),
-		with_step_run_setting(workflow, "legacy", 6, {"shell": "python"}),
+		with_step_run_setting(workflow, "legacy", 7, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"shell": "python"}),
 		with_step_run_setting(workflow, "binding", 4, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"working-directory": "unreviewed"}),
 		with_step_run_env(workflow, "static-policy", 0, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 6, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 6, {"UNREVIEWED": "value"}),
+		with_step_run_env(workflow, "legacy", 7, {"BASH_ENV": "unreviewed"}),
+		with_step_run_env(workflow, "legacy", 7, {"UNREVIEWED": "value"}),
 		with_step_run_env(workflow, "enterprise", 3, {"ENV": "unreviewed"}),
 	] {
 		violations := deny with input as candidate
@@ -275,7 +275,11 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -286,8 +290,34 @@ test_rejects_changed_openclaw_legacy_operation if {
 			replace(openclaw_legacy_run, "c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "network-nix-entry", "network-unknown"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "network-kubeconfig", "network-unknown"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "network-kubectl-version", "network-unknown"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "network-source", "network-unknown"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "write", "id-token": "write"}),
 		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"actions": "read", "contents": "read", "id-token": "write"}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"steps": array.concat(array.slice(openclaw_operations_fixture.jobs.legacy.steps, 0, 5), [object.union(openclaw_operations_fixture.jobs.legacy.steps[5], {"if": "true"}), openclaw_operations_fixture.jobs.legacy.steps[6], openclaw_operations_fixture.jobs.legacy.steps[7]])})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"steps": array.concat(array.slice(openclaw_operations_fixture.jobs.legacy.steps, 0, 6), [object.union(openclaw_operations_fixture.jobs.legacy.steps[6], {"if": "true"}), openclaw_operations_fixture.jobs.legacy.steps[7]])})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "single"}})})}),
 	] {
 		violations := deny with input as candidate
@@ -299,8 +329,8 @@ test_rejects_changed_openclaw_legacy_operation if {
 test_rejects_short_openclaw_legacy_session if {
 	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "read", "id-token": "write"})
 	legacy := candidate.jobs.legacy
-	short_credentials := object.union(legacy.steps[5], {"with": {"role-duration-seconds": 3600}})
-	short_job := object.union(legacy, {"steps": [legacy.steps[0], legacy.steps[1], legacy.steps[2], legacy.steps[3], legacy.steps[4], short_credentials, legacy.steps[6]]})
+	short_credentials := object.union(legacy.steps[6], {"with": {"role-duration-seconds": 3600}})
+	short_job := object.union(legacy, {"steps": [legacy.steps[0], legacy.steps[1], legacy.steps[2], legacy.steps[3], legacy.steps[4], legacy.steps[5], short_credentials, legacy.steps[7]]})
 	short_workflow := object.union(candidate, {"jobs": object.union(candidate.jobs, {"legacy": short_job})})
 	violations := deny with input as short_workflow
 	some msg in violations
@@ -351,7 +381,7 @@ test_rejects_changed_openclaw_installation_binding if {
 test_allows_fixed_openclaw_phase_tail if {
 	private_live_tail(`then
 phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
-case "$phase" in preflight|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore)
+case "$phase" in preflight|network-nix-entry|network-kubeconfig|network-kubectl-version|network-source|network-current-main|network-stopped-reader|network-namespace|network-postcheck|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore|cache-build|cache-publication|cache-transfer)
   echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
 *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
 esac
@@ -377,9 +407,24 @@ if [[ "$RUN_STAGE" == resume-restore ]]; then
   export PRIOR_RUN_ID=39988927652
 fi
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'
+if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-nix-entry >"$OPENCLAW_PHASE_FILE"
+fi
+if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubeconfig >"$OPENCLAW_PHASE_FILE"
+fi
+if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubectl-version >"$OPENCLAW_PHASE_FILE"
+fi
+if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
+fi
+sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
+sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'
+sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
@@ -389,13 +434,13 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore"], "default": "none"},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight", "publish-discord-cache", "transfer-discord-cache"], "default": "none"},
 		"enterprise_stage": {"options": ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
-		"baseline_ref": {}, "archive_ref": {},
+		"baseline_ref": {}, "archive_ref": {}, "cache_ref": {},
 	}}},
 	"jobs": {
 	"static-policy": {"permissions": {"contents": "read"}, "steps": [
-		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}"}, "run": openclaw_dispatch_guard},
+		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}, "run": openclaw_dispatch_guard},
 		{"name": "Check Out Repository"},
 		{"name": "Install Nix"},
 		{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
@@ -413,10 +458,11 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
 			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
 			{"name": "Verify Prior Restore Run", "env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_resume_provenance_run},
-			{"name": "Verify Protected Inputs"},
-			{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
+			{"name": "Verify Protected Inputs", "env": {"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": `test -n "$OCTELIUM_AUTH_TOKEN"`},
+			{"name": "Verify AWS Role Input", "if": "inputs.legacy_stage != 'network-preflight'", "env": {"AWS_APPLY_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}"}, "run": `test -n "$AWS_APPLY_ROLE_ARN"`},
+			{"name": "Configure AWS Credentials", "if": "inputs.legacy_stage != 'network-preflight'", "with": {"role-duration-seconds": 25200}}, {
 			"name": "Run Legacy Stage",
-				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"},
 			"run": run,
 		}],
 		},
@@ -500,10 +546,22 @@ test_allows_digest_pinned_workflow_images if {
 }
 
 test_rejects_generic_pull_request_target_workflow if {
-	workflow := object.union(workflow_with_live_run("echo safe"), {"on": "pull_request_target"})
-	violations := deny with input as workflow
-	some msg in violations
-	contains(msg, "must not use pull_request_target")
+	every events in ["pull_request_target", ["push", "pull_request_target"], {"pull_request_target": null}, {"pull_request_target": false}, {"pull_request_target": {"branches": ["main"]}}] {
+		every key in ["on", "true", true] {
+			workflow := object.union(object.remove(workflow_with_live_run("echo safe"), {"on", "true", true}), {key: events})
+			violations := deny with input as workflow
+			some msg in violations
+			contains(msg, "must not use pull_request_target")
+		}
+	}
+}
+
+test_allows_safe_pull_request_event_forms if {
+	every events in ["pull_request", ["push", "pull_request"], {"pull_request": null}, {"pull_request": {"branches": ["main"]}}] {
+		workflow := object.union(workflow_with_live_run("echo safe"), {"on": events})
+		violations := deny with input as workflow
+		count(violations) == 0
+	}
 }
 
 test_allows_exact_native_receipt_provenance_workflow if {
@@ -538,6 +596,40 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	violations := deny with input as workflow
 	some msg in violations
 	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_changed_verification_base if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": replace(base.jobs.verify.steps[1].run,
+			`verification_base_sha="$base_sha"`, `verification_base_sha="untrusted"`)}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_without_merged_event_identity_or_premerge_base if {
+	base := native_receipt_provenance_fixture
+	approved_run := base.jobs.verify.steps[1].run
+	every unsafe_run in [
+		replace(approved_run, `verification_base_sha="$(python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py event-base \
+    --event-file "$GITHUB_EVENT_PATH" --base-sha "$base_sha" --token-file "$token_file")"`, `verification_base_sha="$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"`),
+		replace(approved_run, "--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"", "--base-sha \"$base_sha\" --head-sha \"$head_sha\""),
+	] {
+		unsafe_run != approved_run
+		steps := [
+			base.jobs.verify.steps[0],
+			object.union(base.jobs.verify.steps[1], {"run": unsafe_run}),
+		]
+		workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "must not use pull_request_target")
+	}
 }
 
 test_rejects_native_receipt_provenance_with_extra_step if {
@@ -832,6 +924,8 @@ test_allows_visible_terragrunt_plan if {
 
 test_rejects_changed_visible_terragrunt_plan if {
 	every changed in [
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `kubectl get pods -A -o json`),
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF" || true`),
 		replace(visible_terragrunt_plan_run, `bash scripts/ci/terragrunt-plan.sh`, `bash scripts/ci/terragrunt-apply.sh`),
 		concat("\n", [visible_terragrunt_plan_run, `cat "$azuread_report"`]),
 		replace(visible_terragrunt_plan_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `echo "$azuread_report"`),
@@ -871,20 +965,8 @@ test_rejects_modified_azuread_plan_stage_classifier if {
 	}
 }
 
-test_allows_exact_apply_stage_classifier if {
-	violations := deny with input as workflow_with_live_run(classified_apply_run)
-	count(violations) == 0
-}
-
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_unverified_apply_stage_classifier if {
-	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -931,50 +1013,25 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
-test_rejects_modified_apply_stage_guard if {
-	every replacement in [
-		replace(apply_stage_guard, "a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865", "0000000000000000000000000000000000000000000000000000000000000000"),
-		replace(apply_stage_guard, "sha256sum --check --status", "true"),
-		replace(apply_stage_guard, "sha256sum", "shasum"),
-		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
-		replace(apply_stage_guard, " --check", ""),
-		replace(apply_stage_guard, " --status", ""),
-		replace(apply_stage_guard, "stage.sh", "other.sh"),
-		replace(apply_stage_guard, " 2>/dev/null", ""),
-		replace(apply_stage_guard, "; then", " || true; then"),
-		sprintf("%s\n  echo extra", [apply_stage_guard]),
-	] {
-		run := replace(classified_apply_run, apply_stage_guard, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
+test_quiet_deploy_commands_must_withhold_both_streams_and_propagate_failure if {
+	count(quiet_deploy_runs) == 3
+	every run in quiet_deploy_runs {
+		private_live_output(run)
+		every unsafe in [
+			replace(run, " >/dev/null", ""),
+			replace(run, " 2>&1", ""),
+			sprintf("%s || true", [run]),
+		] {
+			violations := deny with input as workflow_with_live_run(unsafe)
+			some msg in violations
+			contains(msg, "withhold sensitive command output")
+		}
 	}
 }
 
-test_rejects_modified_apply_stage_classifier if {
-	every replacement in [
-		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/other.sh <"$private_log"`,
-		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
-		`cat "$private_log"`,
-		`echo "$private_log details withheld"`,
-		`echo "$line details withheld"`,
-		sprintf("%s\n  echo extra", [apply_stage_call]),
-	] {
-		run := replace(classified_apply_run, apply_stage_call, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
-	}
-}
-
+# The actual migrated workflow is covered by the YAML policy mutation fixture.
 test_allows_exact_harbor_mirror_status if {
-	violations := deny with input as workflow_with_live_run(harbor_mirror_private_run)
-	count(violations) == 0
+	private_live_output(harbor_mirror_private_run)
 }
 
 test_rejects_modified_harbor_mirror_status if {
@@ -986,12 +1043,16 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "72f431c67abab37e7c47c4e949d65bd602b3e3b768addeea143584e2e5034ae3", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-litellm", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-prometheus", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-uptime-kuma", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-adguard", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-cilium", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-image-updater-canary", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),
@@ -1136,12 +1197,6 @@ echo "success details withheld"`
 
 classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
 
-apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
-
-apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-
-classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
-
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
@@ -1214,9 +1269,7 @@ workflow_with_catalog_credential_on_different_step := {
 test_encrypted_harbor_artifact_exception_is_exact if {
 	base := workflow_with_live_run(harbor_mirror_private_run)
 	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [harbor_encrypted_diagnostic_step])})
-	workflow := object.union(base, {"jobs": {"mirror": job}})
-	violations := deny with input as workflow
-	count(violations) == 0
+	encrypted_harbor_diagnostic("mirror", job, harbor_encrypted_diagnostic_step)
 	every changed in [
 		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
 		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"retention-days": 2})}),

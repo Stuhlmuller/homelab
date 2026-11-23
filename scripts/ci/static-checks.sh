@@ -5,6 +5,20 @@ set -euo pipefail
 if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
   export TF_REGISTRY_CLIENT_TIMEOUT=60
 fi
+
+# Cache plumbing only: cover Terragrunt invoked by this shell and child fixtures.
+static_download_dir="$(mktemp -d /tmp/homelab-static-terragrunt.XXXXXX)"
+readonly static_download_dir
+cleanup_static_downloads() {
+  [[ ! -d "$static_download_dir" ]] || rm -rf -- "$static_download_dir"
+}
+trap cleanup_static_downloads EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+export TG_DOWNLOAD_DIR="$static_download_dir"
+
+# Kuma offline contracts are included by nix-checks.sh via offline-checks.sh.
+# Pinned Docker behavior fixtures are documented in the workload runbook.
 case "${1:-}" in
   "") bash scripts/ci/nix-checks.sh ;;
   --offline-verified) [[ $# == 1 ]] ;;
@@ -14,6 +28,8 @@ python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+python3 -I scripts/ci/openclaw-legacy-netns-preflight-test.py
+python3 -I scripts/ci/openclaw-discord-cache-publication-test.py
 python3 -I scripts/ci/openclaw-enterprise-resume-test.py
 python3 -I scripts/ci/openclaw-enterprise-journal-operator-test.py
 python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
@@ -28,6 +44,7 @@ python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
+python3 -I scripts/ci/cordium-genesis-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
 node --test scripts/ci/renovate-cache-corruption-drill-test.mjs
@@ -47,6 +64,9 @@ node --test scripts/ci/renovate-acceptance-source-review-test.js
 python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
 python3 -I scripts/ci/renovate-acceptance-final-report-test.py
 python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
+python3 -I scripts/ci/codex-cloud-signer-test.py
+python3 -I scripts/ci/codex-cloud-signer-manifest-test.py
+python3 -I scripts/ci/tailnet-dns-chart-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
@@ -69,6 +89,12 @@ python3 -I scripts/ci/envoy-gateway-registration-test.py
 python3 -I scripts/ci/network-policy-registration-test.py
 
 echo "::group::Operator OpenTofu validation"
+(
+  cd IaC/homelab/us-west-2/operator/tailscale-access
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:TokenIssueTime"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:ViaAWSService"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
@@ -180,8 +206,15 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
   )
 done
 python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
-python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
+echo "::endgroup::"
+
+echo "::group::LiteLLM Bedrock IAM policy"
+(
+  cd IaC/homelab/us-west-2/operator/litellm-bedrock
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
 echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"
@@ -242,6 +275,23 @@ echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
 echo "::endgroup::"
 
+echo "::group::LiteLLM runtime hardening"
+python3 -I scripts/ci/litellm-runtime-hardening-check.py
+python3 -I scripts/ci/multica-project-boundary-test.py --chart
+echo "::endgroup::"
+
+echo "::group::Descheduler cadence"
+bash scripts/ci/descheduler-cadence-check.sh
+python3 -I scripts/ci/octelium-kubernetes-policy-check.py
+echo "::endgroup::"
+
+echo "::group::n8n inactive maintenance fence"
+python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
+bash scripts/ci/n8n-maintenance-fence-check.sh
+python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+echo "::endgroup::"
+
 echo "::group::Secret scan"
 bash scripts/ci/secret-scan.sh --self-check
 bash scripts/ci/secret-scan.sh
@@ -253,35 +303,10 @@ if command -v checkov >/dev/null 2>&1; then
     checkov_output="$(mktemp "${TMPDIR:-/tmp}/homelab-checkov.XXXXXX")"
     trap 'rm -f "$checkov_output"' EXIT
 
-    # These four exact findings are public PVC/Secret names in the pinned
-    # OpenClaw profile and a generated NetworkPolicy name paired with its
-    # reviewed spec hash. Reject any wider secrets-scan baseline or changed
-    # finding fingerprint.
-    jq -e '.failed_checks == [
-      {"file":"/clusters/homelab/apps/openclaw-enterprise/installation.yaml","findings":[
-        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
-      ]},
-      {"file":"/clusters/homelab/apps/openclaw-enterprise/profile-input.json","findings":[
-        {"resource":"4c854688a8888c241dae89b2c0036f1014dd193b","check_ids":["CKV_SECRET_6"]},
-        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
-      ]},
-      {"file":"/docs/evidence/openclaw-enterprise-policy-review.json","findings":[
-        {"resource":"900d958341a77ac728b81edab1190560c72fd655","check_ids":["CKV_SECRET_6"]}
-      ]}
-    ]' .checkov.baseline >/dev/null || {
-      echo "Checkov secrets baseline differs from the four reviewed public names." >&2
-      exit 1
-    }
-
     run_checkov() {
       local framework="$1"
       local directory="$2"
-      local -a extra_args=()
-      if [[ "$framework" == secrets ]]; then
-        extra_args+=(--baseline .checkov.baseline)
-      fi
-
-      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" "${extra_args[@]}" >"$checkov_output" 2>&1; then
+      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" >"$checkov_output" 2>&1; then
         echo "Checkov ${framework} scan failed; detailed output was withheld to prevent publishing a detected secret." >&2
         return 1
       fi
@@ -289,7 +314,14 @@ if command -v checkov >/dev/null 2>&1; then
 
     run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
-    run_checkov secrets .
+    # Reuse hook selection with the installed reviewed scanner, without fetching hook environments.
+    checkov_hook_config="$static_download_dir/checkov-pre-commit.json"
+    yq -o=json '.repos = [{"repo": "local", "hooks": [.repos[].hooks[] |
+      select(.id == "checkov_secrets") |
+      . * {"name": "Checkov Secrets", "language": "system", "args": ["-f"], "require_serial": true}]}]' \
+      .pre-commit-config.yaml >"$checkov_hook_config"
+    env -u PYTHONPATH -u PYTHONHOME PRE_COMMIT_HOME="$static_download_dir/pre-commit" \
+      pre-commit run checkov_secrets --all-files --config "$checkov_hook_config"
   )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2
@@ -299,6 +331,6 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::Whitespace"
-git diff --check
-echo "::endgroup::"
+if [[ "${GITHUB_ACTIONS:-}" != true ]]; then
+  git diff --check HEAD
+fi

@@ -7,15 +7,11 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location('application_backup', Path(__file__).resolve().parents[1] / 'application-backup.py')
 APP = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(APP)
-SPEC = importlib.util.spec_from_file_location('application_backup_runner', Path(__file__).resolve().parents[1] / 'application-backup-run.py')
-RUNNER = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(RUNNER)
 
 
 class FakeAWS:
@@ -179,24 +175,32 @@ class PublicationTests(unittest.TestCase):
                     self.prepare()
 
     def test_paired_sets_require_matching_capture_fence(self):
-        self.make_source('multica')
-        with self.assertRaises(ValueError):
-            self.prepare('multica')
-        capture = {'captured_at': self.source.name, 'writers_fenced': True,
-                   'approved_fence_reference': 'fixture-only-fence'}
-        for fenced in (False, True):
-            capture['writers_fenced'] = fenced
-            (self.source / 'capture.json').write_text(json.dumps(capture))
-            (self.source / 'SHA256SUMS').write_text(''.join(
-                f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
-                for name in APP.CONTRACTS['multica']))
-            if not fenced:
-                with self.assertRaises(ValueError):
-                    self.prepare('multica')
-            else:
-                prepared = self.prepare('multica')
+        for app in ('multica', 'dispatcharr'):
+            self.make_source(app)
+            with self.assertRaises(ValueError):
+                self.prepare(app)
+            capture = {'captured_at': self.source.name, 'writers_fenced': True,
+                       'approved_fence_reference': 'fixture-only-fence'}
+            for fenced in (False, True):
+                capture['writers_fenced'] = fenced
+                (self.source / 'capture.json').write_text(json.dumps(capture))
+                (self.source / 'SHA256SUMS').write_text(''.join(
+                    f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
+                    for name in APP.CONTRACTS[app]))
+                if not fenced:
+                    with self.assertRaises(ValueError):
+                        self.prepare(app)
+                    continue
+                prepared = self.prepare(app)
                 APP.publish(prepared, self.workspace, self.aws)
-                self.assertEqual(len(self.aws.objects), 5)
+                restored = APP.retrieve(app, prepared.name, self.workspace, self.aws)
+                self.assertEqual(set(APP.CONTRACTS[app]), set(json.loads(
+                    (restored / 'complete.json').read_text())['objects']))
+                self.assertFalse(json.loads((restored / 'retrieval.json').read_text())['application_restore_tested'])
+            if app == 'dispatcharr':
+                (self.source / 'data.tar').unlink()
+                with self.assertRaises(OSError):
+                    self.prepare(app)
 
     def test_all_six_media_databases_required(self):
         self.make_source('media-postgres')
@@ -237,36 +241,6 @@ class PublicationTests(unittest.TestCase):
         self.assertIn('check_success{app="octelium"} 0', output.read_text())
         self.assertEqual(output.stat().st_mode & 0o777, 0o600)
         self.assertEqual(list(self.root.glob('.application.prom-*')), [])
-
-    def test_hourly_runner_publishes_both_apps_and_continues_after_failure(self):
-        media_root = self.root / 'media-source'
-        media_source = media_root / self.source.name
-        media_source.mkdir(parents=True)
-        with patch.object(self, 'source', media_source):
-            self.make_source('media-postgres')
-        metrics = self.root / 'metrics'
-        metrics.mkdir()
-        config = self.root / 'recovery/application-backups/schedule.json'
-        config.parent.mkdir(parents=True)
-        config.write_text(json.dumps({
-            'workspace': str(self.workspace), 'metrics_directory': str(metrics),
-            'aws_cli': '/fixture/aws', 'profile': 'fixture',
-            'source_roots': {'octelium': str(self.root), 'media-postgres': str(media_root)},
-        }))
-        for app in APP.CONTRACTS:
-            (self.workspace / app).mkdir(mode=0o700)
-        with (patch.object(RUNNER, 'ROOT', self.root), patch.object(RUNNER, 'APP', APP),
-              patch.object(RUNNER.shutil, 'disk_usage', return_value=SimpleNamespace(free=25 * 1024**3)),
-              patch.object(APP.OFFSITE, 'AWS', return_value=self.aws)):
-            for fail_key in (None, '/octelium.dump'):
-                with self.subTest(fail_key=fail_key):
-                    self.aws.fail_key = fail_key
-                    self.assertEqual(RUNNER.main(), int(fail_key is not None))
-                    self.assertIn('check_success{app="media-postgres"} 1',
-                                  (metrics / 'media-postgres.prom').read_text())
-                    self.assertIn(f'check_success{{app="octelium"}} {int(fail_key is None)}',
-                                  (metrics / 'octelium.prom').read_text())
-        self.assertEqual(len(self.aws.objects), 11)
 
 
 if __name__ == '__main__':

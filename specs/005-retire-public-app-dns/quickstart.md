@@ -16,7 +16,7 @@ From the repository root:
 bash -n scripts/tailscale-private-dns.sh
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
-python3 -I scripts/ci/tailnet-dns-test.py --initial-migration
+python3 -I scripts/ci/tailnet-dns-test.py
 nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 ```
 
@@ -36,13 +36,16 @@ DNS and Traefik Applications Synced/Healthy and observe the DNS Service IP:
 kubectl -n argocd get application tailnet-dns traefik
 kubectl -n tailnet-dns get deployment,service,pod
 kubectl -n tailnet-dns get service tailnet-dns -o json
-python3 -I scripts/tailnet-dns-check.py --server DNS_TAILNET_IPV4
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +notcp +ignore +time=3 +tries=1
+dig @"<DNS_TAILNET_IP>" stinkyboi.com A +tcp +time=3 +tries=1
 python3 -I scripts/tailscale-private-dns-check.py --retire-private --check
 ```
 
-Replace `DNS_TAILNET_IPV4` with the observed Service tailnet IPv4. The direct
-checker verifies the signed proxy and all 29 current approved answers over UDP/TCP;
-the retirement route check verifies current Traefik Service addresses and the
+Replace `<DNS_TAILNET_IP>` with the observed Service tailnet IPv4. Repeat direct
+queries for all current approved A/AAAA names over UDP/TCP and verify the online
+proxy identity using the complete
+[direct resolver verification](../../docs/networking-tailnet-ingress.md#direct-resolver-verification)
+procedure. The retirement route check verifies current Traefik Service addresses and the
 original 27 HTTPS paths. Bare `--check` also probes the two staged Enterprise
 backends; their readiness is a separate rollout gate.
 It accepts a backend error for an intentionally stopped app only when reviewed
@@ -50,7 +53,7 @@ source and the live Deployment both declare zero replicas.
 Confirm the owner's restricted `stinkyboi.com` nameserver is active, then test
 all 29 names through an ordinary client's OS DNS path, including a concrete
 Cordium wildcard child. Record Fleet setup denial and an off-LAN iPhone MDM
-check-in through the [one-shot Fleet verifier](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+check-in through the [one-shot Fleet verifier](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 Also record fresh Harbor node pulls, native API, Cordium reconnect, and public callback results
 using the [ingress runbook](../../clusters/homelab/apps/traefik/CUTOVER.md).
 For the callback gate, retire the unused Codex Review Helper hook through the
@@ -104,7 +107,7 @@ execution. It also requires the selected Cloudflare API zone's nameservers to
 match the parent delegation and aborts if a TTL reply fails or is not
 authoritative. Preserve conflicting records pending a separate reviewed scope.
 
-## Preview and execute
+## Read-only preparation
 
 After the helper change is merged to `main`, from a clean checkout of that
 reviewed commit:
@@ -124,22 +127,10 @@ Other owners and non-address records at selected owners remain untouched. A
 wrong owner returned for an exact-name query or a changed target baseline
 blocks execution. A previous 27-name evidence file is invalid.
 
-Run the write only when every contract gate passes:
-
-```sh
-scripts/tailscale-private-dns.sh --retire-private --execute \
-  --expected-sha REVIEWED_MAIN_SHA \
-  --evidence ~/.local/state/homelab/app-subdomain-retirement.json
-```
-
-Replace `REVIEWED_MAIN_SHA` with `git rev-parse HEAD` from that exact merged
-`main` checkout. Execution rechecks live records, the wildcard/CNAME/NS guard,
-signed private DNS, normal client lookups, and HTTPS before any DELETE. It
-re-reads full record fields after the zone scan immediately before deletion. A
-wrong-owner response, changed target baseline, or failed preflight stops the
-write. If a partial run fails,
-investigate it and retry through the same helper and evidence; never patch
-Cloudflare by hand.
+The current retirement execution path cannot complete its required private-DNS
+validation. This guide offers read-only preparation, route checks and current-state
+verification only. Do not substitute a dry run, stored receipt or successful
+direct query for that executable validation, or use an ad hoc write path.
 
 ## Verify and recover
 
@@ -155,9 +146,9 @@ Cloudflare delegation, ExternalSecret, ClusterIssuer, and both Certificate
 checks above; compare the DNS-01 solver and secret references with reviewed
 source.
 
-If private DNS fails, run `scripts/tailnet-dns-check.py` again, inspect Argo,
-resolver Pods, Service status, and the signed proxy, then restore the failed
-repository declaration through Terragrunt/Argo or re-sign the fixed proxy.
+If private DNS fails, repeat direct UDP/TCP queries and inspect Argo,
+resolver Pods, Service status, and the proxy, then restore the failed
+repository declaration through Terragrunt/Argo.
 Retired subdomains must not receive public app addresses during a controlled
 resolver outage check. The apex intentionally retains a public address
 answer; its outage behavior is outside that guarantee. Do not republish retired app

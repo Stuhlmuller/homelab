@@ -4,30 +4,74 @@ title: "AI observability"
 description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attribution, and per-caller telemetry acceptance gates."
 tags: ["homelab", "navigation"]
 sources:
-  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+  - id: openwiki-source-869eecdfa0764960d85fe017
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-cce2f8f33e3b3639655d2b33
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
-    resource: repo://scripts/ci/n8n-ai-migration-check.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+    resource: repo://scripts/ci/n8n-runtime-check.py
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # AI observability
 
 Langfuse is the operator UI for prompts, outputs, errors and token usage.
-LiteLLM is the sole in-cluster inference gateway: it accepts only
-`openrouter/free`, authenticates named callers with dedicated keys and emits
-trusted application attribution to Langfuse. The provider credential is mounted
-only by LiteLLM from `/homelab/litellm/openai-api-key`; it is an OpenRouter
-credential despite the legacy SSM parameter name.
+LiteLLM is the in-cluster inference gateway. It authenticates named callers
+with dedicated keys scoped to `openrouter/free` and emits trusted application
+attribution to Langfuse. Gateway administrators can also use the Bedrock
+chat routes below. LiteLLM signs those requests with a mounted AWS
+credentials profile. Its OpenRouter
+credential originates from the legacy `/homelab/litellm/openai-api-key`.
 
 The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
-by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/README.md).
+by callers. See the [gateway contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
+
+## Bedrock chat
+
+| LiteLLM model | Amazon Bedrock model or US inference profile |
+| --- | --- |
+| `bedrock/claude-sonnet-4-5` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `bedrock/nova-lite` | `us.amazon.nova-lite-v1:0` |
+| `bedrock/gpt-6.2-sol` | `us.openai.gpt-6.2-sol` |
+| `bedrock/deepseek-v3.2` | `deepseek.v3.2` |
+
+Use `/v1/chat/completions` with an authenticated gateway administrator.
+All routes use Converse through `us-west-2`. US inference profiles process
+requests within the US. DeepSeek V3.2 runs directly in Oregon.
+The gateway enforces the administrator requirement even if a virtual key
+has a broad model allowlist.
+
+The [operator runbook](../../docs/operator-infrastructure.md#litellm-bedrock)
+covers provisioning. Check the `ai/litellm-bedrock` ExternalSecret Ready
+condition before testing the routes. Missing Bedrock credentials leave
+OpenRouter available. After credential rotation and ExternalSecret refresh,
+roll the gateway through GitOps to clear its cached AWS credentials.
+
+## Gateway capacity and protected rollout check
+
+The staged LiteLLM values reserve 1 GiB and constrain the gateway to Acer,
+following memory pressure during overlapping unreserved Pods on the smallest
+worker. RollingUpdate and native PostgreSQL remain unchanged. The protected
+capacity check requires fresh requested and actual memory evidence for sustainable
+surge capacity; the first replacement fitting does not prove future rollouts.
+The November 2 snapshot was short by at least 241.3 MiB of reservations for
+two reserved gateway Pods. This is not a failure-capacity acceptance receipt.
+See the [capacity preflight and recovery separation](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#gateway-memory-reservation-and-executable-rollout-gate).
+Coordinate PR #1656's separate PostgreSQL/Cordium capacity assumptions. Existing
+worker recovery and #775/#793/#785 remain separate, open gates. Budget the
+full inventory of unsuspended Acer-eligible CronJobs, including unpinned
+backups: currently 960 MiB conservatively when all are absent, counting each
+active owned Job only once. Reduce that budget only with verified duration and
+overlap evidence. The hourly Renovate Job's 512 MiB completion produced a
+transient gap, not permanent capacity; its budget alone is insufficient.
+Fresh observed Dispatcharr Celery
+usage exceeds PR #1656's proposed lower request, invalidating that old saving.
+Incomplete startup/recovery evidence and telemetry gaps keep smaller reduction
+candidates unverified; do not change reservations from an instantaneous sample.
 
 ## Caller inventory
 
@@ -41,7 +85,7 @@ so restarts do not undo UI revocations. It uses database authentication, preserv
 inference-only/free-model restrictions and Langfuse attribution. Still prove UI
 listing plus revocation enforcement. Copying rows into the UI while retaining
 file-based authentication is not completion. See the
-[gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+[gateway runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md).
 
 October 10 security gate: the pinned LiteLLM 1.80.8 is within the affected
 range (`<1.84.0`) of
@@ -110,7 +154,8 @@ defaults match the External Secrets API to prevent persistent Argo drift.
 | OpenClaw | `/homelab/openclaw/litellm-app-token` | Routed to `openrouter/free`; Codex subscription runtime removed. |
 | Multica | `/homelab/multica/litellm-token` | OpenCode uses the internal gateway; Codex runtime removed. |
 | NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
-| n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. The idempotent CLI migration keeps its credential and target-workflow exports as n8n's one-element arrays, then replaces the exact Bedrock node with `openrouter/free`. The gateway key never enters workflow JSON. |
+| kagent | `/homelab/kagent/litellm-token` | The private assistant calls `openrouter/free` with its own inference-only key. |
+| n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. One-time workflow conversion overlays have been removed. The gateway key never enters workflow JSON. |
 
 AFFiNE has no active AI workload. Cordium
 may host user workloads and remains outside this cluster-owned routing contract.
@@ -133,7 +178,7 @@ tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
 The authorized capture stage stops web/worker/Valkey through GitOps and mounts
 the queue read-only in a credential-free inspector. The helper verifies all
 writers exited before capture to private off-NAS storage. No live replacement
-path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+path is activated; see the [recovery runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 [PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
 `fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
@@ -160,7 +205,7 @@ removed the inspector first, with writers still stopped. Argo observed merged
 its PVC. This separate reviewed revision restores writers. Runtime loading
 and fresh ingestion remain unverified until live checks pass.
 LiteLLM's later native-key rollout is now recorded in its
-[owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
+[owning runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
 Native-key cutover inspection confirmed all four mounted caller credentials
 already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
@@ -262,17 +307,14 @@ The n8n read-only CLI export hung and was terminated. A subsequent read-only
 database inventory of all ten workflows confirmed the active model node uses
 `openrouter/free` and `litellm-managed`. It also found two inactive workflows
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
-The prepared init migration now covers these three exact workflow/node IDs.
-It lists workflow IDs and skips only a missing workflow, a validated workflow
-whose target node was removed, or a target whose model/settings no longer match
-the inventoried state; other targets continue. A failed ID listing, failed
-export of a present workflow, invalid export or node shape, duplicate target
-node, or JSON/write error stops startup instead of silently skipping a target.
-Matching workflows migrate to `openrouter/free`, and only previously active
-workflows are republished. The migration check exercises the complete init shell
-with absent and edited workflows, removed target nodes, list/export failures,
-malformed JSON, write failures, and the node transformation. This awaits
-deployment; inactive workflows must remain inactive afterward.
+A newer read-only PostgreSQL inventory on 2026-10-24 found all three exact
+target nodes using `openrouter/free` and `litellm-managed`; the same one active
+and two inactive flags remain. The Deployment has no workflow rewrite init
+container. The excluded one-time AI and GitHub Trigger conversion overlays
+have been removed, so GitOps syncs do not edit workflow data. The
+[runtime check](../../scripts/ci/n8n-runtime-check.py) preserves startup and
+LiteLLM authorization coverage. Future conversions must use a fresh workflow
+inventory and the [paired recovery procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence).
 The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
@@ -383,3 +425,22 @@ reported by `v4-legacy-api-usage-job`. Ingestion eventually completed, so this
 does not establish the cause of its delay. Diagnose the worker termination and
 ClickHouse part integrity before proposing repository-owned recovery; do not
 delete data or restart workloads manually. No repair was performed.
+
+### LiteLLM rollout capacity check
+
+The protected PR plan runs
+[`litellm-release-check.py`](../../scripts/ci/litellm-release-check.py) for gateway
+runtime or check changes. It requires fresh target health, complete Pod/Job/CronJob
+inventories and scheduler room for the serving Pod's actual effective request
+plus the new Pod's 1 GiB request and all eligible recurring reservations.
+RollingUpdate keeps the old revision's resources: the first unreserved-to-1-GiB
+transition needs 1 GiB; future 1-GiB-to-1-GiB rollouts need 2 GiB. Existing active
+Job requests are counted once; terminating Pods, init sidecars and overhead
+retain their cost. Unknown scheduling, resize or parallel recurring behavior
+fails closed. A fresh kubelet Summary must still show a 2 GiB gateway envelope
+plus absent recurring demand, crediting only the exact serving Pod's existing
+working set (at most 1 GiB). This sampled physical margin is not a hard memory
+bound; neither gateway revision has a memory limit. The check uses existing CI
+access and withholds private metrics; a denied read fails `Terragrunt Gate`.
+It does not prove N-1 capacity, recover a worker or activate an extra approval
+step.

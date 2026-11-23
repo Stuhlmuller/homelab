@@ -1,56 +1,3 @@
-terraform {
-  required_version = ">= 1.10.0"
-
-  required_providers {
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "3.9.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.9.0"
-    }
-  }
-
-  encryption {
-    key_provider "aws_kms" "main" {
-      kms_key_id = var.kms_key_id
-      key_spec   = var.kms_key_spec
-      region     = var.kms_region
-    }
-
-    method "aes_gcm" "main" {
-      keys = key_provider.aws_kms.main
-    }
-
-    state {
-      method   = method.aes_gcm.main
-      enforced = true
-    }
-
-    plan {
-      method   = method.aes_gcm.main
-      enforced = true
-    }
-  }
-}
-
-variable "kms_key_id" {
-  description = "Existing AWS KMS key for OpenTofu state and plan encryption."
-  type        = string
-}
-
-variable "kms_region" {
-  description = "Region of the existing OpenTofu state encryption key."
-  type        = string
-}
-
-variable "kms_key_spec" {
-  description = "OpenTofu state encryption key specification."
-  type        = string
-  default     = "AES_256"
-}
-
 data "azuread_domains" "tenant" {
   include_unverified = true
 }
@@ -120,16 +67,4 @@ resource "azuread_directory_role_assignment" "global_administrator" {
       error_message = "The emergency Global Administrator must remain a cloud-only .onmicrosoft.com account."
     }
   }
-}
-
-output "user_principal_name" {
-  description = "Private sign-in name for the emergency administrator."
-  value       = azuread_user.this.user_principal_name
-  sensitive   = true
-}
-
-output "initial_password" {
-  description = "One-time bootstrap password; privately hand off and replace at first sign-in."
-  value       = random_password.initial.result
-  sensitive   = true
 }

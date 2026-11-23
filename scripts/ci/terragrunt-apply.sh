@@ -4,6 +4,7 @@ umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(pwd)"
+# shellcheck source=scripts/ci/terragrunt-filter-base.sh
 source "${script_dir}/terragrunt-filter-base.sh"
 
 cleanup_dirs=()
@@ -38,16 +39,30 @@ verify_current_main_commit() {
   bash "${script_dir}/terragrunt-current-main.sh"
 }
 
+exclude_other_affected_units() {
+  local selected="$1"
+  local unit
+
+  exclusions=()
+  while IFS= read -r unit; do
+    [[ "$unit" == "$selected" ]] || exclusions+=(--filter "!./$unit")
+  done <<<"$affected_units"
+}
+
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
-  local snapshot_dir
-  local unit_dir
-  local snapshot_unit_dir
-  local state_list_file
+  local deleted_unit_paths
+  local unit_dir source_dir plan_dir plan_file json_file index
+  local -a exclusions
+  local source_dirs=() plan_dirs=()
 
+  if ! deleted_unit_paths="$(terragrunt_deleted_unit_paths)"; then
+    echo "Unable to determine deleted Terragrunt units; refusing to apply." >&2
+    return 1
+  fi
   while IFS= read -r unit_dir; do
-    deleted_units+=("$unit_dir")
-  done < <(terragrunt_deleted_unit_paths)
+    [[ -n "$unit_dir" ]] && deleted_units+=("$unit_dir")
+  done <<<"$deleted_unit_paths"
 
   if ((${#deleted_units[@]} == 0)); then
     echo "No deleted Terragrunt units require destroy handling."
@@ -55,37 +70,42 @@ destroy_deleted_terragrunt_units() {
   fi
 
   for unit_dir in "${deleted_units[@]}"; do
-    snapshot_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-apply.XXXXXX")"
-    cleanup_dirs+=("$snapshot_dir")
-    terragrunt_create_deleted_unit_destroy_stack "$snapshot_dir" "$unit_dir"
-    snapshot_unit_dir="${snapshot_dir}/${unit_dir}"
-    state_list_file="${snapshot_unit_dir}/state-resources.txt"
-
-    if [[ ! -f "${snapshot_unit_dir}/terragrunt.hcl" ]]; then
-      echo "Deleted Terragrunt unit ${unit_dir} fake stack was not generated." >&2
-      exit 1
+    plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-apply.XXXXXX")"
+    cleanup_dirs+=("$plan_dir")
+    source_dir="$(terragrunt_deleted_unit_source "$unit_dir")"
+    if ! terragrunt_unit_affected "$source_dir" "$affected_units"; then
+      echo "Terragrunt did not discover deleted unit ${source_dir}; refusing retirement." >&2
+      return 1
     fi
+    if [[ "$unit_dir" == IaC/live/azuread-applications/* ]] && ! azuread_credentials_available; then
+      echo "AzureAD credentials are required for deleted AzureAD units." >&2
+      return 1
+    fi
+    source_dirs+=("$source_dir")
+    plan_dirs+=("$plan_dir")
+    plan_file="${plan_dir}/binary/@main/${source_dir}/tfplan.tfplan"
+    json_file="${plan_dir}/json/@main/${source_dir}/tfplan.json"
 
     echo "::group::Deleted Terragrunt unit state destroy: ${unit_dir}"
-    (
-      cd "$snapshot_unit_dir"
-      terragrunt --log-disable init -no-color
-      if ! terragrunt --log-disable state list >"$state_list_file"; then
-        echo "Unable to list state for deleted Terragrunt unit ${unit_dir}; inspect the backend or credentials before applying." >&2
-        exit 1
-      fi
-      if [[ -s "$state_list_file" ]]; then
-        echo "Resources in deleted Terragrunt unit state:"
-        cat "$state_list_file"
-        terragrunt plan -destroy -refresh=false -out plan.out -no-color >/dev/null
-        terragrunt --log-disable show -json plan.out >plan.json
-        conftest test --policy "${snapshot_dir}/policy" --output github plan.json
-        verify_current_main_commit
-        terragrunt apply -no-color plan.out
-      else
-        echo "Deleted Terragrunt unit ${unit_dir} has no resources in remote state."
-      fi
-    )
+    exclude_other_affected_units "$source_dir"
+    terragrunt run --all --non-interactive --filter-affected "${exclusions[@]}" --filter-allow-destroy \
+      --out-dir "$plan_dir/binary" --json-out-dir "$plan_dir/json" -- plan -refresh=false -no-color >/dev/null
+    if [[ ! -s "$plan_file" || ! -s "$json_file" ]] ||
+      [[ "$(find "$plan_dir/binary" -type f -name tfplan.tfplan)" != "$plan_file" ||
+         "$(find "$plan_dir/json" -type f -name tfplan.json)" != "$json_file" ]]; then
+      echo "Expected exactly one saved destroy plan for deleted Terragrunt unit ${unit_dir}." >&2
+      return 1
+    fi
+    conftest test --policy "${repo_root}/policy" --output github "$json_file" || return 1
+    echo "::endgroup::"
+  done
+
+  for index in "${!source_dirs[@]}"; do
+    echo "::group::Deleted Terragrunt unit state destroy: ${deleted_units[index]}"
+    verify_current_main_commit
+    exclude_other_affected_units "${source_dirs[index]}"
+    terragrunt run --all --non-interactive --filter-affected "${exclusions[@]}" --filter-allow-destroy \
+      --out-dir "${plan_dirs[index]}/binary" -- apply -no-color
     echo "::endgroup::"
   done
 }
@@ -186,32 +206,41 @@ plan_and_apply_application_backup_storage() {
 }
 
 plan_and_apply_argocd_apps() {
-  local filter
-  local plan_dir
-  local plan_json_files=()
-  local live_apps
-  local app_unit
-  local app
+  local filters=() plan_json_files=()
+  local live_apps=""
+  local plan_dir app_unit app
+
+  if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+    app_unit="$(cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter)"
+    filters+=(--filter "./$app_unit")
+  else
+    while IFS= read -r app_unit; do
+      [[ "$app_unit" == IaC/homelab/us-west-2/apps/*/argocd && -f "$app_unit/terragrunt.hcl" ]] || continue
+      app_unit="${app_unit#IaC/homelab/us-west-2/apps/}"
+      app="${app_unit%/argocd}"
+      if [[ "$existing_argocd_only" == true ]]; then
+        if [[ -z "$live_apps" ]]; then
+          live_apps="$(kubectl -n argocd get applications -o json | jq -r '.items[].metadata.name')"
+          [[ -n "$live_apps" ]] || { echo "No live Argo CD Applications found; refusing existing-only apply." >&2; return 1; }
+        fi
+        if ! grep -Fxq "$app" <<<"$live_apps"; then
+          echo "::notice::Skipping absent Argo CD Application ${app}; use a targeted apply after its gates."
+          continue
+        fi
+      fi
+      filters+=(--filter "./$app_unit")
+    done <<<"$affected_units"
+  fi
+  if ((${#filters[@]} == 0)); then
+    echo "No affected Argo CD Application registration units require apply."
+    return
+  fi
 
   plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-argocd-apps.XXXXXX")"
   cleanup_dirs+=("$plan_dir")
-  filter="$(cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter)"
-  if [[ "$existing_argocd_only" == true ]]; then
-    live_apps="$(kubectl -n argocd get applications -o json | jq -r '.items[].metadata.name')"
-    [[ -n "$live_apps" ]] || { echo "No live Argo CD Applications found; refusing existing-only apply." >&2; return 1; }
-    for app_unit in IaC/homelab/us-west-2/apps/*/argocd/terragrunt.hcl; do
-      app="${app_unit%/argocd/terragrunt.hcl}"
-      app="${app##*/}"
-      if ! grep -Fxq "$app" <<<"$live_apps"; then
-        filter+=" | !${app}/argocd"
-        echo "::notice::Skipping absent Argo CD Application ${app}; use a targeted apply after its gates."
-      fi
-    done
-  fi
-
   (
     cd IaC/homelab/us-west-2/apps
-    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 --source-update \
+    terragrunt run --all "${filters[@]}" --non-interactive --parallelism 1 --source-update \
       --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
   )
 
@@ -225,22 +254,13 @@ plan_and_apply_argocd_apps() {
   fi
 
   conftest test --policy policy --output github "${plan_json_files[@]}"
-  if [[ "$existing_argocd_only" == true ]] &&
-    jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("create"))))' \
-      "${plan_json_files[@]}" >/dev/null; then
-    echo "Existing-only Argo CD apply would create an Application; use a targeted apply after its gates." >&2
-    return 1
-  fi
-  if jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("delete"))))' \
-    "${plan_json_files[@]}" >/dev/null; then
-    echo "Argo CD Application replacement or deletion requires explicit state repair or deleted-unit handling." >&2
-    return 1
-  fi
+  python3 -I scripts/ci/argocd-registration-plan-check.py \
+    --existing-only "$existing_argocd_only" "${plan_json_files[@]}"
 
   (
     cd IaC/homelab/us-west-2/apps
     verify_current_main_commit
-    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
+    terragrunt run --all "${filters[@]}" --non-interactive --parallelism 1 \
       --out-dir "$plan_dir" -- apply -no-color
   )
 }
@@ -278,19 +298,41 @@ repair_argocd_app_state_unit="$(
   cd IaC/homelab/us-west-2/apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "litellm" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" || "${TERRAGRUNT_ARGOCD_APP:-}" == "codex-cloud-signer" || "${TERRAGRUNT_ARGOCD_APP:-}" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter) >/dev/null
   echo "::group::Targeted Argo CD apply prerequisites"
-  kubectl -n argocd get appproject homelab -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
+  target_project=homelab
+  target_namespace="$TERRAGRUNT_ARGOCD_APP"
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" ]]; then
+    target_namespace=ai
+    kubectl get namespace ai -o name >/dev/null
+  fi
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" ]]; then
+    target_namespace=monitoring
+    kubectl get namespace monitoring -o name >/dev/null
+    # Local state is created by the app overlay, but its selected node must
+    # already be schedulable and healthy before any secret/state mutation.
+    kubectl get node acer -o json | jq -e '
+      (.spec.unschedulable != true) and
+      any(.status.conditions[]; .type == "Ready" and .status == "True")
+    ' >/dev/null
+  fi
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "adguard" ]]; then
+    target_project=homelab-workloads
+    target_namespace=automation
+    kubectl get namespace automation -o name >/dev/null
+  fi
+  kubectl -n argocd get appproject "$target_project" -o json | jq -e \
+    --arg app "$TERRAGRUNT_ARGOCD_APP" --arg namespace "$target_namespace" '
     .spec |
     (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
     ($app != "langfuse" or (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null)) and
-    ($app != "traefik" or (.sourceRepos | index("https://bjw-s-labs.github.io/helm-charts") != null)) and
-    any(.destinations[]; .namespace == $app and .server == "https://kubernetes.default.svc") and
-    any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace") and
-    ($app != "mastodon" or (
+    (($app != "traefik" and $app != "uptime-kuma") or (.sourceRepos | index("https://bjw-s-labs.github.io/helm-charts") != null)) and
+    any(.destinations[]; .namespace == $namespace and .server == "https://kubernetes.default.svc") and
+    ($app == "codex-cloud-signer" or $app == "adguard" or any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace")) and
+    (($app != "mastodon" and $app != "uptime-kuma") or (
       any(.clusterResourceWhitelist[]; .group == "" and .kind == "PersistentVolume") and
       any(.clusterResourceWhitelist[]; .group == "storage.k8s.io" and .kind == "StorageClass")
     ))
@@ -298,16 +340,44 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
   prerequisite_apps=(external-secrets cert-manager istio platform-storage)
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
     prerequisite_apps=(cert-manager istio tailscale)
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "adguard" ]]; then
+    prerequisite_apps=(external-secrets tailscale traefik tailnet-dns platform-storage)
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" ]]; then
+    prerequisite_apps=(external-secrets tailscale traefik platform-storage)
   elif [[ "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
     prerequisite_apps+=(octelium-public)
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" ]]; then
+    prerequisite_apps+=(prometheus traefik)
   elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
     prerequisite_apps+=(traefik)
   fi
   kubectl -n argocd get applications "${prerequisite_apps[@]}" -o json | jq -e \
-    --argjson expected "${#prerequisite_apps[@]}" '
+    --argjson expected "${#prerequisite_apps[@]}" --arg target "$TERRAGRUNT_ARGOCD_APP" '
     (.items | length == $expected) and
-    all(.items[]; .status.sync.status == "Synced" and .status.health.status == "Healthy")
+    all(.items[]; .status.sync.status == "Synced" and
+      (if $target == "uptime-kuma" and .metadata.name == "traefik"
+       then true else .status.health.status == "Healthy" end))
   ' >/dev/null
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" ]]; then
+    # Aggregate ingress health includes unrelated consumers. Check the actual
+    # private routing workload and its declared wildcard certificate instead.
+    kubectl -n traefik get deployment traefik -o json | jq -e '
+      (.metadata.generation > 0) and
+      (.status.observedGeneration == .metadata.generation) and
+      (.spec.replicas > 0) and
+      (.status.updatedReplicas == .spec.replicas) and
+      (.status.readyReplicas == .spec.replicas) and
+      (.status.availableReplicas == .spec.replicas)
+    ' >/dev/null
+    kubectl -n traefik get certificate traefik -o json | jq -e '
+      . as $certificate |
+      (.metadata.generation > 0) and
+      (.spec.secretName == "traefik-tls") and
+      ((.spec.dnsNames // []) | index("*.stinkyboi.com") != null) and
+      any(.status.conditions[]?; .type == "Ready" and .status == "True" and
+        .observedGeneration == $certificate.metadata.generation)
+    ' >/dev/null
+  fi
   prerequisite_crds=(
     crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io
     crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io
@@ -318,17 +388,25 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
       crd/authorizationpolicies.security.istio.io
     )
   fi
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "adguard" ]]; then
+    prerequisite_crds=(crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io)
+  fi
   kubectl wait --for=condition=Established --timeout=0s "${prerequisite_crds[@]}"
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
     kubectl wait --for=condition=Ready --timeout=0s clusterissuer/letsencrypt-cloudflare
   else
     kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
-    if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
-      kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
+    if [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" || "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" ]]; then
+      kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$target_namespace" '
         any(.spec.conditions[]?.namespaces[]?; . == $app)
       ' >/dev/null
     fi
-    kubectl get storageclass nfs-default -o name >/dev/null
+    if [[ "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" ]]; then
+      kubectl get storageclass codex-cloud-signer-local -o name >/dev/null
+      kubectl get pv codex-cloud-signer-local -o name >/dev/null
+    else
+      kubectl get storageclass nfs-default -o name >/dev/null
+    fi
   fi
   echo "::endgroup::"
 fi
@@ -356,7 +434,7 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" || "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "codex-cloud-signer" || "$TERRAGRUNT_ARGOCD_APP" == "uptime-kuma" || "${TERRAGRUNT_ARGOCD_APP:-}" == "adguard" || "$TERRAGRUNT_ARGOCD_APP" == "kagent" ]]; then
     plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"
@@ -365,91 +443,113 @@ if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   exit 0
 fi
 
-if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
-  echo "AzureAD credentials are required because IaC/homelab/us-west-2/apps changed or the apply diff could not be determined." >&2
+affected_units="$(terragrunt_affected_units)"
+azuread_filters=()
+secret_filters=()
+while IFS= read -r unit; do
+  [[ -f "$unit/terragrunt.hcl" ]] || continue
+  case "$unit" in
+    IaC/homelab/us-west-2/apps/*/azuread|IaC/homelab/us-west-2/apps/fleet/pilot-user)
+      azuread_filters+=(--filter "./${unit#IaC/homelab/us-west-2/apps/}")
+      ;;
+    IaC/homelab/us-west-2/shared/kubernetes-secrets/*)
+      secret_filters+=(--filter "./${unit#IaC/homelab/us-west-2/shared/kubernetes-secrets/}")
+      ;;
+  esac
+done <<<"$affected_units"
+if ((${#azuread_filters[@]} > 0)) && ! azuread_credentials_available; then
+  echo "AzureAD credentials are required for affected AzureAD units." >&2
   echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
   exit 1
 fi
 
 destroy_deleted_terragrunt_units
 
-echo "::group::OpenClaw legacy offsite bucket plan and apply"
-plan_and_apply_application_backup_storage
-echo "::endgroup::"
+if terragrunt_active_unit_affected "IaC/homelab/us-west-2/operator/application-backup-storage" "$affected_units"; then
+  echo "::group::OpenClaw legacy offsite bucket plan and apply"
+  plan_and_apply_application_backup_storage
+  echo "::endgroup::"
+fi
 
-echo "::group::Argo CD bootstrap apply"
-(
-  cd IaC/homelab/us-west-2/bootstrap/argocd
-  terragrunt init -no-color
-  if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'helm_release.this'; then
-    if helm status argocd --namespace argocd >/dev/null 2>&1; then
-      echo "Adopting existing Argo CD Helm release into OpenTofu state."
-      verify_current_main_commit
-      terragrunt import -no-color helm_release.this argocd/argocd
-    else
-      echo "Argo CD Helm release is absent; OpenTofu will install it."
+if terragrunt_active_unit_affected "IaC/homelab/us-west-2/bootstrap/argocd" "$affected_units"; then
+  echo "::group::Argo CD bootstrap apply"
+  (
+    cd IaC/homelab/us-west-2/bootstrap/argocd
+    terragrunt init -no-color
+    if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'helm_release.this'; then
+      if helm status argocd --namespace argocd >/dev/null 2>&1; then
+        echo "Adopting existing Argo CD Helm release into OpenTofu state."
+        verify_current_main_commit
+        terragrunt import -no-color helm_release.this argocd/argocd
+      else
+        echo "Argo CD Helm release is absent; OpenTofu will install it."
+      fi
     fi
-  fi
-  verify_current_main_commit
-  terragrunt apply -no-color -auto-approve
-)
-echo "::endgroup::"
+    verify_current_main_commit
+    terragrunt apply -no-color -auto-approve
+  )
+  echo "::endgroup::"
+fi
 
-plan_and_apply_langfuse_prerequisites
+if terragrunt_active_unit_affected "IaC/homelab/us-west-2/apps/langfuse/blob-storage" "$affected_units"; then
+  plan_and_apply_langfuse_prerequisites
+elif terragrunt_active_unit_affected "IaC/homelab/us-west-2/shared/aws-ssm-parameters" "$affected_units"; then
+  plan_and_apply_ssm_prerequisites
+fi
 
-echo "::group::Kubernetes node label apply"
-(
-  cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
-  rm -f plan.out plan.json
-  terragrunt plan -out plan.out -no-color
-  terragrunt --log-disable show -json plan.out >plan.json
-  conftest test --policy "${repo_root}/policy" --output github plan.json
-  verify_current_main_commit
-  terragrunt apply -no-color plan.out
-)
-echo "::endgroup::"
+if terragrunt_active_unit_affected "IaC/homelab/us-west-2/shared/kubernetes-node-labels" "$affected_units"; then
+  echo "::group::Kubernetes node label apply"
+  (
+    cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
+    rm -f plan.out plan.json
+    terragrunt plan -out plan.out -no-color
+    terragrunt --log-disable show -json plan.out >plan.json
+    conftest test --policy "${repo_root}/policy" --output github plan.json
+    verify_current_main_commit
+    terragrunt apply -no-color plan.out
+  )
+  echo "::endgroup::"
+fi
 
-echo "::group::AzureAD application registration apply"
-if azuread_credentials_available; then
+if ((${#azuread_filters[@]} > 0)); then
+  echo "::group::AzureAD application registration apply"
   (
     cd IaC/homelab/us-west-2/apps
     verify_current_main_commit
-    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter)" --filter "$(terragrunt_azuread_pilot_filter)" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+    terragrunt run --all "${azuread_filters[@]}" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
   )
-elif terragrunt_azuread_stack_changed; then
-  echo "AzureAD credentials are required because IaC/homelab/us-west-2/apps changed or the apply diff could not be determined." >&2
-  echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
-  exit 1
-else
-  echo "::warning::Skipping AzureAD application registration because AzureAD credentials are not configured and IaC/homelab/us-west-2/apps did not change in this push."
+  echo "::endgroup::"
 fi
-echo "::endgroup::"
 
 echo "::group::Argo CD Application registration apply"
 plan_and_apply_argocd_apps
 echo "::endgroup::"
 
-echo "::group::External Secrets AWS auth Secret state adoption"
-verify_current_main_commit
-kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
-if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
-  (
-    cd IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth
-    terragrunt init -no-color
-    if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'kubernetes_secret_v1.this'; then
-      verify_current_main_commit
-      terragrunt import -no-color kubernetes_secret_v1.this external-secrets/aws-ssm-auth
-    fi
-  )
-else
-  echo "external-secrets/aws-ssm-auth is absent; Kubernetes secret materialization will create it from SSM."
-fi
-echo "::endgroup::"
-
-echo "::group::Kubernetes secret materialization apply"
-(
-  cd IaC/homelab/us-west-2/shared/kubernetes-secrets
+if terragrunt_active_unit_affected "IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth" "$affected_units"; then
+  echo "::group::External Secrets AWS auth Secret state adoption"
   verify_current_main_commit
-  terragrunt run --all --filter "$(terragrunt_changed_filter '*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
-)
-echo "::endgroup::"
+  kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
+  if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
+    (
+      cd IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth
+      terragrunt init -no-color
+      if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'kubernetes_secret_v1.this'; then
+        verify_current_main_commit
+        terragrunt import -no-color kubernetes_secret_v1.this external-secrets/aws-ssm-auth
+      fi
+    )
+  else
+    echo "external-secrets/aws-ssm-auth is absent; Kubernetes secret materialization will create it from SSM."
+  fi
+  echo "::endgroup::"
+fi
+
+if ((${#secret_filters[@]} > 0)); then
+  echo "::group::Kubernetes secret materialization apply"
+  (
+    cd IaC/homelab/us-west-2/shared/kubernetes-secrets
+    verify_current_main_commit
+    terragrunt run --all "${secret_filters[@]}" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+  )
+  echo "::endgroup::"
+fi

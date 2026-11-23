@@ -108,7 +108,7 @@ They create:
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
   Octelium human authentication and forwards directly to
   `http://bazarr.media.svc.cluster.local:6767`. See the
-  [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for the guarded
+  [Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) for the guarded
   single-Service reconciliation and public tunnel DNS commands.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,
@@ -211,10 +211,13 @@ cleanup Job runs at PostSync wave 1 after success and as a SyncFail hook after
 failure, deleting only the named genesis ServiceAccount, ClusterRole, and
 ClusterRoleBinding. Its persistent cleanup RBAC has `delete` on
 `resourceNames: [cordium-genesis]` and cannot create, bind, or escalate
-arbitrary RBAC. An ordinary failed child sync runs cleanup and removes the
-identity. In-operation retries are disabled because they share the original
-timeout start; the next new full `cordium-bootstrap` sync gets a fresh budget
-and recreates the identity immediately before genesis.
+arbitrary RBAC. The cleanup uses kubectl's default in-cluster token and CA
+and a 120-second Job deadline. Keep the request-timeout override out of the
+Job so kubectl can select the mounted identity. After a reviewed child sync,
+verify the three genesis resources are absent. In-operation retries are
+disabled because they share the original timeout start. Each new full
+`cordium-bootstrap` sync gets a fresh budget and recreates the identity
+immediately before genesis.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
 identity with access restricted to the package-managed Cordium
@@ -229,8 +232,24 @@ upstream kubeconfig stays inside Octelium and is never copied to the client or
 committed to this repository. The Service uses that kubeconfig's cluster CA;
 do not add `insecureSkipVerify`.
 
-Recreating that shared Secret briefly affects this private Service and the CI
-Service, so validate both after rotation.
+The kubeconfig helper validates and minifies the selected context, requires the
+canonical API endpoint and embedded CA, and verifies authenticated TLS plus the
+current operator authorization contract before creating a Secret. It accepts
+only an inline token or embedded client certificate/key pair; exec plugins,
+file references, proxy overrides, and insecure TLS are rejected. Private
+validation output stays outside git and is removed on exit.
+
+Existing Secrets are never overwritten or deleted. Initial bootstrap may create
+`homelab-ci-kubeconfig`; an existing name fails closed. For an authorized rotation,
+stage a new name such as `homelab-ci-kubeconfig-20261101t120000z` using
+`--secret-name`, optionally selecting `--context`. Staging does not cut over any
+consumer. Before cutover, a separate reviewed change must update both catalog
+Service references and their exact-name validation/credential-helper contracts.
+Apply that catalog through the declared workflow, then verify CI, operator and
+Cordium access. Retain the previous Secret through the rollback window; rollback
+restores the reviewed previous references. This helper provides no retirement
+operation. A failed create is checked by exact name; an ambiguous outcome must
+be inspected before retrying or choosing another name.
 
 From an operator workstation, install the current
 [Octelium CLI](https://octelium.com/docs/octelium/latest/install/cli/install)
@@ -267,13 +286,28 @@ cordium run --rm --domain stinkyboi.com \
 Each running Workspace already has its own Octelium client session. Inside the
 Workspace, run `octelium config kubernetes-api.homelab --domain
 stinkyboi.com`, run the printed `KUBECONFIG` export, set it to mode `0600`, and
-run the same `kubectl` check. Cordium is limited to nonsensitive `get`, `list`,
-and `watch`; verify Secret reads and a server-side dry-run create are denied:
+run `kubectl --request-timeout=15s -n ai get pods` (replace this homelab
+namespace as needed). The staged Cordium allowlist permits GET-based
+`get`, `list`, and `watch` only for namespaced core/v1 events, pods and services;
+apps/v1 daemonsets, deployments, replicasets and statefulsets; and batch/v1
+cronjobs and jobs. Discovery is limited to `/api`, `/api/v1`, `/apis`,
+`/apis/apps/v1` and `/apis/batch/v1`. Nodes, cluster-wide lists, subresources,
+unknown resources and other API groups are denied. Verify these denials plus
+Secret reads and server-side dry-run creates after protected activation:
 
 ```sh
 ! kubectl get secrets --all-namespaces
+! kubectl get nodes
+! kubectl get pods --all-namespaces
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
+
+Run `python3 -I scripts/ci/octelium-kubernetes-policy-check.py` in the pinned
+Nix shell for the actual v0.35.0 parser/CEL regression. Merging this catalog
+does not apply it. Use the existing exact-main private Kubernetes workflow;
+retain #846 until the separate identity/credential and live owner/Cordium
+acceptance gates pass. Rollback uses a reviewed catalog change through that
+same path; do not restore broad reads merely to make a probe pass.
 
 Neither path needs the Tailscale subnet route.
 
@@ -355,28 +389,22 @@ aws ssm put-parameter \
 ### Entra owner conversion
 
 Octelium binds privileged access to immutable Entra `oid` and has
-`disableEmailAsIdentity: true`. That binding must remain unchanged when the
-owner's external sign-in is converted in place to the internal
-`rodman@stuhlmuller.net` UPN: the Entra object ID remains the same, while email
-and `preferred_username` may change. Do not bind privileged access to the new
-UPN or a new pilot user.
-
-Before conversion, retain an independent working Octelium session and create,
-then test, an independent cloud-only Entra Global Administrator. The complete
-live mapping inventory must bind only the original owner `oid` to owner access,
-show no email fallback, and contain no target-pilot binding. Do not close the
-working session until a fresh owner browser login with the converted internal
-identity renders the Services page.
+`disableEmailAsIdentity: true`. Preserve that binding across any future owner
+identity change: email and `preferred_username` are not privilege identifiers.
+Do not bind privileged access to a UPN or a new pilot user. The complete live
+mapping inventory must bind only the original owner `oid` to owner access,
+show no email fallback, and contain no target-pilot binding. Preserve a working
+session while validating a fresh owner browser login and the Services page.
 
 On October 7, 2026 UTC, the reviewed migration applied the original owner's
 `oid` binding and disabled email fallback. Fresh owner sessions through Entra
 callbacks rendered the Services page before and after the separate directory-mail
 attempt. That proves the `oid` binding only. The mail attempt left the old SMTP
 alias reserved, so its alias-release and pilot-rename route is retired. The
-supported continuation is the in-place Entra conversion documented in the
-[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md), followed by fresh
-Octelium and Fleet-console SAML sign-ins. No support case, Exchange
-license, or email-based identity workaround is needed.
+blocked one-off conversion procedure has been removed. The federated target
+remains unresolved in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+Future identity changes must preserve the owner `oid` and validate fresh
+Octelium and Fleet console SAML sign-ins.
 
 ## Cutover Gate
 
@@ -401,6 +429,12 @@ denied. It also checks the AFFiNE native-client CORS preflight and public
 `serverConfig` GraphQL query. A negative workspace query must still return
 AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other app Services must remain
 non-anonymous.
+
+A missing or malformed catalog, or a missing or duplicate private Kubernetes
+or Talos policy, records an explicit failure and reaches the final failure
+summary. Parser diagnostics and catalog contents are not printed. Validate
+this offline with `python3 -I scripts/ci/octelium-catalog-test.py`; this does
+not replace the authenticated owner and Cordium access checks.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
@@ -511,7 +545,7 @@ the carrier does not grant Octelium authorization.
 
 The public DNS-restoration workflow is removed before private DNS cutover.
 Use the [current tailnet DNS cutover](../specs/005-retire-public-app-dns/quickstart.md),
-which requires a signed resolver, direct queries and an owner nameserver handoff
+which requires a resolver, direct queries and an owner nameserver handoff
 before retiring the 26 approved non-apex public app address records. The
 public apex and four legacy public endpoints remain. Keep the
 Tunnel Deployment and old carrier only until replacement acceptance. Reverting

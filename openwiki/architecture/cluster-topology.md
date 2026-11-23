@@ -4,18 +4,12 @@ title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
 sources:
-  - id: openwiki-source-3ee445a5390585cab7a1edab
-    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
-  - id: openwiki-source-0dd011c84b2dc53d92df4754
-    resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
@@ -29,7 +23,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T05:01:55.414Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:00:26.315Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -192,7 +186,7 @@ These are desired-state projections, not live rollout proof. Before starting
 a Workspace, verify the new web Pod is Ready on Acer, the old Pod has left
 `zimaboard-1`, SQL and web behavior recover, and both nodes retain measured
 headroom without pressure. Preserve workspace PV bindings and run only one
-Workspace. See the [standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
+Workspace. See the [standby and rollback procedure](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
 
 ### Octelium dataplane capacity
 
@@ -224,12 +218,35 @@ a failover can start 51 dataplane-selected Deployments plus the node-local
 gateway agent at once. Seven-day measurements put the full fleet near 3.1 GiB
 memory at p95, while its declared memory requests total only about 315 MiB.
 
-Do not use the existing control-plane node or `zimaboard-1` as the replacement
-dataplane target. The control-plane node has etcd and rollout pod-slot risk;
+Do not use the existing control-plane node or `zimaboard-1` as the steady-state
+replacement dataplane target. The control-plane node has etcd and rollout pod-slot risk;
 `zimaboard-1` already hosts the Octelium control plane and stateful workloads.
 After the 16 stale `*.homelab` service proxies are removed, the retained
 dataplane still uses about 2.7 GiB memory at p95 and creates 35 Deployment Pods
 plus the gateway agent.
+
+The [existing-node NetworkPolicy canary route](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+uses `acer`'s already-running emergency fallback Pods during a bounded native
+dataplane outage. It does not add native dataplane eligibility to `acer`:
+70 existing active Pods plus 56 selector-bound Pods from `zimaboard-0` would
+exceed its 110 allocatable Pod slots, even before Prowlarr or surge. Prove
+fallback and protected CI access, list uncovered native paths, and accept their
+outage before changing the `zimaboard-0` label. A November 1 15:34 UTC selector
+check found 25 fallback-covered and 29 native-only Octelium Services. Its
+protected node-label PR plan and exact-identity taint handoff are not yet
+implemented. No placement change is admitted from scheduler requests alone.
+A temporary `zimaboard-0` Node rename is not an admitted isolation shortcut:
+the kubelet needs a matching Node credential, no reviewed Talos no-wipe rejoin
+and old-Node retirement path exists, and four media `hostPath` PVs are pinned
+to its current hostname. The canary remains blocked on a proven placement
+fence for older Binding requests.
+The single `acer` control plane permits a candidate full-reboot fence while a
+fail-closed placement guard and `NoExecute` remain active. A successful
+post-reboot Kubernetes API Node-annotation barrier write must precede a
+complete Pod and runtime inventory;
+reboot and PodList alone do not order older persisted writes. This path still
+needs a reviewed source-owned operation, tested guard, etcd backup, outage
+acceptance, and live proof before activation.
 
 The durable recovery requirement is a dedicated third dataplane-capable worker
 with enough real memory and pod capacity for that retained fleet plus startup
@@ -312,6 +329,16 @@ and addresses the version-independent condition in
 It cannot revive an unreachable kubelet; the NotReady workers still require an
 operator reboot or physical recovery before GitOps can roll out this hardening.
 
+## Staged Cilium Migration
+
+The [platform-cilium Terragrunt stack](../../IaC/homelab/us-west-2/apps/platform-cilium/stack.hcl)
+declares the Cilium 1.20.5 Argo CD Application in `kube-system`, after
+`platform-dns`. Automatic sync is disabled. The coexistence values
+preserve Flannel, Multus, and kube-proxy and leave Cilium policy enforcement
+off. The standalone node migration manifest is outside the Application's
+sources. Use the [Cilium rollout checkpoints](../../clusters/homelab/platform/cilium/README.md#rollout-checkpoints)
+to qualify live activation and node cutover separately.
+
 ## Canonical Endpoints
 
 - Talos endpoint: `10.1.0.199`
@@ -358,8 +385,12 @@ Service supplies the approved hostnames and live ingress IPv4; Traefik still
 terminates HTTPS and routes requests. Cluster `kube-dns` remains separate.
 Approved A/AAAA answers are local; unmatched address queries and other record
 types use public resolvers. The owner adds the DNS proxy's observed IP to
-Tailscale only after direct UDP/TCP answers, signature, and client checks pass;
+Tailscale only after direct UDP/TCP answers, device identity and client checks pass;
 public app address records stay until a later guarded retirement.
+
+AdGuard is placed away from `zimaboard-2` to reserve memory for the planned
+Cilium agent and Envoy. Its NFS-backed work volume permits rescheduling to
+another eligible node. Verify the tailnet DNS path after rescheduling.
 
 ## Source Files
 
@@ -370,6 +401,7 @@ public app address records stay until a later guarded retirement.
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
+- [Cilium migration trial](../../clusters/homelab/platform/cilium/README.md)
 
 ## Maintenance Notes
 

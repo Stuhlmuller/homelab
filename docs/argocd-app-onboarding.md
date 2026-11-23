@@ -36,12 +36,15 @@ cross-namespace RoleBindings there.
 
 | App                             | Kind              | Namespace               | GitOps path                                                                | Terragrunt path                                                     | Auto-sync     | Dependencies                                                                                       |
 | ------------------------------- | ----------------- | ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| uptime-kuma                     | app               | `monitoring`            | `clusters/homelab/apps/uptime-kuma`                                        | `IaC/homelab/us-west-2/apps/uptime-kuma/argocd`                     | Yes           | external-secrets, cert-manager, istio, platform-storage, prometheus, traefik                       |
 | platform-image-policy           | support           | cluster-scoped          | `clusters/homelab/platform/image-policy`                                   | `IaC/homelab/us-west-2/apps/platform-image-policy/argocd`           | Yes           | none (audit-only)                                                                                  |
 | platform-network-policy         | staged            | `kube-system`           | `clusters/homelab/platform/network-policy`                                 | `IaC/homelab/us-west-2/apps/platform-network-policy/argocd`         | No, no prune  | platform-dns; admission and canary qualification before activation                                 |
 | platform-network-policy-canary  | staged            | `network-policy-canary` | `clusters/homelab/platform/network-policy/canary`                          | `IaC/homelab/us-west-2/apps/platform-network-policy-canary/argocd`  | No, no prune  | platform-network-policy; tainted node and mirrored fixtures before activation                      |
 | platform-network-policy-cleanup | staged            | `kube-system`           | `clusters/homelab/platform/network-policy/cleanup`                         | `IaC/homelab/us-west-2/apps/platform-network-policy-cleanup/argocd` | No, no prune  | platform-network-policy; reviewed owner-only cleanup after tenant quiescence                       |
 | platform-dns                    | support           | `kube-system`           | `clusters/homelab/platform/dns`                                            | `IaC/homelab/us-west-2/apps/platform-dns/argocd`                    | Yes, no prune | Argo CD bootstrap                                                                                  |
-| platform-envoy-gateway          | staged            | `envoy-gateway-system`  | `clusters/homelab/platform/envoy-gateway`                                  | `IaC/homelab/us-west-2/apps/platform-envoy-gateway/argocd`          | No, no prune  | istio, cert-manager; image publication and Gateway API qualification before activation             |
+| platform-envoy-gateway          | staged            | `envoy-gateway-system`  | `clusters/homelab/platform/envoy-gateway`                                  | `IaC/homelab/us-west-2/apps/platform-envoy-gateway/argocd`          | No, no prune  | platform-gateway-api-crds; image publication and Gateway API qualification before activation       |
+| platform-gateway-api-crds       | staged            | `envoy-gateway-system`  | pinned `gateway-crds-helm` chart                                           | `IaC/homelab/us-west-2/apps/platform-gateway-api-crds/argocd`       | No, no prune  | istio, cert-manager; sole Gateway API CRD owner, establish before waypoints or Envoy Gateway       |
+| platform-istio-egress           | staged            | `istio-egress`          | `clusters/homelab/platform/istio-egress`                                   | `IaC/homelab/us-west-2/apps/platform-istio-egress/argocd`           | No, no prune  | platform-gateway-api-crds and LiteLLM DNS capture before sync; qualify waypoint traffic after sync |
 | platform-storage                | support           | cluster-scoped          | `clusters/homelab/platform/storage`                                        | `IaC/homelab/us-west-2/apps/platform-storage/argocd`                | Yes           | QNAP NFS export validation                                                                         |
 | metrics-server                  | support           | `kube-system`           | official `metrics-server` Helm chart                                       | `IaC/homelab/us-west-2/apps/metrics-server/argocd`                  | Yes           | Kubernetes API and node kubelets                                                                   |
 | media-postgres                  | support           | `media`                 | `clusters/homelab/apps/media-postgres`                                     | `IaC/homelab/us-west-2/apps/media-postgres/argocd`                  | Yes           | external-secrets, platform-storage                                                                 |
@@ -118,7 +121,7 @@ Bazarr keeps its SQLite database and config on a retained local volume on
 `media-tv` at `/tv` and `media-movies` at `/movies`; Sonarr and Radarr retain
 ownership of those claims. Acceptance requires both library synchronizations,
 an English subtitle beside an existing media file, and a verified backup.
-See [the Bazarr runbook](../clusters/homelab/apps/bazarr/README.md).
+See [the Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md).
 
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and
@@ -139,21 +142,21 @@ Readiness requires its App ExternalSecret, retained cache claim, and a successfu
 dry-run parity check. The separate GitHub Actions runner remains the only writer
 until its complete workflow is removed, every unfinished run drains, and its
 repository Actions private key is retired through the guarded receipt. See the
-[Renovate runbook](../clusters/homelab/apps/renovate/README.md) for cutover and
+[Renovate runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md) for cutover and
 rollback.
 
 AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
 pgvector extension, authenticated Redis, migration init container, four
-retained NFS claims, Istio route, Octelium `WEB` Service, Cloudflare Tunnel
-ingress, and public DNS record have all reconciled successfully.
+retained NFS claims, and the current private Traefik route and private DNS
+have reconciled successfully. Verify the app's own authentication at that route.
 
 Langfuse is not ready until its ExternalSecret is Ready, its three retained
 `nfs-default` claims are Bound, PostgreSQL, Valkey, and ClickHouse are Healthy,
-the S3 credential parameters exist, and the protected UI responds through
-Octelium. LiteLLM registration follows Langfuse, but that does not gate runtime
+the S3 credential parameters exist, and the native-authenticated UI responds
+through its current private Traefik route. LiteLLM registration follows Langfuse, but that does not gate runtime
 readiness. Existing caller runtime remains unchanged while these prerequisites
 reconcile. Activate telemetry only in a follow-up after the
-[caller readiness gates](../clusters/homelab/apps/langfuse/README.md#caller-activation)
+[caller readiness gates](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/langfuse/README.md#caller-activation)
 pass.
 
 ## Registration Provider
@@ -267,3 +270,36 @@ Operator action:
 Rollback decision:
 Follow-up issue or PR:
 ```
+
+## Uptime Kuma onboarding
+
+The [Kuma stack](../IaC/homelab/us-west-2/apps/uptime-kuma/stack.hcl) declares
+app-template 4.4.0 plus its overlay in `monitoring`. It uses `homelab` because
+its retained local PV and StorageClass need cluster-scoped resources. The
+targeted apply lane validates the project, monitoring secret-store permission,
+healthy prerequisites, NFS class and schedulable `acer`, then applies the
+generated SSM owner password before Application registration.
+
+The route is `https://uptime-kuma.stinkyboi.com` on private Traefik `websecure`,
+with native Kuma authentication. The owning
+[route file](../clusters/homelab/apps/traefik/routes.yaml) and private DNS
+declarations govern browser access; older Octelium-default instructions do not
+add an Octelium Service requirement to these routes. This adds no public or
+Funnel endpoint. Image publication uses the fixed `uptime-kuma` Harbor scope
+before consumer delivery.
+
+The [runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/uptime-kuma/README.md) describes catalog
+coverage, stable native reconciliation, retained storage and fenced restore
+verification. Source declarations and local tests are not deployment evidence:
+exact-revision private login, three observations per active monitor, failure/
+recovery, repeated reconciliation and actual backup/restore remain live acceptance.
+
+When retiring an app, retain its Kuma catalog entry and stable monitor records.
+Set lifecycle `retired`, record the reason, and retain owning source with
+`<!-- uptime-kuma-retired: app-id -->` matching the app ID. Exclusively retired
+monitors become `enabled: false`; keep reciprocal ownership links so native
+reconciliation pauses them without deleting history. Shared monitors with active
+owners remain enabled, and every active app must retain meaningful enabled
+coverage. The catalog validator checks this transition, including historical IDs
+whose original stack has been removed. See the runbook's retirement procedure
+and run `python3 scripts/ci/uptime-kuma-check.py` before normal GitOps delivery.

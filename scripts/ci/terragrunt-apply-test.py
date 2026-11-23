@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual apply shell offline; no cloud CLI is on the fixture PATH."""
+import copy
 import json
 import os
 import shutil
@@ -19,6 +20,7 @@ OIDC_ENVIRONMENT = {
 }
 APPS = ["external-secrets", "cert-manager", "istio", "platform-storage"]
 TRAEFIK_APPS = ["cert-manager", "istio", "tailscale"]
+ADGUARD_APPS = ["external-secrets", "tailscale", "traefik", "tailnet-dns", "platform-storage"]
 CRDS = ["externalsecrets.external-secrets.io", "clustersecretstores.external-secrets.io",
         "authorizationpolicies.security.istio.io", "virtualservices.networking.istio.io"]
 PROJECT = {"spec": {
@@ -34,8 +36,8 @@ TRAEFIK_PROJECT = {"spec": {
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
 
-# Every external operation is enumerated. Real jq evaluates the production
-# predicates; these stubs only provide inputs and verify saved-plan sequencing.
+# Every external operation is enumerated. Real Python and jq evaluate production
+# guards; these stubs only provide inputs and verify saved-plan sequencing.
 STUB = r'''
 import hashlib
 import json
@@ -63,6 +65,7 @@ units = {
     "IaC/homelab/us-west-2/apps/fleet/argocd": "repair",
     "IaC/homelab/us-west-2/apps/mastodon/argocd": "repair",
     "IaC/homelab/us-west-2/apps/traefik/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/uptime-kuma/argocd": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -80,6 +83,13 @@ def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     actions = (["no-op"] if config.get("existing_only_noop") else
                ["delete", "create"] if config.get("replacement") else ["create"])
+    if unit == "apps" and "registration_changes" in config:
+        path.write_text(json.dumps({"unit": unit, "resource_changes": config["registration_changes"]}))
+        if "other_registration_changes" in config:
+            other = path.parent.parent / "other" / "tfplan.json"
+            other.parent.mkdir(parents=True, exist_ok=True)
+            other.write_text(json.dumps({"unit": unit, "resource_changes": config["other_registration_changes"]}))
+        return
     path.write_text(json.dumps({"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}))
@@ -105,6 +115,9 @@ def bulk_apply():
         event(f"{unit}.unit{number}.apply")
 
 if tool == "git":
+    if args[:1] == ["-C"]:
+        assert args[1] == str(root)
+        args = args[2:]
     if args[:2] == ["ls-remote", "--exit-code"]:
         assert args[2:] == ["https://github.com/Stuhlmuller/homelab.git", "refs/heads/main"]
         name = "unit.main.check" if os.environ.get("FIXTURE_BULK_UNIT") else "main.check"
@@ -114,23 +127,29 @@ if tool == "git":
         threshold = config.get("stale_at_unit" if name == "unit.main.check" else "stale_at", 1000)
         print(("e" * 40 if checks >= threshold else config["sha"])
               + "\trefs/heads/main")
+    elif args == ["rev-parse", "--abbrev-ref", "origin/HEAD"]:
+        print("origin/main")
     elif args[:1] == ["rev-parse"]:
         if args == ["rev-parse", "--show-toplevel"]:
             print(root)
-        elif args[:3] != ["rev-parse", "--verify", "--quiet"]:
+        elif args[:3] == ["rev-parse", "--verify", "--quiet"]:
+            print({"main": "base", "HEAD": "head"}.get(args[3], args[3].removesuffix("^{commit}")))
+        else:
             unexpected()
     elif args[:2] == ["cat-file", "-e"]:
         pass
     elif args[:1] == ["show"] and args[1].endswith(":IaC/terragrunt.stack.hcl"):
+        if config.get("inventory_error"):
+            print('unit "partial" {\n  path = "live/argocd-apps/partial"\n}')
+            sys.exit(23)
         pass  # Both fixture revisions have no deleted units.
     elif args[:2] == ["diff", "--name-only"]:
         pass
-    elif "diff" in args and "--quiet" in args:
-        sys.exit(1)  # Shared inputs changed: existing full-run filters select '*'.
     else:
         unexpected()
 elif tool == "kubectl":
-    if args == ["-n", "argocd", "get", "appproject", "homelab", "-o", "json"]:
+    if args == ["-n", "argocd", "get", "appproject",
+                "homelab-workloads" if config["target"] in ("codex-cloud-signer", "adguard") else "homelab", "-o", "json"]:
         event("preflight.project")
         print(json.dumps(config["project"]))
     elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
@@ -151,6 +170,23 @@ elif tool == "kubectl":
         print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
+    elif args == ["-n", "traefik", "get", "deployment", "traefik", "-o", "json"]:
+        event("preflight.traefik_deployment")
+        print(json.dumps(config["traefik_deployment"]))
+    elif args == ["-n", "traefik", "get", "certificate", "traefik", "-o", "json"]:
+        event("preflight.traefik_certificate")
+        print(json.dumps(config["traefik_certificate"]))
+    elif args == ["get", "node", "acer", "-o", "json"]:
+        event("preflight.node")
+        print(json.dumps(config["node"]))
+    elif args == ["get", "namespace", "monitoring", "-o", "name"]:
+        event("preflight.namespace")
+    elif args == ["get", "namespace", "automation", "-o", "name"]:
+        event("preflight.namespace")
+    elif args == ["get", "storageclass", "codex-cloud-signer-local", "-o", "name"]:
+        event("preflight.local_storage")
+    elif args == ["get", "pv", "codex-cloud-signer-local", "-o", "name"]:
+        event("preflight.local_volume")
     elif args == ["apply", "-f", "clusters/homelab/apps/external-secrets/namespace.yaml"]:
         event("namespace.apply")
     elif args == ["-n", "external-secrets", "get", "secret", "aws-ssm-auth"]:
@@ -175,11 +211,17 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard", *(["uptime-kuma"] if config["target"] == "uptime-kuma" else [])):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
+    elif command == ["find", "--filter-affected", "--json", "--log-level", "warn"] and cwd == ".":
+        selected = config.get("affected_units")
+        if selected is None:
+            deployment = root / "IaC/homelab/us-west-2"
+            selected = [str(path.parent.relative_to(root)) for path in deployment.rglob("terragrunt.hcl")]
+        print(json.dumps([{"type": "unit", "path": path} for path in selected]))
     elif command == ["init", "-no-color"]:
         event(unit + ".init")
     elif command == ["state", "list", "-no-color"]:
@@ -212,11 +254,20 @@ elif tool == "terragrunt":
         else:
             checked(Path(command[2]))
     elif command[:2] == ["run", "--all"]:
-        target = command[command.index("--filter") + 1]
-        if target.startswith("*/azuread"):
+        filters = [command[index + 1] for index, arg in enumerate(command) if arg == "--filter"]
+        assert filters and all(target.startswith("./") for target in filters)
+        target = filters[0].removeprefix("./")
+        if target.endswith("/azuread"):
+            assert filters == ["./fleet/azuread"]
             unit = "azure"
-        expected = ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else config.get("argocd_filter", "*/argocd") if unit == "apps" else "*"))
-        assert target == expected
+        elif unit == "apps" and config["target"]:
+            assert filters == ["./" + config["target"] + "/argocd"]
+        elif unit == "apps":
+            assert all(path.endswith("/argocd") for path in filters)
+            if config.get("existing_argocd_only") == "true":
+                assert filters == sorted("./" + app + "/argocd" for app in config["live_apps"])
+        elif unit == "secrets":
+            assert filters == ["./external-secrets-aws-ssm-auth"]
         assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
@@ -258,14 +309,37 @@ class TerragruntApplyTest(unittest.TestCase):
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
                 ]
+        elif target == "uptime-kuma":
+            project["spec"]["destinations"][0]["namespace"] = "monitoring"
+            project["spec"]["sourceRepos"].append("https://bjw-s-labs.github.io/helm-charts")
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            app_names = [*APPS, "prometheus", "traefik"]
+        elif target in ("codex-cloud-signer", "adguard"):
+            project["spec"]["destinations"][0]["namespace"] = "automation"
+            project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+            project["spec"]["clusterResourceWhitelist"] = []
+            app_names = ADGUARD_APPS if target == "adguard" else [
+                "external-secrets", "tailscale", "traefik", "platform-storage"]
+            crds = CRDS[:2]
         elif target == "traefik":
             project = json.loads(json.dumps(TRAEFIK_PROJECT))
             app_names = TRAEFIK_APPS
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
+                  "live_apps": ["langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard"],
+                  "traefik_deployment": {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}},
+                  "traefik_certificate": {"metadata": {"generation": 2},
+                      "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                      "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}},
                   "app_names": app_names, "crds": crds,
-                  "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
+                  "node": {"status": {"conditions": [{"type": "Ready", "status": "True"}]}},
+                  "store": {"spec": {"conditions": [{"namespaces": ["automation" if target in ("codex-cloud-signer", "adguard") else "monitoring" if target == "uptime-kuma" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -274,7 +348,7 @@ class TerragruntApplyTest(unittest.TestCase):
             binaries = root / "bin"
             binaries.mkdir()
             for name in ("bash", "dirname", "find", "rm", "grep", "sort", "sed",
-                         "awk", "comm", "cat", "mktemp", "jq"):
+                         "awk", "comm", "cat", "mktemp", "jq", "python3"):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name + " is required for this offline test")
                 (binaries / name).symlink_to(executable)
@@ -285,7 +359,8 @@ class TerragruntApplyTest(unittest.TestCase):
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
-                         "terragrunt-current-main.sh"):
+                         "terragrunt-current-main.sh", "argocd-registration-plan-check.py",
+                         "terragrunt-affected-units.py"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
@@ -293,8 +368,10 @@ class TerragruntApplyTest(unittest.TestCase):
                          "homelab/us-west-2/operator/application-backup-storage",
                          "homelab/us-west-2/shared/kubernetes-node-labels",
                          "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
-                         "homelab/us-west-2/apps"):
-                (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
+                         "homelab/us-west-2/apps/fleet/azuread"):
+                directory = root / "IaC" / unit
+                directory.mkdir(parents=True, exist_ok=True)
+                (directory / "terragrunt.hcl").touch()
             (root / "fixture.json").write_text(json.dumps(config))
             environment = {"PATH": str(binaries), "FIXTURE_ROOT": str(root),
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
@@ -335,6 +412,12 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_failed_deleted_inventory_stops_full_apply_before_writes(self):
+        result, events = self.run_apply(target="", inventory_error=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("No deleted Terragrunt units", result.stdout)
+        self.assertFalse(any(event.endswith((".import", ".apply", ".plan")) for event in events), events)
 
     def test_github_apply_checks_current_main_before_each_mutation(self):
         for target in ("langfuse", ""):
@@ -524,6 +607,93 @@ else:
                     self.assertEqual(events[-1], stage + "." + operation)
                     self.assertNotIn(stage + ".apply", events)
 
+    @staticmethod
+    def registration_transition(action="delete", app_action="update", clear=False):
+        app = {"apiVersion": "argoproj.io/v1alpha1", "kind": "Application",
+               "metadata": {"name": "fixture", "namespace": "argocd"},
+               "spec": {"source": {"helm": {}}}}
+        after = copy.deepcopy(app)
+        if clear:
+            after["spec"]["source"]["helm"]["parameters"] = []
+        updater = {"apiVersion": "argocd-image-updater.argoproj.io/v1alpha1",
+                   "kind": "ImageUpdater", "metadata": app["metadata"], "spec": {
+                       "writeBackConfig": {"method": "argocd"},
+                       "commonUpdateSettings": {"updateStrategy": "digest", "ignoreTags": ["*"]},
+                       "applicationRefs": [{"namePattern": "fixture", "useAnnotations": False,
+                                            "commonUpdateSettings": None,
+                                            "images": [{"alias": "app", "imageName": "example/app:mutable",
+                                                        "manifestTargets": {"helm": {"spec": "image", "name": None, "tag": None},
+                                                                            "kustomize": {"name": None}}}]}]}}
+        return [{"address": "kubernetes_manifest.this", "type": "kubernetes_manifest", "mode": "managed",
+                 "change": {"actions": [app_action], "before": {"manifest": app},
+                            "after": {"manifest": after}}},
+                {"address": "kubernetes_manifest.image_updater", "type": "kubernetes_manifest", "mode": "managed",
+                 "change": {"actions": [action],
+                            "before": {"manifest": copy.deepcopy(updater), "object": copy.deepcopy(updater)},
+                            "after": {"manifest": copy.deepcopy(updater)} if action == "create" else None}}]
+
+    def test_native_registration_handoffs_and_existing_enrollment(self):
+        for clear in (False, True):
+            for app_action in ("no-op", "update"):
+                with self.subTest(clear=clear, app_action=app_action):
+                    result, events = self.run_apply(target="nofx", registration_changes=
+                                                    self.registration_transition(app_action=app_action, clear=clear))
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("apps.apply", events)
+        for paused in (False, True):
+            changes = self.registration_transition("create")
+            changes[1]["change"]["before"] = None
+            changes[1]["change"]["after"]["manifest"]["spec"]["commonUpdateSettings"]["ignoreTags"] = ["*"] if paused else []
+            result, events = self.run_apply(target="", existing_argocd_only="true", registration_changes=changes)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("apps.apply", events)
+
+    def test_native_registration_invalid_transitions_stop_before_apply(self):
+        mutations = {
+            "unpaused_object": lambda c: c[1]["change"]["before"]["object"]["spec"]["commonUpdateSettings"].update(ignoreTags=[]),
+            "missing_object": lambda c: c[1]["change"]["before"].pop("object"),
+            "unknown_object": lambda c: c[1]["change"]["before"].update(object=None),
+            "wrong_kind": lambda c: c[1]["change"]["before"]["object"].update(kind="Secret"),
+            "wrong_api": lambda c: c[1]["change"]["before"]["manifest"].update(apiVersion="wrong/v1"),
+            "wrong_address": lambda c: c[1].update(address="kubernetes_manifest.other"),
+            "mapping": lambda c: c[1]["change"]["before"]["object"]["spec"]["applicationRefs"][0].update(namePattern="*"),
+            "pause_override": lambda c: c[1]["change"]["before"]["object"]["spec"]["applicationRefs"][0].update(commonUpdateSettings={"ignoreTags": []}),
+            "cr_replace": lambda c: c[1]["change"].update(actions=["delete", "create"]),
+            "app_replace": lambda c: c[0]["change"].update(actions=["delete", "create"]),
+            "app_delete": lambda c: c[0]["change"].update(actions=["delete"]),
+            "app_create": lambda c: c[0]["change"].update(actions=["create"]),
+            "app_rename": lambda c: c[0]["change"]["after"]["manifest"]["metadata"].update(name="other"),
+            "app_unknown": lambda c: c[0]["change"].update(after=None),
+            "app_absent": lambda c: c.pop(0),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                changes = self.registration_transition()
+                mutate(changes)
+                result, events = self.run_apply(target="nofx", registration_changes=changes)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("apps.apply", events)
+        for action in ("delete", "create"):
+            changes = self.registration_transition(action)
+            result, events = self.run_apply(target="", existing_argocd_only="true",
+                                            registration_changes=[changes[1]], other_registration_changes=[changes[0]])
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("apps.apply", events)
+        for bad in ("address", "kind", "identity", "mapping"):
+            changes = self.registration_transition("create")
+            manifest = changes[1]["change"]["after"]["manifest"]
+            if bad == "address":
+                changes[1]["address"] = "kubernetes_manifest.other"
+            elif bad == "kind":
+                manifest["kind"] = "Secret"
+            elif bad == "identity":
+                manifest["metadata"]["name"] = None
+            else:
+                manifest["spec"]["applicationRefs"][0]["namePattern"] = "other"
+            result, events = self.run_apply(target="", existing_argocd_only="true", registration_changes=changes)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("apps.apply", events)
+
     def test_application_replacement_is_rejected(self):
         result, events = self.run_apply(replacement=True)
         self.assertNotEqual(result.returncode, 0)
@@ -534,6 +704,72 @@ else:
         result, events = self.run_apply(target="nofx")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
+    def test_adguard_checks_namespaced_prerequisites_before_ssm_and_registration(self):
+        result, events = self.run_apply(target="adguard", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events[:7], [
+            "generate", "preflight.namespace", "preflight.project", "preflight.apps",
+            "preflight.crds", "preflight.store", "preflight.store_scope",
+        ])
+        self.assertLess(events.index("preflight.storage"), events.index("ssm.init"))
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+        self.assertEqual(events[-3:], ["apps.plan", "apps.policy", "apps.apply"])
+        self.assertFalse(any(event.startswith(("s3.", "secrets.", "bootstrap.")) for event in events))
+        self.assertNotIn("preflight.local_volume", events)
+
+    def test_adguard_rejects_unhealthy_dependencies_and_wrong_scope_before_writes(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["adguard"]}]}}},
+                    {"store": {"spec": {"conditions": []}}}]
+        for name in ADGUARD_APPS:
+            for field, value in (("sync", "OutOfSync"), ("health", "Progressing")):
+                apps = [{"metadata": {"name": app}, "status": {
+                    "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
+                }} for app in ADGUARD_APPS]
+                next(app for app in apps if app["metadata"]["name"] == name)["status"][field]["status"] = value
+                variants.append({"apps": apps})
+        variants.extend({"fail": "preflight." + name}
+                        for name in ("namespace", "project", "apps", "crds", "store", "store_scope", "storage"))
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="adguard", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
+
+    def test_adguard_preserves_current_main_guard_and_unrelated_target_exclusion(self):
+        result, events = self.run_apply(target="adguard", github_actions=True, stale_at=1)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("ssm.apply", events)
+        self.assertNotIn("apps.apply", events)
+        result, events = self.run_apply(target="nofx")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
+    def test_codex_signer_uses_automation_project_store_and_local_volume(self):
+        result, events = self.run_apply(target="codex-cloud-signer", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.namespace", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertIn("preflight.local_storage", events)
+        self.assertIn("preflight.local_volume", events)
+        self.assertNotIn("preflight.storage", events)
+        self.assertLess(events.index("ssm.apply"), events.index("apps.apply"))
+        self.assertNotIn("s3.apply", events)
+
+    def test_codex_signer_denies_wrong_namespace_or_missing_local_state_before_writes(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["codex-cloud-signer"]}]}}},
+                    {"fail": "preflight.namespace"},
+                    {"fail": "preflight.local_storage"}, {"fail": "preflight.local_volume"}]
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="codex-cloud-signer", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
 
     def test_traefik_checks_only_its_platform_prerequisites_before_saved_plan(self):
         result, events = self.run_apply(target="traefik", without_azuread=True)
@@ -631,6 +867,113 @@ else:
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(events, ["generate", "preflight.project"])
 
+    def test_uptime_kuma_checks_monitoring_then_saved_ssm_and_application(self):
+        result, events = self.run_apply(target="uptime-kuma", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.node", events)
+        self.assertIn("preflight.namespace", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertEqual([e for e in events if e.endswith(".apply")],
+                         ["ssm.apply", "apps.apply"])
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+
+    def test_uptime_kuma_preflight_denies_before_any_mutation(self):
+        variants = [{"project": PROJECT}, {"apps": []},
+                    {"store": {"spec": {"conditions": [{"namespaces": ["uptime-kuma"]}]}}},
+                    {"node": {"spec": {"unschedulable": True}, "status": {
+                        "conditions": [{"type": "Ready", "status": "True"}]}}},
+                    {"node": {"status": {"conditions": [{"type": "Ready", "status": "False"}]}}},
+                    {"fail": "preflight.namespace"}, {"fail": "preflight.storage"}]
+        project = json.loads(json.dumps(TRAEFIK_PROJECT))
+        project["spec"]["destinations"][0]["namespace"] = "monitoring"
+        project["spec"]["clusterResourceWhitelist"] += [
+            {"group": "", "kind": "PersistentVolume"},
+            {"group": "storage.k8s.io", "kind": "StorageClass"},
+        ]
+        for missing in ("PersistentVolume", "StorageClass"):
+            altered = json.loads(json.dumps(project))
+            altered["spec"]["clusterResourceWhitelist"] = [
+                item for item in altered["spec"]["clusterResourceWhitelist"]
+                if item["kind"] != missing]
+            variants.append({"project": altered})
+        project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+        variants.append({"project": project})
+        for unhealthy in ("prometheus", "external-secrets"):
+            variants.append({"apps": [{"metadata": {"name": name}, "status": {
+                "sync": {"status": "Synced"},
+                "health": {"status": "Degraded" if name == unhealthy else "Healthy"},
+            }} for name in [*APPS, "prometheus", "traefik"]]})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.")
+                                    for e in events), events)
+
+    def test_uptime_kuma_uses_routing_readiness_despite_unrelated_ingress_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "prometheus", "traefik"]]
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(events.index("preflight.traefik_certificate"), events.index("ssm.plan"))
+        apps[-1]["status"]["sync"]["status"] = "OutOfSync"
+        result, events = self.run_apply(target="uptime-kuma", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("ssm.plan", events)
+
+    def test_uptime_kuma_routing_dependency_failures_precede_all_mutations(self):
+        deployment = {"metadata": {"generation": 4}, "spec": {"replicas": 1},
+                      "status": {"observedGeneration": 4, "updatedReplicas": 1,
+                                 "readyReplicas": 1, "availableReplicas": 1}}
+        certificate = {"metadata": {"generation": 2},
+                       "spec": {"secretName": "traefik-tls", "dnsNames": ["*.stinkyboi.com"]},
+                       "status": {"conditions": [{"type": "Ready", "status": "True", "observedGeneration": 2}]}}
+        variants = [{"fail": "preflight.traefik_deployment"},
+                    {"fail": "preflight.traefik_certificate"},
+                    {"traefik_deployment": {}}, {"traefik_certificate": {}}]
+        for key, value in (("observedGeneration", 3), ("updatedReplicas", 0),
+                           ("readyReplicas", 0), ("availableReplicas", 0)):
+            item = json.loads(json.dumps(deployment))
+            item["status"][key] = value
+            variants.append({"traefik_deployment": item})
+        item = json.loads(json.dumps(deployment))
+        item["spec"]["replicas"] = 0
+        variants.append({"traefik_deployment": item})
+        for key, value in (("status", "False"), ("observedGeneration", 1)):
+            item = json.loads(json.dumps(certificate))
+            item["status"]["conditions"][0][key] = value
+            variants.append({"traefik_certificate": item})
+        for key, value in (("secretName", "unrelated"), ("dnsNames", ["unrelated.invalid"])):
+            item = json.loads(json.dumps(certificate))
+            item["spec"][key] = value
+            variants.append({"traefik_certificate": item})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="uptime-kuma", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.") for e in events), events)
+
+    def test_other_targets_still_require_aggregate_traefik_health(self):
+        apps = [{"metadata": {"name": name}, "status": {
+            "sync": {"status": "Synced"},
+            "health": {"status": "Progressing" if name == "traefik" else "Healthy"},
+        }} for name in [*APPS, "traefik"]]
+        result, events = self.run_apply(target="fleet", apps=apps)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("preflight.traefik_deployment", events)
+        self.assertNotIn("ssm.plan", events)
+
+    def test_uptime_kuma_failed_secret_plan_cannot_register_application(self):
+        for failure in ("ssm.plan", "ssm.policy", "ssm.apply"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="uptime-kuma", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("apps.plan", events)
+                self.assertNotIn("apps.apply", events)
+
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)
         self.assertNotEqual(result.returncode, 0)
@@ -663,20 +1006,31 @@ else:
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
 
+    def test_full_apply_with_no_affected_units_skips_production_phases(self):
+        result, events = self.run_apply(target="", affected_units=[], without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate"])
+
+    def test_full_apply_selects_only_affected_app_without_azuread(self):
+        result, events = self.run_apply(
+            target="", affected_units=["IaC/homelab/us-west-2/apps/fleet/argocd"],
+            without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
     def test_existing_only_skips_absent_apps_and_reuses_plan_filter(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
-            live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            live_apps=["fleet", "langfuse", "mastodon"])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
         self.assertIn("Skipping absent Argo CD Application nofx", result.stdout)
+        self.assertIn("Skipping absent Argo CD Application adguard", result.stdout)
 
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
-            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

@@ -8,6 +8,30 @@
   outputs =
     { self, nixpkgs, ... }:
     let
+      terragruntVersion = "1.2.2";
+      # Official release SHA256SUMS verified before pinning these binary hashes.
+      terragruntBinaries = {
+        aarch64-darwin = {
+          target = "darwin_arm64";
+          assetId = "735921814";
+          hash = "sha256-cGnuxRJ/AHUlsReKeC6AEhg0LPIjYzxuhQh2LeGRZtY=";
+        };
+        x86_64-darwin = {
+          target = "darwin_amd64";
+          assetId = "735921509";
+          hash = "sha256-vzrEexx3OrZ/Sk52Ho2xaqh6JFThJwjDUHAm3Dv2zfk=";
+        };
+        aarch64-linux = {
+          target = "linux_arm64";
+          assetId = "735922884";
+          hash = "sha256-pzDH2vL7fdE+bnsBazqJ/U9Ua8gaMfj/GUdIZsVmt1U=";
+        };
+        x86_64-linux = {
+          target = "linux_amd64";
+          assetId = "735922533";
+          hash = "sha256-G6StEc9qwnfoulmj/c64V2d44i9qJL7dVC6RutnzZJE=";
+        };
+      };
       xerjVersion = "1.0.0-rc.96";
       xerjArchives = {
         aarch64-darwin = {
@@ -44,6 +68,49 @@
           archive = xerjArchives.${system};
         in
         {
+          openwiki = pkgs.buildNpmPackage {
+            pname = "homelab-openwiki";
+            version = "0.7.0";
+            src = ./builds/openwiki;
+            npmDepsHash = "sha256-jz+cp/j9RCcW+v9idCrdvrXOOo5OXiBUSD26Ld1qQuk=";
+            dontNpmBuild = true;
+            nativeBuildInputs = [ pkgs.makeWrapper pkgs.patch ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p "$out/libexec/openwiki" "$out/bin"
+              cp -R node_modules "$out/libexec/openwiki/"
+              substituteInPlace "$out/libexec/openwiki/node_modules/openwiki/dist/ingestion/code-mode.js" \
+                --replace-fail '    await writeCodeModeAgentSnippets(cwd);' \
+                '    if (options.createWorkflow) await writeCodeModeAgentSnippets(cwd);'
+              patch -d "$out/libexec/openwiki/node_modules/openwiki" -p1 \
+                < ${./builds/openwiki/durable-coverage.patch}
+              makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
+                --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
+              runHook postInstall
+            '';
+            meta.mainProgram = "openwiki";
+          };
+          terragrunt = pkgs.stdenvNoCC.mkDerivation {
+            pname = "terragrunt";
+            version = terragruntVersion;
+            src = pkgs.fetchurl {
+              urls = [
+                "https://github.com/gruntwork-io/terragrunt/releases/download/v${terragruntVersion}/terragrunt_${terragruntBinaries.${system}.target}"
+                "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/${terragruntBinaries.${system}.assetId}"
+              ];
+              # The API asset route serves bytes only with this media type.
+              curlOptsList = [ "-H" "Accept: application/octet-stream" ];
+              inherit (terragruntBinaries.${system}) hash;
+            };
+            dontUnpack = true;
+            dontStrip = true;
+            installPhase = ''
+              runHook preInstall
+              install -Dm755 "$src" "$out/bin/terragrunt"
+              runHook postInstall
+            '';
+            meta.mainProgram = "terragrunt";
+          };
           xerj = pkgs.stdenvNoCC.mkDerivation {
             pname = "xerj";
             version = xerjVersion;
@@ -75,13 +142,18 @@
             text = ''
               (cd IaC && terragrunt stack generate)
               terragrunt hcl fmt --check
-              terragrunt hcl validate
+              terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
               bash scripts/ci/static-checks.sh
               bash scripts/ci/conftest-policies.sh
             '';
           };
         in
         {
+          openwiki = {
+            type = "app";
+            program = "${self.packages.${system}.openwiki}/bin/openwiki";
+            meta.description = "Run the pinned OpenWiki MCP with repository agent-policy preservation";
+          };
           validate = {
             type = "app";
             program = "${validate}/bin/validate";
@@ -136,6 +208,13 @@
               '';
         in
         {
+          openwiki-setup = pkgs.runCommand "homelab-openwiki-setup-test" {
+            nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
+          } ''
+            node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
           offline-tests = check "homelab-offline-tests" "bash scripts/ci/offline-checks.sh";
           manifest-policy = check "homelab-manifest-policy" "bash scripts/ci/conftest-policies.sh";
         }
@@ -153,6 +232,7 @@
             argocd
             awscli2
             bash
+            bind.dnsutils
             cloudflared
             conftest
             coreutils
@@ -196,7 +276,7 @@
             skopeo
             sops
             talosctl
-            terragrunt
+            self.packages.${system}.terragrunt
             unzip
             yamllint
             yq-go

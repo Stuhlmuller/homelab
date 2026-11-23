@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["external-secrets", "platform-storage"]
+  dependencies = ["../../external-secrets/argocd", "../../platform-storage/argocd"]
   spec = {
     ignoreDifferences = [
       {

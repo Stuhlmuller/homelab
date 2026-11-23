@@ -7,11 +7,13 @@ if __name__ == "__main__" and not sys.flags.isolated:
 import fcntl
 import importlib.util
 import json
+import math
 import os
 import re
 import signal
 from pathlib import Path
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("runner", ROOT / "scripts/cordium-runner.py")
@@ -20,6 +22,9 @@ spec.loader.exec_module(runner)
 SOURCE = Path("/var/run/cordium-runner-credentials")
 STATE = Path("/data/cordium-runner")
 KEYS = ("github-app-private-key", "auth-token")
+# Bounds cover existing command timeouts, startup/deletion loops and the job deadline.
+HEALTH_BUDGET = {"poll": 600, "provision": 840, "runner": runner.RUNNER_EXEC_TIMEOUT + 60,
+                 "cleanup": 600, "idle": 90}
 REPOSITORY = "https://github.com/Stuhlmuller/homelab.git"
 SOURCE_PATHS = (
     ".cordium", "builds/cordium-runner/Dockerfile", "builds/cordium-runner/Dockerfile.controller", "scripts/cordium-runner-controller.py",
@@ -81,6 +86,45 @@ def private_copies(source, destination):
             temporary.unlink(missing_ok=True)
 
 
+def process_start(pid):
+    fields = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()
+    if fields[0] == "Z":
+        raise RuntimeError("Controller process exited")
+    return fields[19]
+
+
+def health_progress(phase):
+    receipt = {"pid": os.getpid(), "start": process_start(os.getpid()), "phase": phase,
+               "deadline": time.monotonic() + HEALTH_BUDGET[phase]}
+    descriptor, name = tempfile.mkstemp(prefix=".health-", dir=STATE)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "w") as output:
+            json.dump(receipt, output)
+        os.replace(temporary, STATE / "health.json")
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def healthcheck():
+    receipt = json.loads((STATE / "health.json").read_text())
+    if (set(receipt) != {"pid", "start", "phase", "deadline"}
+            or type(receipt["pid"]) is not int or receipt["pid"] <= 0
+            or receipt["phase"] not in HEALTH_BUDGET
+            or type(receipt["deadline"]) not in (float, int) or not math.isfinite(receipt["deadline"])
+            or not 0 < receipt["deadline"] - time.monotonic() <= HEALTH_BUDGET[receipt["phase"]]
+            or process_start(receipt["pid"]) != receipt["start"]):
+        raise RuntimeError("Controller progress is stale or invalid")
+    with (STATE / "controller.lock").open("r") as lock:
+        if json.load(lock) != [receipt["pid"], receipt["start"]]:
+            raise RuntimeError("Controller receipt belongs to a previous lock owner")
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+    raise RuntimeError("Controller does not own its lifecycle lock")
+
+
 def main():
     pool = json.loads((ROOT / ".cordium/runner-pool.json").read_text())
     if pool["enabled"] is not True:
@@ -101,13 +145,27 @@ def main():
     client = ["cordium", "--homedir", str(login), "--domain", "stinkyboi.com"]
     with open(STATE / "controller.lock", "a", opener=lambda path, flags: os.open(path, flags, 0o600)) as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        runner.serve(pool, credentials / KEYS[0], client, checkout, credentials / KEYS[1],
-                     refresh_credentials=lambda: private_copies(SOURCE, credentials),
-                     reviewed_main=lambda: reviewed_controller_main(checkout, STATE / "source.git"))
+        lock.seek(0)
+        lock.truncate()
+        json.dump([os.getpid(), process_start(os.getpid())], lock)
+        lock.flush()
+        (STATE / "health.json").unlink(missing_ok=True)
+        try:
+            runner.serve(pool, credentials / KEYS[0], client, checkout, credentials / KEYS[1],
+                         refresh_credentials=lambda: private_copies(SOURCE, credentials),
+                         reviewed_main=lambda: reviewed_controller_main(checkout, STATE / "source.git"),
+                         progress=health_progress)
+        finally:
+            (STATE / "health.json").unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
     try:
-        main()
+        if sys.argv[1:] == ["--healthcheck"]:
+            healthcheck()
+        elif len(sys.argv) == 1:
+            main()
+        else:
+            raise RuntimeError("Unsupported controller arguments")
     except Exception:
         raise SystemExit("Runner controller stopped; private credential and transport output withheld") from None

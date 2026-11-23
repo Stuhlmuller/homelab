@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 
 spec = importlib.util.spec_from_file_location("promote", Path(__file__).with_name("image-automation-promote.py"))
 promote = importlib.util.module_from_spec(spec)
@@ -30,3 +34,24 @@ assert promote.validate_candidate_paths(config, candidate, [".github/workflows/e
 assert promote.validate_candidate_paths(config, candidate, ["clusters/homelab/apps/pilot.yaml"], ["x"])[0] is False
 assert promote.fast_forward_ref("b" * 40, "b" * 40, "c" * 40)[0] is True
 assert promote.fast_forward_ref("d" * 40, "b" * 40, "c" * 40)[0] is False
+
+# Check that the CLI accepts the candidate identity only through its SHA argument.
+with tempfile.TemporaryDirectory() as directory:
+    scratch = Path(directory)
+    state_path = scratch / "state.json"
+    candidate_path = scratch / "candidate.json"
+    state_path.write_text(json.dumps(state))
+    metadata = {key: value for key, value in candidate.items() if key != "candidate_sha"}
+    candidate_path.write_text(json.dumps(metadata))
+    command = [
+        sys.executable, "-I", str(Path(__file__).with_name("image-automation-promote.py")),
+        "--state", str(state_path), "--candidate", str(candidate_path),
+        "--candidate-sha", candidate["candidate_sha"], "--main-sha", candidate["base_sha"],
+    ]
+    result = subprocess.run(command, text=True, capture_output=True, check=True)
+    assert json.loads(result.stdout)["promotable"] is True
+
+    candidate_path.write_text(json.dumps(candidate))
+    result = subprocess.run(command, text=True, capture_output=True, check=False)
+    assert result.returncode != 0
+    assert "candidate_sha must come from the fetched Git ref" in result.stderr

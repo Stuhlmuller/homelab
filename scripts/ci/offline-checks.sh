@@ -6,26 +6,62 @@ set -euo pipefail
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
+# Kuma catalog/freshness/ownership/recovery contracts run in the pinned offline
+# tool set. Real-image timed/network fixtures are a separate local delivery gate.
+command -v promtool >/dev/null
+python3 -I scripts/ci/uptime-kuma-check.py
+python3 -I scripts/ci/uptime-kuma-check-test.py
+node --test scripts/ci/uptime-kuma-test.js
+python3 -I scripts/ci/uptime-kuma-backup-test.py
+
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/release-test.py
+python3 -I scripts/ci/static-cache-test.py
+python3 -I scripts/ci/checkov-reviewed-findings-test.py
+python3 -I scripts/ci/argocd-computed-fields-test.py
+python3 -I scripts/ci/argocd-image-updater-test.py --unit
+python3 -I scripts/ci/argocd-image-updater-policy-test.py
+python3 -I scripts/ci/argocd-image-updater-policy.py
+node --test scripts/ci/renovate-repository-test.js
+python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
 python3 -I scripts/ci/mastodon-routes-test.py
+python3 -I scripts/ci/terragrunt-app-equivalence-test.py
+python3 -I scripts/ci/mastodon-release-check-test.py
+python3 -I scripts/ci/litellm-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
+python3 -I scripts/ci/public-dns-validate-test.py
 python3 -I scripts/ci/openwiki-check.py
+node --test scripts/ci/openwiki-viewer-navigation-test.mjs
+python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
+ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
+python3 -I scripts/ci/cilium-egress-audit-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
+python3 -I scripts/ci/octelium-ci-credential-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-operator-oauth-rotate-test.py
+python3 -I scripts/ci/harbor-tailscale-production-test.py
+python3 -I scripts/ci/harbor-tailscale-production-sign-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
+python3 -I scripts/ci/tailscale-service-host-approve-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
+python3 -I scripts/ci/octelium-catalog-test.py
+python3 -I scripts/ci/terragrunt-credential-duration-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
+python3 -I scripts/ci/adguard-test.py
+python3 -I scripts/ci/adguard-check-test.py
+python3 -I scripts/ci/adguard-recovery-test.py
+python3 -I scripts/ci/adguard-dns-cutover-test.py
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
@@ -41,11 +77,16 @@ python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/octelium-service-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
+python3 -I scripts/ci/bulldozer-credential-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 -I scripts/ci/litellm-provider-credential-test.py
 python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
+python3 -I scripts/ci/langfuse-postgres-object-restore-test.py
+python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
+python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py
@@ -55,6 +96,7 @@ python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
 python3 -I scripts/ci/bazarr-bootstrap-test.py
 python3 -I scripts/ci/nas-media-permissions-test.py
+python3 -I scripts/ci/arr-playback-policy-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
@@ -73,7 +115,9 @@ python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
 python3 -I scripts/ci/harbor-native-chainguard-receipt-import-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
 python3 -I scripts/ci/harbor-core-scan-check-test.py
+python3 -I scripts/ci/validate-runtime-scope-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
+python3 -I scripts/ci/harbor-full-sync-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
 python3 -I scripts/ci/image-automation-test.py
 python3 -I scripts/ci/image-automation-promote-test.py
@@ -81,9 +125,14 @@ python3 -I scripts/ci/image-automation-alert-test.py
 python3 -I scripts/ci/image-automation.py check
 python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
+python3 -I scripts/ci/harbor-chart-publish.py --check
+python3 -I scripts/ci/harbor-chart-publish-test.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/harbor-generated-rollout-test.py
 python3 -I scripts/ci/network-policy-inventory-test.py
+python3 -I scripts/ci/network-policy-candidate-report-test.py
+python3 -I scripts/ci/crossplane-retirement-check-test.py
+python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 -I scripts/ci/talos-nri-preparation-check-test.py
@@ -92,26 +141,31 @@ python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
-python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
+python3 -I scripts/ci/terragrunt-affected-units-test.py
+python3 -I scripts/ci/terragrunt-plan-runner-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
+python3 -I scripts/ci/istio-egress-test.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
-python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py
 python3 scripts/ci/renovate-alert-check.py
 python3 -I scripts/ci/memory-overcommit-check.py
+python3 -I scripts/ci/talos-filesystem-check.py
+python3 -I scripts/ci/state-encryption-test.py
 python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
+bash scripts/ci/terragrunt-deleted-apply-test.sh
 python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
-python3 -I scripts/ci/n8n-ai-migration-check.py
+python3 -I scripts/ci/n8n-runtime-check.py
 python3 -I scripts/ci/clickhouse-log-quarantine-test.py
 python3 scripts/ci/gluetun-cpu-profile-check.py
 python3 scripts/ci/deluge-daemon-status-test.py

@@ -2,6 +2,10 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
+Source publication does not authorize key installation or a live dispatch.
+
+
 ## Helm charts
 
 `scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
@@ -22,10 +26,18 @@ and re-run the protected publication workflow before asking Argo CD to sync.
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
 public Chainguard source catalog. The protected `harbor-mirror.yml`
-`chainguard` scope copies its thirteen entries to
+`chainguard` scope copies its thirteen tagged sources and one retained digest to
 `mirror/cgr.dev/chainguard/<image>`. That proves source provenance and Harbor
 custody only; it does not make an artifact deployment-eligible or move a
 consumer to the public `mirror` project.
+
+Python retains one digest-only catalog entry for the staged network-policy
+canary. Its existing Harbor reference uses the digest hex as both tag and
+pinned digest. A request for upstream `python:latest@<old-digest>` still maps
+to that immutable mirror reference. `python:latest` maps to the current
+reviewed digest. A direct Harbor `:latest@<old-digest>` reference is outside
+the admission allowlist after the alias moves. Use the retained digest-tagged
+reference for that version. Only the current tagged rows select native imports.
 
 Native Harbor replication is currently limited to
 `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
@@ -158,9 +170,9 @@ and alias verification on each run.
 Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
-publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
-registry challenge. Failed forward readiness is retried at most twice, stopping
-the failed process between attempts. It retains completed content in one
+publisher requires a fresh strict-TLS/401 registry challenge. The protected
+public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
+retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
 temporary OCI directory and forces a recursive check of nested manifests and
 blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
@@ -225,8 +237,30 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   For Uptime Kuma onboarding, use `image_scope=uptime-kuma`. The fixed
+   `scripts/config/harbor-uptime-kuma-images.json` contains only Kuma 2.5.11 at
+   its reviewed multi-platform digest. Require complete authenticated pulls
+   before merging any consuming deployment; this prerequisite adds no workload.
+
+   For AdGuard onboarding, use `image_scope=adguard`. The fixed
+   `scripts/config/harbor-adguard-images.json` selects the reviewed AdGuard
+   v0.107.80 and Python 3.14.7 Alpine init images. Both retain normal digest,
+   platform and complete authenticated pull verification. A successful scoped
+   run proves this bundle only; the earlier full-catalog failure remains separate.
+
+   For kagent onboarding, use `image_scope=kagent`. The fixed
+   `scripts/config/harbor-kagent-images.json` bundle includes the controller,
+   UI, Go and Python agent runtimes, skills initializer, and PostgreSQL.
+   The publisher checks the complete bundle against the reviewed catalog.
+
+   For the Cilium migration, use `image_scope=cilium`. The fixed
+   `scripts/config/harbor-cilium-images.json` bundle selects the agent,
+   Envoy and generic operator rendered by chart 1.20.5. Require successful
+   digest and platform verification and complete authenticated pulls before
+   registering the consuming chart.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `uptime-kuma`, `adguard`, `cilium`, `kagent`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -243,7 +277,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    remains enrolled for Harbor; this preparation changes no live database.
    Publish and inspect fresh scan results before changing the Mastodon consumer.
 
-   The `chainguard` scope selects the thirteen digest-pinned public candidates in
+   The `chainguard` scope selects the digest-pinned public sources in
    `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
    Wolfi base and static runtime. It publishes to the same normal
@@ -256,17 +290,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects eight pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Five new digests cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. These candidates use digest-only source references so
+   the existing tag aliases keep their current mapping. It copies and
+   verifies only those eight entries while the unrelated full catalog is held.
+   After this catalog change merges, dispatch
+   it at exact current `main` and require eight complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
+   `afc7e2d` and `7d38526` pins remain for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
@@ -289,7 +324,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    The receipt workflow accepts no image, registry, destination, or credential
    input. It verifies only the committed Python and curl plan and uploads the
-   bounded receipt artifact. Import it only through a receipt-state-only pull
+   bounded receipt artifact. Every required child needs both a zero-finding
+   vulnerability scan and a successful native SPDX SBOM containing real
+   versioned libraries. The verifier binds the SBOM accessory to the child
+   digest and checks accessory/document bytes against their SHA-256 digests;
+   container-root or OS-only SBOMs cannot pass. Version 2 entries carry only
+   digests and package counts, preserving private package details. Earlier
+   version 1 entries require regeneration before they can prove coverage.
+   Import it only through a receipt-state-only pull
    request. The trusted provenance workflow rechecks each changed entry against
    the exact protected Actions artifact and records its provenance; it does not
    migrate a consumer or deploy a workload. Its PR and main-push checks run
@@ -358,9 +400,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures restart the private Harbor port-forward
-   and recheck its TLS registry challenge before retrying either Docker manifests
-   or OCI indexes. Hard authentication, missing-content and digest errors stop.
+   Transient authenticated pull failures recheck the private Harbor TLS registry
+   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
@@ -615,6 +657,11 @@ bcrypt registry password hash.
 
 ## Updates and coverage
 
+AdGuard Home v0.107.80 is staged in the full catalog by its upstream multi-platform
+index digest. Publish it through `image_scope=all` at exact current `main` and
+retain the complete authenticated pull receipt before merging its workload.
+The inventory entry alone does not deploy AdGuard or change tailnet DNS.
+
 Add new image digests to the catalog in a prerequisite PR, publish/verify them,
 then merge the consuming image or chart upgrade. Never combine first publication
 and a new consuming reference in one rollout: Argo follows `main` immediately.
@@ -704,6 +751,18 @@ that consumer exists. Before onboarding, it compares all four fixed version tags
 against the full reviewed catalog. Runtime version changes must update the
 publication scope in the prerequisite change before the consumer reaches main.
 Existing shared platform dependencies keep their own publication ownership.
+
+### Mastodon 4.7.4 security prerequisite
+
+The full catalog additionally retains official 4.7.4 web and streaming index
+pins before any runtime change. The owner authorized a one-time seven-day
+image-age exception for this security release on October 29, 2026.
+The fixed Mastodon scope remains bound to the running 4.7.3 overlay, so publish
+these staged pins through the existing `image_scope=all` lane at exact reviewed
+`main`. Require complete destination pulls and fresh child scan review before
+merging the consuming patch. Catalog entries alone do not prove availability
+or authorize deployment; require fresh database backup and recovery evidence.
+Other image-age policy, routes and persistent data remain unchanged.
 
 ## Publication queue boundaries
 

@@ -1,0 +1,91 @@
+{
+  "scope": "Public upstream images and locally built OCI images for Linux amd64 and arm64",
+  "threshold": "Zero fixable HIGH or CRITICAL findings, with positive Go package coverage",
+  "upstream": {
+    "v0.0.36": {
+      "index": "docker.io/rancher/local-path-provisioner:v0.0.36@sha256:1eba82e9c386038b4af6d69cca7519fac738c28c42735ed48ce70c882ad0d80f",
+      "platforms": {
+        "linux/amd64": {
+          "manifest": "sha256:67f83d34746a637da2141ae38ab547a1d7edc440e794c42239c0fb908296bdfc",
+          "config": "sha256:9254fb81aa65831cce153dfdf883805d40157b78ccec0c10fd82c499113fd1de",
+          "targets": 12,
+          "package_records": 83,
+          "raw_rows": 178,
+          "unique_fixable_high": 28,
+          "unique_fixable_critical": 0,
+          "report": "sha256:108f26c39a7b6ef7e4f7be97953f37b7118785f1eac2ddcbef65e49575de68dc"
+        },
+        "linux/arm64": {
+          "manifest": "sha256:7839ab35f7b8f50c2a871dab2e651c3042a7dd343a9d38b29ba8c550de330ba5",
+          "config": "sha256:58d078c5467bf37b5bf5230f2a85dcfe40fc7042062ab8823757ec7822aaeb22",
+          "targets": 12,
+          "package_records": 83,
+          "raw_rows": 178,
+          "unique_fixable_high": 28,
+          "unique_fixable_critical": 0,
+          "report": "sha256:2782c4e66c11b0ece71cfcb3deb928f1626116f13e3d19b3d587731df65bd6a3"
+        }
+      }
+    },
+    "v0.0.37": {
+      "index": "docker.io/rancher/local-path-provisioner:v0.0.37@sha256:e757967a5ec338f6a9b371c5a9688bedaa8c3578ea3dd4db329ea0084be0a86f",
+      "platforms": {
+        "linux/amd64": {
+          "manifest": "sha256:c3f2c60ee2490eb83ac00101d7e239fd8c20a5b8b4038e2dfc36a7e66fe99c08",
+          "config": "sha256:683316f41426e4fc774e1cd7388e3bcbd5d4d63837753a789d929d64365c399a",
+          "targets": 1,
+          "package_records": 54,
+          "raw_rows": 15,
+          "unique_fixable_high": 15,
+          "unique_fixable_critical": 0,
+          "report": "sha256:cde1fdebf3500d50e235cf344ad64571c551a91be5873c1d7071c3f21537eeee"
+        },
+        "linux/arm64": {
+          "manifest": "sha256:6a6bade778f51df4e3f9710db6b62ff6eb366cac897e7eccc3528ebd6d22e86c",
+          "config": "sha256:004fd242b0093da1fa224b46ebd210bc3932b9ef79bff6f26f8489e61209ae26",
+          "targets": 1,
+          "package_records": 54,
+          "raw_rows": 15,
+          "unique_fixable_high": 15,
+          "unique_fixable_critical": 0,
+          "report": "sha256:3c09b3575af1b1ef377137eadd630e92858bb6d007e7d0edd1ec1f2febdc8087"
+        }
+      }
+    }
+  },
+  "rebuild": {
+    "index": "sha256:584a86394c9e4e2b2e3020c5a025cb87443efef342b29753f8ef5dec35309184",
+    "source_revision": "49b2be8e26d6d34c9afaa21fa33108d2e82f8955",
+    "compiler": "1.27.3",
+    "dependency_patch": "sha256:5313a4696a6e650c33e64c6a17c9b28a81f3df8e708440dc4875a689ddfc0ebf",
+    "scanner": "0.72.0",
+    "scanner_binary": "sha256:7f8266768e8ba12d17800c67725613855737e9afcfb681ce11f55d7b86632672",
+    "checked_at": "2026-11-02T06:32:26.907162+00:00",
+    "db": "ghcr.io/aquasecurity/trivy-db@sha256:0323600b33c951c44c344fd87ebc4810ac6e435ba857b06a2b5b6b26aac03829",
+    "db_updated_at": "2026-11-02T01:14:05.640637121Z",
+    "platforms": {
+      "linux/amd64": {
+        "manifest": "sha256:95f2d964c883f6c3bb388593d7afadf8cb17d51947f9a08d0fc678670af32df7",
+        "config": "sha256:961eab9208d1ff84b804c4d88c02b8e8ff2ca09079e1cc804d4c90a52329eba0",
+        "binary": "sha256:672862c51e828377bbce5303473987209af132a25475c55317c7f784ef8a4d62",
+        "module_graph": "sha256:165eb9bb48449400a8ebd2b8a21e63f85c9372c24897dba598c41639819fe655",
+        "versioned_packages": 53,
+        "report": "sha256:9e1232f93377177edfd0957e0948af1a4c928401060dc73f0afccb427c10ab9e",
+        "fixable_high": 0,
+        "fixable_critical": 0
+      },
+      "linux/arm64": {
+        "manifest": "sha256:8613c0fe6eea46216c34c40cf6b7ae679e3e84ab1c6fcf9ed899279d04057783",
+        "config": "sha256:39339d1635931ce31f21425e5d23f12b92bcd8a77499d989941b8552434c5fe8",
+        "binary": "sha256:e6ffc4e5d669d2ae7436082c53a6b350b0915caec34749d5614ca66e79806b1d",
+        "module_graph": "sha256:165eb9bb48449400a8ebd2b8a21e63f85c9372c24897dba598c41639819fe655",
+        "versioned_packages": 53,
+        "report": "sha256:d4c10812bc8de07ff5291a7985f246a74cc10b8817893d323497f49d4b193497",
+        "fixable_high": 0,
+        "fixable_critical": 0
+      }
+    },
+    "tag": "v0.0.37-homelab.1"
+  },
+  "rollout": "Local artifact evidence only; protected publication and existing-volume acceptance pending."
+}

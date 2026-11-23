@@ -71,7 +71,7 @@ test('one primary scan reports to a per-Pod path without changing its token, cac
   assert.doesNotMatch(kustomization, /acceptance-primary-report-patch/);
   assert.match(cron, /^  schedule: "0 \* \* \* \*"$/m);
   assert.match(cron, /secretName: renovate\n/);
-  assert.match(cron, /claimName: renovate-cache\n/);
+  assert.match(cron, /- name: cache\n\s+persistentVolumeClaim:\n\s+claimName: renovate-cache-local\n/);
   assert.match(patch, /acceptance-report-runner\.js/);
   assert.match(patch, /claimName: renovate-acceptance-ledger/);
   assert.match(patch, /medium: Memory\n\s+sizeLimit: 128Mi/);

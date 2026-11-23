@@ -65,9 +65,9 @@ the cutover must stop for a separate reviewed decision instead.
 
 ## Decision 4: Restore private DNS on failure
 
-**Decision:** On a private resolver or signed proxy failure, recover the
-repository-owned resolver, Service, or fixed Tailnet Lock signature through
-the declared Argo/Terragrunt and signer paths. Do not republish retired public
+**Decision:** On a private resolver or proxy failure, recover the
+repository-owned resolver or Service through
+the declared Argo/Terragrunt paths. Do not republish retired public
 app addresses as an outage response. A later policy reversal needs a separate
 reviewed change.
 
@@ -90,7 +90,7 @@ off-tailnet reachability but reverses the requested security boundary.
 - The private resolver watches the approved Traefik Service and forwards
   unrelated names and non-address types to public resolvers.
   [Resolver values](../../clusters/homelab/platform/tailnet-dns/values.yaml),
-  [health checker](../../scripts/tailnet-dns-check.py).
+  [direct resolver verification](../../docs/networking-tailnet-ingress.md#direct-resolver-verification).
 - Traefik's wildcard certificate uses the Cloudflare DNS-01 issuer. The public
   zone and validation capability must remain.
   [Certificate](../../clusters/homelab/apps/traefik/certificate.yaml),

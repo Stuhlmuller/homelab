@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c5f34284d7a96ce27c10591abe1fa36d601c6b4daf06282af9418d54874fd9c7",
+  "pageVersion": "sha256:401bb34a1d0b2e0ced73b5752eac63e585426d45a81e8d0e8cfba7e21587394f",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+          "version": "repo-file-v1:sha256:ae866f2bb5498937d5732111d647a1e6ad3967e8a4bd5120522baa32f7cc1ed3"
         },
         {
           "resource": "repo://docs/octelium.md",
@@ -54,15 +54,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+          "version": "repo-file-v1:sha256:5c08f09a8498a34621a6abaff6e4da3066f91d4e149a20d1f4715fd43882e7bf"
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+          "version": "repo-file-v1:sha256:ae866f2bb5498937d5732111d647a1e6ad3967e8a4bd5120522baa32f7cc1ed3"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise-access.py",
@@ -76,7 +76,7 @@
       "evidence": [
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+          "version": "repo-file-v1:sha256:ae866f2bb5498937d5732111d647a1e6ad3967e8a4bd5120522baa32f7cc1ed3"
         },
         {
           "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
@@ -87,6 +87,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T12:00:26.315Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

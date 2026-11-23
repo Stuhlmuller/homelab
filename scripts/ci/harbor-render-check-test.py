@@ -295,8 +295,8 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_CATALOG),
             ) if plan["image_id"] == "chainguard-python")
             receipt = {
-                "schema_version": 1,
-                "kind": "native-chainguard-v1",
+                "schema_version": 2,
+                "kind": "native-chainguard-v2",
                 "repository_sha": "a" * 40,
                 "config_digest": plan["config_digest"],
                 "image_id": plan["image_id"],
@@ -306,7 +306,10 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 "destination_digest": plan["source_digest"],
                 "platforms": {"linux/amd64": "sha256:" + "a" * 64,
                               "linux/arm64": "sha256:" + "b" * 64},
-                "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+                "sbom_coverage": {platform: {"manifest_digest": "sha256:" + "d" * 64,
+                              "document_digest": "sha256:" + "e" * 64, "package_count": 1}
+                              for platform in ("linux/amd64", "linux/arm64")},
+            "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
                 "consumer_access": True,
             }
             state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))

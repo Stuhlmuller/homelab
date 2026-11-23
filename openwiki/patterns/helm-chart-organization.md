@@ -9,8 +9,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
   - id: openwiki-source-7965c9b2bfe3b80fc14078ae
     resource: repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-6e612a8a6f7d729d059f3093
@@ -19,7 +17,7 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T12:00:26.315Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Helm Chart Organization
@@ -40,15 +38,14 @@ clusters/homelab/apps/<app>/
   values.yaml                              # overrides for the upstream chart
   kustomization.yaml                       # only when local resources exist
   externalsecret.yaml, networkpolicy.yaml   # app-owned resources, as needed
-  README.md                                # readiness, storage, rollback
 ```
 
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
 [application stack](../../IaC/homelab/us-west-2/apps/traefik/stack.hcl),
-[OpenClaw values and extras](../../clusters/homelab/apps/openclaw/README.md), and
-[Harbor values and extras](../../clusters/homelab/apps/harbor/README.md) demonstrate
+[OpenClaw values and extras](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw/README.md), and
+[Harbor values and extras](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md) demonstrate
 this layout.
 
 Argo CD supports an upstream Helm source plus Git-hosted `$values`, avoiding a
@@ -86,7 +83,7 @@ This is a repository design decision, not a claim that one layout fits every
 deployment. It preserves the existing chart behavior while concentrating
 repetition in the Application registration layer.
 
-The dormant [OpenClaw Enterprise candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+The dormant [OpenClaw Enterprise candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise/README.md)
 keeps the pinned upstream chart intact. App-local `values.yaml` and reviewed
 `installation.yaml` supply site inputs; Kustomize holds lifecycle hook resources
 and a single EnvoyProxy image override. The focused renderer test compares

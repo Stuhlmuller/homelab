@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: traefik-sidecar-canary-state
+  namespace: traefik
+rules:
+  # Kubernetes cannot constrain create by resourceNames. The kube store creates
+  # only its configured Secret name; all later access is exact-name scoped.
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [traefik-sidecar-canary-state]
+    verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: traefik-sidecar-canary-state
+  namespace: traefik
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: traefik-sidecar-canary-state
+subjects:
+  - kind: ServiceAccount
+    name: traefik-sidecar-canary
+    namespace: traefik

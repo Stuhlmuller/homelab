@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/go:latest@sha256:c81d42afe2d9f5728a63998d93340553b46b0a8f149888527f1ab9deb3dfa9ef AS build
+FROM cgr.dev/chainguard/go:latest@sha256:b49aac675fb8613c532b0dd60492f2afa8af358590817d8cede2e5c4c47bd0e3 AS build
 USER 0
 WORKDIR /src/upstream/src
 COPY upstream/ /src/upstream/
@@ -16,14 +16,23 @@ RUN --network=none cp pkg/artifact/manager.go /src/patched-manager.go \
     && grep -F 'duplicate key violates unique_reference' /tmp/baseline.log \
     && cp /src/patched-manager.go pkg/artifact/manager.go \
     && go test ./pkg/artifact -run TestManager -count=1 \
-    && go test ./server/middleware/csrf ./homelabcompat -count=1 \
+    && go test ./server/middleware/csrf ./homelabcompat ./controller/health ./pkg/distribution/... ./pkg/registry/... ./pkg/reg/adapter/azurecr/... -count=1 \
     && go list -deps ./core >/tmp/core-packages \
-    && if grep -E '^(golang.org/x/crypto/openpgp($|/)|github.com/(docker|distribution)/distribution(/v3)?/registry/(proxy|handlers|storage)($|/))' /tmp/core-packages; then exit 1; fi \
+    && if grep -E '^(github.com/docker/distribution($|/)|golang.org/x/crypto/openpgp($|/)|github.com/(docker|distribution)/distribution(/v3)?/registry/(proxy|handlers|storage)($|/))' /tmp/core-packages; then exit 1; fi \
     && CGO_ENABLED=0 go build -buildvcs=false -trimpath \
        -ldflags '-X github.com/goharbor/harbor/src/pkg/version.ReleaseVersion=v2.15.4 -X github.com/goharbor/harbor/src/pkg/version.GitCommit=0a6bf30d54e779962ad5b862fc67e3e9f6b010d8' \
        -o /out/harbor_core ./core
 
 FROM docker.io/goharbor/harbor-core:v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112
+USER 0
+# Use signed current Photon updates because the upstream snapshot predates these fixes.
+RUN printf '%s\n' '[homelab-security]' 'name=Photon security updates' \
+    'baseurl=https://packages.broadcom.com/photon/5.0/photon_updates_5.0_x86_64' \
+    'gpgkey=file:///etc/pki/rpm-gpg/VMWARE-RPM-GPG-KEY-4096' 'gpgcheck=1' 'enabled=1' \
+    > /etc/yum.repos.d/homelab-security.repo \
+    && tdnf install -y openssl-3.5.9-3.ph5 openssl-libs-3.5.9-3.ph5 pcre2-libs-10.40-12.ph5 \
+    && tdnf clean all
+USER 10000
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.description="Harbor core with byte-preserving identical child relation handling"

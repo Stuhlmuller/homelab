@@ -1,0 +1,70 @@
+--- a/dist/generation/repository-run.js
++++ b/dist/generation/repository-run.js
+@@ -134,12 +134,12 @@
+             context.lastUpdate.status === "complete") {
+             await seedRepositoryPageManifest(input.root, initialPages, context.lastUpdate.gitHead);
+         }
+-        if (input.mode === "update") {
+-            await fastForwardUnchangedRepositoryPageCoverage(input.root, ignore, initialPages, {
++        const nonDurablePages = input.mode === "update"
++            ? await fastForwardUnchangedRepositoryPageCoverage(input.root, ignore, initialPages, {
+                 sourceFingerprint: source.fingerprint,
+                 ...(source.gitHead ? { gitHead: source.gitHead } : {}),
+-            });
+-        }
++            })
++            : [];
+         const seededManifest = input.mode === "update"
+             ? await readRepositoryPageManifest(input.root)
+             : undefined;
+@@ -151,7 +151,8 @@
+             const preflight = await getUpdateNoopStatus(input.root, ignore, input.language);
+             if (preflight.shouldSkip &&
+                 claimsRuntime.issueCount === 0 &&
+-                hasCompleteBaselineCoverage) {
++                hasCompleteBaselineCoverage &&
++                nonDurablePages.length === 0) {
+                 const source = await createRepositorySourceSnapshot(input.root, ignore);
+                 await claimsRuntime.finalize(now().toISOString());
+                 const stableSource = await createRepositorySourceSnapshot(input.root, ignore);
+@@ -182,7 +183,9 @@
+             outputMode: "repository",
+             conceptType: resolveConceptTypeLabel(language),
+         });
+-        const requiredRewritePages = input.mode === "update" && languageChanged ? initialPages : [];
++        const requiredRewritePages = input.mode === "update"
++            ? languageChanged ? initialPages : nonDurablePages
++            : [];
+         const state = {
+             schemaVersion: 1,
+             runId: randomUUID(),
+@@ -475,18 +478,26 @@
+  * @param source - Current source checkpoint to fast-forward to.
+  */
+ async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, source) {
+-    if (!source.gitHead)
+-        return;
+     const manifest = await readRepositoryPageManifest(root);
++    const store = new ClaimsStore(root);
++    const nonDurablePages = [];
+     for (const page of [...pages].sort(compareCodeUnits)) {
+         const entry = manifest.pages[page];
+-        if (!entry?.gitHead || entry.gitHead === source.gitHead)
++        const sidecar = await store.loadPage(page);
++        const pageVersion = await store.hashPage(page);
++        if ((entry || sidecar) && (!sidecar?.verification || !entry ||
++            sidecar.pageVersion !== pageVersion || entry.pageVersion !== pageVersion)) {
++            nonDurablePages.push(page);
++            continue;
++        }
++        if (!source.gitHead || !entry?.gitHead || entry.gitHead === source.gitHead)
+             continue;
+         const changedPaths = await getRepositoryChangedPaths(root, ignore, entry.gitHead);
+         if (changedPaths.length > 0)
+             continue;
+         await recordRepositoryPageCompletion(root, page, source, entry.completedBy, entry.completedRunId);
+     }
++    return nonDurablePages;
+ }
+ /**
+  * Validates and durably installs the ordered PageJob queue.

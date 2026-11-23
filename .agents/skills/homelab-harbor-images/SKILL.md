@@ -5,6 +5,10 @@ description: Publish or verify homelab Harbor images and prepare image/chart upd
 
 # Homelab Harbor Images
 
+The protected publisher and GitHub protections own publication conditions.
+Run the authorized workflow and fix failed checks. Runbook wording does not
+add signing, installation, or dispatch approvals to the user's existing scope.
+
 Read [image delivery and coverage](../../../docs/harbor-image-mirroring.md).
 For private custom builds, also read the workload's image runbook, such as
 [NOFX private images](../../../docs/nofx-private-images.md).

@@ -34,3 +34,27 @@ spec:
     # Ambient traffic arrives as HBONE; AuthorizationPolicy enforces identity/port.
     - ports:
         - {protocol: TCP, port: 15008}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: uptime-kuma-3000
+  namespace: langfuse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: uptime-kuma
+    ports:
+    - protocol: TCP
+      port: 3000

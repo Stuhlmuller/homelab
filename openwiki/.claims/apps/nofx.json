@@ -1,26 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50f6e9835f63757335a97145457e317c1adf543442486903c4c00817e2761544",
+  "pageVersion": "sha256:2eb251e3e5a0b1fc032f2f55c9461b660bbac0ae5e793b88840b0dab518ef8f9",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
-      "statement": "NOFX's canonical hostname already has private tailnet DNS and a Traefik HTTPS route, while its public address record remains until the guarded 26-name retirement; Cloudflare Tunnel and Octelium remain for legacy callers after the former public DNS writer was removed.",
+      "statement": "NOFX's canonical hostname uses private tailnet DNS and Traefik HTTPS; its public address record was retired in the documented October 25 cutover, while Cloudflare Tunnel and Octelium remain for legacy callers.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/nofx/README.md",
-          "version": "repo-file-v1:sha256:9ebcc34fb65078af47ddf3bda81f2f3bc68cff7f70d7f5aa7b05842c44ec7137"
+          "resource": "repo://clusters/homelab/apps/nofx/README.md#L1-L14",
+          "version": "repo-lines-v1:sha256:687dc33e97cafd3b9fd36782043251fa72492bf85bc80dd4c24c12a652b332b2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZTRhYWE3NjFmY2U3MGNhMDFlZDc3M2RkMDc0ZjZhYzE5YjlmMmE5ODJhMDBhZDIyNTEyOWQ0ZDcyMmMzMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYmYzODQ1NzcwMTE3YTJlMTdlZDMyZTk5Mzg2MTJiYWQ0OTViZjgxYjM3MWUxYzFkNzU5MWFmNGZlMzZmNzUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:9162eeaa4c209ec37f7a6b38ef6b74eac620680f33b910b6ed61b054765b4997"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L1-L35",
+          "version": "repo-lines-v1:sha256:c224ab001fd04e47214c516700695ccf494b935a7b003dcb6b75a5e07733046e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmYmFkZGRlZDc4Y2UxODFkNmEwMGE4NDRjZTQyYTYxOWU0NGUyODI4NjVhY2I2YjhiYjYwZWJlMGU3MDcwZDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NDhkMjdjOTEyYTU2NDA5NzNjMDI4MDBkM2E1ZDc3Mzc3MzdjMjhhNDIzYzQzNGI4Zjk1ZjQ3YWVlZTQ1ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZjNzkxZjRhMDVhODJhYWE1YzJlMTk1ZWJmZmM5NGUxYmRhNDZjMDE5MzUyYWE5MGYzNmFmM2ZjODE3YTJkZDAifQ"
         }
       ]
     },
@@ -38,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L93-L129",
@@ -49,6 +41,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T12:11:12.391Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

@@ -86,7 +86,7 @@ class SourceTests(unittest.TestCase):
         shutil.copyfile(ROOT / "builds/harbor-core/prepare-source.py", recipe / "prepare-source.py")
         (recipe / "Dockerfile").write_text("fixture only\n")
         (recipe / "patches").mkdir()
-        for name in ("0001.patch", "0002.patch", "0003.patch"):
+        for name in ("0001.patch", "0002.patch", "0003.patch", "0004.patch"):
             (recipe / "patches" / name).write_text("fixture only\n")
         spec = importlib.util.spec_from_file_location("source", recipe / "prepare-source.py")
         self.source = importlib.util.module_from_spec(spec)
@@ -115,7 +115,7 @@ class SourceTests(unittest.TestCase):
         with patch.object(self.source.urllib.request, "urlopen", return_value=io.BytesIO(data)), \
                 patch.object(self.source.subprocess, "run") as commands:
             self.source.prepare(self.destination)
-        self.assertEqual(commands.call_count, 6)
+        self.assertEqual(commands.call_count, 8)
         self.assertTrue(all(call.kwargs["check"] for call in commands.call_args_list))
         self.assertEqual((self.destination / "homelab-build/original-manager.go").read_bytes(), b"original source\n")
 

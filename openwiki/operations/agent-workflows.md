@@ -27,6 +27,52 @@ The homelab skills point to canonical runbooks; OpenWiki supplies searchable
 cross-cutting context. See [wiki maintenance](wiki-maintenance.md) for its
 installation, update, and verification workflow.
 
+## PR Delivery
+
+Repository change tasks continue through protected merge unless the user asks
+for preparation only. The [delivery runbook](../../docs/pr-delivery.md) connects
+PR contribution, protected merging, and stack maintenance. The delivery owner
+repairs actionable ancestors first, then restacks and resumes descendants.
+Drafts and external waits retain a specific next action and ready condition.
+Merge completion is verified in GitHub and `main`; deployment acceptance remains
+separate. A durable runner must resume pending work after checks or dependencies
+change; instructions alone do not schedule another agent session.
+
+The [planner](../../scripts/pr-delivery.py) orders live PR dependencies and
+records checkout-local branch ownership and continuation. Its output is
+advisory: protected merge still verifies signatures, reviews, integration
+identities, and activation gates. Check results preserve the issuing App, so a
+newer same-name result from another App cannot hide a required App's failure.
+Missing App attribution produces `inspect-check-issuers`; REST commit statuses
+alone cannot prove an App-bound requirement. Same-name status and check results
+must both pass. The
+[regression suite](../../scripts/ci/pr-delivery-test.py) exercises conflicting
+parents, restacking, missing checks, App attribution, and interrupted ownership; it runs in the
+repository offline gate and focused PR Delivery workflow. A Codex heartbeat
+provides recurring delivery using the authenticated agent runtime.
+
+## Task Lifecycle
+
+The [lifecycle skill](../../.agents/skills/homelab-task-lifecycle/SKILL.md) and
+[issue form](../../.github/ISSUE_TEMPLATE/agent-task.yml) retain scope, owner,
+authority, dependencies, stage, evidence and next action across sessions.
+The [runbook](../../docs/autonomous-task-lifecycle.md) extends existing PR
+delivery with revision-bound deployment and service-specific acceptance.
+Its read-only verifier rejects stale or incomplete rollout evidence; it does
+not supply functional acceptance or install a runner. Local atomic PR claims
+do not coordinate independent cloud clones. Keep one delivery owner and prove
+an actual scheduled wakeup before describing a task as unattended.
+
+[Research decisions](../../docs/autonomous-development-research.md) distinguish
+documented mechanisms, author claims and deferred integration work.
+
+When an issue surfaces, pause in the originating thread and share design
+feedback. Recommend a reusable root-cause fix using official upstream patterns
+and explain the trade-offs of any existing workaround. Wait for the human's
+decision before resuming. The [agent harness](../../AGENTS.md#root-cause-fixes-and-reusable-design)
+defines this workflow, including the requirement to preserve CI and deployment
+checks.
+
 ## Reference Coding
 
 Before nontrivial code with a relevant upstream or peer implementation, search
@@ -57,10 +103,10 @@ artifact templates and review gates. Feature selection is stored in
 `.specify/feature.json`; helpers ignore `SPECIFY_INIT_DIR`, `SPECIFY_FEATURE`,
 and `SPECIFY_FEATURE_DIRECTORY` inherited from the shell. Run commands from
 the intended checkout and edit `feature_directory` in that file to switch
-features. `.specify/memory/constitution.md` remains an
-unfilled template; use `speckit-constitution` to establish project principles
-before relying on constitution checks. Repository `AGENTS.md` remains the
-operational guide.
+features. The [Homelab Constitution](../../.specify/memory/constitution.md)
+defines the project principles used in constitution checks. Use
+`speckit-constitution` to amend them and keep the repository's `AGENTS.md`
+operational guidance in sync.
 
 Spec Kit updates must pass the existing Super-Linter Markdown and ShellCheck
 rules; imported upstream files are not exempt. Run

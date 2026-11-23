@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/DNS/LiteLLM/Prometheus inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate/DNS/LiteLLM/Prometheus/Kuma/AdGuard/Cilium/kagent/Image Updater canary inventories with exact destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, dns, litellm, prometheus]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate, dns, litellm, prometheus, uptime-kuma, adguard, cilium, kagent, image-updater-canary]
 
 permissions: {}
 
@@ -22,7 +22,7 @@ jobs:
   static-policy:
     name: Validate Harbor Mirror
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
@@ -71,8 +71,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
-      # Mirror runs share mutable aliases only within the public mirror project.
-      group: harbor-mirror-production
+      # The dedicated canary tag never shares a writer with normal mirrors.
+      group: ${{ inputs.image_scope == 'image-updater-canary' && 'harbor-mirror-image-updater-canary-production' || 'harbor-mirror-production' }}
       cancel-in-progress: false
     environment:
       name: homelab-production
@@ -92,7 +92,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
@@ -105,13 +105,50 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|uptime-kuma|adguard|cilium|kagent|image-updater-canary) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Install Verified Tailscale Client
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir "$RUNNER_TEMP/tailscale-state"
+          cd "$RUNNER_TEMP/tailscale-state"
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --retry 3 --max-time 120 \
+            https://pkgs.tailscale.com/stable/tailscale_1.102.3_amd64.tgz -o release.tgz
+          sha256sum --check --status <<<'36ddd9b51be57ffc2990cf76323cfa13643bfbb1b8a969f6183fa164741cdef5  release.tgz'
+          tar xzf release.tgz tailscale_1.102.3_amd64/tailscale tailscale_1.102.3_amd64/tailscaled
+
+      - name: Join Production Tailnet
+        id: join
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: |
+          set +x
+          set -euo pipefail
+          exec >/dev/null 2>&1
+          : "${TAILSCALE_AUTH_KEY:?Production enrollment key is missing}"
+          export -n TAILSCALE_AUTH_KEY
+          dir="$RUNNER_TEMP/tailscale-state"
+          bin="$dir/tailscale_1.102.3_amd64"
+          sudo systemd-run --quiet --collect --unit=harbor-mirror-tailscaled --property=Type=exec --property=TimeoutStopSec=20s \
+            --property=StandardOutput=null \
+            --property=StandardError=null "$bin/tailscaled" --statedir="$dir/state" --socket="$dir/tailscaled.sock"
+          for _ in {1..30}; do
+            [[ -S "$dir/tailscaled.sock" ]] && break
+            sleep 0.5
+          done
+          test -S "$dir/tailscaled.sock"
+          builtin printf '%s' "$TAILSCALE_AUTH_KEY" | sudo "$bin/tailscale" --socket="$dir/tailscaled.sock" up \
+            --auth-key=file:/dev/stdin --hostname="harbor-mirror-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --accept-routes=false --accept-dns=true --timeout=2m >/dev/null 2>&1
+          sudo "$bin/tailscale" --socket="$dir/tailscaled.sock" status --json 2>/dev/null | \
+            jq -e '.BackendState == "Running" and .Self.Tags == ["tag:homelab-ci-apply"]' >/dev/null
 
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
@@ -126,8 +163,6 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           set -euo pipefail
           umask 077
@@ -140,43 +175,58 @@ jobs:
           umask 077
           case "$IMAGE_SCOPE" in
             all)
-              bash scripts/ci/harbor-publish.sh mirror
+              bash scripts/ci/harbor-publish.sh mirror --tailscale
               ;;
             fleet)
-              bash scripts/ci/harbor-publish.sh mirror-fleet
+              bash scripts/ci/harbor-publish.sh mirror-fleet --tailscale
               ;;
             mastodon)
-              bash scripts/ci/harbor-publish.sh mirror-mastodon
+              bash scripts/ci/harbor-publish.sh mirror-mastodon --tailscale
               ;;
             bazarr)
-              bash scripts/ci/harbor-publish.sh mirror-bazarr
+              bash scripts/ci/harbor-publish.sh mirror-bazarr --tailscale
               ;;
             chainguard)
-              bash scripts/ci/harbor-publish.sh mirror-chainguard
+              bash scripts/ci/harbor-publish.sh mirror-chainguard --tailscale
               ;;
             traefik)
-              bash scripts/ci/harbor-publish.sh mirror-traefik
+              bash scripts/ci/harbor-publish.sh mirror-traefik --tailscale
               ;;
             harbor)
-              bash scripts/ci/harbor-publish.sh mirror-harbor
+              bash scripts/ci/harbor-publish.sh mirror-harbor --tailscale
               ;;
             renovate)
-              bash scripts/ci/harbor-publish.sh mirror-renovate
+              bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
               ;;
             dns)
-              bash scripts/ci/harbor-publish.sh mirror-dns
+              bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
               ;;
             litellm)
-              bash scripts/ci/harbor-publish.sh mirror-litellm
+              bash scripts/ci/harbor-publish.sh mirror-litellm --tailscale
               ;;
             prometheus)
-              bash scripts/ci/harbor-publish.sh mirror-prometheus
+              bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
+              ;;
+            uptime-kuma)
+              bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
+              ;;
+            adguard)
+              bash scripts/ci/harbor-publish.sh mirror-adguard --tailscale
+              ;;
+            cilium)
+              bash scripts/ci/harbor-publish.sh mirror-cilium --tailscale
+              ;;
+            kagent)
+              bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
+              ;;
+            image-updater-canary)
+              bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
               ;;
             *) exit 2 ;;
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'72f431c67abab37e7c47c4e949d65bd602b3e3b768addeea143584e2e5034ae3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -193,3 +243,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: false
+
+      - name: Leave Production Tailnet
+        if: always() && steps.join.outcome != 'skipped'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/tailscale-state"
+          result=0
+          if [[ -S "$dir/tailscaled.sock" ]]; then
+            sudo timeout 20 "$dir/tailscale_1.102.3_amd64/tailscale" --socket="$dir/tailscaled.sock" logout >/dev/null 2>&1 || result=1
+          fi
+          sudo systemctl stop harbor-mirror-tailscaled || result=1
+          sudo "$dir/tailscale_1.102.3_amd64/tailscaled" --cleanup >/dev/null 2>&1 || result=1
+          sudo rm -rf -- "$dir"
+          exit "$result"

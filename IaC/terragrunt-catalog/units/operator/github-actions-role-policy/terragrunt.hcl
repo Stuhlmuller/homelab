@@ -23,6 +23,8 @@ EOF
 }
 
 inputs = {
+  aws_region      = local.aws_region
+  tags            = local.root_config.locals.default_tags
   apply_role_name = "Github-TF-State"
 
   # checkov:skip=CKV_SECRET_6: These are public IAM resource names, not credential material.

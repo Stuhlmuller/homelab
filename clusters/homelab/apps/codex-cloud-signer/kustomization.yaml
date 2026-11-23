@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: automation
+resources:
+  - statefulset.yaml
+  - service.yaml
+  - externalsecret.yaml
+  - networkpolicy.yaml
+  - pvc.yaml
+configMapGenerator:
+  - name: codex-cloud-signer-code
+    files: [server.py, activate.sh, init-state.py]

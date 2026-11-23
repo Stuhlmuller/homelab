@@ -1,0 +1,95 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: uptime-kuma-first-backup-v1
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: '1'
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: uptime-kuma-backup
+        app.kubernetes.io/part-of: uptime-kuma
+    spec:
+      serviceAccountName: uptime-kuma
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: backup
+        image: harbor.stinkyboi.com/mirror/docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9
+        command:
+        - python3
+        - /backup-code/backup.py
+        - snapshot
+        - --source
+        - /source
+        - --destination
+        - /backups/snapshots
+        - --catalog
+        - /config/monitors.json
+        - --wait-seconds
+        - '600'
+        - --scratch
+        - /scratch
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 768Mi
+        volumeMounts:
+        - name: code
+          mountPath: /backup-code
+          readOnly: true
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: backups
+          mountPath: /backups
+          readOnly: false
+        - name: tmp
+          mountPath: /tmp
+        - name: source
+          mountPath: /source
+          readOnly: true
+        - name: scratch
+          mountPath: /scratch
+      volumes:
+      - name: code
+        configMap:
+          name: uptime-kuma-backup
+      - name: config
+        configMap:
+          name: uptime-kuma-config
+      - name: backups
+        persistentVolumeClaim:
+          claimName: uptime-kuma-backups
+      - name: tmp
+        emptyDir:
+          sizeLimit: 128Mi
+      - name: source
+        persistentVolumeClaim:
+          claimName: uptime-kuma-local
+          readOnly: true
+      - name: scratch
+        emptyDir:
+          sizeLimit: 5Gi

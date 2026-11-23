@@ -106,7 +106,50 @@ def verify_archive_config(archive_path, inspect_id):
         return config_id
 
 
-def verify(report, image_id, require_zero_matches=False):
+def verify_packages(packages, report, image_id):
+    category = "coverage"
+    assert packages["bomFormat"] == "CycloneDX" and packages["specVersion"] == "1.6", category
+    metadata = packages["metadata"]
+    assert metadata["tools"]["components"] == [
+        {"type": "application", "author": "anchore", "name": "grype", "version": "0.112.0"}
+    ], category
+    timestamp = datetime.fromisoformat(metadata["timestamp"].replace("Z", "+00:00"))
+    scanned = datetime.fromisoformat(report["descriptor"]["timestamp"].replace("Z", "+00:00"))
+    assert abs(timestamp - scanned) <= timedelta(minutes=5), category
+
+    # CycloneDX names the manifest digest, which must bind back to the verified config.
+    target = report["source"]["target"]
+    raw_manifest = base64.b64decode(target["manifest"], validate=True)
+    manifest_id = "sha256:" + hashlib.sha256(raw_manifest).hexdigest()
+    assert target["manifestDigest"] == manifest_id, category
+    manifest = json.loads(raw_manifest)
+    assert manifest["schemaVersion"] == 2 and manifest["mediaType"] in MANIFEST_TYPES, category
+    assert manifest["config"]["digest"] == image_id, category
+    assert manifest["config"]["size"] == len(base64.b64decode(target["config"], validate=True)), category
+    assert metadata["component"]["type"] == "container", category
+    assert metadata["component"]["version"] == manifest_id, category
+
+    components = packages["components"]
+    assert isinstance(components, list), category
+    count = 0
+    for component in components:
+        assert isinstance(component, dict), category
+        if component.get("type") not in {"library", "application"}:
+            continue
+        for field in ("name", "version", "bom-ref"):
+            assert isinstance(component.get(field), str) and component[field].strip(), category
+        properties = component.get("properties")
+        assert isinstance(properties, list) and all(isinstance(p, dict) for p in properties), category
+        types = [p.get("value") for p in properties if p.get("name") == "syft:package:type"]
+        assert len(types) == 1 and isinstance(types[0], str) and types[0].strip(), category
+        if types[0] in {"rpm", "go-module"}:
+            count += 1
+    # Native CycloneDX also includes OS and file records, even with no packages.
+    assert count > 0, category
+    return count
+
+
+def verify(report, image_id, packages, require_zero_matches=False):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
     assert report["source"]["type"] == "image", "identity-source"
     target = report["source"]["target"]
@@ -147,6 +190,7 @@ def verify(report, image_id, require_zero_matches=False):
         assert not fix.get("versions") and not fix.get("available"), "remediation"
     if require_zero_matches:
         assert not report["matches"], "clearance"
+    return verify_packages(packages, report, image_id)
 
 
 def main(args):
@@ -159,23 +203,29 @@ def main(args):
         archive_path = Path(args[1])
         args = args[2:]
     try:
-        require_zero_matches = len(args) == 3 and args[-1] == "--require-zero-matches"
+        require_zero_matches = len(args) == 4 and args[-1] == "--require-zero-matches"
         if require_zero_matches:
             args = args[:-1]
-        assert len(args) == 2, "schema"
-        raw_report = Path(args[0]).read_bytes()
-        report = json.loads(raw_report)
-        config_id = verify_archive_config(archive_path, args[1]) if archive_path is not None else args[1]
-        verify(report, config_id, require_zero_matches=require_zero_matches)
+        assert len(args) == 3, "schema"
+        def read_report(path):
+            with Path(path).open("rb") as source:
+                raw = source.read(64 * 1024 * 1024 + 1)
+            assert len(raw) <= 64 * 1024 * 1024, "schema"
+            return raw, json.loads(raw)
+
+        raw_report, report = read_report(args[0])
+        raw_packages, packages = read_report(args[1])
+        config_id = verify_archive_config(archive_path, args[2]) if archive_path is not None else args[2]
+        package_count = verify(report, config_id, packages, require_zero_matches=require_zero_matches)
     except AssertionError as error:
         category = str(error)
         if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-archive-structure",
                             "identity-archive-config-hash", "identity-archive-inspect-id",
                             "identity-archive-descriptor", "identity-report-config",
                             "identity-platform", "identity-distro", "scanner", "database", "freshness",
-                            "filtering", "schema", "remediation", "clearance"}:
+                            "filtering", "schema", "remediation", "clearance", "coverage"}:
             category = "schema"
-    except (KeyError, TypeError, ValueError, OSError):
+    except (KeyError, TypeError, ValueError, OSError, AttributeError):
         category = "schema"
     else:
         if require_zero_matches:
@@ -183,7 +233,8 @@ def main(args):
         else:
             print("Complete private runtime audit passed; " + str(len(report["matches"])) + " unresolved matches retained; this is not CVE clearance.")
         print("Runtime audit receipt: " + json.dumps({
-            "image_id": args[1], "report_sha256": hashlib.sha256(raw_report).hexdigest(),
+            "image_id": args[2], "report_sha256": hashlib.sha256(raw_report).hexdigest(),
+            "packages_sha256": hashlib.sha256(raw_packages).hexdigest(), "supported_package_count": package_count,
             "scanner": report["descriptor"]["version"], "db_built": report["descriptor"]["db"]["status"]["built"],
             "matches": len(report["matches"]), "severity_counts": dict(Counter(m["vulnerability"]["severity"] for m in report["matches"])),
             "cve_clearance": False}, sort_keys=True))

@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["../aws-ssm-parameters", "external-secrets", "platform-storage"]
+  dependencies = ["../../../shared/aws-ssm-parameters", "../../external-secrets/argocd", "../../platform-storage/argocd"]
   spec = {
     project = "homelab-workloads"
     destination = {

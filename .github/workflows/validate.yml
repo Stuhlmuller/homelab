@@ -3,6 +3,8 @@ name: validate
 
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
   push:
     branches:
       - main
@@ -10,8 +12,35 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: validate-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  runtime-scope:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      image-policy: ${{ steps.scope.outputs.image-policy }}
+      network-policy: ${{ steps.scope.outputs.network-policy }}
+      harbor-core: ${{ steps.scope.outputs.harbor-core }}
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Resolve runtime check scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/ci/validate-runtime-scope.sh "$BASE_SHA"
+
   image-policy:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.image-policy != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,6 +53,10 @@ jobs:
       - name: Exercise native image admission
         run: nix develop --command python3 -I scripts/ci/image-policy-check.py
   network-policy:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.network-policy != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -36,6 +69,10 @@ jobs:
       - name: Exercise isolated network policy enforcement
         run: nix develop --command python3 -I scripts/ci/network-policy-enforcement-check.py
   harbor-core-compatibility:
+    needs: runtime-scope
+    if: >-
+      !cancelled() &&
+      (needs.runtime-scope.result != 'success' || needs.runtime-scope.outputs.harbor-core != 'false')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -52,7 +89,9 @@ jobs:
       - name: Install pinned runtime audit tools
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
       - name: Check runtime report trust boundaries
-        run: python3 -I scripts/ci/harbor-core-scan-check-test.py
+        run: |
+          python3 -I scripts/ci/harbor-core-scan-check-test.py
+          python3 -I scripts/ci/harbor-encrypt-diagnostic-test.py
       - name: Audit exact built runtime privately
         run: |
           set -euo pipefail
@@ -62,12 +101,22 @@ jobs:
           trap 'rm -f "$private_log" "$diagnostic_file"' EXIT
           printf '%s\n' launcher >"$diagnostic_file"
           if ! nix develop --command bash builds/harbor-core/scan.sh \
+            --encrypted-report "$RUNNER_TEMP/harbor-core-reports.tar.gz.gpg" \
             --diagnostic-file "$diagnostic_file" >"$private_log" 2>&1; then
             bash scripts/ci/harbor-core-audit-status.sh "$diagnostic_file"
             exit 1
           fi
           grep -F 'Complete private runtime audit passed;' "$private_log"
           grep -F 'Runtime audit receipt: ' "$private_log"
+      - name: Retain only encrypted failed runtime report
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-core-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-core-reports.tar.gz.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false
   repo:
     runs-on: ubuntu-latest
     steps:
@@ -84,6 +133,8 @@ jobs:
         run: nix flake check --no-build --all-systems
 
       - name: Verify Offline Nix Checks
+        # On PRs, the required Terragrunt Gate already verifies these outputs.
+        if: github.event_name == 'push'
         run: |
           git fetch --no-tags origin main
           cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
@@ -101,7 +152,7 @@ jobs:
         run: nix develop --command bash -c 'cd IaC && terragrunt stack generate'
 
       - name: Validate Terragrunt HCL
-        run: nix develop --command terragrunt hcl validate
+        run: nix develop --command bash -c 'cd IaC/homelab/us-west-2 && terragrunt hcl validate'
 
       - name: Render Kustomize sources
         run: |
@@ -125,8 +176,11 @@ jobs:
       - name: Check ClickHouse diagnostic quarantine
         run: nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py --runtime docker
 
+      - name: Exercise isolated AdGuard DNS and security profile
+        run: nix develop --command python3 -I scripts/ci/adguard-runtime-test.py
+
       - name: Install Python for gateway checks
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.13'
 

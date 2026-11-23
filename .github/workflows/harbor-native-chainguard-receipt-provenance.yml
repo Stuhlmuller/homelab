@@ -3,10 +3,10 @@ name: Verify Native Chainguard Receipt Provenance
 on:
   push:
     branches: [main]
-  # zizmor: ignore[dangerous-triggers] Trusted base code reads the PR state only as bounded API data.
-  pull_request_target:
-    branches: [main]
-    types: [opened, reopened, synchronize, edited]
+  # A completed unprivileged PR check supplies only bounded event metadata.
+  workflow_run:
+    workflows: [Terragrunt Plan]
+    types: [completed]
 
 permissions: {}
 
@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           umask 077
           base_sha="$(git rev-parse HEAD)"
+          verification_base_sha="$base_sha"
           [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
           token_file="$(mktemp)"
           pulls_file="$(mktemp)"
@@ -48,10 +49,16 @@ jobs:
           printf '%s' "$GH_TOKEN" >"$token_file"
           gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
           jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
-          if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
-            event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            jq -e --arg repository "$GITHUB_REPOSITORY" '
+              .action == "completed" and
+              .repository.full_name == $repository and
+              .workflow_run.name == "Terragrunt Plan" and
+              .workflow_run.event == "pull_request"
+            ' "$GITHUB_EVENT_PATH" >/dev/null
+            event_head="$(jq -er '.workflow_run.head_sha' "$GITHUB_EVENT_PATH")"
             [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
-            grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+            grep -Fxq -- "$event_head" "$all_heads_file" || exit 0
             printf '%s\n' "$event_head" >"$heads_file"
           else
             [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
@@ -85,7 +92,7 @@ jobs:
           status_failed=0
           while IFS= read -r head_sha; do
             if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
-              --base-sha "$base_sha" --head-sha "$head_sha" \
+              --base-sha "$verification_base_sha" --head-sha "$head_sha" \
               --token-file "$token_file" && \
               [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
               state=success

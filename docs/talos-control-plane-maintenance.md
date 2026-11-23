@@ -1305,3 +1305,11 @@ preflight, even with image pre-pulling disabled.
 - If a version change requires machine-config schema migration, commit the
   desired config update first, render it locally, and validate it before the
   live upgrade.
+
+## November 2 incident procedure retirement
+
+The staged recovery procedure tied to the November 2 `zimaboard-2` node and
+boot IDs has been removed with its one-shot helper and fixtures. Removal does
+not establish that the incident was resolved or authorize a reboot. Diagnose
+any current failure from fresh node, storage, capacity and backup evidence,
+then use the maintained repository-owned maintenance path for that incident.
