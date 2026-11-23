@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: migration
-          image: harbor.stinkyboi.com/mirror/ghcr.io/toeverything/affine:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
+          image: harbor.stinkyboi.com/mirror/ghcr.io/toeverything/affine:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -101,7 +101,7 @@ spec:
               readOnly: true
       containers:
         - name: affine
-          image: harbor.stinkyboi.com/mirror/ghcr.io/toeverything/affine:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
+          image: harbor.stinkyboi.com/mirror/ghcr.io/toeverything/affine:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099
           imagePullPolicy: IfNotPresent
           env:
             - name: DATABASE_PASSWORD
@@ -131,7 +131,7 @@ spec:
               value: selfhosted
             - name: DEPLOYMENT_PLATFORM
               value: kubernetes
-            # AFFiNE 0.27.0 gates MCP write credentials and tools on canary mode.
+            # AFFiNE gates MCP write credentials and tools on canary mode.
             - name: AFFINE_ENV
               value: dev
             - name: NODE_ENV
