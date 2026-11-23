@@ -628,6 +628,9 @@
       "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
     },
     {
+      "source": "quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"
+    },
+    {
       "source": "quay.io/cilium/cilium-envoy:v1.39.6-1794557904-dee711ff0e84b106edd0abcdd71961af1b870359@sha256:bdef13043ebaa7b9dcd8e3a86be41080bb5369e017cd759a12daf89e2b8fafe7"
     },
     {
