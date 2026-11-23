@@ -57,12 +57,17 @@ class ReleaseCheckTest(unittest.TestCase):
                                .split("        run: |\n", 1)[1])
         baseline = {**os.environ, "STATIC_RESULT": "success", "LIVE_PLAN_REQUIRED": "true",
                     "RUNTIME_CHECK_REQUIRED": "true", "TRUSTED_HEAD": "true",
-                    "LIVE_PLAN_RESULT": "success", "SKIP_NOTE_RESULT": "skipped"}
+                    "LIVE_PLAN_RESULT": "success"}
         for changes, succeeds in (({}, True), ({"TRUSTED_HEAD": "false"}, False),
                                   ({"LIVE_PLAN_RESULT": "failure"}, False),
                                   ({"LIVE_PLAN_REQUIRED": "false"}, False),
                                   ({"RUNTIME_CHECK_REQUIRED": ""}, False),
-                                  ({"STATIC_RESULT": "failure"}, False)):
+                                  ({"STATIC_RESULT": "failure"}, False),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "LIVE_PLAN_REQUIRED": "false",
+                                    "LIVE_PLAN_RESULT": "skipped"}, True),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "LIVE_PLAN_REQUIRED": "false"}, False),
+                                  ({"RUNTIME_CHECK_REQUIRED": "false", "TRUSTED_HEAD": "false",
+                                    "LIVE_PLAN_RESULT": "skipped"}, True)):
             result = subprocess.run(["bash", "-c", gate], env={**baseline, **changes},
                                     capture_output=True, text=True, timeout=5, check=False)
             self.assertEqual(result.returncode == 0, succeeds, changes)
@@ -80,6 +85,35 @@ class ReleaseCheckTest(unittest.TestCase):
         self.assertEqual(read.call_count, 1)
         self.assertIn("evidence unavailable", output.getvalue())
         self.assertNotIn(private, output.getvalue())
+
+    def test_unhealthy_baseline_reports_only_known_status_categories(self):
+        private = "SYNTHETIC_PRIVATE_TOKEN"
+        application = {"status": {
+            "sync": {"status": "OutOfSync", "revision": private},
+            "health": {"status": "Degraded", "message": private},
+            "operationState": {"phase": "Failed", "message": private},
+            "conditions": [{"type": "SyncError", "message": private}, {"type": private}],
+            "resources": [
+                {"kind": "Deployment", "name": private, "health": {"status": "Degraded", "message": private}},
+                {"kind": private, "status": "OutOfSync"},
+                {"kind": "Service", "status": "Synced"},
+            ],
+        }}
+        changed = subprocess.CompletedProcess([], 0, "IaC/root.hcl\0")
+        output = io.StringIO()
+        with (patch("sys.argv", ["check", "--base-ref", "origin/main"]),
+              patch.object(release.subprocess, "run", return_value=changed),
+              patch.object(release, "read_json", side_effect=[application, CRON, {"items": [BACKUP, RESTORE]}]),
+              contextlib.redirect_stderr(output)):
+            self.assertEqual(release.main(), 1)
+        text = output.getvalue()
+        self.assertIn(release.BASELINE_UNHEALTHY, text)
+        self.assertNotIn(private, text)
+        line = next(line for line in text.splitlines() if line.startswith("Mastodon Argo CD status "))
+        self.assertEqual(json.loads(line.removeprefix("Mastodon Argo CD status ")), {
+            "sync": "OutOfSync", "health": "Degraded", "operation": "Failed",
+            "conditions": ["SyncError", "Unknown"], "affected_kinds": ["Deployment", "Unknown"],
+        })
 
     def test_scope_excludes_docs_and_includes_deleted_runtime_paths(self):
         self.assertFalse(release.runtime_changed(["docs/ci-cd.md", "clusters/homelab/apps/mastodon/README.md"]))

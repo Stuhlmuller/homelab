@@ -192,7 +192,7 @@ class PrivatePlanStageTest(unittest.TestCase):
     def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
         workflow = WORKFLOW.read_text()
         run = workflow.split("      - name: Run Live Terragrunt Plan\n", 1)[1]
-        run = run.split("\n  terragrunt-plan-skipped:", 1)[0]
+        run = run.split("\n  terragrunt-gate:", 1)[0]
         self.assertIn("HOMELAB_AZUREAD_PLAN_REPORT_FILE=\"$azuread_report\" nix develop --command bash <<'EOF'", run)
         self.assertNotIn('private_log', run)
         self.assertNotIn('details withheld', run)

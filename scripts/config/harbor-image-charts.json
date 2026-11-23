@@ -169,7 +169,7 @@
   },
   {
     "chart": "k8s-gateway",
-    "repoURL": "codeberg.org/k8s-gateway/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
     "targetRevision": "4.0.0"
   },

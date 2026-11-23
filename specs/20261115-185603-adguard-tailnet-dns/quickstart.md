@@ -103,6 +103,21 @@ and rereads client mode, full DNS policy and source/endpoint. Direct receipts
 cannot satisfy client acceptance. The same temporary shell supplies `hcl2json`
 for both cutover and rollback examples above/below; it does not change the flake.
 
+## Split resolver exit-node preflight
+
+From verified current main, run the preflight against the encrypted
+administrator saved plan and with `hcl2json` available as above:
+
+```sh
+python3 -I scripts/adguard-dns-cutover.py --mode split-exit-node-preview --plan <private-saved-plan>
+```
+
+The preflight checks that live DNS and the saved plan differ from reviewed
+source only in the existing `stinkyboi.com` resolver's exit-node flag. It accepts
+the matching refresh drift when state still held the prior flag. The preflight
+is read-only. Functional acceptance still needs the live flag enabled and the
+client checks on an authorized device with an existing exit node selected.
+
 ## Recovery
 
 A failed pre-cutover check leaves current DNS unchanged. For post-cutover DNS

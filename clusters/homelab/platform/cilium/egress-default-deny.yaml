@@ -1,0 +1,12 @@
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: workload-egress-default-deny
+spec:
+  endpointSelector: {}
+  enableDefaultDeny:
+    ingress: false
+    egress: true
+  egress:
+    - toEntities:
+        - none
