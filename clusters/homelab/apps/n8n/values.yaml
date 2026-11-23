@@ -62,7 +62,7 @@ controllers:
       app:
         image:
           repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
-          tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
+          tag: "3.3.0@sha256:e06707c78ef5adb302b47909f8fee5caf8d389a7e5f3f0e03165214f6178565e"
         env:
           TZ: America/Los_Angeles
           GENERIC_TIMEZONE: America/Los_Angeles

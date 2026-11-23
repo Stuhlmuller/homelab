@@ -597,13 +597,13 @@ take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
 instead of changing the major image in place, then verify SQL, n8n readiness,
 and the public webhook before retiring the old PVC.
 
-The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
-renders the Deployment at zero replicas only when a reviewed GitOps revision
-adds it to Helm `valueFiles`; the active stack omits it. A future paired
-checkpoint must verify that Argo CD synced the exact fence revision, no n8n
-writer Pods or Jobs remain, PostgreSQL is Ready, and both PVC/PV bindings stay
-fixed across the dump and PVC archive. An off-NAS receipt and isolated restore
-are still required before a separate GitOps revision restores one n8n replica.
+The n8n 3.3.0 stack declares one Deployment replica. The
+[inactive maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+declares zero replicas when included in Helm `valueFiles`. While the fence is
+active, the paired checkpoint must verify the exact Argo CD revision, zero
+n8n writer Pods or Jobs, PostgreSQL readiness, and both PVC/PV bindings across
+the dump and archive. The rollout requires an off-NAS receipt and proof that
+both backups restored successfully before reconciling the 3.3.0 revision.
 The staged [one-shot paired checkpoint](../../.github/workflows/n8n-paired-checkpoint.yml)
 uses an excluded [read-only reader Job](../../clusters/homelab/apps/n8n/checkpoint-reader.job.yaml)
 under a temporary deny-all NetworkPolicy
@@ -618,9 +618,8 @@ removes the Job and its Pods before the deny-all policy. A mismatch leaves the
 fence and policy in place. The checkpoint script
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
 downloads and restores both in disposable runner storage, then publishes a
-checksum-bound manifest. This is source preparation, not a completed backup;
-activation still needs a separate reviewed fence revision and successful live
-receipt.
+checksum-bound manifest. The checkpoint receipt records completion of the
+backup and isolated restore.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute

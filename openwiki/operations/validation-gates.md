@@ -1126,8 +1126,8 @@ workflow run separately before retiring the old unsigned hook. Run
 `python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
 The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
-the active values render one Deployment replica and the fence overlay renders
-zero, with no migration Job in either render. Its
+the n8n 3.3.0 stack renders one Deployment replica, and the maintenance overlay
+renders zero when applied, with no migration Job in either render. Its
 [workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
 before a paired capture; source rendering alone is not a live backup.
@@ -1152,8 +1152,8 @@ Kubernetes PodList with a server resource version for the run's owner label.
 path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
 remaining reader Pod must prevent deny-all policy removal. It does not run
 against the cluster during source validation.
-Only a live success receipt binding both exact S3 object versions and an
-isolated restore qualifies for migration activation.
+Before reconciling the n8n 3.3.0 revision, require a live success receipt
+binding both exact S3 object versions and verifying both isolated restores.
 `scripts/ci/litellm-runtime-hardening-check.py` lints and renders the declared
 LiteLLM chart with anonymous registry access. It verifies the tokenless
 ServiceAccount, RuntimeDefault seccomp, disabled privilege escalation and
