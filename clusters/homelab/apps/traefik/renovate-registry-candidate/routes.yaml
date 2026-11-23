@@ -1,0 +1,13 @@
+tcp:
+  routers:
+    harbor:
+      entryPoints: [relay]
+      rule: HostSNI(`harbor.stinkyboi.com`)
+      service: harbor
+      tls:
+        passthrough: true
+  services:
+    harbor:
+      loadBalancer:
+        servers:
+          - address: traefik-registry.traefik.svc.cluster.local:443

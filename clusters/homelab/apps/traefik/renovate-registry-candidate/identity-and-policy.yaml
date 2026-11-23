@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: renovate-registry-relay
+  namespace: traefik
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: renovate-registry-relay-state
+  namespace: traefik
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [renovate-registry-relay-state]
+    verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: renovate-registry-relay-state
+  namespace: traefik
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: renovate-registry-relay-state
+subjects:
+  - kind: ServiceAccount
+    name: renovate-registry-relay
+    namespace: traefik
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: traefik-allow-renovate-registry-relay
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: [cluster.local/ns/traefik/sa/renovate-registry-relay]
+      to:
+        - operation:
+            ports: ["9443"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: traefik-allow-renovate-registry-relay
+  namespace: traefik
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: renovate-registry-relay
+      ports:
+        - protocol: TCP
+          port: 9443

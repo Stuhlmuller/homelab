@@ -46,6 +46,7 @@ python3 -I scripts/ci/argocd-image-updater-test.py --unit
 python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
+python3 -I scripts/ci/renovate-registry-relay-test.py
 python3 -I scripts/ci/verify-gitops-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
