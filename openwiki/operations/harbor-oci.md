@@ -167,6 +167,16 @@ for the bootstrap chart's literal `global.image.tag`. The full catalog keeps
 v3.4.2 for rollback alongside v3.4.14. Use protected Harbor publication and
 authenticated pull verification before applying a new bootstrap image tag.
 
+## Historical pod image entries
+
+Argo CD can list images from retained terminal pods. The one-time
+[terminal image cleanup](../../clusters/homelab/platform/image-policy/terminal-pod-cleanup.yaml)
+is limited to reviewed ReplicaSet pod names in the listed namespaces. It checks
+for an upstream reference and at least 30 days since completion. The Job leaves
+active pods, recent failures, and Job history in place. After the operation,
+check that the reviewed pods are gone and prune the cleanup identities and
+configuration through GitOps.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
