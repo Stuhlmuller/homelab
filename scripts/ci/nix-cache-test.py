@@ -143,8 +143,9 @@ class CacheLayoutTests(unittest.TestCase):
 
     def test_disconnect_cancels_original_pod(self):
         policy = {"url": "https://example.test", "publicKey": "fixture:key"}
+        paths = [f"/nix/store/{check}" for check in builder.CHECKS]
         with patch.object(builder.subprocess, "run"), patch.object(builder.subprocess, "check_output", side_effect=[
-                "tree", b"source", "/nix/store/a", "/nix/store/b", KeyboardInterrupt]), \
+                "tree", b"source", *paths, KeyboardInterrupt]), \
                 patch.object(builder, "preflight", return_value=("nix-builder-original", "original-uid")), \
                 patch.object(builder, "cancel") as cancel:
             with self.assertRaises(KeyboardInterrupt):

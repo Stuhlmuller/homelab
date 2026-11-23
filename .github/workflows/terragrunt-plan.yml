@@ -12,11 +12,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: terragrunt-plan-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
-  queue: max
-
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
@@ -102,6 +97,10 @@ jobs:
       needs.static-policy.outputs.requires-live-plan == 'true'
     needs:
       - static-policy
+    concurrency:
+      group: terragrunt-plan-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-24.04
     environment:
       name: homelab-plan

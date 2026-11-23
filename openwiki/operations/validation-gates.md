@@ -369,7 +369,8 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
 remaining fixture groups concurrently. The offline Nix result requires each
-group's result.
+group's result. The n8n fixtures use the inputs listed in `flake.nix` and
+publish a separate signed result for reuse across unrelated changes.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The offline Nix gate also runs the pinned XERJ release against the Octelium
@@ -1839,9 +1840,10 @@ that route is the failed dependency, restore reviewed
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
-Terragrunt Plan serializes runs per PR and keeps them queued while an earlier
-run finishes. Interrupting OpenTofu while it holds an S3 backend lock can leave
-a stale lock that blocks later plans. Terragrunt Apply keeps its separate
+Terragrunt Plan serializes protected live jobs per PR. Static checks for a
+new revision can start while an older live plan is running. Interrupting
+OpenTofu while it holds an S3 backend lock can leave a stale lock that blocks
+later plans. Terragrunt Apply keeps its separate
 production lock and queues each pending apply, subject to GitHub's queue limit.
 
 ## Live Rollout Rule
