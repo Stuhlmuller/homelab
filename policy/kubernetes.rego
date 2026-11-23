@@ -389,7 +389,7 @@ public_external_route if {
 }
 
 external_secret_allowed_prefixes := {
-	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
+	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/kagent/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
 	"argocd": {"/homelab/argocd/", "/homelab/harbor/mirror-robot-pull-password"},
@@ -397,6 +397,7 @@ external_secret_allowed_prefixes := {
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},
 	"harbor": {"/homelab/harbor/"},
+	"kagent": {"/homelab/kagent/litellm-token", "/homelab/kagent/postgres-password"},
 	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/", "/homelab/uptime-kuma/admin-password"},

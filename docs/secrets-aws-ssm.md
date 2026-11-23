@@ -397,6 +397,7 @@ cluster CA is intentionally rotated.
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
+| kagent | `kagent-litellm`, `kagent-postgres` | Same as ExternalSecrets | `/homelab/kagent/litellm-token`, `/homelab/kagent/postgres-password` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | bulldozer | `bulldozer-config` | `bulldozer-config` | `/homelab/bulldozer/github-app/integration-id`, `/homelab/bulldozer/github-app/webhook-secret`, `/homelab/bulldozer/github-app/private-key` |
@@ -545,7 +546,7 @@ Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
 `--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
 runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
 claim supplies identity. Do not commit personal Entra identifiers into this
-public repo. Follow the [owner-conversion preflight](octelium.md#entra-owner-conversion)
+public repo. Follow the [immutable-ID mapping checks](octelium.md#entra-owner-conversion)
 before refreshing an older email-based mapping.
 
 The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing
