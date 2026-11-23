@@ -71,7 +71,15 @@ removes it so self-heal does not recreate it. Verify Job completion, pod
 absence, a ready Deployment, and the updated Argo CD image summary before
 removing the Job and its RBAC.
 
-## Kiali mesh visibility
+## Kiali retirement
+
+Argo CD prunes the Kiali custom resource when the chart disables CR creation.
+The operator remains running to finalize that deletion, and Uptime Kuma
+monitors the operator during this stage. Verify the server Deployment and
+Service are absent before removing the operator registration. See the
+[rollback and teardown runbook](../../docs/rollback-argocd-apps.md).
+
+### Historical mesh visibility incidents
 
 The 2026-09-05 read-only probes found cluster-wide namespace and Istio config
 listing working, but zero graph connections and no `istio_*` Prometheus series.
@@ -79,11 +87,6 @@ Kiali's API reported a startup Prometheus reachability failure retained in
 memory, even though its CR enabled Prometheus. Upstream v2.26.0
 `cmd/server.go` installs a permanent no-op client in that case.
 
-`clusters/homelab/apps/kiali/values.yaml` waits for Prometheus readiness before
-Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
-ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
-operator security flags, rollback and UI namespace selection. Validate rollout
-with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
 Grafana's frontend-settings endpoint also returned 401; dashboard integration
 is a separate follow-up requiring its existing authentication contract to be
 checked.
