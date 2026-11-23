@@ -66,6 +66,11 @@ only the 26 non-apex names from the fixed original migration set.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
 actual Cordium execution/reconnection before removing the old tunnel or catalog.
 The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.
+The [Cloudflared egress policy](../../clusters/homelab/apps/octelium-public/networkpolicy.yaml)
+allows published global IPv4 Tunnel edges on TCP and UDP 7844. Qualify both
+tunnel replicas and their configured public routes under an enforcing dataplane
+before relying on the policy.
+
 
 During the CoreDNS rewrite, Traefik's private listener explicitly admits the
 retained `cluster.local/ns/octelium-client/sa/octelium-client` principal only on
