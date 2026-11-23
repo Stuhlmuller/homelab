@@ -365,7 +365,9 @@ Nix outputs, then runs remaining provider, network and security checks fresh.
 Fixture calls and source contracts live in `scripts/ci/offline-checks.sh`.
 One hosted runner builds the private DNS, n8n recovery, Harbor publication,
 and remaining groups concurrently. The offline result requires every group
-to pass. CI reuses signed results from the protected main cache. Live plans
+to pass. The n8n fixtures use the inputs listed in `flake.nix` and publish a
+separate signed result for reuse across unrelated changes. CI verifies signed
+results from the protected main cache and uses sandboxed builds. Live plans
 and runtime acceptance run separately.
 See [signed offline validation](../../docs/nix-cache.md).
 

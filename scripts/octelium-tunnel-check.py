@@ -49,18 +49,22 @@ def has_status_16(headers):
 def probe(api, directory, *, port=None):
     headers = directory / "headers"
     body = directory / "body"
+    request = directory / "request"
+    # An empty GetStatusRequest still needs the gRPC message header.
+    request.write_bytes(bytes(5))
     protocol = "application/grpc" if port else "application/grpc-web+proto"
     command = [
         "curl", "--silent", "--show-error", "--http2", "--max-time", "15",
         "--header", f"content-type: {protocol}",
         "--header", "TE: trailers",  # codespell:ignore te
-        "--header", "x-grpc-web: 1", "--data-binary", "",
+        "--data-binary", f"@{request}",
         "--dump-header", str(headers), "--output", str(body),
         "--write-out", "%{http_code} %{http_version}",
     ]
     if port:
         command += ["--connect-to", f"{api}:443:127.0.0.1:{port}"]
     else:
+        command += ["--header", "x-grpc-web: 1"]
         answer = subprocess.run(
             ["dig", "+short", "@1.1.1.1", api, "A"],
             capture_output=True, text=True, check=True, timeout=10,
