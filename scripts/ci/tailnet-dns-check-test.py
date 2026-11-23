@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("dns_check", ROOT / "scripts/tailnet-dns-check.py")
 CHECK = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECK)
-NAMES = json.loads((ROOT / "scripts/config/tailscale-private-dns.json").read_text())["hostnames"]
+INVENTORY = json.loads((ROOT / "scripts/config/tailscale-private-dns.json").read_text())
+NAMES = [name for name in INVENTORY["hostnames"] if name not in INVENTORY["retired_private_hostnames"]]
 SERVER = "100.99.16.75"
 TRAEFIK = "100.99.16.74"
 

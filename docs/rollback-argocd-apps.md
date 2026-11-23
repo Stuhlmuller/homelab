@@ -18,16 +18,15 @@ handling is clear.
 9. LiteLLM
 10. Langfuse
 11. Deluge
-12. Kiali
-13. Grafana
-14. Descheduler
-15. Prometheus
-16. platform-storage
-17. Tailscale
-18. Istio
-19. cert-manager
-20. external-secrets
-21. platform-dns
+12. Grafana
+13. Descheduler
+14. Prometheus
+15. platform-storage
+16. Tailscale
+17. Istio
+18. cert-manager
+19. external-secrets
+20. platform-dns
 
 ## cert-manager v1.20.3
 
@@ -100,8 +99,8 @@ resource while the operator is still running. Apply the Application
 registration through targeted Terragrunt Apply to install the Argo CD
 cascading-deletion finalizer. Confirm that the Kiali custom resource and the
 server Deployment and Service are absent before removing the Terragrunt unit.
-A subsequent full Terragrunt Apply deletes the Application and lets Argo CD
-prune the remaining operator resources.
+Dispatch Terragrunt Apply with `retire_argocd_app=kiali` to delete the
+Application and let Argo CD prune the remaining operator resources.
 
 ## Emergency Recovery
 

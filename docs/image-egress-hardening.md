@@ -75,7 +75,7 @@ PostgreSQL, Cosign, kubectl and nginx indexes. kubectl is not included in the
 migration publication scope until client/server skew is checked. Generic nginx
 is not a verified replacement for Harbor's coupled nginx-photon component.
 Probed pgvector, MySQL, ClickHouse, Envoy, Cloudflared, Grafana, Prometheus-family,
-Argo CD/Dex, cert-manager-family, External Secrets, Istio-family, Kiali,
+Argo CD/Dex, cert-manager-family, External Secrets, Istio-family,
 Tailscale, metrics-server, descheduler, Crossplane, NFS provisioner and Harbor
 component paths were not anonymously readable. Denial does not prove an image
 is absent from Chainguard's production catalog. No production organization

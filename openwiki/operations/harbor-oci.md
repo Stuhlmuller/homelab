@@ -1270,7 +1270,7 @@ case, then reconcile all pinned chart renders and read-only runtime images
 before claiming complete migration coverage.
 
 The implementation is staged in repository desired state: public Chainguard
-replication is active, the Python and Kiali enrollments are candidates, the
+replication is active, the Python enrollment is a candidate, the
 updater remains paused, and deterministic contract checks plus the main-owned
 verification workflow are present. Workload migration, bot promotion, and
 live acceptance remain paused until their gates pass; existing images still use

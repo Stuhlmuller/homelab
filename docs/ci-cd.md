@@ -308,6 +308,11 @@ checks remain fresh.
   retiree it saves the binary destroy plan and JSON, checks the JSON against
   current Conftest policy, verifies the current main commit, and replays the
   same saved plan. Missing plans or policy rejections stop the apply.
+- For a single Application retirement, dispatch with `retire_argocd_app` set to
+  the exact removed app name. The saved plan can delete only that Application.
+  A live Application must already have the Argo CD cascading-deletion
+  finalizer. This dispatch skips the other affected units and leaves the full
+  apply checkpoint in place.
 - The full apply reconciles affected units in order. It handles retirements
   first, then backup storage, Argo CD bootstrap, SSM and Langfuse storage,
   node labels, AzureAD, Argo CD registrations, and Kubernetes Secrets.

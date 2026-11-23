@@ -300,6 +300,58 @@ terragrunt_deleted_unit_paths() {
   done <<<"$candidates"
 }
 
+terragrunt_retired_argocd_app_path() {
+  local app="$1"
+  local deleted_units="$2"
+  local unit="IaC/live/argocd-apps/$app"
+
+  if [[ ! "$app" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] ||
+     ! grep -Fxq "$unit" <<<"$deleted_units"; then
+    echo "Unknown deleted Argo CD Application unit: ${app}" >&2
+    return 1
+  fi
+  printf '%s\n' "$unit"
+}
+
+terragrunt_kiali_teardown_complete() {
+  local remaining
+  if ! remaining="$(kubectl --request-timeout=15s -n monitoring get \
+    kialis.kiali.io/kiali deployment.apps/kiali service/kiali --ignore-not-found -o name)"; then
+    echo "Unable to verify Kiali teardown before retiring the operator." >&2
+    return 1
+  fi
+  if [[ -n "$remaining" ]]; then
+    echo "Kiali retirement requires completed server teardown; Kiali resources still exist." >&2
+    return 1
+  fi
+}
+
+terragrunt_retired_argocd_app_plan() {
+  local app="$1"
+  local live_app="$2"
+  local plan="$3"
+
+  jq -e --arg app "$app" --argjson live "$live_app" '
+    def identity:
+      .apiVersion == "argoproj.io/v1alpha1" and .kind == "Application" and
+      .metadata.namespace == "argocd" and .metadata.name == $app;
+    def cascading:
+      identity and ((.metadata.finalizers // []) | index("resources-finalizer.argocd.argoproj.io") != null);
+
+    .resource_changes // [] |
+    if length == 0 then
+      $live == null
+    else
+      length == 1 and
+      (.[0] |
+        .address == "kubernetes_manifest.this" and .mode == "managed" and
+        .type == "kubernetes_manifest" and .change.actions == ["delete"] and
+        (.change.before.manifest | identity) and (.change.before.object | identity)) and
+      ($live == null or ($live | cascading))
+    end
+  ' "$plan" >/dev/null
+}
+
 # Resolve a stable backend identity to the configuration path at the base.
 terragrunt_deleted_unit_source() {
   local unit_dir="$1"

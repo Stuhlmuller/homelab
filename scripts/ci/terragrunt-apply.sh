@@ -50,6 +50,8 @@ exclude_other_affected_units() {
 }
 
 destroy_deleted_terragrunt_units() {
+  local retire_app="${1:-}"
+  local guarded_app live_app
   local deleted_units=()
   local deleted_unit_paths
   local unit_dir source_dir plan_dir plan_file json_file index
@@ -60,6 +62,10 @@ destroy_deleted_terragrunt_units() {
     echo "Unable to determine deleted Terragrunt units; refusing to apply." >&2
     return 1
   fi
+  if [[ -n "$retire_app" ]]; then
+    deleted_unit_paths="$(terragrunt_retired_argocd_app_path "$retire_app" "$deleted_unit_paths")" || return 1
+  fi
+
   while IFS= read -r unit_dir; do
     [[ -n "$unit_dir" ]] && deleted_units+=("$unit_dir")
   done <<<"$deleted_unit_paths"
@@ -97,6 +103,21 @@ destroy_deleted_terragrunt_units() {
       return 1
     fi
     conftest test --policy "${repo_root}/policy" --output github "$json_file" || return 1
+    guarded_app="$retire_app"
+    if [[ "$unit_dir" == IaC/live/argocd-apps/kiali ]]; then
+      guarded_app=kiali
+    fi
+    if [[ -n "$guarded_app" ]]; then
+      live_app="$(kubectl -n argocd get application "$guarded_app" --ignore-not-found -o json |
+        jq -c '{apiVersion, kind, metadata: (.metadata | {name, namespace, finalizers})}')" || return 1
+      if [[ "$guarded_app" == kiali && -n "$live_app" ]]; then
+        terragrunt_kiali_teardown_complete || return 1
+      fi
+      if ! terragrunt_retired_argocd_app_plan "$guarded_app" "${live_app:-null}" "$json_file"; then
+        echo "Retirement plan must delete only the selected Application with cascading deletion enabled." >&2
+        return 1
+      fi
+    fi
     echo "::endgroup::"
   done
 
@@ -277,7 +298,7 @@ esac
 backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
 case "$backup_storage_scope" in
   true)
-    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false && "$existing_argocd_only" == false ]] || {
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && -z "${TERRAGRUNT_RETIRE_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false && "$existing_argocd_only" == false ]] || {
       echo "The backup-storage scope cannot be combined with an Argo CD target, existing-only mode or state repair." >&2
       exit 2
     }
@@ -291,6 +312,18 @@ if [[ "$backup_storage_scope" == true ]]; then
   echo "::group::OpenClaw legacy offsite bucket plan and apply"
   plan_and_apply_application_backup_storage
   echo "::endgroup::"
+  exit 0
+fi
+
+if [[ -n "${TERRAGRUNT_RETIRE_ARGOCD_APP:-}" ]]; then
+  if [[ "${GITHUB_EVENT_NAME:-}" != workflow_dispatch ||
+        -n "${TERRAGRUNT_ARGOCD_APP:-}" || "$existing_argocd_only" != false ||
+        "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" != false ]]; then
+    echo "Application retirement requires a protected dispatch without another apply scope." >&2
+    exit 2
+  fi
+  affected_units="$(terragrunt_affected_units)"
+  destroy_deleted_terragrunt_units "$TERRAGRUNT_RETIRE_ARGOCD_APP"
   exit 0
 fi
 

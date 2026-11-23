@@ -17,9 +17,6 @@ config: |
     - label: Argo CD
       url: https://argocd.stinkyboi.com
       icon: selfhst:argo-cd
-    - label: Kiali
-      url: https://kiali.stinkyboi.com
-      icon: selfhst:kiali
 
   services:
     filters:
