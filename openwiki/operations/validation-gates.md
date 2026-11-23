@@ -194,8 +194,6 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-d070446e78bc2444fe729dec
@@ -364,13 +362,13 @@ secret and saved-state scans remain checked.
 
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
-Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
-`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
-and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
-One hosted runner builds the private DNS, n8n recovery, Harbor publication, and
-remaining fixture groups concurrently. The offline Nix result requires each
-group's result. The n8n fixtures use the inputs listed in `flake.nix` and
-publish a separate signed result for reuse across unrelated changes.
+Fixture calls and source contracts live in `scripts/ci/offline-checks.sh`.
+One hosted runner builds the private DNS, n8n recovery, Harbor publication,
+and remaining groups concurrently. The offline result requires every group
+to pass. The n8n fixtures use the inputs listed in `flake.nix` and publish a
+separate signed result for reuse across unrelated changes. CI verifies signed
+results from the protected main cache and uses sandboxed builds. Live plans
+and runtime acceptance run separately.
 See [signed offline validation](../../docs/nix-cache.md).
 
 The offline Nix gate also runs the pinned XERJ release against the Octelium

@@ -166,7 +166,7 @@ class PrivatePlanStageTest(unittest.TestCase):
             self.assertFalse(output.exists())
 
     def test_provider_cache_contract_rejects_state_paths_and_extra_credentials(self):
-        source = HELPER.with_name("offline-static-checks.sh").read_text()
+        source = HELPER.with_name("offline-checks.sh").read_text()
         gate = source.split('echo "::group::Terragrunt pull request gate"', 1)[1]
         gate = gate.split("scope_body_sha256=", 1)[0]
         original = json.loads(subprocess.check_output(

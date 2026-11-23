@@ -12,13 +12,12 @@ Unrelated source edits can reuse it while the aggregate offline check still
 requires it. Cross-repository fixtures and policy checks use the full tracked
 tree.
 
-[`offline-checks.sh`](../scripts/ci/offline-checks.sh) owns the extracted
-Python checks; [offline-static-checks.sh](../scripts/ci/offline-static-checks.sh)
-owns shell fixtures and source contracts. Their generated Terragrunt units are fixtures; it performs no
-provider initialization or authenticated cloud/cluster requests.
+[`offline-checks.sh`](../scripts/ci/offline-checks.sh) owns the Python tests,
+shell fixtures, and source contracts. It generates Terragrunt units for the
+fixtures without initializing providers or making authenticated requests.
 The offline result requires all four fixture groups to pass. GitHub Actions
-builds the independent private DNS, n8n recovery, Harbor publication, and
-remaining groups in parallel on a single runner.
+builds the private DNS, n8n recovery, Harbor publication, and remaining
+groups concurrently on one runner.
 [`conftest-policies.sh`](../scripts/ci/conftest-policies.sh) owns the second
 check. Provider initialization/validation, Helm chart downloads, Git-sensitive
 secret scanning, security scanners, live plans, and cluster acceptance still
