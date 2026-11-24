@@ -22,6 +22,7 @@ APPS = {
     "fleet": "fleet.fleet:8080",
     "grafana": "grafana.monitoring:80",
     "harbor": "harbor.harbor:80",
+    "immich": "immich.immich:2283",
     "kiali": "kiali.monitoring:20001",
     "langfuse": "langfuse-web.langfuse:3000",
     "litellm": "litellm.ai:4000",
@@ -53,6 +54,14 @@ ROUTERS = HTTP["routers"]
 
 
 class RouteTests(unittest.TestCase):
+    def test_controller_rolls_out_without_a_fixed_hostname(self):
+        values = read_yaml("clusters/homelab/apps/traefik/values.yaml")
+        controller = values["controllers"]["traefik"]
+        self.assertNotIn("kubernetes.io/hostname", controller["pod"].get("nodeSelector", {}))
+        self.assertEqual(controller["strategy"], "RollingUpdate")
+        self.assertEqual(controller["rollingUpdate"]["surge"], 1)
+        self.assertEqual(controller["rollingUpdate"]["unavailable"], "0%")
+
     def test_adguard_is_private_authenticated_backend_with_tls_coverage(self):
         self.assertEqual(ROUTERS["adguard"], {"entryPoints": ["websecure"],
                          "rule": "Host(`adguard.stinkyboi.com`)", "service": "adguard", "tls": {}})
@@ -74,7 +83,7 @@ class RouteTests(unittest.TestCase):
                 self.assertEqual(router["tls"], {})
                 self.assertEqual(router["service"], app)
                 host = f"Host(`{app}.stinkyboi.com`)"
-                if app != "fleet":
+                if app not in {"fleet", "immich"}:
                     self.assertEqual(router["rule"], host)
                 service, port = backend.split(":")
                 self.assertEqual(HTTP["services"][app]["loadBalancer"], {
@@ -110,6 +119,21 @@ class RouteTests(unittest.TestCase):
         # An alternate Fleet router would bypass the setup exclusions.
         self.assertEqual([name for name, route in ROUTERS.items()
                           if "fleet.stinkyboi.com" in route["rule"]], ["fleet"])
+
+    def test_immich_setup_routes_are_only_available_to_cluster_operators(self):
+        router = ROUTERS["immich"]
+        self.assertEqual(router["rule"], "Host(`immich.stinkyboi.com`) && "
+                         "!PathRegexp(`(?i)^/+api/+(auth/+admin-sign-up|"
+                         "admin/+database-backups/+start-restore)(/|$)`)")
+        self.assertEqual(router["middlewares"], ["reject-ambiguous-paths"])
+        self.assertEqual([name for name, route in ROUTERS.items()
+                          if "immich.stinkyboi.com" in route["rule"]], ["immich"])
+        blocked = re.compile(re.search(r"PathRegexp\(`(.*)`\)", router["rule"])[1])
+        for path in ("/api/auth/admin-sign-up", "/API//auth/admin-sign-up/",
+                     "/api/admin/database-backups/start-restore"):
+            self.assertIsNotNone(blocked.search(path))
+        for path in ("/api/auth/login", "/api/server/ping", "/api/assets"):
+            self.assertIsNone(blocked.search(path))
 
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()

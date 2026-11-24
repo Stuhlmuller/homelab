@@ -1,5 +1,6 @@
 include "root" {
-  path = find_in_parent_folders("root.hcl")
+  path   = find_in_parent_folders("root.hcl")
+  expose = true
 }
 
 locals {
@@ -8,6 +9,17 @@ locals {
   placeholder        = "REPLACE_ME"
   argocd_oidc_issuer = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
 }
+
+# The existing SSM state predates client-side encryption. Remove after an encrypted write.
+remote_state = merge(include.root.remote_state, {
+  encryption = jsondecode(
+    lower(local.root_config.locals.project_name) == "homelab" && path_relative_to_include("root") == "homelab/us-west-2/shared/aws-ssm-parameters" ?
+    jsonencode(merge(
+      { for key, value in include.root.remote_state.encryption : key => value if key != "enforced" },
+      { fallback = { method = "unencrypted" } }
+    )) : jsonencode(include.root.remote_state.encryption)
+  )
+})
 
 terraform {
   source = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/modules/aws-ssm-parameters"
@@ -43,6 +55,7 @@ inputs = {
     "/homelab/grafana/azuread/allowed-organizations",
     "/homelab/langfuse/s3-access-key-id",
     "/homelab/langfuse/s3-secret-access-key",
+    "/homelab/litellm/bedrock-credentials",
   ]
 
   parameters = {
@@ -264,6 +277,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/proxy-dockerhub-pull-password" = {
+      description = "Read-only Harbor robot credential for the private Docker Hub proxy cache."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/nofx/harbor-pull-password" = {
       description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential."
       generated = {
@@ -459,6 +480,21 @@ inputs = {
     "/homelab/litellm/openai-api-key" = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder
+    }
+    "/homelab/kagent/litellm-token" = {
+      description = "kagent inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
+    "/homelab/kagent/postgres-password" = {
+      description = "kagent PostgreSQL database password."
+      generated = {
+        length  = 40
+        special = false
+      }
     }
     "/homelab/nofx/litellm-token" = {
       description = "NOFX inference-only LiteLLM key with app attribution."
@@ -745,6 +781,20 @@ inputs = {
         special = false
       }
       initial_value = local.placeholder
+    }
+    "/homelab/immich/postgres-admin-password" = {
+      description = "Immich dedicated PostgreSQL administrator password for initialization and logical backup."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/immich/postgres-app-password" = {
+      description = "Immich database owner password for the server role without PostgreSQL superuser permissions."
+      generated = {
+        length  = 40
+        special = false
+      }
     }
     "/homelab/uptime-kuma/admin-password" = {
       description = "Uptime Kuma native owner password; generated once and retained."

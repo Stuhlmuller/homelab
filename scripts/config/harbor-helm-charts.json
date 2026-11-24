@@ -32,16 +32,16 @@
       "sha256": "ef5d707f5afbb2c3ce9892f5ff3fca0dec6864db8830a1c454b3d4822c485843"
     },
     {
+      "chart": "cilium",
+      "version": "1.20.5",
+      "repository": "https://helm.cilium.io",
+      "sha256": "0c7592eb75179ecf46dd3ec22145916f0164c4401214ea15afb5b230b1d11a21"
+    },
+    {
       "chart": "cni",
       "version": "1.27.3",
       "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "fa60f8b5e80ee72c48ea72f2a0b63f9ed1b82fdffc57d1c59241bbbcba2b9f0a"
-    },
-    {
-      "chart": "compass",
-      "version": "0.6.0",
-      "repository": "ghcr.io/adinhodovic/charts",
-      "sha256": "884bb89d548736f516f0f428fc204c5db873b6fd7cd8f7e34bb21ba02f0f466f"
     },
     {
       "chart": "crossplane",
@@ -116,6 +116,18 @@
       "sha256": "716733f473fcfd00380cb9317c004aeb7cc8a49be311d2c28dce9f900e124491"
     },
     {
+      "chart": "kagent",
+      "version": "0.10.6",
+      "repository": "ghcr.io/kagent-dev/kagent/helm",
+      "sha256": "59787ac0199a75a1357541cef4a3d2443ea9a05ca24536c84671e793dab1bad6"
+    },
+    {
+      "chart": "kagent-crds",
+      "version": "0.10.6",
+      "repository": "ghcr.io/kagent-dev/kagent/helm",
+      "sha256": "8cf7aa29a0d001e111fa2444cb5347423898acb18226f2ae330ca59e74084a9f"
+    },
+    {
       "chart": "langfuse",
       "version": "2.1.1",
       "repository": "ghcr.io/langfuse/langfuse-k8s/charts",
@@ -133,7 +145,7 @@
       "repository": "https://github.com/rancher/local-path-provisioner.git",
       "revision": "5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0",
       "path": "deploy/chart/local-path-provisioner",
-      "sha256": "77136a45b6381468f6760716a35eed03bf42bebef95d3dfcc141850995dd7a44"
+      "sha256": "93c261b71ef3496013cbd135f86596e8f9e4ee160aaf5c028c77011e668ed6bd"
     },
     {
       "chart": "metrics-server",
@@ -159,7 +171,7 @@
       "repository": "https://github.com/openclaw/openclaw-enterprise.git",
       "revision": "33bb74590a749f37934da4502fca6035cd234a55",
       "path": "deploy/helm/openclaw-enterprise",
-      "sha256": "11f91ee792b44be13d138d96ce4362df595b6faf045f7b68536da22d01b7a3a9"
+      "sha256": "b2d28ad6016b18a3e7ea4943081802cd2c8025449175abc93a6996fad5a7dcb3"
     },
     {
       "chart": "tailscale-operator",

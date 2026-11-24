@@ -100,8 +100,9 @@ organization-policy blocker is tracked below.
   Langfuse database relocation is currently queued.
 - **Next step:** Rotate the shared token through the guarded
   [CI credential helper](../../scripts/octelium-ci-credential.sh), then verify
-  authenticated read-only Kubernetes access through the protected
-  [diagnostics workflow](../../.github/workflows/homelab-diagnostics.yml).
+  authenticated read-only Kubernetes access from a private operator terminal
+  using the [private route](../../docs/octelium.md#private-kubernetes-access).
+  Verify the CI token separately in the next authorized protected apply.
   Any future PostgreSQL move needs fresh PVC/PV identity checks, versioned
   off-NAS readback, and an isolated restore receipt before merge.
 
@@ -178,7 +179,7 @@ observations below retain their original dates.
   unhealthy and Harbor OutOfSync alerts. All four nodes and 189 non-terminal
   Pods were Ready; all 43 Argo CD Applications were Healthy and Synced.
 - **Risk:** Watchdog remains disabled without an independent dead-man receiver
-  (`clusters/homelab/apps/prometheus/README.md`). A monitoring-stack outage can
+  ([archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md)). A monitoring-stack outage can
   therefore remain silent. Retired UPnP Job failures still generate recurring
   noise. Authenticated Grafana API inspection returned HTTP 401 using the
   current `grafana-admin` Secret, so per-rule/API checks were unavailable;

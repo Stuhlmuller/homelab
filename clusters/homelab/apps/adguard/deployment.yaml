@@ -19,9 +19,18 @@ spec:
         app.kubernetes.io/name: adguard
         istio.io/dataplane-mode: none
       annotations:
-        homelab.stuhlmuller.dev/config-revision: "v2"
+        homelab.stuhlmuller.dev/config-revision: "v4"
     spec:
       automountServiceAccountToken: false
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - zimaboard-2
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
@@ -55,8 +64,8 @@ spec:
             - {name: dns-tcp, containerPort: 53, protocol: TCP}
             - {name: http, containerPort: 3000, protocol: TCP}
           resources:
-            requests: {cpu: 100m, memory: 128Mi}
-            limits: {cpu: 500m, memory: 512Mi}
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: 500m, memory: 1Gi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

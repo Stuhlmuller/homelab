@@ -12,8 +12,10 @@ from litellm.proxy.common_utils.encrypt_decrypt_utils import decrypt_value_helpe
 from prisma import Json
 import yaml
 
-APPS = ("openclaw", "nofx", "multica", "n8n")
+LEGACY_APPS = ("openclaw", "nofx", "multica", "n8n")
+APPS = (*LEGACY_APPS, "kagent")
 IMPORT_MARKER = "homelab-native-key-import-v1"
+KAGENT_IMPORT_MARKER = "homelab-kagent-key-import-v1"
 PROVIDER_IMPORT_MARKER = "homelab-provider-credential-import-v1"
 KEY_DIRECTORY = Path("/var/run/secrets/litellm-apps")
 PASSWORD_FILE = Path("/var/run/secrets/litellm-postgres/password")
@@ -47,28 +49,27 @@ async def import_service_keys(client):
     # Serialize first startup across rolling Pods; marker and all keys commit together.
     async with client.db.tx() as transaction:
         await transaction.execute_raw('LOCK TABLE "LiteLLM_UserTable" IN SHARE ROW EXCLUSIVE MODE')
-        marker = await transaction.litellm_usertable.find_unique(where={"user_id": IMPORT_MARKER})
-        if marker is not None:
-            return
-        keys = {app: (KEY_DIRECTORY / app).read_text().strip() for app in APPS}
-        operator = (KEY_DIRECTORY / "operator").read_text().strip()
-        if (any(not key.startswith("sk-") or len(key) < 32 for key in keys.values())
-                or len(set(keys.values())) != len(APPS) or operator in keys.values()):
-            raise ValueError("Caller keys must be initialized, distinct and non-administrative")
-        for app, key in keys.items():
-            await transaction.litellm_usertable.create(data={
-                "user_id": app, "user_role": LitellmUserRoles.INTERNAL_USER.value,
-                "models": ["openrouter/free"],
-            })
-            await transaction.litellm_verificationtoken.create(data={
-                "token": hash_token(key), "key_alias": app, "key_name": app,
-                "user_id": app, "models": ["openrouter/free"],
-                "allowed_routes": ALLOWED_ROUTES, "blocked": False,
-            })
-        await transaction.litellm_usertable.create(data={
-            "user_id": IMPORT_MARKER, "models": [],
-        })
-    # Once the marker exists, never recreate deleted keys or undo UI blocks/rotations.
+        for marker_id, apps in ((IMPORT_MARKER, LEGACY_APPS), (KAGENT_IMPORT_MARKER, ("kagent",))):
+            marker = await transaction.litellm_usertable.find_unique(where={"user_id": marker_id})
+            if marker is not None:
+                continue
+            keys = {app: (KEY_DIRECTORY / app).read_text().strip() for app in apps}
+            operator = (KEY_DIRECTORY / "operator").read_text().strip()
+            if (any(not key.startswith("sk-") or len(key) < 32 for key in keys.values())
+                    or len(set(keys.values())) != len(apps) or operator in keys.values()):
+                raise ValueError("Caller keys must be initialized, distinct and non-administrative")
+            for app, key in keys.items():
+                await transaction.litellm_usertable.create(data={
+                    "user_id": app, "user_role": LitellmUserRoles.INTERNAL_USER.value,
+                    "models": ["openrouter/free"],
+                })
+                await transaction.litellm_verificationtoken.create(data={
+                    "token": hash_token(key), "key_alias": app, "key_name": app,
+                    "user_id": app, "models": ["openrouter/free"],
+                    "allowed_routes": ALLOWED_ROUTES, "blocked": False,
+                })
+            await transaction.litellm_usertable.create(data={"user_id": marker_id, "models": []})
+    # Import markers preserve UI blocks, rotations, and deletions on later starts.
 
 
 async def import_provider_credential(client):

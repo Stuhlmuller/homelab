@@ -1,0 +1,10 @@
+{
+  "machineLearning": {
+    "enabled": false
+  },
+  "backup": {
+    "database": {
+      "enabled": false
+    }
+  }
+}

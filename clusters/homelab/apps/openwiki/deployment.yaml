@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwiki
+  namespace: openwiki
+  labels:
+    app.kubernetes.io/name: openwiki
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openwiki
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openwiki
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: harbor.stinkyboi.com/mirror/docker.io/library/nginx:latest@sha256:abe47724e466aeab9a345d8e46a221c2fa8953c7848bb4a3bd9976a7199f8cf2
+          imagePullPolicy: IfNotPresent
+          command: ["nginx", "-e", "stderr", "-g", "daemon off;", "-c", "/config/nginx.conf"]
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /graph.json
+              port: http
+              httpHeaders:
+                - name: Accept-Encoding
+                  value: gzip
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: site
+              mountPath: /site
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: openwiki-config
+        - name: site
+          configMap:
+            name: openwiki-site
+        - name: tmp
+          emptyDir:
+            sizeLimit: 16Mi

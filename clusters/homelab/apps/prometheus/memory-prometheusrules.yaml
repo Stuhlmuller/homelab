@@ -28,4 +28,4 @@ spec:
               allocatable memory by {{ $value | humanize1024 }}B.
               Reduce workload demand or add capacity. This non-HA policy does
               not reserve memory for node failure.
-            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/prometheus/README.md#memory-capacity-policy
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/prometheus/README.md#memory-capacity-policy

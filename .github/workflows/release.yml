@@ -3,47 +3,11 @@ name: "Release"
 permissions: {}
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
-    branches:
-      - main
   push:
     branches:
       - main
 
 jobs:
-  release-dry-run:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    concurrency:
-      group: release-preview-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: chainguard-actions/actions-checkout@37298d8de412b35988dd165ffae45f45b329d365 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Install Nix
-        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
-
-      - name: Install locked release toolchain
-        run: nix develop --command npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Semantic Release Dry Run
-        run: |
-          nix develop --command python3 -I scripts/ci/release-test.py --runtime
-          git switch --force-create semantic-release-dry-run
-          git clone --bare . "${RUNNER_TEMP}/semantic-release-dry-run.git"
-          nix develop --command env -u CI -u GITHUB_ACTIONS -u GITHUB_EVENT_NAME \
-            ./node_modules/.bin/semantic-release --dry-run --no-ci \
-            --branches semantic-release-dry-run \
-            --repository-url "file://${RUNNER_TEMP}/semantic-release-dry-run.git"
-
   release:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -51,6 +15,7 @@ jobs:
     concurrency:
       group: semantic-release-main
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: write # for creating releases
     steps:

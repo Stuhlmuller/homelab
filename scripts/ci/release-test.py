@@ -29,25 +29,25 @@ class ReleaseTests(unittest.TestCase):
             ["yq", "-o=json", ".", str(ROOT / ".github/workflows/release.yml")], text=True,
         ))
         publisher = workflow["jobs"]["release"]
-        preview = workflow["jobs"]["release-dry-run"]
+        self.assertEqual(workflow["on"], {"push": {"branches": ["main"]}})
+        self.assertEqual(set(workflow["jobs"]), {"release"})
         self.assertEqual(publisher["concurrency"], {
-            "group": "semantic-release-main", "cancel-in-progress": False,
+            "group": "semantic-release-main",
+            "cancel-in-progress": False,
+            "queue": "max",
         })
-        self.assertTrue(preview["concurrency"]["cancel-in-progress"])
-        self.assertNotEqual(preview["concurrency"]["group"], publisher["concurrency"]["group"])
+        self.assertNotIn("concurrency", workflow)
         self.assertEqual(publisher["steps"][0]["with"]["ref"], "refs/heads/main")
-        for job in (preview, publisher):
-            self.assertLessEqual(job["timeout-minutes"], 15)
-            install = next(s for s in job["steps"] if s["name"] == "Install locked release toolchain")
-            self.assertIn("npm ci --ignore-scripts", install["run"])
-            self.assertNotIn("env", install)
-            self.assertFalse(job["steps"][0]["with"]["persist-credentials"])
-        self.assertNotIn("secrets.", json.dumps(preview))
+        self.assertLessEqual(publisher["timeout-minutes"], 15)
+        install = next(s for s in publisher["steps"] if s["name"] == "Install locked release toolchain")
+        self.assertIn("npm ci --ignore-scripts", install["run"])
+        self.assertNotIn("env", install)
+        self.assertFalse(publisher["steps"][0]["with"]["persist-credentials"])
         self.assertEqual(publisher["permissions"], {"contents": "write"})
         self.assertEqual(publisher["steps"][-1]["env"], {"GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"})
 
     @unittest.skipUnless(RUNTIME, "install locked dependencies and pass --runtime")
-    def test_preview_coalesced_commits_and_repeat_publication(self):
+    def test_preview_includes_multiple_commits_and_repeat_publication(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             checkout, remote = root / "checkout", root / "remote.git"

@@ -22,8 +22,6 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -36,8 +34,6 @@ sources:
     resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
   - id: openwiki-source-e63f21a2fc45e0b39144df0d
     resource: repo://builds/harbor-core/prepare-source.py
-  - id: openwiki-source-d8462ae63760d7635fda38ef
-    resource: repo://builds/harbor-core/README.md
   - id: openwiki-source-4809fcf6b821691d424ca089
     resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-edb4db7f4400ce88789df37e
@@ -58,28 +54,18 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
-  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-bd06d6b0499111fbfe3b1e84
     resource: repo://clusters/homelab/apps/litellm/values.yaml
-  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
-    resource: repo://clusters/homelab/apps/mastodon/README.md
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-d27624f754153b714543d8c4
     resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
-  - id: openwiki-source-01fc0bedc522f2abd58d6698
-    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
     resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -88,18 +74,12 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
-  - id: openwiki-source-fbaccd01ca51226fa9e5324d
-    resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
-  - id: openwiki-source-e61e6d11d2a5c456a06bdb85
-    resource: repo://clusters/homelab/platform/image-policy/README.md
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -180,12 +160,30 @@ verified:
 
 # Harbor Private OCI Registry
 
+## Argo CD bootstrap image
+
+The offline image coverage check requires a digest-pinned Quay catalog entry
+for the bootstrap chart's literal `global.image.tag`. The full catalog keeps
+v3.4.2 for rollback alongside v3.4.14. Use protected Harbor publication and
+authenticated pull verification before applying a new bootstrap image tag.
+
+## Historical pod image entries
+
+Argo CD can list images from retained terminal pods. A one-time GitOps Job
+removed 51 reviewed terminal ReplicaSet pods with upstream references after
+their 30-day retention period. Argo CD reported the hook succeeded, and a
+subsequent Kubernetes inventory found none of the reviewed pods. The cleanup
+preserved active pods, recent failures, and Job history.
+
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
 the package SHA-256 for every Argo CD chart source, including the dormant
-OpenClaw Enterprise Git Helm chart. The protected
-`harbor-helm-charts.yml` dispatch publishes the exact packages to
+OpenClaw Enterprise Git Helm chart. The required offline check validates that
+every declared Argo CD chart has a reviewed package before publication. For
+charts from pinned Git revisions, Helm selects the package contents and the
+publisher normalizes the archive timestamps before checking the reviewed hash.
+The protected `harbor-helm-charts.yml` dispatch publishes the exact packages to
 `harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
 robot. Run it on current `main` before moving any Argo CD chart source to
 Harbor. The repository credential is owned by Argo CD self-management and
@@ -193,6 +191,12 @@ reads only the mirror pull robot password. Terraform's Argo CD bootstrap chart
 remains upstream for a cold-cluster restore.
 
 ## Ownership And Access
+
+The Harbor bootstrap declares private pull-through projects for Docker Hub,
+GitHub Container Registry, and Quay. An authenticated pull through a `proxy-*`
+project fetches a missing image from that project's public upstream without
+the publication catalog. Workload migration requires a scoped pull identity
+and release verification. See the [pull-through cache runbook](../../docs/harbor-image-mirroring.md#pull-through-cache-projects).
 
 Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
@@ -231,6 +235,44 @@ for the Kubernetes Service hostname, as declared in
 verify Harbor TLS. A shared ingress hardening change should establish a trusted
 upstream server name/CA and remove this bypass across the service catalog.
 
+## Repository and lifecycle audit
+
+On November 21, 2026, the public registry listed 159 `mirror` repositories
+and an empty default `library` project. The `homelab` project required
+authentication. The existing project boundary preserves upstream paths in
+`mirror` and keeps private builds and Chainguard verification imports in
+`homelab`. Bootstrap uses separate project-scoped pull and publisher robots.
+See [project bootstrap](../../clusters/homelab/apps/harbor/bootstrap.py).
+
+The snapshot at `818a8442` found 13 of 234 catalog repository/digest pairs
+missing from Harbor. Five were kagent runtime images referenced by the
+workload. The remaining eight were entries in the image-policy catalog
+without a direct workload pin. Keep publication evidence tied to exact
+digests. The [kagent mirror scope](../../scripts/config/harbor-kagent-images.json)
+includes its five runtime images and PostgreSQL. The
+[protected publisher](../../.github/workflows/harbor-mirror.yml) verifies
+the manifest digest and a complete download with the reader robot.
+
+The audit also found that the chart publisher's preflight rejected the
+inventory because Cilium `1.20.5` lacked a checksum. The package inventory
+now includes the digest from the [official Cilium index](https://helm.cilium.io/index.yaml),
+and offline PR checks exercise the same preflight. The publisher normalizes
+timestamps only in packages built from the two pinned Git sources so the
+reviewed checksums are reproducible. The protected
+[chart publication](https://github.com/Stuhlmuller/homelab/actions/runs/45042781938)
+succeeded before the Tailnet DNS chart switched to Harbor. The Helm
+immutability rule is independent of the five Kubernetes `v1.35.9` upgrade aliases.
+Those matched their expected digests during the audit and Harbor reported
+them mutable. See the [Kubernetes activation prerequisites](../../docs/harbor-image-mirroring.md#updates-and-coverage).
+
+Check actual quota, storage growth, cleanup schedules, and the live and
+rollback keep set before configuring retention or garbage collection. The
+public API could not verify administrator-only policy or private artifacts.
+Artifact presence alone does not measure a complete pull or live node state.
+All public repository descriptions were empty in the snapshot. Use Harbor
+descriptions or labels to expose upstream and ownership metadata without
+changing the mirror manifests. See [Harbor retention](https://goharbor.io/docs/2.15.0/working-with-projects/working-with-images/create-tag-retention-rules/).
+
 ## Private node registry foundation
 
 Before the October 10 rollout, read-only Talos inspection found no configured
@@ -263,7 +305,7 @@ bootstrap pull back through Harbor. This is reviewed desired state, not a
 recovery receipt. After protected merge and targeted Terragrunt Apply, require
 Istio Synced/Healthy, ztunnel Ready on all four nodes, and a later scheduled
 Renovate dry run without Harbor token or image-pull errors. The
-[Istio runbook](../../clusters/homelab/apps/istio/README.md#ztunnel-bootstrap-image)
+[Istio runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/istio/README.md#ztunnel-bootstrap-image)
 keeps the reviewed rollback path.
 
 [`talos-harbor-mirrors.py --registry-host-only`](../../scripts/talos-harbor-mirrors.py)
@@ -337,12 +379,23 @@ success did not prove Harbor version discovery worked. These hosted-runner
 timeouts do not establish the cause of the separate cluster failure. Keep
 detailed Job logs restricted because they can name private packages.
 
+The [hosted Renovate relay candidate](../../clusters/homelab/apps/traefik/renovate-registry-candidate/README.md)
+is a standalone Kustomization at zero replicas outside the active Traefik
+Application. It prepares a private TCP 443 route from the dedicated hosted
+runner to the registry-only listener, with Harbor TLS, SNI, and the token
+realm preserved. The [offline fixture](../../scripts/ci/renovate-registry-relay-test.py)
+checks that the active overlay excludes it and verifies the route and its
+identity boundary. A separate activation must verify signed Tailnet Lock
+enrollment, persistent relay state, the protected companion workflow, and a
+read-only OCI lookup plus access denials before using the route for hosted
+Renovate runs.
+
 The first manual in-cluster dry run used the default `automation` service
 identity and resolved Harbor through the shared private Traefik listener on
 8443. Destination ztunnel rejected its HBONE connections under the existing
 [authorization policy](../../clusters/homelab/apps/traefik/authorizationpolicy.yaml)
 before they reached Traefik; Renovate reported TLS `ECANCELED`. The
-[repository-owned repair](../../clusters/homelab/apps/renovate/README.md)
+[repository-owned repair](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/renovate/README.md)
 gives the unsuspended full dry-run CronJob a dedicated no-token ServiceAccount
 and a Pod-local alias for `harbor.stinkyboi.com` to the registry-only
 `10.96.0.50:443` Service.
@@ -355,6 +408,26 @@ expected public or unauthorized responses, and actual version discovery
 before writer cutover. If an eligible private source needs a Harbor credential,
 add a reviewed secret contract before enabling writes.
 
+### cert-manager v1.20.5 security prerequisite
+
+The [Harbor image catalog](../../scripts/config/harbor-images.json) retains
+the five deployed cert-manager v1.20.3 rollback digests and stages official
+v1.20.5 indexes for the controller, CA injector, webhook, ACME solver and
+startup API check. Anonymous scans of all ten Linux amd64 and arm64 images
+found package inventories and zero fixable HIGH or CRITICAL findings with the
+November 22, 2026 Trivy database. The latest v1.21.3 release still has fixable
+findings.
+
+The [Jetstack v1.20.5 chart package](https://charts.jetstack.io/charts/cert-manager-v1.20.5.tgz)
+has SHA-256 `1cd093ea8b069bd136acfdc8d20002096e880ce0944854e78b4448cfb7aa8a15`.
+The candidate render preserves the existing resource identities, webhook
+settings, RBAC and the CRD served and storage versions. Publish the five
+indexes using the existing full Harbor mirror scope at reviewed current main
+and verify complete authenticated pulls. Then update the Argo chart, chart
+inventory and five runtime digests together. Verify the exact GitOps revision,
+webhook readiness and non-production certificate issuance and renewal.
+See [issue #919](https://github.com/Stuhlmuller/homelab/issues/919).
+
 ## Identity And State
 
 The SSM catalog declares twelve Harbor SecureStrings. `harbor-secrets` renders
@@ -364,6 +437,11 @@ and `publisher` robots and the public upstream-only `mirror` project with
 separate `publisher` and `pull` robots. The publisher has pull/push permissions
 and no artifact deletion; the reader has pull only. Source-controlled bootstrap
 credentials stay outside this public repository.
+
+The bootstrap Job logs fixed phase names for API readiness, project and robot
+policy, registry policy, and scan backfill. Use the last phase message to
+locate a timeout. Verify Job completion separately from the Harbor health
+endpoint, which can report healthy while bootstrap is still running.
 
 The reviewed Stage A saved plan created and metadata-verified
 `/homelab/harbor/mirror-robot-pull-password` without exposing its value. It made
@@ -413,6 +491,10 @@ map is included and fails closed. Unrelated open PR heads keep
 their earlier status, avoiding repeated writes to GitHub's per-head/context
 status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
+Use the [n8n mirror scope](../../docs/harbor-image-mirroring.md#delivery)
+for the single staged n8n image. It verifies a complete authenticated Harbor
+pull independently of the shared Renovate scope.
+
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
 Retain the database, registry blobs, signing certificate and encryption key
@@ -451,7 +533,7 @@ shared timeout or skip readiness. The separate robot inventory retains its
 The recovery command uses a temporary loopback Argo API with explicit namespace
 and Kubernetes context: CLI v3.3.6 ignores `--kube-context` during `--core`
 startup. This transport does not edit kubeconfig and is stopped on exit.
-See `clusters/homelab/apps/harbor/README.md`.
+See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md).
 
 Grafana receives `harbor_vulnerability_critical_total` from the repository-owned
 Harbor vulnerability collector. It queries only completed scan summaries for the
@@ -511,7 +593,7 @@ mirror copy had successful scans for all 62 uploaded runnable manifests and
 16 indexes inspected; 15 unscanned objects were in-toto attestations. This
 snapshot does not establish scan completion for images not yet uploaded.
 
-The [local-path controller rebuild](../../builds/local-path-provisioner/README.md)
+The [local-path controller rebuild](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/local-path-provisioner/README.md)
 produces a local, two-platform OCI candidate from pinned Rancher source. Its
 scan records the complete linked Go package inventory, compiler and module
 sums, and fresh fixable HIGH/CRITICAL results for each immutable child.
@@ -530,6 +612,10 @@ anonymous upstream reads, immutable digest checks and complete authenticated
 Harbor pulls with the dedicated mirror reader. They use the same fixed
 destination repositories.
 
+Homepage uses the fixed [Homepage inventory](../../scripts/config/harbor-homepage-images.json)
+at reviewed current main. The scope checks the v2.8.0 digest against the full
+catalog and requires a complete authenticated pull before the cutover.
+
 Bazarr uses `image_scope=bazarr` with the fixed
 `scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
 BusyBox init image. CI compares that subset with the Kustomize render and
@@ -540,7 +626,7 @@ before registering the Application. Talos mirrors keep `skipFallback: true`;
 an upstream digest pin cannot make an uncopied image pullable. Scoped publication
 preserves digest checks and complete authenticated Harbor pulls without coupling Bazarr to
 unrelated historical images. See the
-[Bazarr rollout](../../clusters/homelab/apps/bazarr/README.md).
+[Bazarr rollout](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md).
 
 Traefik uses `image_scope=traefik` with the fixed two-image
 `scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog.
@@ -652,7 +738,7 @@ does not establish rollout health. See the [operator steps](../../docs/harbor-im
 
 ### Identical-reference core repair candidate
 
-The [maintained core recipe](../../builds/harbor-core/README.md) pins upstream
+The [maintained core recipe](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/harbor-core/README.md) pins upstream
 Harbor v2.15.4 source and its archive hash, the official amd64 runtime image and
 a public Chainguard Go builder. Its source patch deduplicates only identical
 database relations for the same child. Differing digest, platform, URL or
@@ -789,7 +875,7 @@ input bound applies to the combined archive after compression, with no
 truncation or plaintext fallback. Partial scanner failures retain only the
 report files that were produced.
 Encryption failure keeps the audit failed and retains no report. The [operator
-instructions](../../builds/harbor-core/README.md) describe private decryption;
+instructions](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/harbor-core/README.md) describe private decryption;
 existing remediation and zero-match publication checks remain enforced.
 The category narrows investigation but does not relax the audit or establish
 vulnerability clearance. Identity failures distinguish archive structure,
@@ -811,19 +897,18 @@ also failed with the same sanitized category. The [last passing main run](https:
 on October 28 retained five unresolved matches. A
 [commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
 shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
-workflow between the passing and failing main revisions. A fresh advisory
-database may now report an available fix; public logs deliberately withhold the
-finding, so the exact cause remains unverified. Inspect the private report,
-update the pinned runtime base or affected dependency as needed, then rerun the
+workflow between the passing and failing main revisions. A November 22 rebuild
+reproduced the available-fix finding with the current Grype database. The
+[Core Dockerfile](../../builds/harbor-core/Dockerfile) pins the signed Photon
+updates for cURL and Expat. The hosted
 [Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
-[full-image scan](../../builds/harbor-core/scan.sh). Keep the
-[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
-Grype database gate; do not suppress the match to clear unrelated PR checks.
+[full-image scan](../../builds/harbor-core/scan.sh) verify the package update
+before protected publication.
 
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
 The vulnerability exporter references it only for kubelet pulls. The
-[excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+[excluded private-core pull candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/private-core-candidate/README.md)
 holds the ServiceAccount pull reference. No app-container mount, new IAM/SSM
 declaration or credential rotation is added. Merge the held pull reference
 only with reviewed publication/scans, recovery clearance and ExternalSecret
@@ -856,6 +941,13 @@ activate the held consumer, or clear shared recovery/advisory gates.
 Current-main source staging also applies the fresh private pull prerequisite to
 both retained NOFX subjects; its anonymous source download and alias checks
 remain independent of this fixed core-only mode.
+
+The Photon security rebuild updated curl, curl-libs and expat-libs. The
+protected publisher recorded a zero-match runtime audit, a complete
+authenticated pull and signature verification for the new image. The
+[Harbor Helm values](../../clusters/homelab/apps/harbor/values.yaml) select
+that exact tag and digest.
+[Protected publication](https://github.com/Stuhlmuller/homelab/actions/runs/45104169857)
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
@@ -898,7 +990,7 @@ gates. The publisher emits only the two verified current-revision image referenc
 as job outputs. A separate credential-free job validates them again and uploads
 one fixed text file, retained for 30 days, for `gh run download`; private logs and
 registry credentials remain outside artifacts. The live-job artifact upload ban
-is unchanged. See the [NOFX build recipe](../../builds/nofx/README.md#publish-update-and-revert)
+is unchanged. See the [NOFX build recipe](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/nofx/README.md#publish-update-and-revert)
 for the artifact name and CLI retrieval command.
 
 At the pre-cutover inspection on 2026-09-19, NOFX still used upstream images.
@@ -1081,7 +1173,7 @@ also leaves isolated canary placement blocked; a mirror receipt cannot clear
 that independent gate.
 The Enterprise foundation Application is declared with automatic sync disabled,
 has not been applied, and deploys neither image.
-The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+The separate dormant [chart candidate](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
 stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. The
 catalog publication passed, but its local render comparison does not prove
@@ -1091,7 +1183,7 @@ See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.m
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned
 Image Updater v1.3.0 and the older Kubernetes SIG Network
 `kube-network-policies` v1.1.2 source. Image Updater stays paused at zero
-replicas. The [staged enforcer](../../clusters/homelab/platform/network-policy/README.md)
+replicas. The [staged enforcer](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/network-policy/README.md)
 instead uses pinned firewall-only kube-router; its Argo Application is dormant
 and selects no node. Flannel remains the CNI and kube-proxy the service proxy.
 Cataloging an image does not activate enforcement. Activation needs published
@@ -1110,13 +1202,13 @@ update, including init and ephemeral containers, across namespaces. Its binding
 uses `Warn, Audit`, so public image references remain admitted while inventory
 and mirror coverage are measured. A later `Deny` promotion requires clean
 static and live inventory, protected Harbor publication, and authenticated
-node-pull acceptance. See the [policy source](../../clusters/homelab/platform/image-policy/README.md).
+node-pull acceptance. See the [policy source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/image-policy/README.md).
 
 The staged [Cordium runner publisher](../../.github/workflows/cordium-runner-publish.yml)
 uses an exact-main manual dispatch for a fixed runner/controller pair. It
 requires authenticated Harbor pulls and signatures before emitting immutable
 digests. Publication and cold-pull acceptance remain pending; the runner pool
-stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
+stays disabled. See the [runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md).
 
 No consumer migration, zero-CVE result or live egress enforcement is
 established by these prerequisites. The full catalog has a protected receipt;
@@ -1193,7 +1285,7 @@ compatibility. Preserve the failure context in
 
 - [Official chart](https://github.com/goharbor/harbor-helm/releases/tag/v1.19.2)
 - [Harbor OCI support](https://goharbor.io/blog/harbor-2.0/)
-- `clusters/homelab/apps/harbor/README.md`
+- [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md)
 - [Storage And State](../architecture/storage-and-state.md)
 - [Secrets And Identity](../architecture/secrets-and-identity.md)
 - [GitOps Flow](../architecture/gitops-flow.md)
@@ -1226,7 +1318,7 @@ in memory-backed storage; finished Jobs expire after ten minutes. Namespace
 Pod creators and cluster administrators remain trusted. Protect the signing
 Secret in encrypted off-node etcd backups, retain public keys independently,
 and restore the Secret before cert-manager after a disaster. PostgreSQL backups
-do not cover the signing key. See `builds/nofx/README.md` for recovery and rollback.
+do not cover the signing key. See [archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/nofx/README.md) for recovery and rollback.
 
 Status: the retained signer's fingerprint is enrolled. Backup verification
 receipts and the independently retained public key stay in private operator
@@ -1348,7 +1440,7 @@ Publication verifies all-platform copies, aliases and complete authenticated
 Harbor pulls before consuming manifests merge. The dedicated PostgreSQL
 `18-bookworm` candidate preserves PostgreSQL 18 and its data directory; it does
 not change Harbor's existing database image. The
-[workload runbook](../../clusters/homelab/apps/mastodon/README.md#scan-acceptance-evidence)
+[workload runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/mastodon/README.md#scan-acceptance-evidence)
 retains scan findings and source-based applicability evidence. Publication and
 scans do not prove runtime compatibility or live acceptance.
 
@@ -1394,7 +1486,7 @@ The v3 core image passed protected publication in
 including the zero-match runtime audit and authenticated pull/signature checks.
 Harbor values pin its private digest. The harbor ServiceAccount references the
 existing harbor-pull Secret, and the core Deployment retains RollingUpdate.
-The [app runbook](../../clusters/homelab/apps/harbor/README.md) records recovery.
+The [app runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md) records recovery.
 
 ## Cilium image prerequisite
 

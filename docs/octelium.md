@@ -108,7 +108,7 @@ They create:
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
   Octelium human authentication and forwards directly to
   `http://bazarr.media.svc.cluster.local:6767`. See the
-  [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for the guarded
+  [Bazarr runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) for the guarded
   single-Service reconciliation and public tunnel DNS commands.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,
@@ -211,10 +211,13 @@ cleanup Job runs at PostSync wave 1 after success and as a SyncFail hook after
 failure, deleting only the named genesis ServiceAccount, ClusterRole, and
 ClusterRoleBinding. Its persistent cleanup RBAC has `delete` on
 `resourceNames: [cordium-genesis]` and cannot create, bind, or escalate
-arbitrary RBAC. An ordinary failed child sync runs cleanup and removes the
-identity. In-operation retries are disabled because they share the original
-timeout start; the next new full `cordium-bootstrap` sync gets a fresh budget
-and recreates the identity immediately before genesis.
+arbitrary RBAC. The cleanup uses kubectl's default in-cluster token and CA
+and a 120-second Job deadline. Keep the request-timeout override out of the
+Job so kubectl can select the mounted identity. After a reviewed child sync,
+verify the three genesis resources are absent. In-operation retries are
+disabled because they share the original timeout start. Each new full
+`cordium-bootstrap` sync gets a fresh budget and recreates the identity
+immediately before genesis.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
 identity with access restricted to the package-managed Cordium
@@ -386,28 +389,22 @@ aws ssm put-parameter \
 ### Entra owner conversion
 
 Octelium binds privileged access to immutable Entra `oid` and has
-`disableEmailAsIdentity: true`. That binding must remain unchanged when the
-owner's external sign-in is converted in place to the internal
-`rodman@stuhlmuller.net` UPN: the Entra object ID remains the same, while email
-and `preferred_username` may change. Do not bind privileged access to the new
-UPN or a new pilot user.
-
-Before conversion, retain an independent working Octelium session and create,
-then test, an independent cloud-only Entra Global Administrator. The complete
-live mapping inventory must bind only the original owner `oid` to owner access,
-show no email fallback, and contain no target-pilot binding. Do not close the
-working session until a fresh owner browser login with the converted internal
-identity renders the Services page.
+`disableEmailAsIdentity: true`. Preserve that binding across any future owner
+identity change: email and `preferred_username` are not privilege identifiers.
+Do not bind privileged access to a UPN or a new pilot user. The complete live
+mapping inventory must bind only the original owner `oid` to owner access,
+show no email fallback, and contain no target-pilot binding. Preserve a working
+session while validating a fresh owner browser login and the Services page.
 
 On October 7, 2026 UTC, the reviewed migration applied the original owner's
 `oid` binding and disabled email fallback. Fresh owner sessions through Entra
 callbacks rendered the Services page before and after the separate directory-mail
 attempt. That proves the `oid` binding only. The mail attempt left the old SMTP
 alias reserved, so its alias-release and pilot-rename route is retired. The
-supported continuation is the in-place Entra conversion documented in the
-[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md), followed by fresh
-Octelium and Fleet-console SAML sign-ins. No support case, Exchange
-license, or email-based identity workaround is needed.
+blocked one-off conversion procedure has been removed. The federated target
+remains unresolved in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+Future identity changes must preserve the owner `oid` and validate fresh
+Octelium and Fleet console SAML sign-ins.
 
 ## Cutover Gate
 

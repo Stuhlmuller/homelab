@@ -2,10 +2,14 @@ name: Cordium Runner Image Builds
 
 on:
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - '.cordium/**'
       - 'builds/cordium-runner/Dockerfile*'
       - 'builds/cordium-runner/build.sh'
+      - 'builds/cordium-runner/nix-packages.nix'
+      - 'flake.lock'
       - 'scripts/cordium-*.py'
       - 'scripts/ci/install-octelium-client.sh'
       - 'scripts/ci/install-cordium-client.sh'
@@ -16,6 +20,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: cordium-runner-images-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

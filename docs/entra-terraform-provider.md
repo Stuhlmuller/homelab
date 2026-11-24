@@ -2,19 +2,9 @@
 
 Microsoft Entra resources are managed by OpenTofu through Terragrunt. The
 existing Azure CLI operator login can bootstrap the provider identities, so no
-manual application creation or new subscription is required. The supported
-external-to-internal owner conversion is an Entra admin-center transition, not a
-Terraform resource; Terraform declares the immutable object-ID references that
-must survive it. The narrowly approved portal exception is bounded by
-`scripts/entra-owner-conversion.py`: its private receipt performs only Graph
-v1.0 reads before and after the conversion and never makes a Graph write. Its
-post-conversion attestation requires an explicit `externalUserState: null`, one
-local `userPrincipalName` identity issued by the tenant default domain,
-`onPremisesSyncEnabled: null` (never directory-synced), a password timestamp
-strictly after receipt preparation,
-and a target-account `/me` response from the same Graph token. `userType:
-Member` and the historical `creationType: Invitation` alone do not prove
-local-tenant authentication.
+manual application creation or new subscription is required. The one-off
+owner-conversion helper and manual portal exception have been removed.
+Immutable owner object-ID references remain unchanged.
 
 `IaC/homelab/us-west-2/operator/azuread-ci-identities` owns two applications, their service
 principals, exact GitHub federation subjects, requested Microsoft Graph
@@ -47,32 +37,39 @@ principal; it is not limited to assigning Fleet administrators.
 
 `IaC/homelab/us-west-2/operator/entra-stuhlmuller-domain` and
 `IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` remain outside the CI credential
-boundary. The former uses a human Entra operator to read and verify the
-existing non-default, managed `stuhlmuller.net` domain; the latter retains only
-the separate cloud-only `rodman.mac@stuhlmuller.net` pilot. The exact
-`rodman@stuhlmuller.net` identity is the existing owner converted in place, not
-a Terraform-created user. Neither expands the plan/apply identities with
-`Domain.ReadWrite.All` or `User.ReadWrite.All`.
+boundary. The domain unit attests that `stuhlmuller.net` is verified,
+federated, non-default, and non-initial. It reads Graph without a write action
+and forgets the completed verification action in its existing backend state
+using `destroy = false`. The first reviewed plan should contain only that
+state-only removal, the status read, and output changes. It should contain no
+Graph mutations.
 
-The module default starts with verification disabled, but this catalog already
-sets `verify_domain = true` after its reviewed DNS change. Its saved plan must
-still prove the exact one-time `verify` action, and the applied output must
-prove the domain is verified, managed, non-default, and non-initial. It does
-not configure Microsoft mail, federation or Google Workspace. Existing
-`stuhlmuller.net` users are not created, converted, assigned, or forced to use
-Entra. See the
-[domain module](../IaC/terragrunt-catalog/modules/entra-domain-verification/README.md) for the
-saved-plan sequence.
+A new managed domain still uses the separate `entra-domain-verification`
+catalog module. In that bootstrap path, publish and verify the DNS TXT record
+before enabling its one-time, bodyless verification POST. Bootstrap retains
+the Managed-only guard and does not configure federation or mail.
+
+The pilot unit retains only the separate cloud-only
+`rodman.mac@stuhlmuller.net` pilot. The existing owner identity is not a
+Terraform-created user. Neither unit expands the CI identities with
+`Domain.ReadWrite.All` or `User.ReadWrite.All`.
 
 ## Google Workspace federation
 
-`IaC/homelab/us-west-2/operator/entra-google-workspace-federation` is a separate, human-operated
-Terraform unit. It creates the Graph `internalDomainFederation` only after the
-Google Workspace Microsoft Office 365 SAML app has supplied validated metadata
-through the operator-only SSM contract. Google Workspace auto-provisioning must
-create matching Entra users for every enabled Google address; federation
-authenticates those users but does not create them. The CI identities retain no
-domain-write permission.
+The [operator unit](../IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl)
+reads the verified Federated domain and compares its sole SAML configuration
+with the protected Google Workspace metadata from SSM. It checks issuer,
+sign-in and sign-out endpoints, signing certificate, SAML protocol, and the
+reviewed MFA behavior. Review plans privately because they contain metadata.
+If an older state contains the former managed resource, the plan can forget
+that address without deleting the Graph object. Missing state does not
+enable Graph writes.
+
+The separate [bootstrap module](../IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf)
+still requires a verified Managed domain for a reviewed first configuration.
+Google Workspace auto-provisioning must create matching Entra users for every
+enabled Google address. Federation authenticates the users. The CI identities
+retain no domain-write permission.
 
 The plan identity's claims-assignment refresh is a live acceptance gate:
 Microsoft's documented least permissions for that read include
@@ -152,14 +149,11 @@ public PRs or logs. Keep live acceptance details in a private operator report.
 
 ## Recovery and limits
 
-The owner conversion is blocked while `stuhlmuller.net` remains federated with
-Google Workspace. Microsoft requires a nonfederated UPN domain for
-[cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user),
-and `prepare` rejects the current domain state. Reconcile the protected
-federation through a separate reviewed code change, or choose a managed target
-and revise the conversion transaction and dependent SAML mapping before running
-this procedure. Do not attempt the Entra admin-center conversion while this
-gate fails.
+The proposed owner conversion remains unresolved while `stuhlmuller.net` is
+federated with Google Workspace. Microsoft requires a nonfederated UPN domain
+for [cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
+A future implementation must reconcile that constraint and dependent SAML
+mappings; the removed one-off procedure is no longer an execution path.
 
 Before converting the existing external owner, create and successfully test an
 independent cloud-only Global Administrator. This is the tenant recovery path;
@@ -171,16 +165,10 @@ permanent role assignment. Its source-controlled
 run --all apply/destroy operations. After explicit authorization, set it true
 only through a separate signed, reviewed change and apply its reviewed saved
 plan; then test its independent login and restore the literal to false in a
-separate signed change. The private conversion `prepare` transaction must use
-Azure CLI authenticated as that exact recovery account; it read-validates its
-cloud-only identity and direct tenant-root Global Administrator assignment before
-it creates a receipt, then rereads that same recovery path during attestation.
-The read needs delegated `RoleManagement.Read.Directory` (or `Directory.Read.All`),
-never a Graph write permission. After the authorized admin-center conversion,
-clear the recovery Azure CLI session and sign in as the converted owner before
-running `attest`; its Graph `/me` check rejects the recovery account. Follow
-the exact commands and Fleet ordering in the [Fleet
-runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+separate signed change. The retired conversion helper is not needed for
+provider authentication or routine recovery-account validation. See the
+[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md) for the preserved
+console SAML and local recovery account boundaries.
 
 A federation or CI permission failure does not require recreating applications,
 resetting family passwords or changing Fleet authentication. Correct trust or

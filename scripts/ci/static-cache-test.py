@@ -116,8 +116,10 @@ source "$1" --offline-verified
             "github-actions-role-policy", "azuread-ci-identities", "entra-stuhlmuller-domain",
             "entra-stuhlmuller-pilot-user", "entra-emergency-global-admin", "entra-owner-mail",
             "entra-google-workspace-federation", "etcd-backup-storage", "kubernetes-node-labels",
-            "tailscale-access",
+            "tailscale-access", "litellm-bedrock",
         })
+        tested = {Path(call["cwd"]).name for call in calls if "test" in call["args"]}
+        self.assertLessEqual({"entra-stuhlmuller-domain", "entra-stuhlmuller-pilot-user"}, tested)
         self.assertGreaterEqual(sum(call["args"] == ["render"] for call in calls), 3)
 
     def test_init_failure_cleans_private_cache(self):

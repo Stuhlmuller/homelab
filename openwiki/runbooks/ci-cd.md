@@ -14,8 +14,6 @@ sources:
     resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-ae9e276e4f1f0876814f04a2
     resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
-  - id: openwiki-source-9a01f0687eaa075cf78c3abc
-    resource: repo://.github/workflows/image-automation.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
@@ -34,12 +32,8 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -68,8 +62,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
   - id: openwiki-source-2b445535596913b662665f3c
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-8483d28614308625b1073872
@@ -163,11 +157,10 @@ environment protection rules; `homelab-production` has its branch policy and
 no required reviewer. The older October 6 reviewer snapshot is superseded.
 Re-read live settings before changing environment or branch protections.
 
-NOFX image builds, OpenClaw native configuration checks, and Image automation
-verification now run on matching `main` pushes or reviewed manual dispatches,
-without optional pull-request runs. Image automation no longer observes every
-five minutes; dispatch its `verify` operation from `main` for a deliberate
-journal check. Required pull-request checks retain their existing producers.
+NOFX image builds and OpenClaw native configuration checks run on matching
+`main` pushes or manual dispatches. The dedicated image updater and legacy
+proposal workflows were removed. The offline suite still validates the image
+catalog and runtime ownership policy.
 
 The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
 builds the stock controller, runtime, and CLI plus the source-bound journal
@@ -213,7 +206,7 @@ requires a blocked result when `main` advances during sync. The committed
 only after `journalOperator.enabled` is true. It rechecks current `main`,
 source and configuration identity, retained journal and bootstrap claim/PV
 identity, and prior Job state before a fresh Job per workflow attempt. The
-[operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+[operator bundle](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a local journal claim and scoped proof permissions but is absent from
 active GitOps; the disabled gate stops before Job creation. The hosted runner
 does not mount the private journal. `restore` and `acceptance` still exit before
@@ -313,14 +306,17 @@ isolation.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
-Cordium runner bootstrap is staged as separate exact-main workflows for
+Cordium runner bootstrap is staged as separate workflows from reviewed main for
 credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
 The pool remains disabled and existing job selectors stay unchanged. The
-[runner contract](../../builds/cordium-runner/README.md) lists the live
+[runner contract](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
-before a reviewed selector cutover.
+before a reviewed selector cutover. The
+[Nix runner image](../../docs/cordium-ci.md#nix-based-actions-runner-image)
+uses the same nixpkgs lock as the development shell and is built by the
+existing image workflow for digest-pinned delivery through Harbor.
 
 ## Credential recovery: 2026-09-26
 

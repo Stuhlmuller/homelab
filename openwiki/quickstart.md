@@ -30,15 +30,17 @@ Generated indexes: [root](index.md), [apps](apps/index.md),
 
 | Task | Read first | Owning source or skill |
 | --- | --- | --- |
-| Add or change an app | [Inventory](workloads/inventory.md), [application pattern](patterns/new-application.md) | App README under `clusters/homelab/apps/`; [app onboarding](../.agents/skills/homelab-app-onboarding/SKILL.md) |
+| Add or change an app | [Inventory](workloads/inventory.md), [application pattern](patterns/new-application.md) | App manifests under `clusters/homelab/apps/`; [app onboarding](../.agents/skills/homelab-app-onboarding/SKILL.md) |
 | Fix a bug or regression | [Application notes](workloads/application-notes.md), [runbooks](runbooks/overview.md), [validation gates](operations/validation-gates.md) | Search the app, symptom, or resource name; follow callers, manifests, tests, and relevant incident evidence |
 | Change IaC or GitOps | [GitOps flow](architecture/gitops-flow.md), [unit pattern](patterns/new-terragrunt-unit.md) | `IaC/`, shared catalog/modules; [Terragrunt workflow](../.agents/skills/terragrunt-workflows/SKILL.md), Terraform module [layout](../.agents/skills/terraform-module-layout/SKILL.md), [composition](../.agents/skills/terraform-module-composition/SKILL.md), and [refactoring](../.agents/skills/terraform-module-refactoring/SKILL.md) |
+| Organize GitOps folders | [GitOps flow](architecture/gitops-flow.md) | Kubernetes monorepo [layout](../.agents/skills/kubernetes-monorepo-layout/SKILL.md) and [migration](../.agents/skills/kubernetes-monorepo-migration/SKILL.md) |
 | Add a platform dependency | [Platform pattern](patterns/new-platform-service.md), [topology](architecture/cluster-topology.md) | `clusters/homelab/platform/`; [app onboarding](../.agents/skills/homelab-app-onboarding/SKILL.md) |
 | Change secrets or identity | [Secret boundaries](architecture/secrets-and-identity.md) | [Secret contracts](../.agents/skills/homelab-secret-contracts/SKILL.md) |
 | Diagnose storage or recovery | [Storage and state](architecture/storage-and-state.md), [PVC metrics](operations/pvc-metrics-recovery.md), [etcd scheduling](operations/etcd-scheduler-diagnostics.md) | Workload backup/restore runbooks and [application recovery](../docs/application-recovery.md) |
-| Diagnose network or access | [Topology](architecture/cluster-topology.md), [Octelium](runbooks/octelium.md), [ingress](runbooks/tailnet-ingress.md) | Route manifests and workload README; compare native client and browser behavior |
+| Diagnose network or access | [Topology](architecture/cluster-topology.md), [Octelium](runbooks/octelium.md), [ingress](runbooks/tailnet-ingress.md) | Route manifests and workload runbooks; compare native client and browser behavior |
 | Change AI routing | [AI observability](architecture/ai-observability.md) | Caller configuration, LiteLLM/Langfuse contracts, and per-caller acceptance evidence |
 | Publish or upgrade images | [Harbor](operations/harbor-oci.md), [chart organization](patterns/helm-chart-organization.md) | [Harbor images](../.agents/skills/homelab-harbor-images/SKILL.md) |
+| Design Harbor repository layout or image policies | [Harbor](operations/harbor-oci.md) | [Repository layout](../.agents/skills/harbor-oci-repository-layout/SKILL.md), [image lifecycle](../.agents/skills/harbor-oci-image-lifecycle/SKILL.md) |
 | Repair a PR or deliver a rollout | [Validation gates](operations/validation-gates.md) | [Protected PRs](../.agents/skills/homelab-protected-prs/SKILL.md), [release verification](../.agents/skills/homelab-release-verification/SKILL.md) |
 | Maintain documentation | [Source map](source-map.md), [wiki maintenance](operations/wiki-maintenance.md) | [Homelab context](../.agents/skills/homelab-knowledge-base/SKILL.md), [OpenWiki](../.agents/skills/openwiki/SKILL.md) |
 | Plan a larger feature | [Agent workflows](operations/agent-workflows.md) | Repository `speckit-*` skills and `.specify/` templates |

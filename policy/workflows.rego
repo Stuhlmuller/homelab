@@ -243,7 +243,7 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 7
-	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "cilium-route-preflight", "cilium-evacuate-worker", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
@@ -337,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -414,7 +414,7 @@ fi`)
 	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
   printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
 fi`)
-	contains(step.run, concat("", [`sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'fac3034c426bd1539fee8cad06cb838e9b55681784d6eadd12fda30ea79a63fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'97c41edc52cc7370f97433824f3d9211e9f1ae8497e52a80c7cf75191c6a5037  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
@@ -876,6 +876,20 @@ private_live_output(run) if {
 	private_live_tail(tail)
 }
 
+# Deployment steps propagate their exit status and discard both output streams.
+private_live_output(run) if {
+	trim(run, "\n") in quiet_deploy_runs
+}
+
+quiet_deploy_runs := {
+	`umask 077
+nix develop --command bash scripts/ci/install-kubeconfig.sh >/dev/null 2>&1
+nix develop --command kubectl --request-timeout=15s version >/dev/null 2>&1`,
+	`nix develop --command bash scripts/ci/terragrunt-apply.sh >/dev/null 2>&1`,
+	`umask 077
+nix develop --command bash scripts/ci/octelium-private-kubernetes-apply.sh >/dev/null 2>&1`,
+}
+
 # The AzureAD plan report can contain provider diagnostics, so keep it and the
 # plan log inside the same private directory and expose only the verified helper.
 private_live_output(run) if {
@@ -912,6 +926,8 @@ echo "::group::Mastodon database release checks"
 python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::LiteLLM rollout capacity checks"
 python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"
+echo "::group::Descheduler activation checks"
+python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"
 echo "::group::Argo CD bootstrap plan"
 bash scripts/ci/terragrunt-plan.sh
 EOF`
@@ -1032,6 +1048,9 @@ case "$IMAGE_SCOPE" in
   renovate)
     bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
     ;;
+  n8n)
+    bash scripts/ci/harbor-publish.sh mirror-n8n --tailscale
+    ;;
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
     ;;
@@ -1040,6 +1059,9 @@ case "$IMAGE_SCOPE" in
     ;;
   prometheus)
     bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
+    ;;
+  immich)
+    bash scripts/ci/harbor-publish.sh mirror-immich --tailscale
     ;;
   uptime-kuma)
     bash scripts/ci/harbor-publish.sh mirror-uptime-kuma --tailscale
@@ -1053,11 +1075,29 @@ case "$IMAGE_SCOPE" in
   kagent)
     bash scripts/ci/harbor-publish.sh mirror-kagent --tailscale
     ;;
+  bazel-cache)
+    bash scripts/ci/harbor-publish.sh mirror-bazel-cache --tailscale
+    ;;
+  home-assistant)
+    bash scripts/ci/harbor-publish.sh mirror-home-assistant --tailscale
+    ;;
+  homepage)
+    bash scripts/ci/harbor-publish.sh mirror-homepage --tailscale
+    ;;
+  affine)
+    bash scripts/ci/harbor-publish.sh mirror-affine --tailscale
+    ;;
+  argocd)
+    bash scripts/ci/harbor-publish.sh mirror-argocd --tailscale
+    ;;
+  image-updater-canary)
+    bash scripts/ci/harbor-publish.sh mirror-image-updater-canary --tailscale
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'aaa51141e513e048776c4501c82bcaf9dcd78065432f1ac8a53e05c4ce8957cd  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1118,19 +1158,6 @@ private_live_tail(tail) if {
 	safe_withheld_echo(lines[7])
 }
 
-private_live_tail(tail) if {
-	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
-	count(lines) == 8
-	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-	lines[2] == `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-	lines[3] == "fi"
-	safe_withheld_echo(lines[4])
-	lines[5] == "exit 1"
-	lines[6] == "fi"
-	safe_withheld_echo(lines[7])
-}
-
 safe_withheld_echo(line) if {
 	startswith(line, `echo "`)
 	endswith(line, `"`)
@@ -1174,7 +1201,7 @@ approved_tailnet_harbor_mirror if {
 	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
 	count({"on", "true", true} & object.keys(input)) == 1
 	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
-	crypto.sha256(json.marshal(canonical)) == "c7d9bea880c36e9c29963e75a24007c110784c3071070a881e586670d60c3b2d"
+	crypto.sha256(json.marshal(canonical)) == "5e06f164be5db718e12d921b7783d21b9d1c7f855414688ff2d663ac58acb257"
 }
 
 tailnet_workflow_requested if {

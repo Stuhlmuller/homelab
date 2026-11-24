@@ -6,12 +6,8 @@ tags: ["workloads", "apps", "platform"]
 sources:
   - id: openwiki-source-1a1a01e3db3c30a111cb3145
     resource: repo://clusters/homelab/apps/openclaw/assistant/config.json
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
-  - id: openwiki-source-292630744884d406c86589ac
-    resource: repo://clusters/homelab/apps/sonarr/README.md
   - id: openwiki-source-8412fea3ae511bb478ea11c7
     resource: repo://clusters/homelab/apps/sonarr/values.yaml
   - id: openwiki-source-4ca0ce872f200b18ae467a0e
@@ -30,9 +26,9 @@ verified:
 
 Canonical sources:
 
-- [`clusters/homelab/apps/README.md`](../../clusters/homelab/apps/README.md)
-- `clusters/homelab/apps/*/README.md`
-- `clusters/homelab/platform/*/README.md`
+- [`clusters/homelab/apps/README.md`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/README.md)
+- Workload manifests under `clusters/homelab/apps/`
+- Platform manifests under `clusters/homelab/platform/`
 - [Workload Inventory](inventory.md) for ownership, namespaces, dependencies, and state
 
 ## Shared Rules
@@ -61,7 +57,29 @@ workload README and [Storage And State](../architecture/storage-and-state.md). S
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [Secrets And Identity](../architecture/secrets-and-identity.md).
 
-## Kiali mesh visibility
+## Compass image history
+
+Argo CD includes retained terminal pods in the Application image summary. The
+Compass Deployment and its ready pod use the Harbor image in the
+[chart values](../../clusters/homelab/apps/compass/values.yaml). The
+[tracked Job](../../clusters/homelab/apps/compass/retired-pod-cleanup.yaml)
+gives Argo CD a missing resource to reconcile. A hook-only change left the
+application Synced without creating the Job. The Job checks the historical
+pod's finished phase, ReplicaSet, and old image before deleting it with UID
+and resource-version preconditions. Keep the completed Job until GitOps
+removes it so self-heal does not recreate it. Verify Job completion, pod
+absence, a ready Deployment, and the updated Argo CD image summary before
+removing the Job and its RBAC.
+
+## Kiali retirement
+
+Argo CD prunes the Kiali custom resource when the chart disables CR creation.
+The operator remains running to finalize that deletion, and Uptime Kuma
+monitors the operator during this stage. Verify the server Deployment and
+Service are absent before removing the operator registration. See the
+[rollback and teardown runbook](../../docs/rollback-argocd-apps.md).
+
+### Historical mesh visibility incidents
 
 The 2026-09-05 read-only probes found cluster-wide namespace and Istio config
 listing working, but zero graph connections and no `istio_*` Prometheus series.
@@ -69,11 +87,6 @@ Kiali's API reported a startup Prometheus reachability failure retained in
 memory, even though its CR enabled Prometheus. Upstream v2.26.0
 `cmd/server.go` installs a permanent no-op client in that case.
 
-`clusters/homelab/apps/kiali/values.yaml` waits for Prometheus readiness before
-Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
-ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
-operator security flags, rollback and UI namespace selection. Validate rollout
-with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
 Grafana's frontend-settings endpoint also returned 401; dashboard integration
 is a separate follow-up requiring its existing authentication contract to be
 checked.
@@ -120,7 +133,7 @@ username or password, consistent with first-run state. Preserve both existing
 data and PostgreSQL claims during setup. Transport and Octelium authentication
 are verified; first-admin/provider setup and functional acceptance remain open.
 Follow the loopback-only human setup procedure in
-`clusters/homelab/apps/dispatcharr/README.md`; do not broaden
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/dispatcharr/README.md); do not broaden
 public setup access or create an administrator through a shell command.
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
@@ -285,7 +298,7 @@ Re-measure after 48 hours of healthy runtime before raising a limit or relaxing
 affinity.
 
 Use [Workload Inventory](inventory.md) as the current cross-workload summary and read the named
-source README before changing an application.
+source manifests before changing an application.
 
 The September 6 [Deluge CPU Audit — 2026-09-05](../operations/deluge-cpu-audit-2026-09-05.md) isolates Gluetun's
 sustained 300m use mostly to its main process while VPN and RPC health remain
@@ -333,7 +346,7 @@ archive and rollback target; only the backup CronJob mounts it.
 Sonarr requests `192Mi` and permits `512Mi` of memory. Two October 29 OOM
 restarts at the former `256Mi` limit interrupted compatibility repairs; one
 left a partial copy that native recovery completed from the preserved download.
-The [import memory runbook](../../clusters/homelab/apps/sonarr/README.md#import-memory)
+The [import memory runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/sonarr/README.md#import-memory)
 requires a single validated copy import after GitOps rollout, with memory,
 restart and node-pressure checks every 30 seconds through completion plus two
 minutes, bounded at ten minutes. Verify the replacement, retained source and
@@ -369,7 +382,7 @@ Actual Roku playback remains an acceptance check after settings converge.
 
 ## Bazarr
 
-[Bazarr's runbook](../../clusters/homelab/apps/bazarr/README.md) owns the
+[Bazarr's runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/bazarr/README.md) owns the
 English subtitle policy, Sonarr/Radarr bootstrap, provider setup, and acceptance
 checks. Both media roots match their source applications, so no path mapping is
 needed. The app shares `zimaboard-0` with the local source config claims; its

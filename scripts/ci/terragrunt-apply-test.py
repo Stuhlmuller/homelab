@@ -127,10 +127,14 @@ if tool == "git":
         threshold = config.get("stale_at_unit" if name == "unit.main.check" else "stale_at", 1000)
         print(("e" * 40 if checks >= threshold else config["sha"])
               + "\trefs/heads/main")
+    elif args == ["rev-parse", "--abbrev-ref", "origin/HEAD"]:
+        print("origin/main")
     elif args[:1] == ["rev-parse"]:
         if args == ["rev-parse", "--show-toplevel"]:
             print(root)
-        elif args[:3] != ["rev-parse", "--verify", "--quiet"]:
+        elif args[:3] == ["rev-parse", "--verify", "--quiet"]:
+            print({"main": "base", "HEAD": "head"}.get(args[3], args[3].removesuffix("^{commit}")))
+        else:
             unexpected()
     elif args[:2] == ["cat-file", "-e"]:
         pass
@@ -141,8 +145,6 @@ if tool == "git":
         pass  # Both fixture revisions have no deleted units.
     elif args[:2] == ["diff", "--name-only"]:
         pass
-    elif "diff" in args and "--quiet" in args:
-        sys.exit(1)  # Shared inputs changed: existing full-run filters select '*'.
     else:
         unexpected()
 elif tool == "kubectl":
@@ -209,11 +211,17 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard", *(["uptime-kuma"] if config["target"] == "uptime-kuma" else [])):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "codex-cloud-signer", "adguard", *([config["target"]] if config["target"] in {"immich", "uptime-kuma"} else [])):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
+    elif command == ["find", "--filter-affected", "--json", "--log-level", "warn"] and cwd == ".":
+        selected = config.get("affected_units")
+        if selected is None:
+            deployment = root / "IaC/homelab/us-west-2"
+            selected = [str(path.parent.relative_to(root)) for path in deployment.rglob("terragrunt.hcl")]
+        print(json.dumps([{"type": "unit", "path": path} for path in selected]))
     elif command == ["init", "-no-color"]:
         event(unit + ".init")
     elif command == ["state", "list", "-no-color"]:
@@ -246,11 +254,20 @@ elif tool == "terragrunt":
         else:
             checked(Path(command[2]))
     elif command[:2] == ["run", "--all"]:
-        target = command[command.index("--filter") + 1]
-        if target.startswith("*/azuread"):
+        filters = [command[index + 1] for index, arg in enumerate(command) if arg == "--filter"]
+        assert filters and all(target.startswith("./") for target in filters)
+        target = filters[0].removeprefix("./")
+        if target.endswith("/azuread"):
+            assert filters == ["./fleet/azuread"]
             unit = "azure"
-        expected = ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else config.get("argocd_filter", "*/argocd") if unit == "apps" else "*"))
-        assert target == expected
+        elif unit == "apps" and config["target"]:
+            assert filters == ["./" + config["target"] + "/argocd"]
+        elif unit == "apps":
+            assert all(path.endswith("/argocd") for path in filters)
+            if config.get("existing_argocd_only") == "true":
+                assert filters == sorted("./" + app + "/argocd" for app in config["live_apps"])
+        elif unit == "secrets":
+            assert filters == ["./external-secrets-aws-ssm-auth"]
         assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
@@ -292,6 +309,14 @@ class TerragruntApplyTest(unittest.TestCase):
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
                 ]
+        elif target == "immich":
+            project["spec"]["destinations"][0]["namespace"] = target
+            project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            app_names = [*APPS, "traefik", "tailnet-dns"]
         elif target == "uptime-kuma":
             project["spec"]["destinations"][0]["namespace"] = "monitoring"
             project["spec"]["sourceRepos"].append("https://bjw-s-labs.github.io/helm-charts")
@@ -342,7 +367,8 @@ class TerragruntApplyTest(unittest.TestCase):
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
-                         "terragrunt-current-main.sh", "argocd-registration-plan-check.py"):
+                         "terragrunt-current-main.sh", "argocd-registration-plan-check.py",
+                         "terragrunt-affected-units.py"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
@@ -350,8 +376,10 @@ class TerragruntApplyTest(unittest.TestCase):
                          "homelab/us-west-2/operator/application-backup-storage",
                          "homelab/us-west-2/shared/kubernetes-node-labels",
                          "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
-                         "homelab/us-west-2/apps"):
-                (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
+                         "homelab/us-west-2/apps/fleet/azuread"):
+                directory = root / "IaC" / unit
+                directory.mkdir(parents=True, exist_ok=True)
+                (directory / "terragrunt.hcl").touch()
             (root / "fixture.json").write_text(json.dumps(config))
             environment = {"PATH": str(binaries), "FIXTURE_ROOT": str(root),
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
@@ -847,6 +875,22 @@ else:
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(events, ["generate", "preflight.project"])
 
+    def test_immich_applies_saved_ssm_plan_before_registration(self):
+        result, events = self.run_apply(target="immich")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preflight.node", events)
+        self.assertIn("preflight.store_scope", events)
+        self.assertLess(events.index("ssm.policy"), events.index("ssm.apply"))
+        self.assertLess(events.index("ssm.apply"), events.index("apps.plan"))
+
+    def test_immich_preflight_fails_closed(self):
+        for prerequisite in ("project", "apps", "store_scope", "node", "storage"):
+            with self.subTest(prerequisite=prerequisite):
+                result, events = self.run_apply(target="immich", fail=f"preflight.{prerequisite}")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(e == "generate" or e.startswith("preflight.")
+                                    for e in events), events)
+
     def test_uptime_kuma_checks_monitoring_then_saved_ssm_and_application(self):
         result, events = self.run_apply(target="uptime-kuma", without_azuread=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -986,11 +1030,22 @@ else:
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
 
+    def test_full_apply_with_no_affected_units_skips_production_phases(self):
+        result, events = self.run_apply(target="", affected_units=[], without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate"])
+
+    def test_full_apply_selects_only_affected_app_without_azuread(self):
+        result, events = self.run_apply(
+            target="", affected_units=["IaC/homelab/us-west-2/apps/fleet/argocd"],
+            without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
     def test_existing_only_skips_absent_apps_and_reuses_plan_filter(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
-            live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !adguard/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
+            live_apps=["fleet", "langfuse", "mastodon"])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
@@ -999,8 +1054,7 @@ else:
 
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
-            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !adguard/argocd | !codex-cloud-signer/argocd | !nofx/argocd | !traefik/argocd")
+            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

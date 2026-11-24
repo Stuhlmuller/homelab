@@ -4,18 +4,12 @@ title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
 sources:
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-00d374aa17b82a33b8b28024
     resource: repo://clusters/homelab/apps/openclaw/runtime-backup.yaml
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-9824f110ded8ce152ef180f9
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-cb44bee82f523806d88ae83a
     resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b

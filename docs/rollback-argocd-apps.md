@@ -61,7 +61,7 @@ Preserve both `media-postgres-local` and `data-media-postgres-0`. The retained
 NFS physical copy became stale when local writes began; use the repository-owned
 `media-postgres-recovery` logical restore overlay instead of mounting that copy
 directly. Follow
-`clusters/homelab/apps/media-postgres/README.md#backup-and-restore`, require the
+[archived runbook](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/media-postgres/README.md#backup-and-restore), require the
 recovery Job to be `Complete`, and use a separate reviewed revision to return
 the Application to the writable base overlay.
 
@@ -95,8 +95,13 @@ Policy Bot is stateless. Roll back its public exposure by removing the
 hostname first, then roll back the Deployment and ExternalSecret if the GitHub
 App should stop evaluating pull requests.
 
-Kiali is stateless. Remove the Kiali custom resource before removing the
-operator chart so the operator can clean up its managed server resources.
+Kiali is stateless. Disabling `cr.create` lets Argo CD prune the Kiali custom
+resource while the operator is still running. Apply the Application
+registration through targeted Terragrunt Apply to install the Argo CD
+cascading-deletion finalizer. Confirm that the Kiali custom resource and the
+server Deployment and Service are absent before removing the Terragrunt unit.
+A subsequent full Terragrunt Apply deletes the Application and lets Argo CD
+prune the remaining operator resources.
 
 ## Emergency Recovery
 

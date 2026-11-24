@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  namespace: immich
+  name: immich-postgres-backup
+spec:
+  schedule: '20 10 * * *'
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: immich-backup
+        spec:
+          serviceAccountName: immich-backup
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              image: harbor.stinkyboi.com/mirror/ghcr.io/immich-app/postgres:18-vectorchord1.1.1@sha256:f7388adc1e3414800a71506528917f4f5615249f5fe7a872b1e1431e01b72ad7
+              imagePullPolicy: Always
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  umask 077
+                  mkdir -p /library/postgres-dumps
+                  timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+                  backup="/library/postgres-dumps/immich-${timestamp}.dump"
+                  temporary="$(mktemp "${backup}.XXXXXX")"
+                  trap 'rm -f "$temporary"' EXIT
+                  export PGPASSWORD="$(cat /run/immich-secrets/admin-password)"
+                  pg_dump --host=immich-postgres --username=postgres --no-password \
+                    --format=custom --file="$temporary" immich
+                  pg_restore --list "$temporary" >/dev/null
+                  mv "$temporary" "$backup"
+                  find /library/postgres-dumps -maxdepth 1 -type f -name 'immich-*.dump' -mtime +14 -delete
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {cpu: "1", memory: 512Mi}
+              volumeMounts:
+                - name: library
+                  mountPath: /library
+                - name: credentials
+                  mountPath: /run/immich-secrets
+                  readOnly: true
+          volumes:
+            - name: library
+              persistentVolumeClaim:
+                claimName: immich-library
+            - name: credentials
+              secret:
+                secretName: immich-postgres-admin

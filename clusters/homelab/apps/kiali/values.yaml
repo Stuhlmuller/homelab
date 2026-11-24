@@ -17,8 +17,9 @@ image:
 allowAdHocContainers: true
 allowSecurityContextOverride: true
 
+# Prune the Kiali CR while the operator can still run its cleanup finalizer.
 cr:
-  create: true
+  create: false
   namespace: monitoring
   annotations:
     argocd.argoproj.io/sync-wave: "1"

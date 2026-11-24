@@ -26,14 +26,10 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-878d8aa0884abae2a8194701
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-007543776318a4afbd5fc1b0
     resource: repo://clusters/homelab/platform/network-policy/daemonset.yaml
-  - id: openwiki-source-994a8289757a8dfdfff70e1b
-    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
@@ -44,8 +40,8 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -153,16 +149,16 @@ requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
 
 The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-an-existing-worker-candidate-2026-11-01)
-keeps live Traefik on `zimaboard-1` and stages a second Traefik controller on
-`acer` with a userspace Tailscale sidecar, leaving the old controller and
-LoadBalancer serving during tests. Its Pod must match no existing private,
-Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
-only to Pod loopback, with raw TCP Serve exposing HTTPS 443 first while Traefik
+stages a second Traefik controller on `acer` with a userspace Tailscale
+sidecar while the live controller and LoadBalancer serve traffic. Its Pod must
+match no existing private, Funnel, or registry Service selector. Private HTTP
+and HTTPS listeners would bind only to Pod loopback, with raw TCP Serve
+exposing HTTPS 443 first while Traefik
 retains TLS termination. Port 80 needs separate review. This could close the
 private listener when kube-router or the sidecar is absent, without clearing
 another worker. Its source is staged but the runtime is not deployed or
 proven. The current Tailscale operator uses a separate proxy;
-[`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
+[`tailnet-dns`](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/tailnet-dns/README.md) derives
 answers from its LoadBalancer status, and
 [CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
 Harbor and Octelium API names to its Service. A selectorless headless Service
@@ -201,7 +197,7 @@ app routes still have 54 source entries. The
 existing-node evacuation below remains a separate general `NetworkPolicy`
 canary candidate, not a prerequisite for the sidecar test.
 
-The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.md)
+The [dormant sidecar source](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/traefik/canary/README.md)
 renders independently and is absent from the live Traefik Argo source. It has
 distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
 first raw TCP Serve exposes only tailnet 443. The current broad grant reaches

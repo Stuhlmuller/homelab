@@ -3,13 +3,17 @@
 
 import base64
 import hashlib
+import ipaddress
 import json
 import os
+import re
+import runpy
 import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,6 +23,12 @@ SHA = "a" * 40
 
 
 class PlatformStageTests(unittest.TestCase):
+    def test_workflow_pins_current_stage_script(self):
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        script = re.escape(STAGE.relative_to(ROOT).as_posix())
+        pins = re.findall(rf"sha256sum --check --status <<<'([0-9a-f]{{64}})  {script}'", workflow)
+        self.assertEqual(pins, [hashlib.sha256(STAGE.read_bytes()).hexdigest()])
+
     def run_stage(self, stage, canary_node=None):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
@@ -67,6 +77,151 @@ class PlatformStageTests(unittest.TestCase):
                 result, external = self.run_stage(stage, "zimaboard-1")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
+
+    def test_cilium_route_preflight_reaches_read_only_entry_before_activation(self):
+        result, external = self.run_stage("cilium-route-preflight")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(external)
+        body = STAGE.read_text().split("  cilium-route-preflight)\n", 1)[1].split("    ;;", 1)[0]
+        self.assertIn("get routes -o json", body)
+        self.assertIn("cilium-route-preflight.py", body)
+        self.assertNotRegex(body, r"kubectl\s+(apply|patch|delete|drain)|talosctl.*(reboot|apply-config)")
+
+    def test_cilium_route_preflight_rejects_overlap_and_missing_nodes(self):
+        check = runpy.run_path(str(ROOT / "scripts/cilium-route-preflight.py"))["check"]
+        pool = ipaddress.ip_network("10.245.0.0/16")
+        nodes = [{"metadata": {"name": "worker"}, "spec": {"podCIDRs": ["10.244.0.0/24"]}}]
+        services = [{"metadata": {"name": "kubernetes"}, "spec": {"cidrs": ["10.96.0.0/12"]}}]
+        self.assertEqual(check(pool, nodes, services, {"worker": ["0.0.0.0/0", "10.1.0.0/24"]}), [])
+        self.assertEqual(check(pool, nodes, services, {"worker": ["10.0.0.0/8"]}),
+                         [("worker host route", "10.0.0.0/8")])
+        with self.assertRaisesRegex(ValueError, "exactly the nodes"):
+            check(pool, nodes, services, {})
+        with self.assertRaisesRegex(ValueError, "no nondefault routes"):
+            check(pool, nodes, services, {"worker": ["0.0.0.0/0"]})
+
+    def test_worker_evacuation_refuses_unready_overlay_or_another_cordoned_node(self):
+        require_overlay = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["require_overlay"]
+        app = {"spec": {"syncPolicy": {"automated": {"enabled": True}}},
+               "status": {"sync": {"status": "Synced", "revisions": ["1.20.5", SHA]},
+                          "health": {"status": "Healthy"}}}
+        nodes = [{"metadata": {"name": node}, "spec": {}}
+                 for node in ("acer", "zimaboard-0", "zimaboard-1", "zimaboard-2")]
+        daemonset = {"metadata": {"name": "cilium", "generation": 1},
+                     "status": {"observedGeneration": 1, "desiredNumberScheduled": 4,
+                                "numberReady": 4, "updatedNumberScheduled": 4, "numberAvailable": 4}}
+        require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 3
+        with self.assertRaisesRegex(ValueError, "not current and ready"):
+            require_overlay(app, nodes, [daemonset])
+        daemonset["status"]["numberReady"] = 4
+        nodes[0]["spec"]["unschedulable"] = True
+        with self.assertRaisesRegex(ValueError, "different node is already cordoned"):
+            require_overlay(app, nodes, [daemonset])
+
+    def test_worker_evacuation_checks_harbor_before_live_drain(self):
+        evacuation = runpy.run_path(str(ROOT / "scripts/cilium-evacuate-worker.py"))["main"]
+        kube = mock.Mock()
+
+        def get(kind, *_args):
+            if kind == "configmap":
+                return {"data": {"enable-policy": "never", "custom-cni-conf": "true"}}
+            return {"items": []}
+
+        settings = {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": SHA}
+        commands = {"run": mock.Mock(return_value=SHA), "get": get, "kube": kube,
+                    "check_main": mock.Mock(), "require_overlay": mock.Mock(),
+                    "ready_elsewhere": mock.Mock(side_effect=(True, False))}
+        with (mock.patch.dict(os.environ, settings),
+              mock.patch("sys.argv", ["evacuate", "--expected-sha", SHA]),
+              mock.patch.dict(evacuation.__globals__, commands)):
+            with self.assertRaisesRegex(SystemExit, "Harbor core Ready on a surviving node before evacuation"):
+                evacuation()
+        kube.assert_called_once()
+        self.assertIn("--dry-run=server", kube.call_args.args)
+
+    def test_cilium_route_preflight_retains_exit_status_and_failure_phase(self):
+        source = STAGE.read_text()
+        start = "finish_cilium_preflight() {"
+        finish = start + source.split(start, 1)[1].split("\n}\n", 1)[0] + "\n}"
+        script = """set -euo pipefail
+umask 077
+work="$1"
+stage=cilium-route-preflight
+GITHUB_RUN_ID=123
+GITHUB_SHA="$2"
+preflight_attempt=2
+preflight_phase="$3"
+printf '%s' "$4" >"$work/cilium-route-check.log"
+store_status="$5"
+retain_result() {
+  test "$2" = cilium-route-preflight-2
+  ((store_status == 0))
+  cat "$1"
+}
+cleanup() { touch "$work/cleaned"; }
+""" + finish + '\ntrap \'finish_cilium_preflight "$?"\' EXIT\nexit "$6"\n'
+        for phase, detail, stage_status, store_status in (
+                ("route-check", "no overlap", 0, 0),
+                ("route-check", "pool overlaps worker host route", 1, 0),
+                ("inventory", "", 42, 0),
+                ("route-check", "no overlap", 0, 1)):
+            with self.subTest(phase=phase, stage_status=stage_status, store_status=store_status):
+                with tempfile.TemporaryDirectory() as directory:
+                    result = subprocess.run(["bash", "-c", script, "test", directory, SHA,
+                                             phase, detail, str(store_status), str(stage_status)],
+                                            capture_output=True, text=True, timeout=10)
+                    self.assertTrue((Path(directory) / "cleaned").exists())
+                self.assertEqual(result.returncode, store_status or stage_status, result.stderr)
+                if store_status == 0:
+                    self.assertEqual(json.loads(result.stdout), {
+                        "format": 1, "stage": "cilium-route-preflight", "sourceSha": SHA,
+                        "runId": "123", "runAttempt": "2", "phase": phase,
+                        "exitCode": stage_status, "verified": stage_status == 0, "detail": detail,
+                    })
+
+    def test_cilium_route_preflight_identifies_inventory_failure_without_recording_stderr(self):
+        source = STAGE.read_text()
+        functions = []
+        for start in ("connect_talos() {", "finish_cilium_preflight() {"):
+            functions.append(start + source.split(start, 1)[1].split("\n}\n", 1)[0] + "\n}")
+        body = source.split("  cilium-route-preflight)\n", 1)[1].split("    ;;", 1)[0]
+        fixture = """
+set -euo pipefail
+umask 077
+work="$1"
+GITHUB_SHA="$2"
+fixture_phase="$3"
+stage=cilium-route-preflight
+GITHUB_RUN_ATTEMPT=1
+GITHUB_RUN_ID=123
+unset OCTELIUM_AUTH_TOKEN OCE_OCTELIUM_CLIENT_AUTH_TOKEN OCE_TALOSCONFIG_B64
+retain_result() { cat "$1"; }
+cleanup() { :; }
+if [[ "$fixture_phase" != transport-inputs ]]; then
+  connect_talos() { :; }
+fi
+kubectl() {
+  case "$*" in
+    *"get daemonset cilium"*) return 0;;
+    "get nodes -o json")
+      if [[ "$fixture_phase" != kubernetes-node-inventory ]]; then printf '{}\\n'; return 0; fi;;
+  esac
+  printf 'sensitive fixture stderr\\n' >&2
+  return 49
+}
+"""
+        for phase, status in (("transport-inputs", 1), ("kubernetes-node-inventory", 49),
+                              ("kubernetes-service-cidr-inventory", 49)):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                result = subprocess.run(
+                    ["bash", "-c", "\n".join([*functions, fixture, body]), "test", directory, SHA, phase],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                self.assertEqual(result.returncode, status, result.stderr)
+                receipt = json.loads(result.stdout)
+                self.assertEqual((receipt["phase"], receipt["exitCode"], receipt["detail"]),
+                                 (phase, status, ""))
 
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()

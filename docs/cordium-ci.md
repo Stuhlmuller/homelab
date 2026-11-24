@@ -40,7 +40,7 @@ The fixed `runner-probe` mode tests the pinned Actions runner image and nested
 Docker inside a separate disposable Workspace. It uses the same exact-main
 checkout guard, dedicated CI identity, time budget, and verified deletion.
 It cannot register runners or receive GitHub App credentials. See the
-[runner probe](../builds/cordium-runner/README.md) for its capabilities,
+[runner probe](https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/builds/cordium-runner/README.md) for its capabilities,
 image prerequisite, command, acceptance, and rollback.
 
 `.cordium/workspace.yaml` pins the Nix image and public repository, with
@@ -75,6 +75,26 @@ deleting unknown work. Inspect the dedicated identity and use the documented
 Cordium workspace lifecycle to remove the identified disposable workspace;
 do not delete unrelated Kubernetes resources. Workspace data is disposable
 and has no backup contract.
+
+## Nix-based Actions runner image
+
+The [runner image build](../.github/workflows/cordium-runner-images.yml)
+preloads Nix and the tools in
+[`nix-packages.nix`](../builds/cordium-runner/nix-packages.nix) from the
+repository's locked nixpkgs revision. The final image uses the official Actions
+runner base for the runner process and Docker support. Its writable Nix store
+lets each ephemeral runner use project flakes and build missing dependencies.
+The build verifies the tools and an offline Nix derivation as the runner user.
+
+The [Harbor publisher](../.github/workflows/cordium-runner-publish.yml) builds
+and publishes the image from the reviewed dispatch commit. It checks
+that the commit is still an ancestor of main and that all inputs outside
+Markdown documentation still match before registry access. Tags and
+provenance identify the original dispatch commit. Cordium's inline Dockerfile API
+accepts only the Dockerfile itself. The Nix recipe needs repository files, so
+the cutover must point the Workspace at the published digest and use Cordium's
+registry image path. Use the live canary to verify Nix, Docker actions, and
+cleanup before routing regular jobs to that image.
 
 ## Rollout and acceptance
 

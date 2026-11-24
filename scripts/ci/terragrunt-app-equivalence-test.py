@@ -81,6 +81,31 @@ class EquivalenceTest(unittest.TestCase):
         self.assertFalse(CHECK['equivalent']('mastodon', [path, 'clusters/homelab/apps/mastodon/workloads.yaml'], 'HEAD'))
         self.assertFalse(CHECK['equivalent']('mastodon', [path], 'missing-ref', root=self.root))
 
+    def test_shared_root_requires_an_identical_render(self):
+        with tempfile.TemporaryDirectory(prefix="app-equivalence-history-") as directory:
+            root = Path(directory)
+            archive = subprocess.check_output(
+                ["git", "archive", "HEAD", "IaC", "scripts/ci/terragrunt-current-main.sh"], cwd=ROOT)
+            subprocess.run(["tar", "-xf", "-"], input=archive, cwd=root, check=True)
+
+            def git(*args):
+                return subprocess.check_output([
+                    "git", "-c", "user.name=Equivalence fixture",
+                    "-c", "user.email=equivalence@example.invalid", "-c", "commit.gpgsign=false", *args,
+                ], cwd=root, text=True).strip()
+
+            git("init", "-q")
+            git("add", "IaC", "scripts")
+            git("commit", "-qm", "fixture baseline")
+            base = git("rev-parse", "HEAD")
+            path = root / "IaC/root.hcl"
+            original = path.read_text()
+            path.write_text(original + "\n# Unrelated Terragrunt documentation\n")
+            git("commit", "-qam", "fixture equivalent root")
+            self.assertTrue(CHECK["equivalent"]("mastodon", ["IaC/root.hcl"], base, root=root))
+            path.write_text(original.replace("rstuhlmuller-aws-s3-use1-datalake", "changed-bucket"))
+            git("commit", "-qam", "fixture changed backend")
+            self.assertFalse(CHECK["equivalent"]("mastodon", ["IaC/root.hcl"], base, root=root))
 
 
 if __name__ == '__main__':

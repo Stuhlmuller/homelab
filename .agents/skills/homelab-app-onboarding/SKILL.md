@@ -7,7 +7,7 @@ description: Add a homelab workload or platform Application through the shared g
 
 Start with the relevant [inventory entry](../../../openwiki/workloads/inventory.md)
 and [onboarding contract](../../../docs/argocd-app-onboarding.md). Read the nearest
-workload README and only the storage, secret or ingress runbooks the app needs.
+workload runbook and only the storage, secret or ingress runbooks the app needs.
 
 ## Minimal registration
 
@@ -66,7 +66,7 @@ must remain explicit. See [Terragrunt merge semantics](../terragrunt-workflows/S
 - Inventory and [publish required images](../homelab-harbor-images/SKILL.md)
   before a consuming reference reaches `main`.
 - Keep Terragrunt registration dependencies separate from the app's runtime
-  Synced/Healthy prerequisites, and document both in its README.
+  Synced/Healthy prerequisites, and document both in its runbook.
 
 Generate the stack and inspect the resulting Application. OpenTofu initialization
 creates ignored local `.terraform.lock.hcl` files; do not copy or commit them.

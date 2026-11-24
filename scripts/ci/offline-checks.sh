@@ -1,14 +1,37 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2329 # Sourced helpers and test fixtures resolve names indirectly.
 set -euo pipefail
 
+# These suites use independent disposable fixtures. The flake builds them
+# alongside the rest of this script and requires all results.
+case "${1:-}" in
+  --private-dns)
+    exec python3 -I scripts/ci/tailscale-private-dns-test.py
+    ;;
+  --n8n)
+    python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+    exec python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
+    ;;
+  --harbor)
+    exec python3 -I scripts/ci/harbor-publish-test.py
+    ;;
+  --remaining) ;;
+  "")
+    bash "$0" --private-dns
+    bash "$0" --n8n
+    bash "$0" --harbor
+    ;;
+  *) echo "Unknown offline fixture group: $1" >&2; exit 2 ;;
+esac
+
 # Generated units are fixtures here; no provider init or live API access.
-# shellcheck disable=SC1091 # Shared helper is linted separately.
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 # Kuma catalog/freshness/ownership/recovery contracts run in the pinned offline
 # tool set. Real-image timed/network fixtures are a separate local delivery gate.
 command -v promtool >/dev/null
+bash scripts/ci/octelium-proxy-alert-check.sh
 python3 -I scripts/ci/uptime-kuma-check.py
 python3 -I scripts/ci/uptime-kuma-check-test.py
 node --test scripts/ci/uptime-kuma-test.js
@@ -23,8 +46,8 @@ python3 -I scripts/ci/argocd-image-updater-test.py --unit
 python3 -I scripts/ci/argocd-image-updater-policy-test.py
 python3 -I scripts/ci/argocd-image-updater-policy.py
 node --test scripts/ci/renovate-repository-test.js
+python3 -I scripts/ci/renovate-registry-relay-test.py
 python3 -I scripts/ci/verify-gitops-test.py
-python3 -I scripts/ci/zimaboard-2-incident-recovery-test.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py
@@ -32,14 +55,18 @@ python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/terragrunt-app-equivalence-test.py
 python3 -I scripts/ci/mastodon-release-check-test.py
 python3 -I scripts/ci/litellm-release-check-test.py
+python3 -I scripts/ci/descheduler-release-check-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
+python3 -I scripts/ci/public-dns-validate-test.py
 python3 -I scripts/ci/openwiki-check.py
+node --test scripts/ci/openwiki-viewer-navigation-test.mjs
 python3 -I scripts/ci/pr-delivery-test.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 ruby scripts/ci/traefik-sidecar-canary-test.rb
 python3 -I scripts/ci/network-policy-peers-test.py
+python3 -I scripts/ci/cilium-egress-audit-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/octelium-ci-credential-test.py
@@ -53,7 +80,6 @@ python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/octelium-catalog-test.py
 python3 -I scripts/ci/terragrunt-credential-duration-test.py
-python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/tailnet-dns-check-test.py
 python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/adguard-test.py
@@ -82,8 +108,6 @@ python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
 python3 -I scripts/ci/langfuse-postgres-object-restore-test.py
-python3 -I scripts/ci/n8n-paired-checkpoint-test.py
-python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
 python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
@@ -103,7 +127,6 @@ python3 -I scripts/ci/fleet-apple-csr-test.py
 python3 -I scripts/ci/fleet-free-setup-test.py
 python3 -I scripts/ci/fleet-google-login-test.py
 python3 -I scripts/ci/fleet-airvpn-setup-test.py
-python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/openclaw-enterprise-image-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py
@@ -113,6 +136,7 @@ python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
 python3 -I scripts/ci/harbor-native-chainguard-receipt-import-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
 python3 -I scripts/ci/harbor-core-scan-check-test.py
+python3 -I scripts/ci/validate-runtime-scope-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-full-sync-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
@@ -122,9 +146,12 @@ python3 -I scripts/ci/image-automation-alert-test.py
 python3 -I scripts/ci/image-automation.py check
 python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
+python3 -I scripts/ci/harbor-chart-publish.py --check
+python3 -I scripts/ci/harbor-chart-publish-test.py
 python3 -I scripts/ci/image-rewrite-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/network-policy-candidate-report-test.py
+python3 -I scripts/ci/crossplane-retirement-check-test.py
 python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
@@ -134,9 +161,8 @@ python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
-python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
-python3 -I scripts/ci/terragrunt-plan-units-test.py
+python3 -I scripts/ci/terragrunt-affected-units-test.py
 python3 -I scripts/ci/terragrunt-plan-runner-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
@@ -149,7 +175,6 @@ python3 scripts/ci/etcd-offline-restore-check-test.py
 python3 -I scripts/ci/application-backup-test.py
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
-python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py
 python3 scripts/ci/renovate-alert-check.py
 python3 -I scripts/ci/memory-overcommit-check.py
@@ -170,4 +195,1643 @@ python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
 python3 scripts/ci/openclaw-runtime-storage-check.py
 python3 -I scripts/ci/nix-cache-test.py
-bash scripts/ci/offline-static-checks.sh
+
+# Keep the shell fixtures in their own scope with the same generated stack.
+(
+echo "::group::Octelium console login redirect"
+(
+  redirect_source="$(mktemp)"
+  trap 'rm -f "$redirect_source"' EXIT
+  yq -r '.spec.configPatches[0].patch.value.typed_config.inlineCode' \
+    clusters/homelab/apps/octelium-cluster/console-redirect.yaml > "$redirect_source"
+  lua scripts/ci/octelium-console-redirect-check.lua "$redirect_source"
+)
+echo "::endgroup::"
+
+echo "::group::Terragrunt HCL"
+terragrunt hcl fmt --check
+terragrunt --working-dir IaC/homelab/us-west-2 hcl validate
+expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
+parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
+if [[ "$parsed_units" -ne "$expected_units" ]]; then
+  echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
+discovered_units="$(terragrunt --working-dir IaC/homelab/us-west-2 find --filter 'type=unit' --json | jq length)"
+if [[ "$discovered_units" -ne "$expected_units" ]]; then
+  echo "Discovered ${discovered_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
+  echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
+  exit 1
+fi
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+  render --json --write=false --no-color \
+  | jq -e '
+      .inputs.manifest.spec as $spec |
+      $spec.syncPolicy.automated.enabled == true and
+      $spec.syncPolicy.automated.prune == true and
+      $spec.syncPolicy.automated.selfHeal == true and
+      ([ $spec.sources[] | select(has("chart")) |
+        [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
+        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+      ]) and
+      any($spec.sources[];
+        .chart == "ztunnel" and
+        any(.helm.parameters[]?;
+          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
+          .value == "10-1-0-199-v1") and
+        any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxSurge" and
+          .value == "0") and
+        any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
+          .value == "1")
+      )
+    ' >/dev/null
+jq -e '
+  .schemaVersion == 1 and .activationEnabled == false and
+  .from == "1.27.3" and .to == "1.28.10" and
+  .chartRepository == "https://blob.istio.io/istio-release/charts" and
+  ([.components[] | [.chart, .releaseName]] == [
+    ["base", "istio-base"], ["istiod", "istiod"], ["cni", "istio-cni"],
+    ["ztunnel", "ztunnel"], ["gateway", "istio-ingressgateway"],
+    ["gateway", "octelium-api-ingressgateway"]
+  ]) and
+  ([.components[].archiveSha256] == [
+    "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132",
+    "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1",
+    "7fd3133f6232c590493bb94974b2647dc287cd9a3a6acde621f6d4c7c1939295",
+    "02dc5cee6532b0ed7ebf289e4dff003518a9bda5f09ab1ff7eff8c2530d6fc49",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"
+  ])
+' clusters/homelab/apps/istio/upgrade-1.28.10.json >/dev/null
+if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
+  echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
+  exit 1
+fi
+if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
+  echo "The PR plan job must not render saved plan or state details." >&2
+  exit 1
+fi
+if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
+  .pre-commit-config.yaml >/dev/null; then
+  echo "Remote pre-commit hooks must be pinned to full commit SHAs." >&2
+  exit 1
+fi
+echo "::endgroup::"
+
+echo "::group::Terragrunt deleted-unit ownership"
+(
+  fixture_repo_root="$PWD"
+  git() {
+    if [[ "$1" == -C ]]; then
+      [[ "$2" == "$fixture_repo_root" ]] || return 1
+      shift 2
+    fi
+    case "$1" in
+      rev-parse)
+        if [[ "$2" == --show-toplevel ]]; then printf '%s\n' "$fixture_repo_root"; fi
+        return 0
+        ;;
+      diff) printf '%s\n' IaC/terragrunt-catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
+      *) return 1 ;;
+    esac
+  }
+  terragrunt_stack_unit_paths_at_ref() {
+    printf '%s\n' IaC/live/old
+    if [[ "$1" == "base" ]]; then
+      printf '%s\n' IaC/live/retired IaC/operator/retired
+    fi
+  }
+  export TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF="base"
+  export TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="head"
+  [[ "$(terragrunt_deleted_unit_paths)" == $'IaC/bootstrap/old\nIaC/live/retired' ]]
+)
+echo "::endgroup::"
+
+echo "::group::Terragrunt deleted-unit providers"
+(
+  deleted_unit_test_root="$(mktemp -d)"
+  trap 'rm -rf -- "$deleted_unit_test_root"' EXIT
+  terragrunt_create_deleted_unit_destroy_stack "$deleted_unit_test_root" IaC/live/argocd-apps/deleted-unit-test
+  (
+    cd "${deleted_unit_test_root}/IaC/live/argocd-apps/deleted-unit-test"
+    terragrunt render --json
+  ) | jq -e '
+    .generate.kubernetes_provider.contents as $kubernetes |
+    .generate.deleted_unit_destroy_config.contents as $config |
+    ($kubernetes | contains("provider \"kubernetes\"")) and
+    ($kubernetes | contains("config_path = pathexpand(\"~/.kube/config\")")) and
+    ($config | contains("provider \"helm\"")) and
+    ($config | contains("config_path = pathexpand(\"~/.kube/config\")"))
+  ' >/dev/null
+)
+echo "::endgroup::"
+
+echo "::group::Terragrunt generated-unit filters"
+(
+  cd IaC/homelab/us-west-2/apps
+  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine/argocd" ]]
+  if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
+    echo "Unsafe Argo CD Application unit filter was accepted" >&2
+    exit 1
+  fi
+  [[ -z "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=false terragrunt_argocd_app_state_repair_unit)" ]]
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=invalid terragrunt_argocd_app_state_repair_unit; then
+    echo "Invalid Argo CD Application state repair value was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=push \
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit; then
+    echo "Non-dispatch Argo CD Application state repair was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    terragrunt_argocd_app_state_repair_unit; then
+    echo "Untargeted Argo CD Application state repair was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_state_repair_unit; then
+    echo "Unsafe Argo CD Application state repair target was accepted" >&2
+    exit 1
+  fi
+  [[ "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine/argocd" ]]
+)
+echo "::endgroup::"
+
+echo "::group::Cloudflare API response handling"
+(
+  check_cloudflare_response() (
+    local script="$1"
+    local mock_response="$2"
+    local curl_status="${3:-0}"
+    local cf_api_source
+
+    cf_api_source="$(awk '/^cf_api\(\)/,/^}/' "$script")"
+    [[ -n "$cf_api_source" ]]
+
+    # Used by the helper evaluated below.
+    # shellcheck disable=SC2034
+    # checkov:skip=CKV_SECRET_6: Inert leak-detection sentinel, not secret material.
+    cloudflare_token="mock-token-must-not-leak"
+    # Invoked indirectly by the evaluated helper.
+    # shellcheck disable=SC2329
+    curl() {
+      printf '%s\n' "$mock_response"
+      return "$curl_status"
+    }
+
+    eval "$cf_api_source"
+    cf_api GET "/zones/mock"
+  )
+
+  for script in scripts/tailscale-private-dns.sh scripts/octelium-gateway-dns.sh; do
+    success_response='{"success":true,"result":[]}'
+    [[ "$(check_cloudflare_response "$script" "$success_response")" == "$success_response" ]]
+
+    for rejected_response in \
+      '{"success":false,"errors":[{"code":1000,"message":"rejected"}]}' \
+      '{}' \
+      'not-json'; do
+      if response_error="$(check_cloudflare_response "$script" "$rejected_response" 2>&1)"; then
+        echo "${script} accepted a rejected or invalid Cloudflare API response" >&2
+        exit 1
+      fi
+      if grep -Fq 'mock-token-must-not-leak' <<<"$response_error"; then
+        echo "${script} exposed the Cloudflare API token while reporting a response error" >&2
+        exit 1
+      fi
+    done
+
+    if transport_error="$(check_cloudflare_response "$script" "$success_response" 22 2>&1)"; then
+      echo "${script} accepted a failed Cloudflare API transport" >&2
+      exit 1
+    fi
+    if grep -Fq 'mock-token-must-not-leak' <<<"$transport_error"; then
+      echo "${script} exposed the Cloudflare API token while reporting a transport error" >&2
+      exit 1
+    fi
+  done
+)
+echo "::endgroup::"
+
+echo "::group::Helm workload token contracts"
+yq -e '.automountServiceAccountToken == false' \
+  clusters/homelab/apps/grafana/values.yaml >/dev/null
+echo "::endgroup::"
+
+echo "::group::Grafana persisted alert cleanup"
+yq -e '
+  ([.alerting."rules.yaml".deleteRules[] |
+    select(.orgId == 1 and .uid == "homelab-octelium-api-upnp-stale")] | length) == 1 and
+  ([.alerting."rules.yaml".groups[].rules[] |
+    select(.uid == "homelab-octelium-api-upnp-stale")] | length) == 0
+' clusters/homelab/apps/grafana/values.yaml >/dev/null
+echo "::endgroup::"
+
+echo "::group::n8n persisted encryption key"
+n8n_values="clusters/homelab/apps/n8n/values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+  echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
+  exit 1
+fi
+echo "::endgroup::"
+
+echo "::group::Kiali server digest and Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e --slurpfile catalog scripts/config/harbor-images.json '
+    .cr.spec.deployment as $deployment |
+    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
+    $deployment.image_digest == "sha256" and
+    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
+    ([$catalog[0].images[] |
+      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
+    ] | length == 1)
+  ' >/dev/null
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
+echo "::endgroup::"
+
+echo "::group::Kustomize overlays"
+while IFS= read -r overlay; do
+  echo "rendering ${overlay}"
+  kubectl kustomize "$overlay" >/dev/null
+done < <(
+  find clusters/homelab/argocd clusters/homelab/apps clusters/homelab/platform \
+    -name kustomization.yaml \
+    -exec dirname {} \; | sort
+)
+echo "::endgroup::"
+
+echo "::group::NOFX runtime storage"
+kubectl kustomize clusters/homelab/apps/nofx |
+  yq ea -o=json -I=0 '[.]' - |
+  python3 scripts/ci/nofx-runtime-check.py
+echo "::endgroup::"
+
+echo "::group::Multica PostgreSQL recovery probes"
+kubectl kustomize clusters/homelab/apps/multica |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Deployment" and .metadata.name == "multica-postgres")] |
+    length == 1 and (.[0].spec.template.spec |
+      .terminationGracePeriodSeconds == 120 and
+      (.containers[] | select(.name == "postgres") |
+        .startupProbe.exec.command == ["pg_isready", "-U", "multica", "-d", "multica"] and
+        [.startupProbe.periodSeconds, .startupProbe.timeoutSeconds, .startupProbe.failureThreshold] == [10, 5, 180] and
+        .readinessProbe.exec.command == ["psql", "-U", "multica", "-d", "multica", "-Atqc", "SELECT 1"] and
+        [.readinessProbe.periodSeconds, .readinessProbe.timeoutSeconds, .readinessProbe.failureThreshold] == [10, 5, 6] and
+        .livenessProbe.exec.command == .readinessProbe.exec.command and
+        [.livenessProbe.periodSeconds, .livenessProbe.timeoutSeconds, .livenessProbe.failureThreshold] == [30, 5, 60]
+      )
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::Media PostgreSQL backup claim"
+kubectl kustomize clusters/homelab/apps/media-postgres |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.name == "data-media-postgres-0")] as $claims |
+    [.[] | select(.kind == "CronJob" and .metadata.name == "media-postgres-backup")] as $backups |
+    ($claims | length) == 1 and
+    ($backups | length) == 1 and
+    $claims[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $claims[0].spec.storageClassName == "nfs-default" and
+    $claims[0].spec.resources.requests.storage == "20Gi" and
+    any($backups[0].spec.jobTemplate.spec.template.spec.volumes[];
+      .persistentVolumeClaim.claimName == "data-media-postgres-0"
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::Octelium PostgreSQL backup contract"
+kubectl kustomize clusters/homelab/apps/octelium-storage |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "CronJob" and .metadata.name == "octelium-postgres-backup")] as $backups |
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.name == "octelium-postgres-backup")] as $claims |
+    [.[] | select(.kind == "NetworkPolicy" and .metadata.name == "octelium-postgres-backup")] as $policies |
+    $backups[0] as $backup |
+    $backup.spec.jobTemplate.spec.template.spec as $pod |
+    $pod.containers[0].command[2] as $script |
+    ($backups | length) == 1 and
+    ($claims | length) == 1 and
+    ($policies | length) == 1 and
+    $backup.spec.schedule == "30 2 * * *" and
+    $backup.spec.timeZone == "Etc/UTC" and
+    $backup.spec.concurrencyPolicy == "Forbid" and
+    $backup.spec.jobTemplate.spec.activeDeadlineSeconds == 3600 and
+    $backup.spec.jobTemplate.spec.backoffLimit == 1 and
+    $pod.automountServiceAccountToken == false and
+    ($script | contains("pg_dumpall")) and
+    ($script | contains("--no-role-passwords")) and
+    ($script | test("(?m)^pg_dump[[:space:]]+\\\\$")) and
+    ($script | contains("--file=\"${partial}/octelium.dump\"")) and
+    ($script | test("(?m)^[[:space:]]+octelium$")) and
+    ($script | contains("pg_restore --list")) and
+    ($script | contains("sha256sum --check")) and
+    ($script | contains("mv \"$partial\" \"$complete\"")) and
+    ($script | contains("-mtime +13")) and
+    any($pod.volumes[];
+      .name == "backup" and
+      .persistentVolumeClaim.claimName == "octelium-postgres-backup"
+    ) and
+    $claims[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $claims[0].spec.storageClassName == "nfs-default" and
+    $claims[0].spec.resources.requests.storage == "20Gi" and
+    $policies[0].spec.podSelector.matchLabels["app.kubernetes.io/name"] == "octelium-postgres" and
+    any($policies[0].spec.ingress[];
+      any(.from[];
+        .podSelector.matchLabels["app.kubernetes.io/name"] == "octelium-postgres-backup"
+      ) and
+      any(.ports[]; .protocol == "TCP" and .port == 5432)
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::DNS NetworkPolicy peers"
+yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  .spec.selector."k8s-app" == "kube-dns"' \
+  clusters/homelab/platform/dns/coredns-service.yaml >/dev/null
+yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  (.spec.selector.matchLabels | keys | length) == 1 and
+  .spec.selector.matchLabels."k8s-app" == "kube-dns" and
+  .spec.template.metadata.labels."k8s-app" == "kube-dns"' \
+  clusters/homelab/platform/dns/coredns-deployment.yaml >/dev/null
+(
+  rendered="$(mktemp)"
+  trap 'rm -f "$rendered"' EXIT
+  for overlay in cordium harbor mastodon nix-builder nofx octelium-public; do
+    kubectl kustomize "clusters/homelab/apps/$overlay" >> "$rendered"
+    printf '\n---\n' >> "$rendered"
+  done
+  yq ea -o=json -I=0 '[.]' "$rendered" |
+    jq -e '
+      ["octelium/cordium-genesis", "octelium/cordium-cluster-config",
+       "harbor/harbor-postgres-backup", "harbor/harbor-vulnerability-exporter",
+       "harbor/harbor-image-signing", "mastodon/mastodon-datastores",
+       "nix-builder/nix-builder", "nofx/nofx-frontend",
+       "octelium-public/cloudflared-egress"] as $ids |
+      [.[] | select(.kind == "NetworkPolicy") |
+        (.metadata.namespace + "/" + .metadata.name) as $id |
+        select($ids | index($id)) |
+        {id: $id, dns: [.spec.egress[]? | select(any(.ports[]?; .port == 53))]}
+      ] as $reviewed |
+      ($reviewed | map(.id) | sort) == ($ids | sort) and
+      all($reviewed[];
+        (.dns | length) == 1 and
+        .dns[0].to == [{
+          "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}},
+          "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}
+        }] and
+        ([.dns[0].ports[] | {protocol, port}] | sort_by(.protocol)) ==
+          [{"protocol": "TCP", "port": 53}, {"protocol": "UDP", "port": 53}]
+      )
+    ' >/dev/null
+)
+echo "::endgroup::"
+
+echo "::group::Cordium genesis privilege lifecycle"
+yq -e '.data."controller.sync.timeout.seconds" == "900"' \
+  clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null
+yq ea -o=json -I=0 '[.]' clusters/homelab/argocd/self-management/appproject.yaml |
+  jq -e '
+    [.[] | select(.kind == "AppProject" and .metadata.name == "homelab")][0].spec as $project |
+    any($project.sourceRepos[]; . == "https://github.com/Stuhlmuller/homelab.git") and
+    any($project.destinations[]; . == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "argocd"
+    }) and
+    any($project.destinations[]; . == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "octelium"
+    }) and
+    any($project.clusterResourceWhitelist[]; . == {
+      "group": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole"
+    }) and
+    any($project.clusterResourceWhitelist[]; . == {
+      "group": "rbac.authorization.k8s.io",
+      "kind": "ClusterRoleBinding"
+    })
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/cordium |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Application" and .metadata.name == "cordium-bootstrap")] as $bootstrap_apps |
+    [.[] | select(.kind == "NetworkPolicy" and (.metadata.name == "cordium-genesis" or .metadata.name == "cordium-cluster-config"))] as $bootstrap_policies |
+    [.[] | select(.kind == "ExternalSecret" and .metadata.name == "cordium-agent-auth")] as $bootstrap_secrets |
+    [.[] | select(.kind == "DaemonSet" and .metadata.name == "cordium-user-namespace-sysctl")] as $bootstrap_hosts |
+    [.[] | select(
+      (.kind == "Job" and (.metadata.name == "cordium-genesis" or .metadata.name == "cordium-genesis-cleanup" or .metadata.name == "cordium-cluster-config")) or
+      ((.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding") and .metadata.name == "cordium-genesis")
+    )] as $misowned_bootstrap |
+    ($bootstrap_apps | length) == 1 and
+    $bootstrap_apps[0].metadata.namespace == "argocd" and
+    $bootstrap_apps[0].metadata.finalizers == ["resources-finalizer.argocd.argoproj.io"] and
+    $bootstrap_apps[0].metadata.annotations["argocd.argoproj.io/hook"] == null and
+    $bootstrap_apps[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $bootstrap_apps[0].spec.project == "homelab" and
+    $bootstrap_apps[0].spec.source == {
+      "repoURL": "https://github.com/Stuhlmuller/homelab.git",
+      "targetRevision": "main",
+      "path": "clusters/homelab/apps/cordium-bootstrap"
+    } and
+    $bootstrap_apps[0].spec.destination == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "octelium"
+    } and
+    $bootstrap_apps[0].spec.syncPolicy == {
+      "automated": {
+        "allowEmpty": false,
+        "enabled": false,
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": ["CreateNamespace=false", "ServerSideApply=true"],
+      "retry": {
+        "limit": 0
+      }
+    } and
+    ($bootstrap_policies | length) == 2 and
+    all($bootstrap_policies[]; .metadata.annotations["argocd.argoproj.io/sync-wave"] == null) and
+    ($bootstrap_secrets | length) == 1 and
+    $bootstrap_secrets[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == null and
+    ($bootstrap_hosts | length) == 1 and
+    $bootstrap_hosts[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == null and
+    ($misowned_bootstrap | length) == 0
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(
+      .metadata.name == "cordium-genesis" and
+      (.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding")
+    )] as $bootstrap |
+    [.[] | select(.kind == "ServiceAccount" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_service_accounts |
+    [.[] | select(.kind == "Role" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_roles |
+    [.[] | select(.kind == "RoleBinding" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_role_bindings |
+    [.[] | select(.kind == "ClusterRole" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_cluster_roles |
+    [.[] | select(.kind == "ClusterRoleBinding" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_cluster_role_bindings |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-genesis")] as $genesis_jobs |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_jobs |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-cluster-config")] as $cluster_config_jobs |
+    [.[] | select(.kind == "ConfigMap" and (.metadata.name | startswith("cordium-cluster-config-")))] as $cluster_configs |
+    [.[] | select(.kind == "Application" or .kind == "NetworkPolicy" or .kind == "ExternalSecret" or .kind == "DaemonSet")] as $misowned_prerequisites |
+    ($bootstrap | length) == 3 and
+    all($bootstrap[];
+      .metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+      .metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation" and
+      .metadata.annotations["argocd.argoproj.io/sync-wave"] == "-1"
+    ) and
+    ($cleanup_service_accounts | length) == 1 and
+    $cleanup_service_accounts[0].automountServiceAccountToken == false and
+    $cleanup_service_accounts[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] ==
+      $genesis_jobs[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] and
+    $genesis_jobs[0].spec.template.metadata.annotations["homelab.rst.io/cordium-genesis-revision"] ==
+      $genesis_jobs[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] and
+    ($cleanup_roles | length) == 1 and
+    $cleanup_roles[0].rules == [{
+      "apiGroups": [""],
+      "resources": ["serviceaccounts"],
+      "resourceNames": ["cordium-genesis"],
+      "verbs": ["delete"]
+    }] and
+    ($cleanup_role_bindings | length) == 1 and
+    $cleanup_role_bindings[0].roleRef == {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "Role",
+      "name": "cordium-genesis-cleanup"
+    } and
+    $cleanup_role_bindings[0].subjects == [{
+      "kind": "ServiceAccount",
+      "name": "cordium-genesis-cleanup",
+      "namespace": "octelium"
+    }] and
+    ($cleanup_cluster_roles | length) == 1 and
+    $cleanup_cluster_roles[0].rules == [{
+      "apiGroups": ["rbac.authorization.k8s.io"],
+      "resources": ["clusterroles", "clusterrolebindings"],
+      "resourceNames": ["cordium-genesis"],
+      "verbs": ["delete"]
+    }] and
+    ($cleanup_cluster_role_bindings | length) == 1 and
+    $cleanup_cluster_role_bindings[0].roleRef == {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole",
+      "name": "cordium-genesis-cleanup"
+    } and
+    $cleanup_cluster_role_bindings[0].subjects == [{
+      "kind": "ServiceAccount",
+      "name": "cordium-genesis-cleanup",
+      "namespace": "octelium"
+    }] and
+    ($genesis_jobs | length) == 1 and
+    $genesis_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+    $genesis_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "0" and
+    $genesis_jobs[0].spec.activeDeadlineSeconds == 720 and
+    ($cleanup_jobs | length) == 1 and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.activeDeadlineSeconds == 120 and
+    $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
+    $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
+    ($cluster_config_jobs | length) == 1 and
+    $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+    $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    ($cluster_configs | length) == 1 and
+    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
+    ($misowned_prerequisites | length) == 0 and
+    ($cleanup_jobs[0].spec.template.spec.containers[0] | has("command") | not) and
+    $cleanup_jobs[0].spec.template.spec.containers[0].args == [
+      "delete",
+      "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
+      "clusterrole.rbac.authorization.k8s.io/cordium-genesis",
+      "serviceaccount/cordium-genesis",
+      "--namespace=octelium",
+      "--ignore-not-found=true",
+      "--wait=false",
+      "--cache-dir=/tmp/kubectl-cache"
+    ]
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::Prowlarr config normalization"
+bash scripts/ci/prowlarr-config-check.sh
+echo "::endgroup::"
+
+echo "::group::Octelium catalog security contracts"
+yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
+  jq -e '
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-ci-plan")] as $plan_users |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-plan-access")] as $plan_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-ci")] as $kube_api_ci |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
+    [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
+    [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
+    [.[] | select(.kind == "Namespace" and .metadata.name == "oce")] as $oce_namespace |
+    [.[] | select(.kind == "Service" and .metadata.name == "console.oce")] as $oce_console |
+    [.[] | select(.kind == "Service" and .metadata.name == "openclaw")] as $openclaw_redirect |
+    ($users | length) == 1 and
+    $users[0].spec.type == "WORKLOAD" and
+    $users[0].spec.session.clientlessDuration == {"days": 30} and
+    $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($plan_users | length) == 1 and
+    $plan_users[0].spec.type == "WORKLOAD" and
+    $plan_users[0].spec.session.clientlessDuration == {"days": 30} and
+    $plan_users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($kube_api_ci | length) == 1 and
+    $kube_api_ci[0].spec.authorization.policies == [
+      "homelab-ci-kubernetes-api-access",
+      "homelab-ci-kubernetes-api-plan-access"
+    ] and
+    ($nofx | length) == 1 and
+    $nofx[0].spec.isAnonymous == false and
+    $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
+    ($oce_namespace | length) == 1 and
+    $oce_namespace[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($oce_console | length) == 1 and
+    $oce_console[0].spec.isPublic == true and
+    $oce_console[0].spec.isAnonymous == false and
+    $oce_console[0].spec.mode == "WEB" and
+    $oce_console[0].spec.port == 80 and
+    $oce_console[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $oce_console[0].spec.config.upstream.url == "http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080" and
+    $oce_console[0].spec.config.http.header.host.preserve == true and
+    $oce_console[0].spec.config.http.header.removeRequestHeaders == [
+      "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Port",
+      "X-Forwarded-Proto", "X-Real-IP"] and
+    ($openclaw_redirect | length) == 1 and
+    $openclaw_redirect[0].spec.isAnonymous == false and
+    $openclaw_redirect[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($openclaw_redirect[0].spec.config | has("upstream") | not) and
+    $openclaw_redirect[0].spec.config.http.plugins == [{
+      "name": "enterprise-redirect", "phase": "POST_AUTH",
+      "condition": {"matchAny": true},
+      "direct": {"statusCode": 303, "headers": [
+        {"key": "Location", "value": "https://console.oce.stinkyboi.com/"},
+        {"key": "Cache-Control", "value": "no-store"}]}
+    }] and
+    ($human | length) == 1 and
+    ($human[0].spec.rules[0].condition.all.of | any(.any.of == [
+      {"match": "ctx.session.status.type == \"CLIENT\""},
+      {"match": "ctx.session.status.type == \"CLIENTLESS\" && ctx.session.status.isBrowser"}
+    ])) and
+    ($multica | length) == 1 and
+    $multica[0].spec.isPublic == true and
+    ($multica[0].spec.isAnonymous // false) == false and
+    $multica[0].spec.mode == "WEB" and
+    $multica[0].spec.port == 80 and
+    $multica[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $multica[0].spec.config.http.header.authorizationMode == "PASS" and
+    ($policies | length) == 1 and
+    $policies[0].spec.rules == [{
+      "name": "kubernetes-api-service",
+      "effect": "ALLOW",
+      "condition": {"all": {"of": [
+        {"match": "ctx.user.metadata.name == \"homelab-ci\""},
+        {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+        {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+        {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+        {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
+      ]}}
+    }] and
+    ($plan_policies | length) == 1 and
+    $plan_policies[0].spec.rules == [
+      {
+        "name": "deny-non-dry-run-writes",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"]"},
+          {"match": "!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != \"All\""}
+        ]}}
+      },
+      {
+        "name": "deny-subresources",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "has(ctx.request.kubernetes.subresource)"}
+        ]}}
+      },
+      {
+        "name": "read-or-dry-run",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "!has(ctx.request.kubernetes.subresource)"},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.http.method in [\"GET\", \"HEAD\"] && ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+            {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"] && ctx.request.kubernetes.http.queryParams.dryRun == \"All\""}
+          ]}}
+        ]}}
+      }
+    ]
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::Terragrunt pull request gate"
+yq -o=json '.' .github/workflows/terragrunt-plan.yml |
+  jq -e '
+    [.jobs["static-policy"].steps[] | select(.id == "live-plan-scope")] as $scope |
+    [.jobs["static-policy"].steps[] | select(.name == "Run Static Checks")] as $conftest |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Cache Terragrunt Providers")] as $provider_cache |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Verify Live Plan Inputs")] as $plan_inputs |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
+    (.on | keys) == ["pull_request"] and
+    .on.pull_request.branches == ["main"] and
+    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review", "edited"] and
+    .on.pull_request.paths == null and
+    .concurrency == null and
+    (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs["static-policy"].steps[0].with["fetch-depth"] == 0 and
+    .jobs["static-policy"].outputs["requires-live-plan"] == "${{ steps.live-plan-scope.outputs.requires-live-plan }}" and
+    ($scope | length) == 1 and
+    $scope[0].env.BASE_REF == "${{ github.base_ref }}" and
+    ($scope[0].run | type) == "string" and
+    ($conftest | length) == 1 and
+    ($conftest[0].run | contains("bash scripts/ci/nix-checks.sh --policy")) and
+    ($conftest[0].run | contains("git show origin/main:scripts/config/nix-cache.json")) and
+    .jobs["terragrunt-plan"].needs == ["static-policy"] and
+    .jobs["terragrunt-plan"].concurrency == {
+      "group": "terragrunt-plan-${{ github.event.pull_request.number }}",
+      "cancel-in-progress": false,
+      "queue": "max"
+    } and
+    .jobs["static-policy"].concurrency == null and
+    .jobs["terragrunt-gate"].concurrency == null and
+    (.jobs["terragrunt-plan"].if |
+      contains("github.event.pull_request.head.repo.full_name == github.repository") and
+      contains("needs.static-policy.outputs.requires-live-plan == '\''true'\''")) and
+    .jobs["terragrunt-plan"].environment == {"name": "homelab-plan"} and
+    .jobs["terragrunt-plan"].permissions == {
+      "contents": "read",
+      "id-token": "write"
+    } and
+    .jobs["terragrunt-plan"].env == null and
+    ($provider_cache | length) == 1 and
+    $provider_cache[0].uses == "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830" and
+    $provider_cache[0].with.path == "~/.cache/terragrunt/providers" and
+    $provider_cache[0].env == null and
+    ($plan_inputs | length) == 1 and
+    $plan_inputs[0].env == {
+      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ($aws_credentials | length) == 1 and
+    $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
+    ($live_plan | length) == 1 and
+    $live_plan[0].env == {
+      "BASE_REF": "${{ github.base_ref }}",
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ([.jobs["terragrunt-plan"].steps[] |
+      .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
+    (. | tostring | contains("update-pr-plan-description") | not) and
+    (. | tostring | contains("pull-requests") | not) and
+    ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
+    .jobs["terragrunt-gate"].if == "${{ !cancelled() }}" and
+    .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan"] and
+    .jobs["terragrunt-gate"].permissions == {} and
+    .jobs["terragrunt-gate"].environment == null and
+    (.jobs["terragrunt-gate"] | tostring | contains("secrets") | not) and
+    (.jobs["terragrunt-gate"].steps | length) == 1 and
+    (.jobs["terragrunt-gate"].steps[0].run | type) == "string"
+  ' >/dev/null
+scope_body_sha256="$(
+  yq -r '.jobs."static-policy".steps[] | select(.id == "live-plan-scope") | .run' \
+    .github/workflows/terragrunt-plan.yml |
+    sha256sum |
+    cut -d' ' -f1
+)"
+gate_body_sha256="$(
+  yq -r '.jobs."terragrunt-gate".steps[0].run' .github/workflows/terragrunt-plan.yml |
+    sha256sum |
+    cut -d' ' -f1
+)"
+[[ "$scope_body_sha256" == "1fee4aac6decf54b55fd68f4a1f530b26160a1c57f7181d534443d71e10d4807" ]] || {
+  echo "Live-plan scope body changed; review it and update its exact security hash." >&2
+  exit 1
+}
+[[ "$gate_body_sha256" == "a763f0da3abffbde191ffb2c3d55fbc561c90b2b7f7a42f52a601de47d0d8194" ]] || {
+  echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
+  exit 1
+}
+
+workflow_sha256() {
+  yq -o=json '.' "$1" |
+    jq -cS '.' |
+    sha256sum |
+    cut -d' ' -f1
+}
+
+credentialed_job_inventory="$({
+  while IFS= read -r -d '' workflow; do
+    yq -o=json '.' "$workflow" |
+      jq -r --arg workflow "$workflow" '
+        def has_write($permissions):
+          if ($permissions | type) == "object" then
+            any($permissions[]; . == "write")
+          else
+            $permissions == "write-all"
+          end;
+        def credential_context($text):
+          $text | ascii_downcase |
+          test("(^|[^A-Za-z0-9_])(secrets|github)([^A-Za-z0-9_]|$)");
+
+        . as $document |
+        (.permissions // {}) as $workflow_permissions |
+        ((.env // {}) | tostring) as $workflow_env_text |
+        .jobs | to_entries[] |
+        . as $entry |
+        ($entry.value | tostring) as $job_text |
+        select(
+          ($entry.value.environment? != null) or
+          credential_context($job_text) or
+          credential_context($workflow_env_text) or
+          (($document.on | tostring) | contains("workflow_call")) or
+          has_write($entry.value.permissions // {}) or
+          has_write($workflow_permissions)
+        ) |
+        "\($workflow):\($entry.key)"
+      '
+  done < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+} | LC_ALL=C sort)"
+jq -en '
+  def credential_context($text):
+    $text | ascii_downcase |
+    test("(^|[^A-Za-z0-9_])(secrets|github)([^A-Za-z0-9_]|$)");
+  credential_context("${{ GITHUB [ \"token\" ] }}") and
+  credential_context("${{ SECRETS [ \"NAME\" ] }}") and
+  credential_context("${{ toJSON(GITHUB) }}")
+' >/dev/null
+expected_credentialed_job_inventory="$({
+  printf '%s\n' \
+    '.github/workflows/bulldozer-credential.yml:credential' \
+    '.github/workflows/bulldozer-credential.yml:static-policy' \
+    '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/codex-review-gate.yml:verify' \
+    '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-runner-canary.yml:canary' \
+    '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/cordium-runner-credentials.yml:credential' \
+    '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+    '.github/workflows/cordium-runner-publish.yml:publish' \
+    '.github/workflows/cordium-runner-publish.yml:published-digests' \
+    '.github/workflows/cordium-runner-publish.yml:test-build' \
+    '.github/workflows/deployment-checks.yml:validate' \
+    '.github/workflows/entra-oidc-verify.yml:verify' \
+    '.github/workflows/harbor-core-images.yml:publish' \
+    '.github/workflows/harbor-core-images.yml:published-digest' \
+    '.github/workflows/harbor-helm-charts.yml:publish' \
+    '.github/workflows/harbor-helm-charts.yml:validate' \
+    '.github/workflows/harbor-mirror.yml:mirror' \
+    '.github/workflows/harbor-mirror.yml:static-policy' \
+    '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
+    '.github/workflows/langfuse-postgres-object-restore.yml:restore' \
+    '.github/workflows/langfuse-postgres-object-restore.yml:static-policy' \
+    '.github/workflows/lint.yml:build' \
+    '.github/workflows/litellm-provider-credential.yml:credential' \
+    '.github/workflows/litellm-provider-credential.yml:static-policy' \
+    '.github/workflows/mastodon-public-dns.yml:credential' \
+    '.github/workflows/mastodon-public-dns.yml:static-policy' \
+    '.github/workflows/mastodon-smtp-credential.yml:credential' \
+    '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+    '.github/workflows/n8n-paired-checkpoint.yml:checkpoint' \
+    '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
+    '.github/workflows/nofx-images.yml:publish' \
+    '.github/workflows/nofx-images.yml:published-digests' \
+    '.github/workflows/nofx-images.yml:test-build' \
+    '.github/workflows/nofx-registry-credential.yml:credential' \
+    '.github/workflows/nofx-registry-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-images.yml:publish' \
+    '.github/workflows/openclaw-enterprise-model-credential.yml:credential' \
+    '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:enterprise' \
+    '.github/workflows/openclaw-enterprise-operations.yml:binding' \
+    '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-startup.yml:startup' \
+    '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
+    '.github/workflows/platform-maintenance.yml:maintenance' \
+    '.github/workflows/platform-maintenance.yml:static-policy' \
+    '.github/workflows/release.yml:release' \
+    '.github/workflows/terragrunt-apply-request.yml:request' \
+    '.github/workflows/terragrunt-apply.yml:static-policy' \
+    '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
+    '.github/workflows/terragrunt-plan.yml:static-policy' \
+    '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
+    '.github/workflows/validate.yml:harbor-core-compatibility' \
+    '.github/workflows/validate.yml:repo' \
+    '.github/workflows/validate.yml:runtime-scope'
+} | LC_ALL=C sort)"
+[[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
+  echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
+  diff -u \
+    <(printf '%s\n' "$expected_credentialed_job_inventory") \
+    <(printf '%s\n' "$credentialed_job_inventory") >&2 || true
+  exit 1
+}
+
+for workflow in .github/workflows/*.yml; do
+  workflow_json="$(yq -o=json '.' "$workflow")"
+  jq -e '
+    if (.on // {} | has("pull_request")) then
+      .on.pull_request.branches == ["main"] and
+      (.on.pull_request.types | index("edited") != null)
+    else true end
+  ' <<<"$workflow_json" >/dev/null || {
+    echo "Pull-request workflow must target main and run when retargeted: $workflow" >&2
+    exit 1
+  }
+  jq -e '
+    if (.on // {} | has("pull_request")) then
+      [.permissions, .jobs[].permissions] |
+      all(. != "write-all" and (type != "object" or .statuses != "write"))
+    else true end
+  ' <<<"$workflow_json" >/dev/null || {
+    echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
+    exit 1
+  }
+done
+
+while read -r workflow expected_hash; do
+  [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
+    echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
+    exit 1
+  }
+done <<'EOF'
+.github/workflows/codex-review-gate.yml 1adf9da4236b2427450c6418b14f6e46e250acd738b2534893bb89984d7e8102
+.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
+.github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
+.github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
+.github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
+.github/workflows/cordium-runner-publish.yml 6e6b144bb533599bbd7152d56ac8f22086ade9187f09202b54588b54275be6b8
+.github/workflows/deployment-checks.yml 2cfeeda43c50b922216f047a7eb7cdeb65d76a1f3a8ad0f73d1333db956c14da
+.github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
+.github/workflows/codeql.yml 4a748f0a98e47d440b0b2757b09bd5ef40f3ccb87295cf69170fd40233657b20
+.github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
+.github/workflows/harbor-mirror.yml 62f591bfe5e42405ad60306e1847a3822af8326a533325214f2842e3f94a5dfe
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 1fd8b998454b8a2dc438c98bf521eda7deed6039e1706206f040bdf79c6ebd2d
+.github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
+.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
+.github/workflows/langfuse-postgres-object-restore.yml 82c087cdd4030a8444f78374cf6e27f0aa22c91ddb691aabb44ddb1e7a862aec
+.github/workflows/lint.yml a0348d00b52e0e8d7269fa1ba98ed45615bee45c5ce94cef3d8e300e06b76819
+.github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
+.github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
+.github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
+.github/workflows/openclaw-enterprise-operations.yml 7dbee4f31068b8106cc290b2d1b98ed92ef7a23046f8d7c3332419388bd5a229
+.github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
+.github/workflows/platform-maintenance.yml 169110a23093308f72101b82e3763edd9c9b722adf1b368248d65213c97a6745
+.github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
+.github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
+.github/workflows/mastodon-public-dns.yml a7eb99576302d118f72057b33c3724ae61435aa597fbd029fd782afd8d05ee98
+.github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
+.github/workflows/n8n-paired-checkpoint.yml a62c86a206a11ed7c09170ed73d978b181b415ad88b06862b6942ae82764fb89
+.github/workflows/octelium-private-kubernetes-apply.yml 46d6cc499a0f292ca8fca194dbff9d348fdf80e7c32030c5652c2b97155699c5
+.github/workflows/release.yml a409bab29dfef722cf3bf76cb0f379f4927c3875e6923ea1c0d9b65dbb76b95a
+.github/workflows/terragrunt-apply-request.yml 0dbfe8ce2f5900c5b40120f880b678166fd601869fd97996d5e29ef8ee2c0f7c
+.github/workflows/terragrunt-apply.yml 82a15380671c63e01cf4f248811c86ea65f92431497d3fd8d9d6c6282ee051c3
+.github/workflows/terragrunt-plan.yml fd14da374b313d09e6cd4789c96d0f1a7c7370c70d412a2e9ef829cf7ca8c76f
+.github/workflows/validate.yml bad484658d05c948cd6025da84222a32c4e0c666ba670427254e192854f2a497
+EOF
+echo "::endgroup::"
+
+echo "::group::Exact workflow dispatch commits"
+for workflow_job in \
+  '.github/workflows/bulldozer-credential.yml:static-policy' \
+  '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-runner-canary.yml:canary' \
+  '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+  '.github/workflows/cordium-runner-publish.yml:test-build' \
+  '.github/workflows/entra-oidc-verify.yml:verify' \
+  '.github/workflows/harbor-core-images.yml:publish' \
+  '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-object-restore.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-images.yml:publish' \
+  '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+  '.github/workflows/platform-maintenance.yml:static-policy' \
+  '.github/workflows/nofx-images.yml:test-build' \
+  '.github/workflows/nofx-registry-credential.yml:static-policy' \
+  '.github/workflows/litellm-provider-credential.yml:static-policy' \
+  '.github/workflows/mastodon-public-dns.yml:static-policy' \
+  '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy'; do
+  workflow="${workflow_job%%:*}"
+  job="${workflow_job##*:}"
+  yq -o=json '.' "$workflow" |
+    jq -e --arg job "$job" '
+      .on.workflow_dispatch.inputs.expected_sha.required == true and
+      .jobs[$job].steps[0].name == "Verify Dispatch Commit" and
+      .jobs[$job].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
+      .jobs[$job].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+      .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+      (.jobs[$job].steps[0].run | contains("refs/heads/main")) and
+      (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
+    ' >/dev/null
+done
+for workflow in terragrunt-apply octelium-private-kubernetes-apply; do
+  yq -o=json '.' ".github/workflows/$workflow.yml" |
+    jq -e '
+      .on.workflow_dispatch.inputs.expected_sha.required == true and
+      .jobs["static-policy"] == {
+        "uses": "./.github/workflows/deployment-checks.yml",
+        "permissions": {"contents": "read"},
+        "with": {"expected_sha": "${{ inputs.expected_sha }}"}
+      }
+    ' >/dev/null
+done
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
+  jq -e '
+    (.on | keys) == ["workflow_dispatch"] and
+    .on.workflow_dispatch.inputs == {
+      "expected_sha": {
+        "description": "Exact current main commit containing the reviewed native Chainguard contract",
+        "required": true,
+        "type": "string"
+      }
+    } and
+    .permissions == {} and
+    .env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"} and
+    (.jobs | keys | sort) == ["receipt", "static-policy"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs.receipt.needs == ["static-policy"] and
+    .jobs.receipt.environment == {"name": "homelab-production"} and
+    .jobs.receipt.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.receipt.concurrency == {"group": "harbor-native-chainguard-receipt", "cancel-in-progress": false} and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")] | length) == 1 and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].uses ==
+      "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508") and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].with["inline-session-policy"] |
+      contains("parameter/homelab/harbor/robot-pull-password") and
+      contains("parameter/homelab/harbor/robot-scan-password") and
+      contains("ssm:GetParameter") and contains("kms:ViaService")) and
+    ([.jobs.receipt.steps[] | select(.name == "Verify Native Imports Without Exposing Transport Output")][0].env == {
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    }) and
+    ([.jobs.receipt.steps[] | select(.name == "Upload Native Receipt")][0].with == {
+      "name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+      "path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+      "if-no-files-found": "error",
+      "retention-days": 30,
+      "include-hidden-files": false
+    })
+  ' >/dev/null
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
+    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
+    .name == "Verify Native Chainguard Receipt Provenance" and
+    (.on | keys | sort) == ["push", "workflow_run"] and
+    .on.push == {"branches": ["main"]} and
+    .on.workflow_run == {"workflows": ["Terragrunt Plan"], "types": ["completed"]} and
+    .permissions == {} and
+    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
+    .env == null and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.name == "Native Chainguard Receipt Provenance" and
+    .jobs.verify["runs-on"] == "ubuntu-24.04" and
+    .jobs.verify["timeout-minutes"] == 20 and
+    .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
+    .jobs.verify.environment == null and
+    .jobs.verify.env == null and
+    (.jobs.verify.steps | length) == 2 and
+    ($checkout | length) == 1 and
+    $checkout[0].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505" and
+    $checkout[0].with == {
+      "ref": "main",
+      "fetch-depth": 1,
+      "persist-credentials": false
+    } and
+    ($revalidate | length) == 1 and
+    $revalidate[0].if == null and
+    $revalidate[0].env == {"GH_TOKEN": "${{ github.token }}"} and
+    ($revalidate[0].run |
+      contains("set -euo pipefail") and
+      contains("base_sha=\"$(git rev-parse HEAD)\"") and
+      contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
+      contains("jq -r '\''.[].head.sha'\''") and
+      contains("$GITHUB_EVENT_NAME") and
+      contains("verification_base_sha=\"$base_sha\"") and
+      contains(".workflow_run.event == \"pull_request\"") and
+      contains(".workflow_run.head_sha") and
+      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\"") and
+      contains("--base-sha \"$verification_base_sha\" --head-sha \"$head_sha\"") and
+      contains("native-receipts-unchanged") and
+      contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
+      contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
+      contains("repos/${GITHUB_REPOSITORY}/commits/main") and
+      contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
+  ' >/dev/null
+python3 -I scripts/ci/harbor-native-chainguard-provenance-event-test.py
+python3 -I scripts/ci/codex-review-gate-test.py
+fixture_env=""
+if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
+  fixture_env="$(type -P env || true)"
+fi
+trusted_source_sha256() {
+  local source="$1" first_line
+  IFS= read -r first_line <"$source" || return 1
+  if [[ "$fixture_env" == /nix/store/*-coreutils-*/bin/env && "$first_line" == "#!$fixture_env python3" ]]; then
+    # Only the active Nix fixture rewrites this exact interpreter; production bytes stay pinned.
+    { printf '%s\n' '#!/usr/bin/env python3'; tail -n +2 "$source"; } | sha256sum | cut -d' ' -f1
+  else
+    sha256sum "$source" | cut -d' ' -f1
+  fi
+}
+while read -r source expected_hash; do
+  [[ "$(trusted_source_sha256 "$source")" == "$expected_hash" ]] || {
+    echo "Trusted native receipt provenance source changed; review it and update its exact security hash: $source" >&2
+    exit 1
+  }
+done <<'EOF'
+scripts/ci/harbor-native-chainguard-receipt-import.py 3bb5541f181af9d8945ea5be68ecccaf9d7a1a1dc9b432d45a0f52e241af4c3e
+scripts/ci/harbor-native-chainguard-receipt.py aa0f770ca2d3ca4184d609581f11fb828d28a1c0e219cedbf744cbb5caad5380
+EOF
+yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
+  jq -e '
+    (.on | keys) == ["push"] and
+    .on.push == {"branches": ["main"]} and
+    .permissions == {} and
+    .env == null and
+    (.jobs | keys) == ["request"] and
+    .concurrency == null and
+    .jobs.request.concurrency == null and
+    .jobs.request.environment == null and
+    .jobs.request.env == null and
+    .jobs.request.permissions == null and
+    (.jobs.request | tostring | contains("secrets") | not) and
+    (.jobs.request.permissions["id-token"] == null) and
+    (.jobs.request.steps | length) == 1 and
+    .jobs.request.steps[0].name == "Show Exact Apply Command" and
+    .jobs.request.steps[0].env.REQUEST_SHA == "${{ github.sha }}" and
+    (.jobs.request.steps[0].run |
+      contains("gh workflow run terragrunt-apply.yml --repo ${GH_REPO} --ref main -f expected_sha=${REQUEST_SHA}") and
+      contains("${GITHUB_STEP_SUMMARY}"))
+  ' >/dev/null
+yq -o=json '.' .github/workflows/terragrunt-apply.yml |
+  jq -e '
+    [.jobs["terragrunt-apply"].steps[] | select(.name == "Run Live Terragrunt Apply")] as $live_apply |
+    (.concurrency == null) and
+    (.on | keys) == ["workflow_dispatch"] and
+    (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
+    .on.workflow_dispatch.inputs.repair_argocd_app_state == {
+      "description": "Untaint the selected Argo CD Application before reconciling it",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
+    .on.workflow_dispatch.inputs.existing_argocd_only == {
+      "description": "Reconcile only Argo CD Applications already registered live",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
+    .on.workflow_dispatch.inputs.application_backup_storage == {
+      "description": "Apply only the application backup storage unit",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
+    .jobs["terragrunt-apply"].needs == ["static-policy"] and
+    .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
+    ($live_apply | length) == 1 and
+    ([.jobs["terragrunt-apply"].steps[] | select(.name == "Configure Kubernetes Credentials").env] ==
+      [{"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}]) and
+    $live_apply[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}"
+    } and
+    ([.jobs["terragrunt-apply"].steps[] |
+      .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
+    (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
+      "TERRAGRUNT_ARGOCD_APP",
+      "TERRAGRUNT_EXISTING_ARGOCD_ONLY",
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
+    ] and
+    (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_EXISTING_ARGOCD_ONLY == "${{ inputs.existing_argocd_only }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
+    .jobs["terragrunt-apply"].concurrency == {
+      "group": "terragrunt-apply-production",
+      "cancel-in-progress": false,
+      "queue": "max"
+    } and
+    .jobs["terragrunt-apply"].steps[1] == {
+      "name": "Verify Current Main Commit",
+      "run": "bash scripts/ci/terragrunt-current-main.sh"
+    } and
+    ([.jobs["terragrunt-apply"].steps | to_entries[] |
+      select(.value | tostring | contains("secrets.")) | .key] | min) > 1 and
+    (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run |
+      contains("--paginate --slurp") and
+      contains("branch=main&status=success&per_page=100") and
+      contains(".event == \"push\"") and
+      contains(".event == \"workflow_dispatch\"") and
+      contains("startswith(\"Full @ \")") and
+      contains("max_by(.run_number)"))
+  ' >/dev/null
+yq -o=json '.' .github/workflows/entra-oidc-verify.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Verify Four Entra Units Without Applying")] as $verify |
+    (.on | keys) == ["workflow_dispatch"] and
+    (.on.workflow_dispatch.inputs | keys) == ["expected_sha"] and
+    .name == "Entra OIDC Verify" and
+    ."run-name" == "Entra OIDC verification @ ${{ github.sha }}" and
+    .permissions == {} and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.if == "github.repository == '\''Stuhlmuller/homelab'\'' && github.ref == '\''refs/heads/main'\''" and
+    .jobs.verify.strategy == {"fail-fast": false, "matrix": {"include": [
+      {"identity": "plan", "environment": "homelab-plan"},
+      {"identity": "apply", "environment": "homelab-production"}
+    ]}} and
+    .jobs.verify.environment == {"name": "${{ matrix.environment }}"} and
+    .jobs.verify.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.verify.env == null and
+    ($verify | length) == 1 and
+    $verify[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "ARM_USE_OIDC": "true", "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"
+    } and
+    ($verify[0].run | contains("python3 -I scripts/ci/entra-oidc-verify.py")) and
+    ([.jobs.verify.steps[] | .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
+    (.jobs.verify | tostring | contains("OCTELIUM") | not)
+  ' >/dev/null
+yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
+  jq -e '
+    [.jobs.reconcile.steps[] |
+      select(.name == "Reconcile Private Kubernetes Catalog")] as $catalog_steps |
+    (.on | keys) == ["workflow_dispatch"] and
+    .on.workflow_dispatch.inputs == {
+      "expected_sha": {
+        "description": "Exact main commit to apply",
+        "required": true,
+        "type": "string"
+      },
+      "dispatch_id": {
+        "description": "Unique identifier used to bind the caller to this run",
+        "required": true,
+        "type": "string"
+      }
+    } and
+    .["run-name"] == "Private Kubernetes @ ${{ github.sha }} / ${{ inputs.dispatch_id }}" and
+    .permissions == {} and
+    (.jobs | keys | sort) == ["reconcile", "static-policy"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs.reconcile.needs == ["static-policy"] and
+    .jobs.reconcile.environment == {"name": "homelab-production"} and
+    .jobs.reconcile.permissions == {"contents": "read"} and
+    .jobs.reconcile["timeout-minutes"] == 15 and
+    .jobs.reconcile.concurrency == {
+      "group": "octelium-private-kubernetes-production",
+      "cancel-in-progress": false
+    } and
+    .jobs.reconcile.steps[1] == {
+      "name": "Verify Current Main Commit",
+      "run": "bash scripts/ci/terragrunt-current-main.sh"
+    } and
+    ($catalog_steps | length) == 1 and
+    $catalog_steps[0].env == {
+      "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
+    } and
+    ($catalog_steps[0].run |
+      contains("bash scripts/ci/octelium-private-kubernetes-apply.sh") and
+      endswith(" >/dev/null 2>&1\n")) and
+    ([.jobs.reconcile.steps[] |
+      select(.name != "Reconcile Private Kubernetes Catalog") |
+      .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and
+    (.jobs.reconcile | tostring | contains("id-token") | not) and
+    (.jobs.reconcile | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
+    (.jobs.reconcile | tostring | contains("kubectl") | not) and
+    ($catalog_steps[0].run | contains("terragrunt") | not)
+  ' >/dev/null
+bash -n \
+  scripts/ci/octelium-private-kubernetes-apply.sh \
+  scripts/octelium-private-kubernetes-credential.sh
+[[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
+  "4937adc1a5f41201c17e83fc777ac0e76a5678a93bd1c8d9d5fccef697d364af" ]] || {
+  echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
+  exit 1
+}
+[[ "$(sha256sum scripts/octelium-private-kubernetes-credential.sh | cut -d' ' -f1)" == \
+  "f3252fb26d58b7eb4ae57ac8eab64b5d8e76028406a0b60cbc1cc2332ff97ace" ]] || {
+  echo "Octelium private Kubernetes credential helper changed; review its exact security hash." >&2
+  exit 1
+}
+bash -n scripts/ci/terragrunt-apply.sh
+rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci/terragrunt-apply.sh
+echo "::endgroup::"
+
+echo "::group::Renovate config"
+jq empty renovate.json
+echo "::endgroup::"
+
+echo "::group::Private cluster access"
+# Native parser/CEL regression runs in the network static gate; keep its exact reviewed policy offline.
+private_policy_hash="$(
+  yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' \
+    docs/examples/octelium/homelab-services.yaml | jq -cS . | sha256sum | cut -d' ' -f1
+)"
+[[ "$private_policy_hash" == d232749dfe13897937645fa8fe3e47a62e5cb6ee307b1ab42326fcab0ae584ab ]] || {
+  echo "Private Kubernetes policy changed; review the native boundary test and update its exact security hash." >&2
+  exit 1
+}
+yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
+  jq -e '
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")] as $talos_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "talos-api.homelab")] as $talos_services |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-platform-talos-ci-access")] as $talos_ci_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "talos-api-ci.homelab")] as $talos_ci_services |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
+    [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
+    ($policies | length) == 1 and
+    ($services | length) == 1 and
+    ($services[0].spec.isPublic // false) == false and
+    $services[0].spec.mode == "KUBERNETES" and
+    $services[0].spec.port == 6443 and
+    $services[0].spec.authorization.policies == ["homelab-private-kubernetes-access"] and
+    $services[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
+    # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
+    $services[0].spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and
+    ($services[0].spec.config.tls.insecureSkipVerify // false) == false and
+    ($talos_policies | length) == 1 and
+    $talos_policies[0].spec.rules == [
+      {
+        "name": "operator-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"talos-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"TCP\""},
+          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
+        ]}}
+      }
+    ] and
+    ($talos_services | length) == 1 and
+    $talos_services[0].spec == {
+      "displayName": "Homelab Talos API",
+      "isPublic": false,
+      "isTLS": false,
+      "mode": "TCP",
+      "port": 50000,
+      "authorization": {"policies": ["homelab-private-talos-access"]},
+      "config": {"upstream": {"url": "tcp://10.1.0.199:50000"}}
+    } and
+    ($talos_services[0].spec.config.tls // null) == null and
+    ($talos_services[0].spec.config.clientCertificate // null) == null and
+    ($talos_ci_policies | length) == 1 and
+    $talos_ci_policies[0].spec.rules == [{
+      "name": "protected-maintenance-client",
+      "effect": "ALLOW",
+      "condition": {"all": {"of": [
+        {"match": "ctx.user.metadata.name == \"homelab-ci\""},
+        {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+        {"match": "ctx.session.status.type == \"CLIENT\""},
+        {"match": "ctx.service.metadata.name == \"talos-api-ci.homelab\""},
+        {"match": "ctx.service.spec.mode == \"TCP\""}
+      ]}}
+    }] and
+    ($talos_ci_services | length) == 1 and
+    $talos_ci_services[0].spec == {
+      "displayName": "Protected CI Talos API",
+      "isPublic": false,
+      "isTLS": false,
+      "mode": "TCP",
+      "port": 50000,
+      "authorization": {"policies": ["homelab-platform-talos-ci-access"]},
+      "config": {"upstream": {"url": "tcp://10.1.0.199:50000"}}
+    } and
+    ($talos_ci_services[0].spec.config.tls // null) == null and
+    ($talos_ci_services[0].spec.config.clientCertificate // null) == null and
+    ($catalog_users | length) == 1 and
+    $catalog_users[0].spec == {
+      "type": "WORKLOAD",
+      "session": {
+        "clientDuration": {"minutes": 15},
+        "maxPerUser": 2
+      }
+    } and
+    ($catalog_credentials | length) == 0
+  ' >/dev/null
+yq -o=json '.' docs/examples/octelium/homelab-private-kubernetes-ci-credential.yaml |
+  jq -e '
+    .kind == "Credential" and
+    .metadata.name == "homelab-private-kubernetes-ci" and
+    .spec == {
+      "type": "AUTH_TOKEN",
+      "user": "homelab-catalog-ci",
+      "expiresAt": "1970-01-01T00:00:00Z",
+      "sessionType": "CLIENT",
+      "maxAuthentications": 1,
+      "autoDelete": true,
+      "authorization": {
+        "inlinePolicies": [{
+          "name": "private-kubernetes-catalog-apply",
+          "spec": {
+            "rules": [
+              {
+                "name": "deny-other-core-methods",
+                "priority": -4,
+                "effect": "DENY",
+                "condition": {
+                  "not": "ctx.user.metadata.name == \"homelab-catalog-ci\" && ctx.user.spec.type == \"WORKLOAD\" && ctx.session.status.type == \"CLIENT\" && ctx.namespace.metadata.name == \"octelium-api\" && ctx.service.metadata.name == \"default.octelium-api\" && ctx.service.spec.mode == \"GRPC\" && ctx.request.grpc.serviceFullName == \"octelium.api.main.core.v1.MainService\" && ctx.request.grpc.method in [\"ListPolicy\", \"CreatePolicy\", \"UpdatePolicy\", \"ListService\", \"CreateService\", \"UpdateService\"]"
+                }
+              },
+              {
+                "name": "required-core-methods",
+                "priority": -4,
+                "effect": "ALLOW",
+                "condition": {
+                  "match": "ctx.user.metadata.name == \"homelab-catalog-ci\" && ctx.user.spec.type == \"WORKLOAD\" && ctx.session.status.type == \"CLIENT\" && ctx.namespace.metadata.name == \"octelium-api\" && ctx.service.metadata.name == \"default.octelium-api\" && ctx.service.spec.mode == \"GRPC\" && ctx.request.grpc.serviceFullName == \"octelium.api.main.core.v1.MainService\" && ctx.request.grpc.method in [\"ListPolicy\", \"CreatePolicy\", \"UpdatePolicy\", \"ListService\", \"CreateService\", \"UpdateService\"]"
+                }
+              }
+            ]
+          }
+        }]
+      }
+    }
+  ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
+  jq -e '
+    .service.type == "ClusterIP" and
+    .service.loadBalancerClass == null and
+    (.service.annotations["tailscale.com/hostname"] // null) == null and
+    (.service.annotations["homelab.rst.io/pod-security"] // "") != "tailscale-proxy-requires-privileged"
+  ' >/dev/null
+python3 -I scripts/ci/octelium-ci-kubeconfig-secret-test.py
+if rg -Fq 'octeliumctl delete secret' scripts/octelium-ci-kubeconfig-secret.sh; then
+  echo "Shared Octelium kubeconfig rotation must not delete the active Secret." >&2
+  exit 1
+fi
+echo "::endgroup::"
+
+echo "::group::Image digest pins"
+python3 -I builds/local-path-provisioner/scan-test.py
+cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/cert-manager/argocd \
+  render --json --write=false --no-color \
+  | jq -e '
+      any(.inputs.manifest.spec.sources[];
+        .repoURL == "https://charts.jetstack.io" and
+        .chart == "cert-manager" and
+        .targetRevision == "v1.20.3" and
+        .helm.valueFiles == ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]
+      )
+    ' >/dev/null
+yq -o=json '.' "$cert_manager_values" \
+  | jq -e '[
+      .image.digest,
+      .webhook.image.digest,
+      .cainjector.image.digest,
+      .acmesolver.image.digest,
+      .startupapicheck.image.digest
+    ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
+    >/dev/null
+python3 -I scripts/ci/harbor-images-check.py
+echo "::endgroup::"
+
+echo "::group::Multica Argo project boundary"
+python3 -I scripts/ci/multica-project-boundary-test.py
+echo "::endgroup::"
+
+echo "::group::OpenClaw Discord plugin"
+node scripts/ci/openclaw-github-check.cjs
+python3 -I scripts/ci/openclaw-credential-containment-test.py
+# homelab-workloads deliberately has no cluster-scoped resource permissions.
+kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \
+  '[select(.kind == "PersistentVolume" or .kind == "StorageClass")] | length == 0' - >/dev/null
+node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs
+openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
+rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
+rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
+rg -Fq 'openclaw plugins enable discord --accept-capabilities' "$openclaw_values"
+rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
+rg -Fq 'plugin.get("origin") == "global"' "$openclaw_values"
+rg -Fq 'plugin.get("status") == "loaded"' "$openclaw_values"
+rg -Fq 'install.get("source") == "npm"' "$openclaw_values"
+rg -Fq 'install.get("spec") == f"@openclaw/discord@{expected_version}"' "$openclaw_values"
+rg -Fq 'install.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'package.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
+rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
+rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
+rg -Fq 'tar --one-file-system' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
+rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
+rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
+rg -Fq '"maxConcurrent": 4' clusters/homelab/apps/openclaw/assistant/config.json
+if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
+  rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
+  echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
+  exit 1
+fi
+if ! awk '
+  /tar --one-file-system/ && !backup { backup = NR }
+  /^[[:space:]]+verify_backup_dir "\$backup_dir"[[:space:]]*$/ && !backup_verified { backup_verified = NR }
+  /--pin --force --accept-capabilities/ && !install { install = NR }
+  /openclaw config validate/ && !config_validate { config_validate = NR }
+  END {
+    exit !(backup && backup_verified && install && config_validate &&
+      backup < backup_verified && backup_verified < install && install < config_validate)
+  }
+' "$openclaw_values"; then
+  echo "OpenClaw must back up, install Discord, then validate persisted state" >&2
+  exit 1
+fi
+yq -e '
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
+  .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "01-runtime-storage" and
+  .controllers.openclaw.initContainers."00-operator-toolbox" != null and
+  .controllers.openclaw.containers.app.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
+  .controllers.openclaw.strategy == "Recreate" and
+  .controllers.openclaw.pod.nodeSelector."kubernetes.io/hostname" == "zimaboard-1" and
+  .persistence."runtime-state".existingClaim == "openclaw-runtime-local" and
+  .persistence."runtime-database".existingClaim == "openclaw-runtime-state-local" and
+  .persistence."runtime-agent".existingClaim == "openclaw-runtime-agent-local" and
+  ([.persistence."runtime-database".advancedMounts.openclaw[][] | has("subPath")] | any == false) and
+  ([.persistence."runtime-agent".advancedMounts.openclaw[][] | has("subPath")] | any == false) and
+  .persistence."codex-runtime" == null and
+  .controllers.openclaw.initContainers."01-runtime-storage".dependsOn == "00-operator-toolbox" and
+  .controllers.openclaw.initContainers."01-runtime-storage".securityContext.runAsNonRoot == true and
+  .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
+  .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
+  .controllers.openclaw.containers.app.probes.liveness.spec.timeoutSeconds == 3 and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SERVICE_REPAIR_POLICY == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_NO_AUTO_UPDATE == "1" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_NO_AUTO_UPDATE == "1" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.name == "openclaw-secrets" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.key == "LITELLM_TOKEN" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_ID == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_INSTALLATION_ID == null and
+  .controllers.openclaw.containers.app.env.GRAFANA_ALERT_HOOK_TOKEN == null and
+  .persistence.config.advancedMounts.openclaw.proxy == null and
+  .persistence."github-app-private-key".advancedMounts.openclaw."bootstrap-config" == null
+' "$openclaw_values" >/dev/null
+rg -Fq 'LITELLM_TOKEN must be provided by openclaw-secrets' "$openclaw_values"
+rg -Fq '/data/openclaw/tmp/openclaw-1000/litellm-token.tmp' "$openclaw_values"
+echo "::endgroup::"
+
+echo "::group::Credential rotation script"
+bash -n scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'set +x' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq -- '--cli-input-json "file://$1"' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'KUBECONFIG must be unset' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'f83fb4e86c60ea695e6d7d951d5bfef2ea52a33c87707e5f6e540050d9aa8bce' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'actual_kubernetes_insecure_skip_tls_verify' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'json_excludes_new_credentials' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'ambient_aws_variables' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'live-secret-before.json' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_controller_key "$old_key_id" "$old_secret_access_key" old-key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_controller_key "$new_access_key_id" "$new_secret_access_key" new-key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'DenyTemporarySessionCredentials' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq '"Bool": {"aws:ViaAWSService": "false"}' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_temporary_session_denied' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'duration-seconds 900' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'new-parameters.json' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'cleanup_uncertain_created_key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'delete_access_key_safely' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'acquire_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'release_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
+echo "::endgroup::"
+)

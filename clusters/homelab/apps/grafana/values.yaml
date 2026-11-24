@@ -329,7 +329,7 @@ alerting:
             annotations:
               summary: Harbor completed image scans report one or more critical CVEs.
               description: The alert is grouped by Harbor project. Triage the affected image scan in Harbor; the metric intentionally omits artifact, digest, and CVE labels.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/harbor/README.md#critical-cve-alerting
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/harbor/README.md#critical-cve-alerting
             labels:
               severity: critical
               managed_by: grafana-provisioning
@@ -480,7 +480,7 @@ alerting:
             for: 10m
             annotations:
               summary: Prometheus is not scraping Grafana metrics.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/grafana/README.md
             labels:
               severity: warning
               managed_by: grafana-provisioning
@@ -576,12 +576,16 @@ alerting:
                       sum by (namespace, pod, container) (
                         increase(prober_probe_total{
                           container="postgres",
-                          namespace=~"automation|media|octelium-storage",
-                          pod=~"media-postgres-local-0|n8n-postgres-0|octelium-postgres-0",
+                          namespace=~"affine|automation|media|octelium-storage",
+                          pod=~"affine-postgres-0|media-postgres-local-0|n8n-postgres-0|octelium-postgres-0",
                           probe_type="Readiness",
                           result="successful"
                         }[2m])
                       ) == 0
+                    )
+                    or
+                    sum by (namespace, pod, container) (
+                      absent(prober_probe_total{namespace="affine",pod="affine-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
                     )
                     or
                     sum by (namespace, pod, container) (
@@ -650,7 +654,7 @@ alerting:
             annotations:
               summary: A repository-owned PostgreSQL database is not passing readiness probes.
               description: Successful kubelet readiness probes have stopped or the expected probe series is missing. Inspect the labeled pod, its events, logs, and backing storage before recovery.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/grafana/README.md
             labels:
               severity: critical
               managed_by: grafana-provisioning
@@ -926,7 +930,7 @@ alerting:
             annotations:
               summary: Deluge's VPN or daemon health probe is failing or missing.
               description: The daemon-metrics sidecar could not reach Gluetun's health endpoint, could not query authenticated daemon RPC, or Prometheus is not scraping those metrics. Check Gluetun health, Deluge app logs, port-config logs, and the session.state recovery runbook.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/deluge/README.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/deluge/README.md
             labels:
               severity: critical
               managed_by: grafana-provisioning
@@ -1078,7 +1082,7 @@ alerting:
             for: 10m
             annotations:
               summary: Prometheus is not receiving Argo CD application metrics.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/apps/grafana/README.md
             labels:
               severity: critical
               managed_by: grafana-provisioning

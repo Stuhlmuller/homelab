@@ -178,11 +178,10 @@ terragrunt_deleted_unit_paths
         self.stack.unlink()
         self.base = self.commit()
 
-    def test_nested_inventory_and_azuread_comparisons_match_root(self):
+    def test_nested_inventory_matches_root(self):
         self.modern_stack()
         nested = "cd IaC/homelab/us-west-2/apps; "
         commands = ("terragrunt_stack_unit_paths_at_ref HEAD",
-                    "terragrunt_azuread_changed_filter true", "terragrunt_azuread_pilot_filter",
                     "terragrunt_deleted_unit_paths")
         for command in commands:
             self.assertEqual(self.shell(command), self.shell(nested + command))
@@ -190,16 +189,8 @@ terragrunt_deleted_unit_paths
         head = self.commit()
         self.assertEqual(self.shell(nested + "terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
-        for path in ("IaC/homelab/account.hcl", "flake.nix"):
-            with self.subTest(path=path):
-                (self.root / path).write_text("changed fixture\n")
-                head = self.commit()
-                self.assertEqual(self.shell("terragrunt_azuread_changed_filter true", head), "*/azuread")
-                self.assertEqual(self.shell(nested + "terragrunt_azuread_changed_filter true", head),
-                                 "*/azuread")
-                self.base = head
 
-    def test_invalid_inventory_never_means_unchanged_or_no_deletions(self):
+    def test_invalid_inventory_never_means_no_deletions(self):
         self.modern_stack()
         for path in (self.root / "IaC/homelab/us-west-2").rglob("terragrunt.stack.hcl"):
             path.unlink()
@@ -211,7 +202,6 @@ terragrunt_deleted_unit_paths
                          f'TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF={head}; '
                          f'APPLY_BASE_SHA={base}; APPLY_HEAD_SHA={head}; ')
                 # Conditions deliberately suppress errexit inside the functions.
-                self.shell(setup + "if terragrunt_azuread_stack_changed; then :; else exit 90; fi")
                 self.assertEqual(self.shell(setup + 'if output=$(terragrunt_deleted_unit_paths); '
                                             'then exit 91; fi; printf "%s" "$output"'), "")
 
@@ -225,16 +215,6 @@ terragrunt_deleted_unit_paths
                           'command git "$@"; }; ')
                 self.assertEqual(self.shell(inject + 'if output=$(terragrunt_deleted_unit_paths); '
                                             'then exit 92; fi; printf "%s" "$output"', head), "")
-                if "diff" not in pattern:
-                    self.shell(inject + "if terragrunt_azuread_stack_changed; then :; else exit 93; fi", head)
-
-    def test_valid_empty_azuread_subset_stays_unchanged(self):
-        self.stack.write_text(self.locals + self.apps)
-        self.base = self.commit()
-        self.shell("! terragrunt_azuread_stack_changed")
-        self.assertEqual(self.shell("terragrunt_azuread_changed_filter true"),
-                         "*/azuread | [main...HEAD]")
-        self.assertEqual(self.shell("terragrunt_deleted_unit_paths"), "")
 
     def test_valid_empty_stack_inventory_is_not_a_read_failure(self):
         self.stack.write_text(self.locals)
@@ -247,7 +227,6 @@ terragrunt_deleted_unit_paths
         self.base = self.commit()
         self.assertEqual(self.shell("terragrunt_stack_unit_paths_at_ref HEAD"), "")
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths"), "")
-        self.shell("! terragrunt_azuread_stack_changed")
 
     def test_stack_and_file_retirement_are_deduplicated(self):
         path = self.root / "IaC/live/argocd-apps/retired/terragrunt.hcl"
@@ -260,13 +239,11 @@ terragrunt_deleted_unit_paths
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
 
-    def test_shared_argocd_defaults_select_apps_without_azure_or_retirement(self):
+    def test_shared_argocd_defaults_preserve_owned_state(self):
         self.stack.write_text(self.stack.read_text().replace('project = "homelab"',
                                                             'project = "homelab-workloads"'))
         head = self.commit()
-        self.assertEqual(self.shell("terragrunt_changed_filter 'IaC/live/argocd-apps/*'", head), "*")
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
-        self.shell("! terragrunt_azuread_stack_changed", head)
 
     def separate_app_configs(self):
         (self.root / "IaC/stack-defaults.hcl").write_text(self.locals)
@@ -287,7 +264,6 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(self.shell("terragrunt_stack_unit_paths_at_ref HEAD", head),
                          self.shell(f"terragrunt_stack_unit_paths_at_ref {self.base}", head))
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
-        self.shell("! terragrunt_azuread_stack_changed", head)
 
     def test_layout_move_keeps_all_owned_state_and_later_retirement(self):
         for app, unit_path in (("kept", "argocd"), ("retired", "argocd"),
@@ -313,7 +289,7 @@ inputs = { defaults = local.shared.argocd_defaults }
         empty = self.commit()
         self.shell("! terragrunt_stack_unit_paths_at_ref HEAD", empty)
 
-    def test_app_config_changes_select_apps_without_azure_or_retirement(self):
+    def test_app_config_changes_preserve_owned_state(self):
         self.separate_app_configs()
         self.base = self.commit()
         path = self.root / "IaC/kept/stack.hcl"
@@ -321,22 +297,16 @@ inputs = { defaults = local.shared.argocd_defaults }
             "inputs = { defaults = local.shared.argocd_defaults }",
             'inputs = { defaults = local.shared.argocd_defaults, spec = { project = "workloads" } }'))
         head = self.commit()
-        self.assertEqual(self.shell("terragrunt_changed_filter 'IaC/live/argocd-apps/*'", head), "*")
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
-        self.shell("! terragrunt_azuread_stack_changed", head)
-        self.assertEqual(self.shell("terragrunt_azuread_changed_filter true", head),
-                         "*/azuread | [main...HEAD]")
 
-    def test_shared_defaults_file_changes_select_apps_without_azure_or_retirement(self):
+    def test_shared_defaults_file_changes_preserve_owned_state(self):
         self.separate_app_configs()
         self.base = self.commit()
         path = self.root / "IaC/stack-defaults.hcl"
         path.write_text(path.read_text().replace('project = "homelab"',
                                                  'project = "homelab-workloads"'))
         head = self.commit()
-        self.assertEqual(self.shell("terragrunt_changed_filter 'IaC/live/argocd-apps/*'", head), "*")
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
-        self.shell("! terragrunt_azuread_stack_changed", head)
 
     def test_removing_referenced_unit_retires_only_its_state(self):
         self.separate_app_configs()
@@ -346,14 +316,12 @@ inputs = { defaults = local.shared.argocd_defaults }
         head = self.commit()
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
-        self.shell("! terragrunt_azuread_stack_changed", head)
 
     def test_removing_unit_retires_only_that_workflow_owned_state(self):
         self.stack.write_text(self.locals + unit("kept") + self.azure)
         head = self.commit()
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
-        self.shell("! terragrunt_azuread_stack_changed", head)
 
     def test_deleted_app_preserves_backend_and_state_encryption_contract(self):
         for name in ("root.hcl", "kubernetes-provider.hcl"):
@@ -399,11 +367,6 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(backend.count("enforced = true"), 2)
         self.assertEqual(backend.count("encryption {"), 1)
 
-
-    def test_azure_changes_still_require_azure_credentials(self):
-        self.stack.write_text(self.stack.read_text().replace('name = "identity"',
-                                                            'name = "changed-identity"'))
-        self.shell("terragrunt_azuread_stack_changed", self.commit())
 
 
 class SharedAppTemplateTest(unittest.TestCase):
@@ -465,6 +428,15 @@ inputs = {
 ''')
         run("terragrunt", "--log-disable", "stack", "generate", cwd=cls.root)
 
+    def test_iac_discovery_excludes_catalog_templates(self):
+        shutil.copyfile(ROOT / "IaC/.terragrunt-filters", self.root / ".terragrunt-filters")
+        args = ("terragrunt", "--log-disable", "find", "--filter", "type=unit", "--json")
+        unfiltered = json.loads(run(*args, "--no-filters-file", cwd=self.root))
+        expected = [unit for unit in unfiltered if not unit["path"].startswith("terragrunt-catalog/")]
+        self.assertTrue(expected)
+        self.assertLess(len(expected), len(unfiltered))
+        self.assertEqual(json.loads(run(*args, cwd=self.root)), expected)
+
     def test_repeat_generation_and_clean_preserve_source_configs(self):
         paths = [self.root / "stack-defaults.hcl",
                  *self.root.glob("homelab/us-west-2/apps/*/stack.hcl"),
@@ -505,6 +477,33 @@ inputs = {
         self.assertEqual(rendered["remote_state"]["config"]["key"],
                          "IaC/homelab/live/argocd-apps/sparse-app/terraform.tfstate")
         self.assertFalse((self.root / "homelab/us-west-2/apps/sparse-app/.terragrunt-stack").exists())
+
+    def test_backend_state_mapping_compatibility(self):
+        mappings = {
+            "homelab/us-west-2/apps/fleet/azuread": "live/azuread-applications/fleet",
+            "homelab/us-west-2/apps/fleet/pilot-user": "live/azuread-applications/fleet-pilot-user",
+            "homelab/us-west-2/apps/grafana/azuread": "live/azuread-applications/grafana",
+            "homelab/us-west-2/apps/octelium/azuread": "live/azuread-applications/octelium",
+            "homelab/us-west-2/apps/langfuse/blob-storage": "live/langfuse-blob-storage",
+            "homelab/us-west-2/apps/example/argocd": "live/argocd-apps/example",
+            "homelab/us-west-2/apps/example/extra": "homelab/us-west-2/apps/example/extra",
+            "homelab/us-west-2/apps/fleet/argocd": "live/argocd-apps/fleet",
+            "homelab/us-west-2/shared/aws-ssm-parameters": "live/aws-ssm-parameters",
+            "homelab/us-west-2/operator/example": "operator/example",
+            "homelab/us-west-2/bootstrap/example": "bootstrap/example",
+            "live/argocd-apps/retired": "live/argocd-apps/retired",
+            "legacy": "legacy",
+        }
+        for unit_path, state_path in mappings.items():
+            with self.subTest(unit_path=unit_path):
+                target = self.root / unit_path
+                target.mkdir(parents=True, exist_ok=True)
+                (target / "terragrunt.hcl").write_text(
+                    'include "root" { path = find_in_parent_folders("root.hcl") }\n')
+                rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
+                                          "--write=false", "--no-color", cwd=target))
+                self.assertEqual(rendered["remote_state"]["config"]["key"],
+                                 f"IaC/homelab/{state_path}/terraform.tfstate")
 
     def test_scope_settings_follow_unit_ancestors(self):
         scope = self.root / "other"

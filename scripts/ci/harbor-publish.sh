@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent [--tailscale for public mirrors only]' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-n8n || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus || "$1" == mirror-immich || "$1" == mirror-uptime-kuma || "$1" == mirror-adguard || "$1" == mirror-cilium || "$1" == mirror-kagent || "$1" == mirror-image-updater-canary || "$1" == mirror-bazel-cache || "$1" == mirror-home-assistant || "$1" == mirror-homepage || "$1" == mirror-affine || "$1" == mirror-argocd) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-n8n|mirror-dns|mirror-litellm|mirror-prometheus|mirror-immich|mirror-uptime-kuma|mirror-adguard|mirror-cilium|mirror-kagent|mirror-image-updater-canary|mirror-bazel-cache|mirror-home-assistant|mirror-homepage|mirror-affine|mirror-argocd [--tailscale for public mirrors only]' >&2
   exit 2
 }
 tailnet_https=false
@@ -28,8 +28,10 @@ if [[ "$mode" == publish-harbor-core ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
 fi
+cordium_publication=false
 if [[ "$mode" == publish-cordium ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  cordium_publication=true
   mode=publish
   publish_names=(homelab-cordium-runner homelab-cordium-controller)
   publish_outputs=(runner controller)
@@ -43,6 +45,9 @@ if [[ "$mode" == publish-openclaw-enterprise ]]; then
   publish_outputs=(controller runtime cli operator)
 fi
 mirror_manifest=scripts/config/harbor-images.json
+canary_publication=false
+canary_digest_a=sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+canary_digest_b=sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
 if [[ "$mode" == mirror-fleet ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-fleet-images.json
@@ -61,6 +66,9 @@ elif [[ "$mode" == mirror-harbor ]]; then
 elif [[ "$mode" == mirror-renovate ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-renovate-images.json
+elif [[ "$mode" == mirror-n8n ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-n8n-images.json
 elif [[ "$mode" == mirror-chainguard ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-chainguard-images.json
@@ -73,6 +81,9 @@ elif [[ "$mode" == mirror-litellm ]]; then
 elif [[ "$mode" == mirror-prometheus ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-prometheus-images.json
+elif [[ "$mode" == mirror-immich ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-immich-images.json
 elif [[ "$mode" == mirror-uptime-kuma ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-uptime-kuma-images.json
@@ -85,6 +96,26 @@ elif [[ "$mode" == mirror-cilium ]]; then
 elif [[ "$mode" == mirror-kagent ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-kagent-images.json
+elif [[ "$mode" == mirror-bazel-cache ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-bazel-cache-images.json
+elif [[ "$mode" == mirror-home-assistant ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-home-assistant-images.json
+elif [[ "$mode" == mirror-homepage ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-homepage-images.json
+elif [[ "$mode" == mirror-affine ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-affine-images.json
+elif [[ "$mode" == mirror-argocd ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-argocd-images.json
+elif [[ "$mode" == mirror-image-updater-canary ]]; then
+  mode=mirror
+  canary_publication=true
+  mirror_manifest=scripts/config/harbor-image-updater-canary.json
+  [[ "$tailnet_https" == true ]] || exit 2
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
@@ -99,7 +130,11 @@ fi
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repository_root"
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
-[[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+if "$cordium_publication"; then
+  bash scripts/ci/cordium-publication-source.sh
+else
+  [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+fi
 
 # Enroll the independently checked public key through review before publication.
 if [[ "$mode" == publish ]]; then
@@ -120,8 +155,13 @@ if [[ "$mode" == mirror ]]; then
       (unique | length) == length) and
     all(.images[];
       keys == ["source"] and
-      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|codeberg[.]org|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+      (.source | type == "string" and
+        (startswith("docker.io/library/busybox:issue-1846-canary@") | not) and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|codeberg[.]org|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
+  if [[ "$manifest" == scripts/config/harbor-n8n-images.json ]]; then
+    jq --exit-status '(.images | length == 1) and
+      (.images[0].source | test("^ghcr[.]io/n8n-io/n8n:[0-9]+[.][0-9]+[.][0-9]+@sha256:[0-9a-f]{64}$"))' "$manifest" >/dev/null
+  fi
   if [[ "$manifest" == scripts/config/harbor-dns-images.json ]]; then
     jq --exit-status '.images == [{"source":"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}]' "$manifest" >/dev/null
   fi
@@ -130,6 +170,28 @@ if [[ "$mode" == mirror ]]; then
   fi
   if [[ "$manifest" == scripts/config/harbor-prometheus-images.json ]]; then
     jq --exit-status '.images == [{"source":"quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-home-assistant-images.json ]]; then
+    jq --exit-status '.images == [{"source":"ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-bazel-cache-images.json ]]; then
+    jq --exit-status '.images == [{"source":"quay.io/bazel-remote/bazel-remote:v2.6.4@sha256:10285c1183e606679eb450b725c2495c055a45eb532a6c80f6b6f9771f6d2f67"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-immich-images.json ]]; then
+    jq --exit-status --slurpfile inventory scripts/config/harbor-images.json '
+      (.images | length == 3) and
+      ((.images | sort_by(.source)) == ($inventory[0].images | map(select(.source |
+        test("^ghcr[.]io/immich-app/(immich-server:v3[.]4[.]2|postgres:18-vectorchord1[.]1[.]1)@|^docker[.]io/valkey/valkey:9@"))) | sort_by(.source)))
+    ' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-affine-images.json ]]; then
+    jq --exit-status '.images == [{"source":"ghcr.io/toeverything/affine@sha256:b649f5ce2384ffdf13c23bccf81d759e15973d59d0b0058af65d895a84373099"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-argocd-images.json ]]; then
+    jq --exit-status '.images == [{"source":"quay.io/argoproj/argocd:v3.4.14@sha256:487168f017d1d969e0378e665156633e517be6a86bfb139a935fa3d43f627560"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-homepage-images.json ]]; then
+    jq --exit-status '.images == [{"source":"ghcr.io/gethomepage/homepage:v2.8.0@sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18"}]' "$manifest" >/dev/null
   fi
   if [[ "$manifest" == scripts/config/harbor-uptime-kuma-images.json ]]; then
     jq --exit-status '.images == [{"source":"docker.io/louislam/uptime-kuma:2.5.11@sha256:7554dba313c84e44fee921ef3b5626ba1c711e412e82815e8c957517026112a9"}]' "$manifest" >/dev/null
@@ -151,7 +213,16 @@ if [[ "$mode" == mirror ]]; then
         test("^ghcr[.]io/kagent-dev/kagent/(app|controller|golang-adk|skills-init|ui):0[.]10[.]6@|^docker[.]io/library/postgres:18[.]6-bookworm@"))) | sort_by(.source)))
     ' "$manifest" >/dev/null
   fi
-  if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
+  if "$canary_publication"; then
+    jq --exit-status --slurpfile inventory scripts/config/harbor-images.json \
+      --arg a "docker.io/library/busybox@$canary_digest_a" --arg b "docker.io/library/busybox@$canary_digest_b" '
+      .images as $selected |
+      ($selected | length == 1) and
+      ($selected[0].source == $a or $selected[0].source == $b) and
+      any($inventory[0].images[];
+        (.source | sub(":[^:@]+@"; "@")) == $selected[0].source)
+    ' "$manifest" >/dev/null
+  elif [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.
     # No caller-supplied repository, digest, manifest path, or destination exists.
     jq --exit-status --slurpfile inventory scripts/config/harbor-images.json '
@@ -281,12 +352,25 @@ fi
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 start_private_forward() {
-  local attempt ready status
+  local attempt ready status probe_exit
   if "$tailnet_https"; then
-    status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
-      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
-      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]
-    return
+    for attempt in 1 2 3; do
+      if status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
+        --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+        2>"$scratch/readiness.log")"; then
+        [[ "$status" == 401 ]]
+        return
+      else
+        probe_exit=$?
+      fi
+      # A failed connection can be transient. TLS errors and unexpected HTTP
+      # responses still fail immediately on the same private route.
+      if [[ "$probe_exit" != 7 || "$attempt" == 3 ]]; then
+        return "$probe_exit"
+      fi
+      sleep "$attempt"
+    done
+    return 1
   fi
   for attempt in 1 2 3; do
     timeout --signal=TERM --kill-after=5s "$forward_timeout" \
@@ -389,7 +473,100 @@ if [[ "$mode" == mirror ]]; then
     ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status(:| code:?)?[[:space:]]*4[0-9]{2}|status code:?[[:space:]]*4[0-9]{2}' "$scratch/mirror-error" &&
       { mirror_retryable_server_error ||
         { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
-          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; }; }
+          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded|stream error: stream ID [0-9]+; INTERNAL_ERROR; received from peer' "$scratch/mirror-error"; }; }
+  }
+  mirror_copy_from_upstream() {
+    local publisher_config="$scratch/regctl-publisher.json"
+    if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
+      # Bound requests for this image in both scoped and full publication.
+      publisher_config="$scratch/regctl-chunked-publisher.json"
+      cp -- "$scratch/regctl-publisher.json" "$publisher_config"
+      REGCTL_CONFIG="$publisher_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl registry set harbor.stinkyboi.com --blob-chunk 16777216 --blob-max 16777216 \
+        2>"$scratch/mirror-error"
+    fi
+    REGCTL_CONFIG="$publisher_config" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+      regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+      2>"$scratch/mirror-error"
+    oci_index_copy=true
+  }
+  mirror_alias() {
+    local source_tag="$1" alias_needs_copy=true attempt lookup_status copy_status read_status observed_digest
+    mirror_phase="alias-lookup"
+    for attempt in 1 2 3; do
+      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+        observed_digest="sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)"
+        if "$canary_publication"; then
+          mirror_category="digest-mismatch"
+          [[ "$observed_digest" == "$source_digest" ||
+             ( "$source_digest" == "$canary_digest_b" && "$observed_digest" == "$canary_digest_a" ) ]]
+          mirror_category="command-failed"
+        fi
+        if [[ "$observed_digest" == "$source_digest" ]]; then
+          alias_needs_copy=false
+        fi
+        break
+      else
+        lookup_status=$?
+      fi
+      if grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" ||
+          grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" ||
+          grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+        if "$canary_publication" && [[ "$source_digest" == "$canary_digest_b" ]]; then
+          # B may advance an established canary but must not skip the A baseline.
+          exit "$lookup_status"
+        fi
+        break
+      fi
+      if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
+        exit "$lookup_status"
+      fi
+      sleep "$attempt"
+    done
+    if [[ "$alias_needs_copy" == true ]]; then
+      mirror_phase="alias-copy"
+      if "$canary_publication"; then
+        [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+      fi
+      if "$canary_publication" || "$oci_index_copy"; then
+        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+          2>"$scratch/mirror-error"
+      else
+        if skopeo copy --all --preserve-digests \
+            --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+            "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"; then
+          :
+        else
+          copy_status=$?
+          if ! grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" ||
+              ! grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
+            exit "$copy_status"
+          fi
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+            2>"$scratch/mirror-error"
+          oci_index_copy=true
+        fi
+      fi
+    fi
+    mirror_phase="alias-verify"
+    for attempt in 1 2 3; do
+      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+        break
+      else
+        read_status=$?
+      fi
+      if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
+        exit "$read_status"
+      fi
+      sleep "$attempt"
+    done
+    mirror_category="digest-mismatch"
+    [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    mirror_category="command-failed"
   }
   while IFS= read -r source; do
     oci_index_copy=false
@@ -400,11 +577,17 @@ if [[ "$mode" == mirror ]]; then
     tag="${source_digest#sha256:}"
     mirror_source="$source"
     mirror_phase="digest-lookup"
+    artifact_ref="${destination}:${tag}"
+    if "$canary_publication"; then
+      # This scope retags only an existing, completely readable Harbor artifact.
+      artifact_ref="${destination}@${source_digest}"
+    fi
     if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-      "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"; then
+      "docker://${artifact_ref}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"; then
       : # Resume only after checking the exact bytes below.
     else
       lookup_status=$?
+      if "$canary_publication"; then exit "$lookup_status"; fi
       if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
           ! grep -Fq "artifact mirror/${source_repository}:${tag} not found" "$scratch/mirror-error" &&
           ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
@@ -421,7 +604,9 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if skopeo copy --all --preserve-digests --src-no-creds \
+        if [[ "$source_repository" == ghcr.io/home-assistant/home-assistant ]]; then
+          mirror_copy_from_upstream
+        elif skopeo copy --all --preserve-digests --src-no-creds \
             --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
             "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
           :
@@ -438,19 +623,13 @@ if [[ "$mode" == mirror ]]; then
           else
             exit "$copy_status"
           fi
-          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
-            2>"$scratch/mirror-error"
-          oci_index_copy=true
+          mirror_copy_from_upstream
         fi
       else
         grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
         grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
         mirror_phase="destination-copy"
-        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
-          2>"$scratch/mirror-error"
-        oci_index_copy=true
+        mirror_copy_from_upstream
       fi
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
@@ -468,68 +647,7 @@ if [[ "$mode" == mirror ]]; then
     if [[ "$tagged_source" == *:* ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
-      mirror_phase="alias-lookup"
-      alias_needs_copy=true
-      for attempt in 1 2 3; do
-        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
-          if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
-            alias_needs_copy=false
-          fi
-          break
-        else
-          lookup_status=$?
-        fi
-        if grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" ||
-            grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" ||
-            grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
-          break
-        fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
-          exit "$lookup_status"
-        fi
-        sleep "$attempt"
-      done
-      if [[ "$alias_needs_copy" == true ]]; then
-        mirror_phase="alias-copy"
-        if "$oci_index_copy"; then
-          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-            regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
-            2>"$scratch/mirror-error"
-        else
-          if skopeo copy --all --preserve-digests \
-              --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-              "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"; then
-            :
-          else
-            copy_status=$?
-            if ! grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" ||
-                ! grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
-              exit "$copy_status"
-            fi
-            REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-              regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
-              2>"$scratch/mirror-error"
-            oci_index_copy=true
-          fi
-        fi
-      fi
-      mirror_phase="alias-verify"
-      for attempt in 1 2 3; do
-        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
-          break
-        else
-          read_status=$?
-        fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
-          exit "$read_status"
-        fi
-        sleep "$attempt"
-      done
-      mirror_category="digest-mismatch"
-      [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
-      mirror_category="command-failed"
+      mirror_alias "$source_tag"
     fi
     mirror_phase="authenticated-pull"
     pull_attempts=(1 2 3)
@@ -599,6 +717,10 @@ if [[ "$mode" == mirror ]]; then
     fi
     mirror_category="command-failed"
     rm -rf -- "$pull_directory"
+    if "$canary_publication"; then
+      tag=issue-1846-canary
+      mirror_alias "$tag"
+    fi
     printf '%s:%s@%s\n' "$destination" "$tag" "$source_digest" >>"$scratch/verified-digests"
   done < <(jq --raw-output '.images[].source' "$manifest")
   mirror_phase="acceptance"

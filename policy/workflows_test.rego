@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312",
+		"6b9fb14b5f2450c9f6209f48f5dc6f8bc93d29cdad104a26b092e83be46dd35c",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -190,7 +190,7 @@ platform_maintenance_fixture := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"stage": {"options": ["inspect", "cilium-route-preflight", "cilium-evacuate-worker", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
 		"cleanup_run_id": {"required": false, "type": "string"},
 		"qualification_run_id": {},
 		"evidence_source_sha": {},
@@ -275,7 +275,7 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "fac3034c426bd1539fee8cad06cb838e9b55681784d6eadd12fda30ea79a63fa", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -295,7 +295,7 @@ test_rejects_changed_openclaw_legacy_operation if {
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "97c41edc52cc7370f97433824f3d9211e9f1ae8497e52a80c7cf75191c6a5037", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -419,12 +419,12 @@ fi
 if [[ "$RUN_STAGE" == network-preflight ]]; then
   printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
 fi
-sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'fac3034c426bd1539fee8cad06cb838e9b55681784d6eadd12fda30ea79a63fa  scripts/ci/openclaw-enterprise-operations.sh'
 sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
 sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'
-sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'
+sha256sum --check --status <<<'97c41edc52cc7370f97433824f3d9211e9f1ae8497e52a80c7cf75191c6a5037  scripts/ci/openclaw-discord-cache-publication.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
@@ -926,6 +926,8 @@ test_rejects_changed_visible_terragrunt_plan if {
 	every changed in [
 		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `kubectl get pods -A -o json`),
 		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF"`, `python3 -I scripts/ci/litellm-release-check.py --base-ref "origin/$BASE_REF" || true`),
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"`, `kubectl get pods -A -o json`),
+		replace(visible_terragrunt_plan_run, `python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF"`, `python3 -I scripts/ci/descheduler-release-check.py --base-ref "origin/$BASE_REF" || true`),
 		replace(visible_terragrunt_plan_run, `bash scripts/ci/terragrunt-plan.sh`, `bash scripts/ci/terragrunt-apply.sh`),
 		concat("\n", [visible_terragrunt_plan_run, `cat "$azuread_report"`]),
 		replace(visible_terragrunt_plan_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `echo "$azuread_report"`),
@@ -965,20 +967,8 @@ test_rejects_modified_azuread_plan_stage_classifier if {
 	}
 }
 
-test_allows_exact_apply_stage_classifier if {
-	violations := deny with input as workflow_with_live_run(classified_apply_run)
-	count(violations) == 0
-}
-
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_unverified_apply_stage_classifier if {
-	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -1025,54 +1015,19 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
-test_rejects_classified_apply_success_exit if {
-	run := replace(classified_apply_run, "exit 1", "exit 0")
-	violations := deny with input as workflow_with_live_run(run)
-	some msg in violations
-	contains(msg, "withhold sensitive command output")
-}
-
-test_rejects_modified_apply_stage_guard if {
-	every replacement in [
-		replace(apply_stage_guard, "f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829", "0000000000000000000000000000000000000000000000000000000000000000"),
-		replace(apply_stage_guard, "sha256sum --check --status", "true"),
-		replace(apply_stage_guard, "sha256sum", "shasum"),
-		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
-		replace(apply_stage_guard, " --check", ""),
-		replace(apply_stage_guard, " --status", ""),
-		replace(apply_stage_guard, "stage.sh", "other.sh"),
-		replace(apply_stage_guard, " 2>/dev/null", ""),
-		replace(apply_stage_guard, "; then", " || true; then"),
-		sprintf("%s\n  echo extra", [apply_stage_guard]),
-	] {
-		run := replace(classified_apply_run, apply_stage_guard, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
-	}
-}
-
-test_rejects_modified_apply_stage_classifier if {
-	every replacement in [
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || cat "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || exit 0`,
-		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/other.sh <"$private_log"`,
-		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
-		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
-		`cat "$private_log"`,
-		`echo "$private_log details withheld"`,
-		`echo "$line details withheld"`,
-		sprintf("%s\n  echo extra", [apply_stage_call]),
-	] {
-		run := replace(classified_apply_run, apply_stage_call, replacement)
-		violations := deny with input as workflow_with_live_run(run)
-		some msg in violations
-		contains(msg, "withhold sensitive command output")
+test_quiet_deploy_commands_must_withhold_both_streams_and_propagate_failure if {
+	count(quiet_deploy_runs) == 3
+	every run in quiet_deploy_runs {
+		private_live_output(run)
+		every unsafe in [
+			replace(run, " >/dev/null", ""),
+			replace(run, " 2>&1", ""),
+			sprintf("%s || true", [run]),
+		] {
+			violations := deny with input as workflow_with_live_run(unsafe)
+			some msg in violations
+			contains(msg, "withhold sensitive command output")
+		}
 	}
 }
 
@@ -1090,7 +1045,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "e9bf15954f1fcf2a99c2a9291aa4ab1a3f1a66d0accb812f831572adee0ca423", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "aaa51141e513e048776c4501c82bcaf9dcd78065432f1ac8a53e05c4ce8957cd", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -1099,6 +1054,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-uptime-kuma", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-adguard", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-cilium", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-image-updater-canary", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),
@@ -1242,12 +1198,6 @@ fi
 echo "success details withheld"`
 
 classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
-
-apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log" || true`
-
-apply_stage_guard := `if sha256sum --check --status <<<'f3297b3c508c7fd919357877f5cf39210ddc0f075354af8ba6c935637b301829  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
-
-classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
 
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT

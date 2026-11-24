@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: homepage-ingress
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: homepage
+      app.kubernetes.io/instance: compass
+  policyTypes: [Ingress]
+  ingress:
+    # Istio AuthorizationPolicy restricts the mesh callers by service account.
+    - ports:
+        - protocol: TCP
+          port: 3000

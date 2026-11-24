@@ -174,21 +174,11 @@ class RscstoreCaptureTest(unittest.TestCase):
                     path.write_text(invalid)
                     CAPTURE.fenced_kustomization_guard(path)
 
-    def test_s3_policy_examples_scope_new_prefix(self):
-        prefix = "applications/octelium-rscstore/*"
-        bucket = "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/"
-        for filename, required in (("publisher-policy.json", "CreateChecksummedObjects"),
-                                   ("reader-policy.json", "VerifyImmutableApplicationVersions")):
-            with self.subTest(filename=filename):
-                policy = json.loads((ROOT / "recovery/application-backups" / filename).read_text())
-                statements = {item["Sid"]: item for item in policy["Statement"]}
-                self.assertIn(prefix, statements["ListApplicationPrefixes"]["Condition"]
-                              ["StringLike"]["s3:prefix"])
-                self.assertIn(bucket + prefix, statements[required]["Resource"])
-
-    def test_stage_is_dormant_in_active_kustomization(self):
+    def test_inspector_stage_keeps_writer_fence_inactive(self):
         source = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        self.assertNotIn("capture-stage", source)
+        self.assertIn("  - capture-stage/inspector.yaml", source)
+        self.assertIn("  - capture-stage/inspector-networkpolicy.yaml", source)
+        self.assertNotIn("components:", source)
 
     def test_pod_list_requires_unpaginated_resource_version(self):
         deployment, pvc, pv, pods = cluster_fixture()

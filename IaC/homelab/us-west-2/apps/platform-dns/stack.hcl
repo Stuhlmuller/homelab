@@ -25,7 +25,7 @@ inputs = {
     info = [
       {
         name  = "dns"
-        value = "clusters/homelab/platform/dns/README.md"
+        value = "https://github.com/Stuhlmuller/homelab/blob/3b2256219bcc0cb70596a94fc17e66491e284a9f/clusters/homelab/platform/dns/README.md"
       },
       {
         name  = "prune"
