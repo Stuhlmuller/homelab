@@ -15,4 +15,8 @@ provider "msgraph" {}
 EOF
 }
 
-inputs = jsondecode(read_tfvars_file("terragrunt.values.hcl"))
+locals {
+  values = jsondecode(read_tfvars_file("terragrunt.values.hcl"))
+}
+
+inputs = local.values

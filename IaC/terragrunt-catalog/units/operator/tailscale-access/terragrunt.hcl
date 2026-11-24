@@ -40,9 +40,15 @@ provider "aws" {
 EOF
 }
 
+locals {
+  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region  = local.root_config.locals.aws_region
+  policy      = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
+}
+
 inputs = {
-  aws_region = read_terragrunt_config(find_in_parent_folders("root.hcl")).locals.aws_region
+  aws_region = local.aws_region
   # Generation 2 exists in encrypted state since 2026-10-14 UTC; rotate 60 days after provider creation.
   ci_key_generation = 2
-  policy            = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
+  policy            = local.policy
 }
